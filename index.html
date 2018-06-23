@@ -13,6 +13,12 @@
         font-style: italic;
     }
     
+    code, pre {
+        font-size: 16px;
+        background-color: #eee;
+        padding: 2px;
+        border-radius: 4px;
+    } 
 
     blockquote a {
         text-decoration: none; 
@@ -22,8 +28,14 @@
 
 <h1>Drew's Software Learnings</h1>
 <p>By Drew LeSueur <a href="https://twitter.com/drewlesueur">@drewlesueur</a></p>
-<p>This site is for documenting the things I've learned as a computer programmer working on teams to create software for people.</p>
-<p>Below is a list of concepts or technologies and my thoughts on them.</p>
+<p>
+This site is for documenting the things I've learned as a computer programmer working on teams to create software for people.
+<br>
+Below is a list of concepts or technologies and my thoughts on them.
+<br>
+Much of this is my personal opinion and I value ideas that are different than these.
+</p>
+
 <hr>
 <a name="enduservalue"><h2>End-User Value</h2></a>
 <p>
@@ -33,7 +45,9 @@
     <br>
     It's extremely satisfying to create something useful.
     <br>
-    I enjoy working with the end-user or a good representative of end-user to create software.
+    I enjoy working with the end-user to create software.
+    <br>
+    What's the essence of what you are making? Does your software do that well?
 </p>
 <hr>
 <a name="teams"><h2>Teams</h2></a>
@@ -45,6 +59,9 @@
     I have learned so much from my teammates.
     <br>
     I value diversity and inclusion.
+    <br>
+    I try to be sensitive and understanding to others.
+
     </p>
     <blockquote><i>Personality differences are totally overcomable with a unified cause or purpose.</i></blockquote>
     <blockquote>&mdash;Ryan LeSueur</blockquote>
@@ -64,13 +81,19 @@
 <hr>
 <a name="simplicity"><h2>Simplicity</h2></a>
     <p>
-    Simplicity is one of the most important considerations when writing code. Simple code has fewer bugs, is more secure, is easier to change and remove later.
+    Simplicity is one of the most important considerations when writing code and designing systems.
     <br>
-    Simple code is easy to read and understand&mdash;code you can fit in your head.
+    Simple code and systems have fewer bugs, are more secure, are easier to change later.
+    <br>
+    Simple code is easy to read and understand.
+    <br>
+    Simple systems can fit in your head.
     <br>
     Not everything can be simple, and there are tradeoffs that require more complex code, but as much as reasonable, I prefer simple code.
     <br>
-    In general, I think of simple code is code that has few levels of indirection, fewer nodes in a diagram, and generally linear.
+    If something is out of the norm or confusing, make sure to add clear comments to explain what's going on.
+    <br/>
+    In general, I think of simple code and systems as having few levels of indirection, few nodes in a diagram, and generally linear.
     <br>
     What can I remove?
     </p>
@@ -86,21 +109,23 @@
     <br> 
     Users can get incremental benefit along the way.
     <br>
-    Without the drive to release, I've seen software projects spin forever in development mode.
+    Without the drive to release, I've seen software projects spin too long in development mode.
     <br>
     What's the most important thing we can work on in order to release quickly?
     </p>
 <hr>
 <a name="overhead"><h2>Overhead</h2></a>
 <p>
-    It's natural for me to love coding,
+    It's natural for me to love coding and releasing software,
     <br>
     and not spend as much time on other important things related to software.
     <br>
-    Make time for other tasks like Code Maintenance, Testing, Documentation, and Production Monitoring
+    Make time for other tasks like <a href=#cleanup>Cleanup</a>, <a href=#testing>Testing</a>, <a href=#documentation>Documentation</a>, and <a href=#monitoring>Monitoring</a>
+    <br>
+    If these are neglected, you'll feel burdened by technical debt.
 </p>
 <hr>
-<a name="codemaintenance"><h2>Code Mainentance</h2></a>
+<a name="cleanup"><h2>Cleanup</h2></a>
 <p>
     Code and systems develop organically over time.
     <br>
@@ -108,19 +133,75 @@
     <br>
     After time, artifacts of change exist that are unintended, but natural.
     <br>
-    Your code could have left-over parts that aren't used.
+    Code will have left-over parts that aren't used.
     <br>
-    Or your system could be too complex.
+    Or systems will be too complex.
     <br>
-    It's important to take time to analyze code and systems, and identify ways to clean and simpify it.
+    It's important to take time to analyze code and systems, and identify ways to clean and simplify them.
     <br>
     It's much easier to do this when there are tests, especially integration-style tests.
 </p>
-
-<a name=bugs><h2>Bugs</h2></a>
-<a name=abstraction><h2>Abstraciton</h2></a>
+<hr />
+<a name=testing><h2>Testing</h2></a>
 <p>
-    I follow the idea that code is read much more that it is written.
+    I have benefitted hugely from having automated tests that prevent bugs.
+    <br>
+    I generally prefer integration-style tests over unit tests, but I still see value in unit tests.
+    <br>
+    Integration-style tests allow me to test a system as a whole, and allow me to refactor
+    without changing too many tests.
+    <br>
+    I generally prefer not to mock in tests, except for mocking third-party services if necessary.
+    <br>
+    I'd rather spin up a dependent test database or internal service instead of adding mocks.
+    <br>
+    I think it's easy for things to break at the seams and integration-style tests test the seams too.
+    <br>
+    I think integration-style tests can be made to run in all environments&mdash;development, test, and even in production.
+</p>
+<hr>
+<a name="documentation"><h2>Documentation</h2></a>
+<p>
+    Tests help with documentation, but they don't always answer, "Why?"
+    <br>
+    Add documentation for users, other developers, or yourself later.
+    <br>
+    It takes time.
+</p>
+<hr>
+<a name=monitoring><h2>Monitoring</h2></a>
+<p>
+    Software is more than just code, it's a living system.
+    <br>
+    It's important to monitor the health of the system.
+    <br>
+    Track things like latency, throughput, request lifecycles, error rates.
+</p>
+<hr>
+<a name=bugs><h2>Bugs</h2></a>
+<p>
+    It's frustrating but also somewhat reassuring that there will always be bugs.
+    <br>
+    Plan on bugs existing (because they will), and write code that is easy to debug (because you will have to).
+    <br>
+    Add tests and review code to limit bugs, but know that even with tests, code review, QA, bugs will exist.
+    <br>
+    I like to be empathetic to customers who report bugs&mdash;I feel the same frustration when I encounter bugs&mdash;
+    <br>and I feel bad about all the bugs that aren't reported.
+    <br>
+    I've learned to not argue over what's a bug and what's not. If it doesn't work the way the user expects, I consider it a bug.
+    <br>
+    A quick bug checklist:
+    <ul>
+        <li>Is cache getting in the way? Do you need to clear cache?</li>
+        <li>Are you on the correct server or environment?</li>
+        <li>What was the last thing you changed?</li>
+    </ul>
+</p>
+<hr>
+<a name=abstraction><h2>Abstraction</h2></a>
+<p>
+    Code is read much more that it is written.
     <br>
     Code should be able to be removed and edited easily.
     <br>
@@ -137,54 +218,200 @@
     <blockquote><a href="https://twitter.com/sandimetz">&mdash;Sandi Metz</a></blockquote>
 
     <blockquote><i><a href="https://go-proverbs.github.io/">A little copying is better than a little dependency.</a></i></blockquote>
-
+<hr>
 <a name=tradeoffs><h2>Tradeoffs</h2></a>
-    <p>
-        I love the idea of tradeoffs. Two opposing decisions might both be right, as long as the deciders are happy with the tradeoffs involved.
-        <br>
-        Many decisions come down to personal preference. I don't believe that there is always one universal, correct way to solve a problem.
-        <br> 
-        I've really enjoyed seeing "best practices" change over the years. It reminds me that I should have confidence in the tradeoff decisions I have made,
-        <br>
-        but also respect others for their decisions.
-        <br>
-        If you are making software, and you have a simple solution that works, don't feel bad if it seems to go against "best practices"
-    </p>
-    <blockquote class="twitter-tweet" data-lang="en"><p lang="en" dir="ltr">simplicity of doing things by hand<br><br>simplicity of automation</p>&mdash; Drew LeSueur (@drewlesueur) <a href="https://twitter.com/drewlesueur/status/1000765800125362182?ref_src=twsrc%5Etfw">May 27, 2018</a></blockquote>
-    <blockquote class="twitter-tweet" data-lang="en"><p lang="en" dir="ltr">simplicity of reusing common existing tools for a new purpose<br>vs<br>simplicity of creating a new tool for a specific purpose</p>&mdash; Drew LeSueur (@drewlesueur) <a href="https://twitter.com/drewlesueur/status/1000451679764926464?ref_src=twsrc%5Etfw">May 26, 2018</a></blockquote>
-    <blockquote class="twitter-tweet" data-lang="en"><p lang="en" dir="ltr">not perfect but consistent<br>vs<br>perfect inconsistently <a href="https://twitter.com/hashtag/software?src=hash&amp;ref_src=twsrc%5Etfw">#software</a> <a href="https://twitter.com/hashtag/code?src=hash&amp;ref_src=twsrc%5Etfw">#code</a></p>&mdash; Drew LeSueur (@drewlesueur) <a href="https://twitter.com/drewlesueur/status/1000003528717352961?ref_src=twsrc%5Etfw">May 25, 2018</a></blockquote>
+<p>
+    I love the idea of tradeoffs. Two opposing decisions might both be right, as long as the deciders are happy with the tradeoffs involved.
+    <br>
+    Many decisions come down to personal preference. I don't believe that there is always one universal, correct way to solve a problem.
+    <br> 
+    I've really enjoyed seeing "best practices" change over the years.
+    <br>
+    It reminds me that I should have confidence in the tradeoff decisions I have made,
+    <br>
+    but also respect others for their decisions.
+    <br>
+    If you are making software, and you have a simple solution that works, don't feel bad if it seems to go against current "best practices."
+</p>
+<hr>
 <a name=automation><h2>Automation</h2></a>
 <p>
-    
+    I like automating tasks.
+    <br> 
+    When automating, it's important to allow for "manual overrides" so a human can do what a computer can't.
 </p>
-
-
+<hr>
 <a name=pairprogramming"><h2>Pair Programming</h2></a>
+<p>
+    I really enjoy pair programming.
+    <br>
+    I enjoy the knowledge transfer and focus that pair programming provides.
+    <br>
+    I think that there doesn't need to be a formal way of doing pair programming.
+    <br>
+    It should be natural.
+    <br>
+    Both people in the pair provide value even if one isn't touching the keyboard.
+</p>
+<hr>
 <a name=learning><h2>Learning</h2></a>
-<a name=drive><h2>Drive</h2></a>
-<a name=testing><h2>Testing</h2></a>
-<ul>
-    <li>System as a whole</li>
-    <li>Produciton testing</li>
-    <li>Integration testing</li>
-</ul>
+<p>
+    I love learning technologies and practices. I love experimenting with things.
+    <br>
+    Even if I don't need it yet, one day I might.
+    <br>
+    When I am with other developers, I think it's better to ask, "What can I learn?" instead of, "How do I prove how smart I am?"
+</p>
+<hr>
 <a name=optimization><h2>Optimization</h2></a>
 <p>
-    I enjoy thinking through optimization problems. Sometimes optimization means changing the way the system works vs optimizing existing code.
+    I enjoy thinking through and working on optimization problems.
+    <br>Sometimes optimization means changing the way the system works rather than optimizing existing code.
 </p>
-
-
-<a name=git><h2>Git</h2></a>
-<a name=redis><h2>Redis</h2></a>
-<a name=variables><h2>Variables</h2></a>
+<hr>
+<a name=variables><h2>Finding Code</h2></a>
+<p>
+    It's frustrating to not be able to find code.
+    <br>
+    I value things like <code>onclick=</code> in html.
+    <br>
+    And 'greppable' identifiers in code.
+    <br>
+    If a specific feature spans multiple files in code,
+    <br>
+    I like to be able to grep for a single word and find all places in code that relate to that feature.
+</p>
+<hr>
+<a name=drive><h2>Drive</h2></a>
+<p>
+    Sometimes solving problems (like fixing bugs) takes a lot of effort and repetition.
+    <br>
+    Keep trying.
+</p>
+<hr>
 <a name=focus><h2>Focus</h2></a>
+<p>
+    Focus is a form of simplicity and minimalism. 
+    <br>
+    You can only do so much, what is the most important thing?
+</p>
+<hr>
+<a name=flow><h2>Flow</h2></a>
+<p>
+    Creating software requires a good flow.
+</p>
+<hr>
+<a name=tools><h2>Tools</h2></a>
+<p>
+    I value tools with a simple interface&mdash;like command-line-based tools.
+    <br>
+    Sometimes it's great to use existing tools to solve a problem,
+    <br>
+    and sometimes you need to write your own tools.
+    <br>
+    I also value "dumb" tools.
+    <br>
+    Many times a tool will try to be "smart" (like adding &ldquo;smart quotes&rdquo;, spell-check),
+    <br>
+    but it ends up not being what I want.
+</p>
+<hr>
+<a name=git><h2>Git</h2></a>
+<p>
+    Git is a very useful tool for developing software.
+    <br>
+    I like that I can be in the middle of something, but revert back to do hotfixes.
+    <br>
+    I like that it helps teams work together on the same codebase.
+</p>
+<hr>
+<a name=redis><h2>Redis</h2></a>
+<p>
+    I love the simplicity of Redis.
+    <br>
+    The conceptual interface is extremely simple&mdash;commands with arguments that set state of data structures shared over a network
+    <br>
+    The simplicity exists in the underlying RESP protocol too.
+    <br>
+    Even the configuration file is simple&mdash;no JSON, no YAML, no TOML&mdash;just <code>key value</code> and <code># comments</code>
+    <br>
+    Its simplicity is so refreshing.
+</p>
+<hr>
 <a name=go><h2>Go</h2></a>
+<p>
+    I really enjoy writing Go&mdash;especially for networked services.
+    <br>
+    It's clunkier to write than more dynamic languages, but it really pays off when going back to read Go code.
+    <br>
+    I like that Go intentionally leaves out features like inheritance and exceptions.
+    <br>
+    Some things are harder to abstract in Go, but this can lead to clearer code.
+    <br>
+    I also value the idea that Go doesn't meet all needs and that other languages can be more appropriate or preferred.
+</p>
+<hr>
 <a name=bashshell><h2>Bash/Shell</h2></a>
+<p>
+    The more I use bash/shell, the more I like it.
+    <br>
+    I think of it as the glue of operating system features.
+    <br>
+    And I like glueing together text streams for quickly automating tasks.
+    <br>
+    I also like how easy it is to do multi-threaded scripts in shell if needed.
+</p>
+<hr>
 <a name=javascript><h2>JavaScript</h2></a>
-<a name=vim><h2>Vim</h2></a>
-<a name=mobile><h2>Mobile</h2></a>
-<a name=attentointodetail><h2>Attentoin to Detail</h2></a>
-<a name=weaknesses><h2>Weaknesses</h2></a>
+<p>
+    I gravitate toward simple uses of JavaScript like using <code>&lt;script src="app.js"&gt;&lt/script&gt;</code> with hand-written JavaScript.
+    <br>
+    Lately I've used the Preact library for more complex user interfaces.
+    <br>
+    I like Preact because it's small and I can use it with plain html and JavaScript&mdash;I don't need a compile step.
+    <br>
+    I used to use JavaScript on the backend with Node.js, but I know use Go.
+</p>
+<hr>
+<a name=developmentenvironment><h2>Development Environment</h2></a>
+<p>
+    I use Vim as my text editor.
+    <br>
+    I usually use it with no plugins and a small .vimrc.
+    <br>
+    I enjoy programming with syntax highlighting turned off.
+    <br>
+    I usually program while sshed into a remote machine.
+    <br>
+    I like that I can be productive on any computer with an internet connection.
+    <br>
+    I only use one monitor.
+    <br>
+    I'd love to see more software creating tools done for mobile.
+    <br>
+    In high school I loved programming on my TI-83 Plus graphing calculator.
+</p>
+<hr>
+<a name=attenitontodetail><h2>Atteniton to Detail</h2></a>
+<p>
+    A reminder that bugs happen, and it's important to be able to fix bugs quickly.
+</p>
+<hr>
 
-
-
+<h2>Links</h2>
+<p>
+Here are links to other thoughts on software or design that I value:
+<br>
+<a href="https://www.vitsoe.com/us/about/good-design">Ten Principles for Good Design</a>
+<br>
+<a href="https://www.python.org/dev/peps/pep-0020/">Zen of Python</a>
+<br>
+<a href="http://www.agilemaxims.com/">Agile Maxims</a>
+<br>
+<a href="https://github.com/antirez/redis/blob/unstable/MANIFESTO">Redis Manifesto</a>
+<br>
+<a href="https://www.jwz.org/doc/worse-is-better.html">The Rise of ``Worse is Better''</a>
+<br>
+<a href="https://users.ece.utexas.edu/~adnan/pike.html">Rob Pike's 5 Rules of Programming</a>
+<br>
+</p>
