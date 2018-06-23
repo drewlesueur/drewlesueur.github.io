@@ -1,16 +1,146 @@
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!doctype html>
+<title>Drew LeSueur</title>
 <style>
-  body {
-    font-size: 20px; 
-    background-color: #E9E1C9;
-    color: #2B2924;
-  }
+    * {
+    }
 
-  a {
-    color: #0F3D97; 
-  }
+    p {
+        font-size: 20px;
+    }
+
+    blockquote p {
+        font-size: 16px;
+        font-style: italic;
+    }
+    
+
+    blockquote a {
+        text-decoration: none; 
+    }
+    
 </style>
-<pre>Hello world
 
-<a href="lang1">Lang1: Programming Language Attempt</a>
-<a href="http://bman6.drewles.com">Bomberman game</a>
+<h1>Drew's Software Learnings</h1>
+<p><a href="https://twitter.com/drewlesueur">@drewlesueur</a></p>
+<p>This site is for documenting the things I've learned as a computer programmer working on teams to create software for people.</p>
+<p>Below is a list of concepts or technologies and my thoughts on them.</p>
+<hr>
+<a name="enduservalue"><h2>End-User Value</h2></a>
+<p>
+    The best software is used by people and it helps them.
+    <br>
+    It works!
+    <br>
+    It's extremely satisfying to create something useful.
+    <br>
+    I enjoy working with the end-user, or a good representative of end-user to create software.
+</p>
+<hr>
+<a name="teams"><h2>Teams</h2></a>
+    <p>
+    I love working with a team when creating software.
+    <br>
+    I love helping and learning from a team.
+    <br>
+    I have learned so much from teammates.
+    </p>
+    <blockquote><i>Personality differences are totally overcomable with a unified cause or purpose.</i></blockquote>
+    <blockquote>&mdash;Ryan LeSueur</blockquote>
+<hr>
+<a name="simplicity"><h2>Simplicity</h2></a>
+    <p>
+    Simplicity is one of the most important considerations when writing code. Simple code has fewer bugs, is more secure, is easier to change and remove later.
+    <br>
+    Simple code is easy to read and understand&mdash;code you can fit in your head.
+    <br>
+    Not everything can be simple, and there are tradeoffs that require more complex code, but as much as reasonable, I prefer simple code.
+    <br>
+    In general, I think of simple code is code that has few levels of indirection, fewer nodes in a diagram, and generally linear.
+    <br>
+    What can I remove?
+    </p>
+
+    <blockquote><i>Less is better. And if it's not better, at least there's not as much of it.</i></blockquote>
+    <blockquote>&mdash;Unknown</blockquote>
+<hr>    
+<a name="releasing"><h2>Releasing</h2></a>
+    <p>
+    Web-based software has the benefit (and drawback) of being able to be changed frequently.
+    <br>
+    It allows software developers to release software in small increments.
+    <br> 
+    Users can get incremental benefit along the way
+    </p>
+<hr>
+<a name="maintenanceoverhead"><h2>Maintenance Overhead</h2></a>
+<p>
+    <ul>
+        <li>Remove code</li>
+        <li>Write tests</li>
+        <li>Add Documentation</li>
+        <li>Monitor</li>
+    </ul>    
+</p>
+<a name=abstraction><h2>Abstraciton</h2></a>
+<p>
+    I follow the idea that code is read much more that it is written.
+    <br>
+    Code should be able to be removed and edited easily.
+    <br>
+    There is beauty and simplicity in abstraction in general,
+    <br>
+    but sometimes the cost of learning or remembering
+    the abstraction is not worth the duplication that the abstraction removes.
+    <br>
+    I will sometimes duplicate code if I think it will make it clearer and easier to understand and change later.
+    <br>
+    When a heavy abstraction is beneficial, I like providing an "abstraction escape-hatch" so you can break out of the abstraction when needed.
+</p>
+    <blockquote><i><a href="https://www.sandimetz.com/blog/2016/1/20/the-wrong-abstraction">duplication is far cheaper than the wrong abstraction</a></i></blockquote>
+    <blockquote><a href="https://twitter.com/sandimetz">&mdash;Sandi Metz</a></blockquote>
+
+    <blockquote><i><a href="https://go-proverbs.github.io/">A little copying is better than a little dependency.</a></i></blockquote>
+
+<a name=tradeoffs><h2>Tradeoffs</h2></a>
+    <p>
+        I love the idea of tradeoffs. Two opposing decisions might both be right, as long as the deciders are happy with the tradeoffs involved.
+        <br>
+        Many decisions come down to personal preference. I don't believe that there is always one universal, correct way to solve a problem.
+        <br> 
+        I've really enjoyed seeing "best practices" change over the years. It reminds me that I should have confidence in the tradeoff decisions I have made,
+        <br>
+        but also respect others for their decisions.
+    </p>
+    <blockquote class="twitter-tweet" data-lang="en"><p lang="en" dir="ltr">simplicity of doing things by hand<br><br>simplicity of automation</p>&mdash; Drew LeSueur (@drewlesueur) <a href="https://twitter.com/drewlesueur/status/1000765800125362182?ref_src=twsrc%5Etfw">May 27, 2018</a></blockquote>
+    <blockquote class="twitter-tweet" data-lang="en"><p lang="en" dir="ltr">simplicity of reusing common existing tools for a new purpose<br>vs<br>simplicity of creating a new tool for a specific purpose</p>&mdash; Drew LeSueur (@drewlesueur) <a href="https://twitter.com/drewlesueur/status/1000451679764926464?ref_src=twsrc%5Etfw">May 26, 2018</a></blockquote>
+    <blockquote class="twitter-tweet" data-lang="en"><p lang="en" dir="ltr">not perfect but consistent<br>vs<br>perfect inconsistently <a href="https://twitter.com/hashtag/software?src=hash&amp;ref_src=twsrc%5Etfw">#software</a> <a href="https://twitter.com/hashtag/code?src=hash&amp;ref_src=twsrc%5Etfw">#code</a></p>&mdash; Drew LeSueur (@drewlesueur) <a href="https://twitter.com/drewlesueur/status/1000003528717352961?ref_src=twsrc%5Etfw">May 25, 2018</a></blockquote>
+<a name=automation><h2>Automation</h2></a>
+<p>
+    
+</p>
+
+
+<a name=pairprogramming"><h2>Pair Programming</h2></a>
+<a name=learning><h2>Learning</h2></a>
+<a name=drive><h2>Drive</h2></a>
+<a name=bugs><h2>Bugs</h2></a>
+<a name=testing><h2>Testing</h2></a>
+<ul>
+    <li>System as a whole</li>
+    <li>Produciton testing</li>
+    <li>Integration testing</li>
+</ul>
+<a name=git><h2>Git</h2></a>
+<a name=redis><h2>Redis</h2></a>
+<a name=variables><h2>Variables</h2></a>
+<a name=focus><h2>Focus</h2></a>
+<a name=go><h2>Go</h2></a>
+<a name=bashshell><h2>Bash/Shell</h2></a>
+<a name=javascript><h2>JavaScript</h2></a>
+<a name=vim><h2>Vim</h2></a>
+<a name=mobile><h2>Mobile</h2></a>
+<a name=attentointodetail><h2>Attentoin to Detail</h2></a>
+<a name=weaknesses><h2>Weaknesses</h2></a>
+
+
+
