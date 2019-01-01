@@ -1,0 +1,271 @@
+<!doctype html>
+<html> this thing 
+<head>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>FILEPATH</title>
+<style>
+* {
+    font-size: 20px;
+    color: black;
+}
+input {
+    touch-action: manipulation;
+}
+#bodyContentTextarea {
+	width: 2000px;
+        height: 80000px;
+	font-family: monospace;
+        /*touch-action: manipulation;*/
+       
+}
+#lineNumbersTextarea {
+  	width: 80px;
+        height: 80000px;
+	font-family: monospace;
+	text-align: right;
+}
+</style>
+<meta name="viewport" content="initial-scale=1.0">
+<script>
+
+// it's important that this go in it's own script tag
+window.onerror = function(message, url, lineNumber, columnNumber, error) {
+	alert(lineNumber + ": " + message)
+}
+</script>
+<script>
+// duplicate line
+// delete line
+// indent
+// dedent
+// autoindent
+// line select
+// sub line select
+
+
+window.onbeforeunload = function (e) {
+   alert("unloading")
+} 
+function handleBodyContentInput() {
+    document.getElementById("loadButton").disabled = true
+    document.getElementById("filepathInput").readOnly = true
+    document.getElementById("stopButton").disabled = true
+        
+        
+}
+
+function handleFilepathInput() {
+	document.getElementById("bodyContentTextarea").readOnly = true
+	document.getElementById("saveButton").disabled = true
+        document.getElementById("stopButton").disabled = true
+        
+}
+
+function getSpacePrefix(p) {
+            var spaces = ""
+            for (var j = p; j < t.value.length; j++) {
+               var theChar = t.value.substr(j, 1)
+               if (theChar == " " || theChar == "\t") {
+                    spaces += theChar
+               } else {
+                 break
+               }
+            }
+            return spaces
+}
+
+var selStart = -1
+var selType = "line" // The other option is char
+
+function getStart(p) {
+    if (selType == "line") {
+        if (selStart == -1) {
+            return startOfLine(p)
+        }
+        return selStart
+    }
+    // selType must equal char
+    if (selStart == -1) {
+        return p
+    }
+    
+    return selStart
+}
+
+function getEnd(p) {
+    if (selType == "line") {
+        return endOfLine(p)
+    }
+    // selType must equal char
+    return p
+}
+
+function handleBodyContentKeypress(e) {
+   messager.value = e.keyCode + " " + t.selectionStart + " " + t.value.slice(t.selectionStart - 5, t.selectionStart)
+   if (e.keyCode == 13) {
+      // Going -1 because we are on a new line and I want to get to the last line (I think)
+      var s = startOfLine(t.selectionStart - 1)
+      var spacePrefix = getSpacePrefix(s + 1)
+      
+      var sel = t.selectionStart + spacePrefix.length
+      t.value = t.value.slice(0, t.selectionStart) + spacePrefix + t.value.slice(t.selectionStart)
+      t.setSelectionRange(sel, sel)
+      return
+   }
+   var last2Chars = t.value.substr(t.selectionStart - 2, 2)
+      messager.value = last2Chars
+      switch (last2Chars) {
+      
+      // delete line
+      case "Zd":
+          var s = getStart(t.selectionStart - 2)
+          var e = getEnd(t.selectionStart)
+          messager.value = s + ", " + e
+          pasteBuffer = t.value.slice(s, t.selectionStart - 2) + t.value.slice(t.selectionStart, e)
+          t.value = t.value.slice(0, s) + t.value.slice(e)
+          if (selType == "line") {
+              t.setSelectionRange(s + 1, s + 1)
+          } else {
+              t.setSelectionRange(s, s)
+          }
+          
+          selStart = -1
+          selType = "line"
+          break
+          
+       // copy (yank) line
+       case "Zy":
+          var s = getStart(t.selectionStart)
+          var e = getEnd(t.selectionStart)
+          pasteBuffer = t.value.slice(s, t.selectionStart - 2) + t.value.slice(t.selectionStart, e)
+          var sel = t.selectionStart - 2
+          t.value = t.value.slice(0, t.selectionStart - 2) + t.value.slice(t.selectionStart)
+          t.setSelectionRange(sel, sel)
+          selStart = -1
+          break
+          
+       // paste line
+       case "Zp":
+          var e = getEnd(t.selectionStart)
+          t.value = t.value.slice(0, t.selectionStart - 2) + t.value.slice(t.selectionStart, e) + pasteBuffer + t.value.slice(e)
+          var sel = e - 2+ pasteBuffer.length
+          t.setSelectionRange(sel, sel)
+          selStart = -1
+          selType = "line"
+          break
+          
+       // add line below
+       case "Zo":
+          var prefix = "\n" + getSpacePrefix(startOfLine(t.selectionStart - 1) + 1) // subtract one in case it's at the end of line
+          var e = endOfLine(t.selectionStart)
+          t.value = t.value.slice(0, t.selectionStart - 2) + t.value.slice(t.selectionStart, e) + prefix + t.value.slice(e)
+          var sel = e - 2+ prefix.length
+          t.setSelectionRange(sel, sel)
+          break
+          
+       // select line
+       case "ZV":
+          selStart = startOfLine(t.selectionStart)
+          var sel = t.selectionStart - 2
+          t.value = t.value.slice(0, sel) + t.value.slice(t.selectionStart)
+          t.setSelectionRange(sel, sel)
+          break
+       
+       // select char
+       case "Zv":
+           selStart = t.selectionStart - 2
+           selType = "char"
+           t.value = t.value.slice(0, selStart) + t.value.slice(t.selectionStart)
+           t.setSelectionRange(selStart, selStart)
+         
+           break
+       // write/save
+       case "Zw":
+          var sel = t.selectionStart - 2
+          t.value = t.value.slice(0, t.selectionStart - 2) + t.value.slice(t.selectionStart)
+          t.setSelectionRange(sel, sel)
+          var form = document.forms[0]
+          var formData = new FormData(form)
+          formData.append("action", "Save")
+          var request = new XMLHttpRequest();
+          request.open('POST', location.href, true);
+
+          request.onload = function() {
+              if (this.status >= 200 && this.status < 400) {
+                 // Success!
+                 t.style.backgroundColor = "lime"
+                 loadButton.disabled = false
+                 setTimeout(function() {
+                     t.style.backgroundColor = ""
+                 }, 2000)
+                 var resp = this.response;
+              } else {
+                 // We reached our target server, but it returned an error
+                 alert('error saving, bad status code')
+              }
+          };
+
+          request.onerror = function() {
+              //  There was a connection error of some sort
+              alert("error saving")
+          };
+
+          request.send(formData);
+          break
+      }
+}
+
+var pasteBuffer = ""
+function startOfLine(ss) {
+  for (var i = ss - 1; i >= 0; i--) {
+         if (t.value.substr(i, 1) == "\n" || i == 0) {
+            return i
+         }
+  }
+} 
+
+function endOfLine(ss) {
+  for (var i = ss; i <= t.value.length - 1; i++) {
+         if (t.value.substr(i, 1) == "\n" || i == t.value.length - 1 ) {
+            return i
+         }
+  }
+}
+
+</script>
+</head>
+<body>
+<h1>CWD</h1>
+<form target=_blank method=POST>
+	<input style="width: 700px;" id=filepathInput name=filepath value="FILEPATH" oninput="handleFilepathInput()">
+	<input id=loadButton name=action value=Load type=submit>
+	<input id=saveButton name=action value=Save type=submit>
+        <input id=stopButton name=action value=Stop type=submit>
+        <input id=messager>
+        <button onclick="window.open(location.href)">new</button>
+        <table><tbody><tr>
+        <td style="width: 200px; background-color: maroon;" onclick="saveButton.click()">
+        <input style="display:block; height:100%; width:100%;" type=submit name=action value=Save >
+        </td>
+        <td>
+        <textarea id=lineNumbersTextarea></textarea>
+        </td>
+        <td>
+	<textarea id=bodyContentTextarea name=bodycontent
+        oninput="handleBodyContentInput()"
+        onkeyup="handleBodyContentKeypress(event)">BODYCONTENT</textarea>
+        </td>
+        </tr></tbody></table>
+</form>
+</body>
+<script>
+var t = bodyContentTextarea
+
+// Fill the line numbers.
+var numbers = []
+for (var i=0; i<3000; i++) {
+    numbers.push(i+1)
+}
+lineNumbersTextarea.value = numbers.join("\n")
+</script>
+</html>     
