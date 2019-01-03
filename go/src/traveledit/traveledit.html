@@ -12,17 +12,17 @@ input {
     touch-action: manipulation;
 }
 #bodyContentTextarea {
-	width: 2000px;
+    width: 2000px;
         height: 80000px;
-	font-family: monospace;
+    font-family: monospace;
         /*touch-action: manipulation;*/
        
 }
 #lineNumbersTextarea {
-  	width: 80px;
+    width: 80px;
         height: 80000px;
-	font-family: monospace;
-	text-align: right;
+    font-family: monospace;
+    text-align: right;
 }
 </style>
 <meta name="viewport" content="initial-scale=1.0">
@@ -30,7 +30,7 @@ input {
 
 // it's important that this go in it's own script tag
 window.onerror = function(message, url, lineNumber, columnNumber, error) {
-	alert(lineNumber + ": " + message)
+    alert(lineNumber + ": " + message)
 }
 </script>
 <script>
@@ -55,23 +55,23 @@ function handleBodyContentInput() {
 }
 
 function handleFilepathInput() {
-	document.getElementById("bodyContentTextarea").readOnly = true
-	document.getElementById("saveButton").disabled = true
-        document.getElementById("stopButton").disabled = true
+    document.getElementById("bodyContentTextarea").readOnly = true
+    document.getElementById("saveButton").disabled = true    
+    document.getElementById("stopButton").disabled = true
         
 }
 
 function getSpacePrefix(p) {
-            var spaces = ""
-            for (var j = p; j < t.value.length; j++) {
-               var theChar = t.value.substr(j, 1)
-               if (theChar == " " || theChar == "\t") {
-                    spaces += theChar
-               } else {
-                 break
-               }
-            }
-            return spaces
+    var spaces = ""
+    for (var j = p; j < t.value.length; j++) {
+       var theChar = t.value.substr(j, 1)
+       if (theChar == " " || theChar == "\t") {
+            spaces += theChar
+       } else {
+         break
+       }
+    }
+    return spaces
 }
 
 var selStart = -1
@@ -131,6 +131,49 @@ function handleBodyContentKeypress(e) {
           
           selStart = -1
           selType = "line"
+          break
+          
+      // dedent
+      case "Z<":
+          var s = getStart(t.selectionStart - 2)
+          var e = getEnd(t.selectionStart)
+          var toIndent = t.value.slice(s, t.selectionStart - 2) + t.value.slice(t.selectionStart, e)
+          var lines = toIndent.split("\n")
+          for (var i = 0; i < lines.length; i++) {
+              if (lines[i].substr(0, 4) == "    ") {
+                  lines[i] = lines[i].substr(4)
+              }
+          }
+          var indented = lines.join("\n")
+          var sel =  (t.value.slice(0, s) + indented).length
+          t.value = t.value.slice(0, s) + indented + t.value.slice(e)
+          
+          t.setSelectionRange(sel, sel)
+          if (selType == "char") {
+              selType = "line"
+              selStart = -1
+          }
+          break
+          
+      // indent
+      case "Z>":
+          var s = getStart(t.selectionStart - 2)
+          var e = getEnd(t.selectionStart)
+          var toIndent = t.value.slice(s, t.selectionStart - 2) + t.value.slice(t.selectionStart, e)
+          var lines = toIndent.split("\n")
+          for (var i = 0; i < lines.length; i++) {
+              lines[i] = "    " + lines[i]
+          }
+          var indented = lines.join("\n")
+          var sel =  (t.value.slice(0, s) + indented).length
+          t.value = t.value.slice(0, s) + indented + t.value.slice(e)
+          
+          t.setSelectionRange(sel, sel)
+          if (selType == "char") {
+              selType = "line"
+              selStart = -1
+          }
+          
           break
           
        // copy (yank) line
@@ -237,9 +280,9 @@ function endOfLine(ss) {
 <body>
 <h1>CWD</h1>
 <form target=_blank method=POST>
-	<input style="width: 700px;" id=filepathInput name=filepath value="FILEPATH" oninput="handleFilepathInput()">
-	<input id=loadButton name=action value=Load type=submit>
-	<input id=saveButton name=action value=Save type=submit>
+    <input style="width: 700px;" id=filepathInput name=filepath value="FILEPATH" oninput="handleFilepathInput()">
+    <input id=loadButton name=action value=Load type=submit>
+    <input id=saveButton name=action value=Save type=submit>
         <input id=stopButton name=action value=Stop type=submit>
         <input id=messager>
         <button onclick="window.open(location.href)">new</button>
@@ -251,7 +294,7 @@ function endOfLine(ss) {
         <textarea id=lineNumbersTextarea></textarea>
         </td>
         <td>
-	<textarea id=bodyContentTextarea name=bodycontent
+    <textarea id=bodyContentTextarea name=bodycontent
         oninput="handleBodyContentInput()"
         onkeyup="handleBodyContentKeypress(event)">BODYCONTENT</textarea>
         </td>
@@ -268,4 +311,4 @@ for (var i=0; i<3000; i++) {
 }
 lineNumbersTextarea.value = numbers.join("\n")
 </script>
-</html>     
+</html>

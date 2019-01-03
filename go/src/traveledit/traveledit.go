@@ -72,7 +72,7 @@ func main() {
         w.Header().Set("X-XSS-Protection", "0")
 
         var indexPage string
-        indexPageBytes, err := ioutil.ReadFile("./index.html")
+        indexPageBytes, err := ioutil.ReadFile("./traveledit.html")
         if err != nil {
                 http.Error(w, err.Error(), http.StatusInternalServerError)
                 return
