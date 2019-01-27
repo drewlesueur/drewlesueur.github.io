@@ -16,7 +16,6 @@ mygotodir() {
     ls
 }
 
-
 mygitstatus() {
     echo $'Content-Type: text/html\r'
     echo $'\r'
