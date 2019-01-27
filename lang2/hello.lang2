@@ -1,0 +1,54 @@
+// types
+// int
+// pointer to int
+// array
+
+// functions
+//
+
+// control flow
+// if, for
+
+
+loop
+    
+
+
+
+endloop
+
+---
+if equals x 3
+
+loop unitl x == 3
+    
+end
+
+
+foo
+
+if equals x 3
+
+end
+
+---
+
+
+foo:
+    if eq x 3 (
+    else
+    end
+    )
+
+
+print Hello world
+
+foo 
+
+
+
+if isnull x
+
+else
+
+

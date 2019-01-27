@@ -1,0 +1,99 @@
+<!doctype html>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<div></div>
+<script>
+var r = 300
+
+graphFull(t => 1)
+graphFull(t => Math.sin(6 * t) + 2)
+graphFull(t => Math.cos(4 * t) + 2)
+graphFull(t => Math.sin(1.2 * t))
+graphFull(t => Math.sin(1.1 * t))
+graphFull(t => 3 * Math.sin(1.1 * t))
+graphFull(t => 3 * Math.sin(0.5 * t))
+graphFull(t => 3 * Math.sin(0.4 * t))
+
+graphFull(t => 3 * Math.sin(0.4 * (t - 2)))
+graphFull(t => Math.tan(t))
+graphFull(t => Math.tan(0.2 * t))
+graphFull(t => Math.tan(0.2 * t) + Math.cos(t))
+graphFull(t => Math.sin(t) + Math.cos(1.2* t))
+graphFull(t => Math.cos(1.2* t))
+graphFull(t => Math.cos(5 * Math.sin(t)))
+graphFull(t => Math.cos(10 * Math.sin(t)))
+graphFull(t => Math.cos(10 * Math.sin(2 * t)))
+graphFull(t => 2 * Math.cos(5  * t))
+graphFull(t => 2 * Math.sin(6  * t))
+graphFull(t => 2 * Math.sin(2  * t))
+graphFull(t => 2 * Math.sin(2.2  * t))
+graphFull(t => 2 -  Math.sin(2.2  * t))
+graphFull(t => 2 -  Math.sin(1.1  * t))
+graphFull(t => 2 -  Math.sin(5  * t))
+graphFull(t => 2 -  Math.sin(5.1  * t))
+graphFull(t => 0.5 * (4 -  Math.sin(5.1  * t)))
+graphFull(t => 0.2 * (10 -  Math.sin(5.1  * t)))
+graphFull(t => 0.2 * (10 -  Math.sin(1.1  * t)))
+graphFull(t => 0.2 * (10 -  Math.sin(2.1  * t)))
+graphFull(t => 0.2 * (10 -  Math.sin(9.5  * t)))
+graphFull(t => 0.2 * (10 -  Math.sin(10  * t)))
+graphFull(t => 0.2 * (10 -  Math.sin(5  * t)))
+graphFull(t => 0.2 * (10 -  Math.sin(20  * t)))
+graphFull(t => 0.2 * (10 -  Math.sin(20.5  * t)))
+graphFull(t => 0.2 * (10 -  Math.sin(5.5  * t)))
+graphFull(t => 0.2 * (10 -  Math.sin(5.1  * t)))
+graphFull(t => Math.cos(t) + Math.sin(1.1 * t))
+graphFull(t => Math.cos(t) + Math.sin(1.01 * t))
+graphFull(t => Math.atan(t) + Math.sin(t))
+graphFull(t => Math.atan(t))
+graphFull(t => Math.acos(t) + Math.asin(t) + Math.atan(t))
+graphFull(t => Math.cos(t) + Math.sin(t) + Math.atan(t))
+graphFull(t => Math.cos(t) + Math.sin(t) + Math.tan(t))
+graphFull(t => Math.cos(t) + Math.sin(t) + Math.tan(1.1 * t))
+graphFull(t => Math.cos(t) + Math.sin(t) - 0.9)
+graphFull(t => 0.01 * t)
+graphFull(t => 0.05 * t)
+graphFull(t => 0.05 * t - 2)
+graphFull(t => 0.4 * Math.log(t))
+graphFull(t => 0.4 * Math.log(t) / Math.log(2))
+graphFull(t => 0.4 * Math.log(t) + Math.sin(1.2 * t))
+graphFull(t => 1/t)
+graphFull(t => 1/(0.1 * t))
+graphFull(t => 0.1 * 1/t)
+graphFull(t => Math.tan(t) - Math.atan(t))
+graphFull(t => Math.tan(Math.cos(t)) * Math.atan(t))
+graphFull(t => 0.1 * (12 - t + 4))
+graphFull(t => 3 - 1/(2 * t))
+
+function graphFull(f) {
+    var canvasEl = document.createElement("canvas")
+    canvasEl.width = 600
+    canvasEl.height = 600
+    canvasEl.style.width = "300px"
+    canvasEl.style.height = "300px"
+    document.body.appendChild(canvasEl)
+    var c = canvasEl.getContext("2d")
+    c.translate(300, 300)
+    c.scale(1, -1) // get to normal coordinate system
+    c.lineWidth = 2
+    c.clearRect(-300, -300, 300, 300)
+    //for (var t=0; t<=11 * 2 * Math.PI; t+=Math.PI / 128) {
+    for (var t=0; t<=11 * 2 * Math.PI; t+=Math.PI / 128) {
+        var r = f(t) * 100
+        //x = r * Math.cos(t)
+        //y = r * Math.sin(t)
+        var x = r * Math.cos(t)
+        var y = r * Math.sin(1/t)
+        var x = r * Math.cos(1/t)
+        var y = r * Math.sin(t)
+        var x = r * Math.acos(t)
+        var y = r * Math.asin(t)
+        if (t == 0) {
+            c.moveTo(x, y)
+        } else {
+            c.lineTo(x, y)
+        }
+    }
+    c.stroke()
+    c.restore()
+}
+</script>

@@ -1,0 +1,105 @@
+<!doctype html>
+<pre style="height: 990px;">
+text editor
+shell
+file explorer
+(then maybe a programming lanuage)
+
+morse code input
+pixel land
+draw
+
+
+Inspiration
+http://drum-machine.maryrosecook.com/docs/drum-machine.html
+
+<script>
+var audio = new (window.AudioContext || window.webkitAudioContext)()
+
+var playing = false
+var o
+var startTime
+var gainNode
+
+function randFreq() {
+    return Math.floor(Math.random() * 500) + 100
+}
+
+function play(action, e) {
+    if ((action == "keydown" || action == "touchstart") && playing) {
+        return
+    }
+    if (e) {
+        console.log(e.which)
+    }
+    playing = !playing
+    if (playing) {
+        o = audio.createOscillator()
+        o.type = "sine"
+        //o.type = "square"
+        //o.type = "sawtooth"
+        //o.type = "triangle"
+        var now = audio.currentTime
+        //o.frequency.value = 493.88
+        //o.frequency.value = 700
+        //o.frequency.value = 35
+        //o.frequency.value = 432
+        //o.frequency.value = randFreq()
+        o.frequency.value = 600
+        // o.frequency.value = 100
+        startTime = audio.currentTime
+        //o.start(audio.currentTime) // or just o.Start
+
+        //o.frequency.exponentialRampToValueAtTime(0.1, audio.currentTime +1);
+        //o.frequency.exponentialRampToValueAtTime(1800, audio.currentTime +3);
+        //o.frequency.setTargetAtTime(500, audio.currentTime +1, 0.33);
+
+        gainNode = audio.createGain();
+        o.connect(gainNode)
+        gainNode.connect(audio.destination)
+        //o.connect(audio.destination)
+        
+        //gainNode.gain.setTargetAtTime(1, audio.currentTime, 0.015);
+
+        o.start() 
+    } else {
+        gainNode.gain.setTargetAtTime(0, audio.currentTime, 0.015);
+        //gainNode.gain.setTargetAtTime(0, audio.currentTime, 0.0005);
+        o.stop(audio.currentTime + 1) // or just o.stop  
+        return 
+
+
+        o.stop() // or just o.stop  
+        return
+
+        var now = audio.currentTime
+        var diff = now - startTime
+        console.log(diff)
+        var wait = (1 - (diff % (1/o.frequency.value))) * (1/o.frequency.value)
+        o.stop(now + wait) 
+    }
+}
+
+document.body.onkeydown = function(e) {
+    play("keydown", e)
+}
+document.body.onkeyup = play
+
+document.body.ontouchstart = function(e) {
+    e.preventDefault()
+    play("touchstart")
+}
+
+document.body.ontouchend = function(e) {
+    e.preventDefault()
+    play()
+}
+
+play()
+setTimeout(play(), 1000)
+
+    
+</script>
+
+
+
