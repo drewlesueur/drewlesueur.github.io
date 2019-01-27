@@ -13,11 +13,9 @@ func main() {
 
     var port = flag.String("port", "9000", "Port to listen on")
     var requiredKey = flag.String("key", "needthiskey", "key to block access")
+    var pathPrefix = flag.String("path", "", "path to serve files from, include trailing slash")
     flag.Parse()
-    cwd, err := os.Getwd()
-    if err != nil {
-        log.Fatal(err)
-    }
+    
     serveMux := http.NewServeMux()
 
     serveMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +51,7 @@ func main() {
         if r.Method == "POST" && action == "Save" {
             // todo: is there a way to do this in a setting?
             bodycontent = strings.Replace(bodycontent, "\r\n", "\n", -1)
-            err := ioutil.WriteFile(filepath, []byte(bodycontent), 0664)
+            err := ioutil.WriteFile(*pathPrefix + filepath, []byte(bodycontent), 0664)
             if err != nil {
                 http.Error(w, err.Error(), http.StatusInternalServerError)
                 return
@@ -80,19 +78,18 @@ func main() {
             indexPage = string(indexPageBytes)
         }
 
-        bodyContentBytes, err := ioutil.ReadFile(filepath)
+        bodyContentBytes, err := ioutil.ReadFile(*pathPrefix + filepath)
         if err != nil {
             if strings.Contains(err.Error(), "no such file or directory") {
                 bodyContentBytes = []byte("")
             } else {
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-                return
+               bodyContentBytes = []byte(err.Error())
             }
         }
         replacer := strings.NewReplacer(
             "FILEPATH", html.EscapeString(filepath),
             "BODYCONTENT", html.EscapeString(string(bodyContentBytes)),
-            "CWD", cwd,
+            "CWD", *pathPrefix,
         )
 
         indexPage = replacer.Replace(indexPage)

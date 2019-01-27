@@ -8,21 +8,25 @@
     font-size: 20px;
     color: black;
 }
+body, textarea{
+}
 input {
     touch-action: manipulation;
 }
 #bodyContentTextarea {
     width: 2000px;
-        height: 80000px;
+    height: 80000px;
     font-family: monospace;
-        /*touch-action: manipulation;*/
+    touch-action: manipulation;
+    -webkit-overflow-scrolling: touch;
        
 }
 #lineNumbersTextarea {
     width: 80px;
-        height: 80000px;
+    height: 80000px;
     font-family: monospace;
     text-align: right;
+    touch-action: manipulation;
 }
 </style>
 <meta name="viewport" content="initial-scale=1.0">
@@ -273,6 +277,8 @@ function endOfLine(ss) {
             return i
          }
   }
+  // todo is there a bug with end of line
+  // and doing ZV and Zd
 }
 
 </script>
@@ -294,7 +300,7 @@ function endOfLine(ss) {
         <textarea id=lineNumbersTextarea></textarea>
         </td>
         <td>
-    <textarea id=bodyContentTextarea name=bodycontent
+    <textarea spellcheck=false wrap=off id=bodyContentTextarea name=bodycontent
         oninput="handleBodyContentInput()"
         onkeyup="handleBodyContentKeypress(event)">BODYCONTENT</textarea>
         </td>
