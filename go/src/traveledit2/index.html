@@ -1,0 +1,274 @@
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* { margin: 0; padding: 0; }
+</style>
+<div id=s></div>
+
+<form onsubmit=newLine(event)>
+
+<input id=theTextBefore
+style="font: 12px Courier;
+width: 375px;
+height:30px;
+"
+onfocus=handleFocusBefore()
+onblur=handleBlur()
+>
+<input id=theText 
+style="font: 20px Courier;
+width: 375px;
+height:30px;
+"
+onfocus=handleFocusIn()
+onblur=handleBlur()
+oninput=saveLine()
+onkeydown=handleKeydown(event)
+>
+<input id=theTextAfter 
+style="font: 12px Courier;
+width: 375px;
+height:30px;
+"
+onfocus=handleFocusAfter()
+onblur=handleBlur()
+>
+<input type=submit>
+</form>
+
+<canvas id=c width=1125 height=1500
+style="width: 375px; height:500px;"
+ontouchstart=onStart(event)
+></canvas>
+
+
+</div>
+<script>
+// it's important that this go in it's own script tag
+window.onerror = function(message, url, lineNumber, columnNumber, error) {
+    alert(lineNumber + ": " + message)
+}
+</script>
+<script>
+var t = c.getContext("2d")
+var fontHeight=36
+var fontWidth=10*2
+var cursorX=0
+var cursorY=0
+var lines=[]
+var offsetX = 0
+var offsetY = 0
+var canvasWidth=1125
+var canvasHeightKeyboard=500
+var canvasHeightFull=1500
+var maxLines = 0
+var maxCols = Math.ceil(canvasWidth / fontWidth)
+var canvasHeight = 0
+setCanvasHeight(canvasHeightFull)
+var pointWidth=325
+var pointHeight=500
+var touchScale=6
+var cursorLineIndex = 0
+var cursorColIndex = 0
+var inEdit = false
+// populate lines
+for (var i=0; i<100000; i++) {
+  lines.push("so this is line " + i + " " + Date.now())
+}
+function setCanvasHeight(h) {
+  canvasHeight = h
+  maxLines = Math.ceil(canvasHeight / fontHeight)
+}
+
+function newLine(e) {
+  e.preventDefault()
+  lines.splice(cursorLineIndex + 1, 0, "")
+  cursorLineIndex += 1
+  render()
+  theText.focus()
+  theText.setSelectionRange(cursorColIndex, cursorColIndex)
+  return false
+}
+
+function handleFocusAfter() {
+  if (cursorLineIndex == lines.Length - 1) return
+  cursorLineIndex += 1
+  setCanvasHeight(canvasHeightKeyboard)
+  if (cursorLineIndex < offsetY || cursorLineIndex > (offsetY + maxLines)) {
+    offsetY = cursorLineIndex - maxLines
+  }
+  cursorX = (cursorColIndex - offsetX) * fontWidth
+  cursorY = (cursorLineIndex - offsetY) * fontHeight
+  render()
+  theText.focus()
+  theText.setSelectionRange(cursorColIndex, cursorColIndex)
+}
+
+function handleFocusBefore() {
+  if (cursorLineIndex == 0) return
+  cursorLineIndex -= 1
+  setCanvasHeight(canvasHeightKeyboard)
+  if (cursorLineIndex < offsetY || cursorLineIndex > (offsetY + maxLines)) {
+    offsetY = 0
+  }
+  cursorX = (cursorColIndex - offsetX) * fontWidth
+  cursorY = (cursorLineIndex - offsetY) * fontHeight
+  render()
+  theText.focus()
+  theText.setSelectionRange(cursorColIndex, cursorColIndex)
+}
+
+function handleFocusIn() {
+  setCanvasHeight(canvasHeightKeyboard)
+  if (cursorLineIndex < offsetY || cursorLineIndex > (offsetY + maxLines)) {
+    offsetY = cursorLineIndex - maxLines
+  }
+  render()
+  theText.setSelectionRange(cursorColIndex, cursorColIndex)
+}
+
+function handleBlur() {
+  setCanvasHeight(canvasHeightFull)
+  render()
+}
+
+function handleKeydown(e) {
+  if (e.keyCode == 8 && lines[cursorLineIndex] == "") {
+    e.preventDefault()
+    lines.splice(cursorLineIndex, 1)
+    cursorLineIndex -= 1
+    render()
+  }
+  return true
+}
+
+function saveLine() {
+  cursorColIndex = theText.selectionStart
+  lines[cursorLineIndex] = theText.value
+  cursorX = (cursorColIndex - offsetX) * fontWidth
+  cursorY = (cursorLineIndex - offsetY) * fontHeight
+  inEdit = true
+  render()
+  inEdit = false
+}
+// t.fillRect(0, 0, 10000, 10000)
+function bind(v, min, max) {
+  if (v < min) v = min
+  if (v > max) v = max
+  return v
+}
+function charAt(lines, y, x) {
+  var line = lines[y]
+  if (!line) return ""
+  var theChar = line[x]
+  if (!theChar) return ""
+  return theChar
+}
+
+function render() {
+  c.width = c.width // one way to clear
+  t.fillStyle = "red"
+  t.fillRect(cursorX, cursorY, 6, fontHeight)
+  t.fillStyle = "rgba(0, 0, 255, 0.1)"
+  var yPos = (cursorLineIndex - offsetY) * fontHeight
+  var xPos = (cursorColIndex - offsetX) * fontWidth
+  t.fillRect(0, yPos, canvasWidth, fontHeight)
+  t.fillStyle = "rgba(255, 0, 0, 0.5)"
+  t.fillRect(xPos, yPos, 6, fontHeight)
+  t.fillStyle = "black"
+  t.font = "30px 'Courier'"
+  t.textBaseline = "top"
+  s.innerHTML = cursorX + ", " + cursorY
+  for (var y=0; y <= maxLines; y++) {
+    for (var x=0; x <= maxCols; x++) {  
+      t.fillText( charAt(lines, y+offsetY, x+offsetX), x*fontWidth, y*fontHeight)
+    }
+  }
+  cursorLine = lines[cursorLineIndex]
+  if (!inEdit) {
+    theText.value = cursorLine
+    theTextBefore.value = lines[cursorLineIndex - 1] || ""
+    theTextAfter.value = lines[cursorLineIndex + 1] || ""
+  }
+ // alert(charAt(lines, 0, 0))
+}
+
+function ensureSign(sign, v) {
+  if (sign < 0 && v > 0) return -v
+  if (sign > 0 && v < 0) return -v
+  return v
+}
+function onStart(e) {
+  e.preventDefault()
+  var startTouchX = e.touches[0].pageX
+  var startTouchY = e.touches[0].pageY
+  var startX = cursorX
+  var startY = cursorY
+
+
+  var lastTouchX = startTouchX
+  var lastTouchY = startTouchY
+  var lastTime = Date.now()
+  var firstMove = true
+  var moved = false
+  render()
+  var onMove = function(e) {
+    //var diffTouchX = e.touches[0].pageX - startTouchX
+    //var diffTouchY = e.touches[0].pageY - startTouchY
+    //cursorX = bind(startX + diffTouchX*touchScale, 0, canvasWidth)
+    //cursorY = bind(startY + diffTouchY*touchScale, 0, canvasHeight)
+    
+    moved = true
+    var diffLastTouchX = e.touches[0].pageX - lastTouchX
+    var diffLastTouchY = e.touches[0].pageY - lastTouchY
+    var signX = diffLastTouchX < 0 ? -1: 1
+    var signY = diffLastTouchY < 0 ? -1 : 1
+    thePow = firstMove ? 1 : 2
+    cursorX = cursorX + ensureSign(signX, Math.round(Math.pow(diffLastTouchX, thePow)*touchScale))
+    cursorY = cursorY + ensureSign(signY, Math.round(Math.pow(diffLastTouchY, thePow)*touchScale))
+    lastTouchX = e.touches[0].pageX
+    lastTouchY = e.touches[0].pageY
+
+    var changedY = false
+    if (cursorY > canvasHeight) {
+      var extendY = cursorY - canvasHeight
+      cursorY = canvasHeight //Math.round(canvasHeight - (canvasHeight/4))
+      offsetY += Math.ceil(extendY/fontHeight)
+      if (offsetY > lines.length - 10) offsetY = lines.length - 10
+      changedY = true
+    } else if (cursorY < 0) {
+      var extendY = cursorY
+      cursorY = 0
+      offsetY += Math.floor(extendY/fontHeight)
+      changedY = true
+      if (offsetY < 0) offsetY = 0
+    }
+
+    if (cursorX > canvasHeight) {
+      var extendX = cursorX - canvasWidth
+      cursorX = canvasWidth //Math.round(canvasHeight - (canvasHeight/4))
+      
+      if (!changedY) offsetX += Math.round(extendX/fontWidth)
+    } else if (cursorX < 0) {
+      var extendX = cursorX
+      cursorX = 0
+      if (!changedY) offsetX += Math.round(extendX/fontWidth)
+      if (offsetX < 0) offsetX = 0
+    }
+    cursorLineIndex = Math.round(cursorY/fontHeight) + offsetY
+    cursorColIndex = Math.round(cursorX/fontWidth) + offsetX
+    firstMove = false
+    render()
+    return false
+  }
+  var onEnd = function(e) {
+    if (!moved) {
+      theText.focus()
+      theText.setSelectionRange(cursorColIndex, cursorColIndex)
+    }
+    document.body.removeEventListener("touchmove", onMove)
+    document.body.removeEventListener("touchend", onEnd)
+  }
+  document.body.addEventListener("touchmove", onMove)
+  document.body.addEventListener("touchend", onEnd)
+}
+</script>
