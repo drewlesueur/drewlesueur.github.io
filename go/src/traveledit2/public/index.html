@@ -1,12 +1,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 * { margin: 0; padding: 0; }
+
+.text { border: none; }
 </style>
 <div id=s></div>
 
 <form onsubmit=newLine(event)>
 
-<input id=theTextBefore
+<input id=theTextBefore class=text
 style="font: 12px Courier;
 width: 375px;
 height:30px;
@@ -14,7 +16,7 @@ height:30px;
 onfocus=handleFocusBefore()
 onblur=handleBlur()
 >
-<input id=theText 
+<input id=theText class=text
 style="font: 20px Courier;
 width: 375px;
 height:30px;
@@ -24,7 +26,7 @@ onblur=handleBlur()
 oninput=saveLine()
 onkeydown=handleKeydown(event)
 >
-<input id=theTextAfter 
+<input id=theTextAfter class=text
 style="font: 12px Courier;
 width: 375px;
 height:30px;
@@ -57,6 +59,8 @@ var cursorY=0
 var lines=[]
 var offsetX = 0
 var offsetY = 0
+// 4 chars for line number and 1 for space
+var marginLeft = 5
 var canvasWidth=1125
 var canvasHeightKeyboard=500
 var canvasHeightFull=1500
@@ -66,7 +70,7 @@ var canvasHeight = 0
 setCanvasHeight(canvasHeightFull)
 var pointWidth=325
 var pointHeight=500
-var touchScale=6
+var touchScale=3
 var cursorLineIndex = 0
 var cursorColIndex = 0
 var inEdit = false
@@ -179,6 +183,14 @@ function render() {
   t.textBaseline = "top"
   s.innerHTML = cursorX + ", " + cursorY
   for (var y=0; y <= maxLines; y++) {
+    var lineNumber = (y+offsetY).toString().padStart(4, " ")
+    if (offsetX < -1) {
+      for (var i=0; i<-offsetX-1; i++) {
+        var lineNumberIndex = offsetX + 5 + i
+        t.fillText(lineNumber.charAt(lineNumberIndex), i*fontWidth, y*fontHeight)
+      }
+    }
+
     for (var x=0; x <= maxCols; x++) {  
       t.fillText( charAt(lines, y+offsetY, x+offsetX), x*fontWidth, y*fontHeight)
     }
@@ -243,7 +255,7 @@ function onStart(e) {
       if (offsetY < 0) offsetY = 0
     }
 
-    if (cursorX > canvasHeight) {
+    if (cursorX > canvasWidth) {
       var extendX = cursorX - canvasWidth
       cursorX = canvasWidth //Math.round(canvasHeight - (canvasHeight/4))
       
@@ -252,7 +264,7 @@ function onStart(e) {
       var extendX = cursorX
       cursorX = 0
       if (!changedY) offsetX += Math.round(extendX/fontWidth)
-      if (offsetX < 0) offsetX = 0
+      if (offsetX < -marginLeft) offsetX = -marginLeft
     }
     cursorLineIndex = Math.round(cursorY/fontHeight) + offsetY
     cursorColIndex = Math.round(cursorX/fontWidth) + offsetX
