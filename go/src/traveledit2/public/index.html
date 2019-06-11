@@ -5,9 +5,9 @@ background-color: black; color: white;
 }
 body { background-color: black; }
 
-.text { border: none; }
+.text { border: none; color: lime;}
 </style>
-<div id=s></div>
+<div id=s style="position: absolute; opacity: 0.5;"></div>
 
 <form onsubmit=newLine(event)>
 
@@ -37,7 +37,7 @@ height:30px;
 onfocus=handleFocusAfter()
 onblur=handleBlur()
 >
-<input type=submit>
+<input type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
 
 <canvas id=c width=1125 height=1500
@@ -54,12 +54,15 @@ window.onerror = function(message, url, lineNumber, columnNumber, error) {
 }
 </script>
 <script>
+var lines = []
+// LINES GO HERE
+</script>
+<script>
 var t = c.getContext("2d")
 var fontHeight=36
 var fontWidth=10*2
 var cursorX=0
 var cursorY=0
-var lines=[]
 var offsetX = 0
 var offsetY = 0
 // 4 chars for line number and 1 for space
@@ -77,10 +80,12 @@ var touchScale=3
 var cursorLineIndex = 0
 var cursorColIndex = 0
 var inEdit = false
+
 // populate lines
-for (var i=0; i<100000; i++) {
-  lines.push("so this is line " + i + " " + Date.now())
-}
+// for (var i=0; i<100000; i++) {
+//   lines.push("so this is line " + i + " " + Date.now())
+// }
+
 function setCanvasHeight(h) {
   canvasHeight = h
   maxLines = Math.ceil(canvasHeight / fontHeight)

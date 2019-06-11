@@ -1,0 +1,6 @@
+when you are editing, any cursoor change in the canvas
+should affect the cursor change in the input element
+
+add gzip
+
+a local storage save, just in case
