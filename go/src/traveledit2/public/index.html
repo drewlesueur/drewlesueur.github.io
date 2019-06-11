@@ -1,6 +1,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-* { margin: 0; padding: 0; }
+* { margin: 0; padding: 0; 
+background-color: black; color: white;
+}
+body { background-color: black; }
 
 .text { border: none; }
 </style>
@@ -178,19 +181,20 @@ function render() {
   t.fillRect(0, yPos, canvasWidth, fontHeight)
   t.fillStyle = "rgba(255, 0, 0, 0.5)"
   t.fillRect(xPos, yPos, 6, fontHeight)
-  t.fillStyle = "black"
   t.font = "30px 'Courier'"
   t.textBaseline = "top"
   s.innerHTML = cursorX + ", " + cursorY
   for (var y=0; y <= maxLines; y++) {
     var lineNumber = (y+offsetY).toString().padStart(4, " ")
     if (offsetX < -1) {
+      t.fillStyle = "magenta"
       for (var i=0; i<-offsetX-1; i++) {
         var lineNumberIndex = offsetX + 5 + i
         t.fillText(lineNumber.charAt(lineNumberIndex), i*fontWidth, y*fontHeight)
       }
     }
 
+    t.fillStyle = "white"
     for (var x=0; x <= maxCols; x++) {  
       t.fillText( charAt(lines, y+offsetY, x+offsetX), x*fontWidth, y*fontHeight)
     }
