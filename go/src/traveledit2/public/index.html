@@ -15,6 +15,7 @@ body { background-color: black; }
 style="font: 12px Courier;
 width: 375px;
 height:30px;
+display: none; /* see what it looks like without */
 "
 onfocus=handleFocusBefore()
 onblur=handleBlur()
@@ -33,6 +34,7 @@ onkeydown=handleKeydown(event)
 style="font: 12px Courier;
 width: 375px;
 height:30px;
+display: none; /* see what it looks like without */
 "
 onfocus=handleFocusAfter()
 onblur=handleBlur()
@@ -93,8 +95,12 @@ function setCanvasHeight(h) {
 
 function newLine(e) {
   e.preventDefault()
-  lines.splice(cursorLineIndex + 1, 0, "")
+  theLine = lines[cursorLineIndex]
+  lines.splice(cursorLineIndex + 1, 0, theLine.substr(theText.selectionStart))
+  lines[cursorLineIndex] = theLine.substr(0, theText.selectionStart)
+
   cursorLineIndex += 1
+  cursorColIndex = 0
   render()
   theText.focus()
   theText.setSelectionRange(cursorColIndex, cursorColIndex)
@@ -144,11 +150,17 @@ function handleBlur() {
 }
 
 function handleKeydown(e) {
-  if (e.keyCode == 8 && lines[cursorLineIndex] == "") {
+  // 8 means backspace
+  if (e.keyCode == 8 && theText.selectionStart == 0 && cursorLineIndex != 0) {
     e.preventDefault()
+    var theLine = lines[cursorLineIndex]
+
     lines.splice(cursorLineIndex, 1)
     cursorLineIndex -= 1
+    var prevLine = lines[cursorLineIndex]
+    lines[cursorLineIndex] = lines[cursorLineIndex] + theLine
     render()
+    theText.setSelectionRange(prevLine.length, prevLine.length)
   }
   return true
 }
