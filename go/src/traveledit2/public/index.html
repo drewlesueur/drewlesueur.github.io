@@ -180,9 +180,9 @@ function save() {
           render()
       })
       .catch(e => alert(e))
+      render()
     }
     setTimeout(save, saveEveryMS)
-    render()
 }
 setTimeout(save, saveEveryMS)
 
