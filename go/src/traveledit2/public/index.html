@@ -228,6 +228,8 @@ function charAt(lines, y, x) {
 }
 
 function render() {
+  var selStart = theText.selectionStart
+  var selEnd = theText.selectionEnd
   c.width = c.width // one way to clear
   t.fillStyle = "red"
   t.fillRect(cursorX, cursorY, 6, fontHeight)
@@ -263,6 +265,14 @@ function render() {
     theText.value = cursorLine
     theTextBefore.value = lines[cursorLineIndex - 1] || ""
     theTextAfter.value = lines[cursorLineIndex + 1] || ""
+  }
+
+  // set the selection range back to what it was
+  // if it needs to be changed, some functions will change it
+  // after the call to render.
+  // TODO: have a state variable for what it should be.
+  if (document.activeElement == theText) {
+      theText.setSelectionRange(selStart, selEnd)
   }
  // alert(charAt(lines, 0, 0))
 }
