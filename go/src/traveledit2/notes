@@ -4,3 +4,29 @@ should affect the cursor change in the input element
 add gzip
 
 a local storage save, just in case
+
+need to add file explorer,
+allow nee directory
+
+
+do shortcuts like
+zfn func () { ...
+zer if err != nil
+zpr ()
+zcr {}
+zbr []
+zpq ("")
+zps ('')
+
+
+select in left margin selects lines
+
+single tap - edit mode
+double tap - selects word
+triple tap - selects next most outer grouping (using quotes, parens, brackets, etc.
+(you can get slightly smart and handle wscaped quotes.
+
+tab in
+tab  out
+
+tap then tap drag selects 

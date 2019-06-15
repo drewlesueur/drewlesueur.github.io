@@ -7,7 +7,7 @@ body { background-color: black; }
 
 .text { border: none; color: lime;}
 </style>
-<div id=s style="position: absolute; opacity: 0.5;"></div>
+<div id=s style=";"></div>
 
 <form onsubmit=newLine(event)>
 
@@ -61,6 +61,10 @@ var lines = []
 </script>
 <script>
 var t = c.getContext("2d")
+var version = 0
+var savedVersion = 0
+var savingVersion = -1
+var saveEveryMS = 1000
 var fontHeight=36
 var fontWidth=10*2
 var cursorX=0
@@ -88,6 +92,10 @@ var inEdit = false
 //   lines.push("so this is line " + i + " " + Date.now())
 // }
 
+function docChanged() {
+   version += 1 
+}
+
 function setCanvasHeight(h) {
   canvasHeight = h
   maxLines = Math.ceil(canvasHeight / fontHeight)
@@ -104,6 +112,7 @@ function newLine(e) {
   render()
   theText.focus()
   theText.setSelectionRange(cursorColIndex, cursorColIndex)
+  docChanged()
   return false
 }
 
@@ -149,6 +158,34 @@ function handleBlur() {
   render()
 }
 
+function save() {
+    // loop once so I can simulate a goto for cleanup by breaking
+    for (var i=0; i<1; i++) {
+      if (savedVersion == version) {
+        break
+      }
+      savingVersion = version
+      fetch(location.href, {
+        method: "POST",
+        cache: "no-cache",
+        headers: { "Content-Type": "application/x-www-form-urlencoded"},
+        body: "content=" + encodeURIComponent(lines.join("\n"))
+      })
+      .then(r => r.json())
+      .then(v => {
+          if (v.saved) {
+            savedVersion = savingVersion
+            savingVersion = -1
+          }
+          render()
+      })
+      .catch(e => alert(e))
+    }
+    setTimeout(save, saveEveryMS)
+    render()
+}
+setTimeout(save, saveEveryMS)
+
 function handleKeydown(e) {
   // 8 means backspace
   if (e.keyCode == 8 && theText.selectionStart == 0 && cursorLineIndex != 0) {
@@ -161,6 +198,7 @@ function handleKeydown(e) {
     lines[cursorLineIndex] = lines[cursorLineIndex] + theLine
     render()
     theText.setSelectionRange(prevLine.length, prevLine.length)
+    docChanged()
   }
   return true
 }
@@ -173,6 +211,7 @@ function saveLine() {
   inEdit = true
   render()
   inEdit = false
+  docChanged()
 }
 // t.fillRect(0, 0, 10000, 10000)
 function bind(v, min, max) {
@@ -200,7 +239,10 @@ function render() {
   t.fillRect(xPos, yPos, 6, fontHeight)
   t.font = "30px 'Courier'"
   t.textBaseline = "top"
-  s.innerHTML = cursorX + ", " + cursorY
+  s.innerHTML = "docver:" + version + 
+    " savedver:" + savedVersion +
+    " savingver:" + savingVersion +
+    " x,y:" + cursorX + "," + cursorY
   for (var y=0; y <= maxLines; y++) {
     var lineNumber = (y+offsetY).toString().padStart(4, " ")
     if (offsetX < -1) {
