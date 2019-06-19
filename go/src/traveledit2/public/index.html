@@ -73,6 +73,7 @@ ontouchstart=onStart(event)
   <!-- <div onclick=copy()>copy</div>
   -->
   <div onclick=toggleLog()>log</div>
+  <div onclick=clearLog()>clear</div>
   <div onclick=findDown()>find down</div>
   <div onclick=findUp()>find up</div>
   <div onclick=undo()>undo</div>
@@ -134,6 +135,17 @@ var cursorColIndex = 0
 // TODO: reconcile inEdit and document.activeElement usage
 var inEdit = false
 var copyBuffer = ""
+var cursorType = "move"
+// cursorType can be 
+// * move
+// * select
+// * line-select
+// * vertical-select
+
+var selectTimeout
+var selectTimeoutMillis = 250
+var selectedRegions = []
+
 function log(v) {
   logLines.push(v)
 }
@@ -145,6 +157,12 @@ function toggleLog() {
    lines = contentLines
  }
  render()
+}
+
+function clearLog() {
+  logLines = []
+  if (logShown) lines = logLines
+  render()
 }
 // check for A-Za-z0-9_
 function isWordy(a) {
@@ -361,7 +379,6 @@ function saveLine() {
   inEdit = false
   docChanged()
 }
-// t.fillRect(0, 0, 10000, 10000)
 function bind(v, min, max) {
   if (v < min) v = min
   if (v > max) v = max
@@ -385,8 +402,21 @@ function render() {
   var xPos = (cursorColIndex - offsetX) * fontWidth
   t.fillStyle = "rgba(0, 0, 255, 0.1)"
   t.fillRect(0, yPos, canvasWidth, fontHeight)
-  t.fillStyle = "red"
+  t.fillStyle = cursorType == "move" ? "red" : "cyan"
   t.fillRect(xPos, yPos, 6, fontHeight)
+
+  // the selected areas
+  for (var i=0; i<selectedRegions.length;i++) {
+    // todo: normalize region start and stop
+    // todo: draw the cursors after the selected regions
+    var r = selectedRegions[i]
+    t.fillStyle = "blue"
+    for (var y=r.startY-offsetY; y<=r.stopY-offsetY; y++) {
+      var line = lines[y + offsetY] || ""
+      
+      t.fillRect((0-offsetX)*fontWidth  , y*fontHeight, line.length*fontWidth, fontHeight) 
+    } 
+  }
   t.font = fontCSS
   t.textBaseline = "top"
   s.innerHTML = "docver:" + version + 
@@ -398,7 +428,7 @@ function render() {
     if (offsetX < -1) {
       t.fillStyle = "magenta"
       for (var i=0; i<-offsetX-1; i++) {
-        var lineNumberIndex = offsetX + 5 + i
+        var lineNumberIndex = offsetX + marginLeft + i
         t.fillText(lineNumber.charAt(lineNumberIndex), i*fontWidth, y*fontHeight)
       }
     }
@@ -436,7 +466,7 @@ function onStart(e) {
   var startTouchY = e.touches[0].pageY
   var startX = cursorX
   var startY = cursorY
-
+  var hasSelected = false
 
   var lastTouchX = startTouchX
   var lastTouchY = startTouchY
@@ -444,7 +474,24 @@ function onStart(e) {
   var firstMove = true
   var moved = false
   render()
+  var selectedRegion = {}
+  var selectAction = function() {
+    selectedRegions = []
+    cursorType = "select"
+    selectedRegion.startX = cursorColIndex
+    selectedRegion.startY = cursorLineIndex
+    selectedRegions.push(selectedRegion)
+    hasSelected = true
+    render()
+  }
+  if (!hasSelected) {
+    selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
+  }
   var onMove = function(e) {
+    if (!hasSelected) {
+      clearTimeout(selectTimeout)
+      selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
+    }
     //var diffTouchX = e.touches[0].pageX - startTouchX
     //var diffTouchY = e.touches[0].pageY - startTouchY
     //cursorX = bind(startX + diffTouchX*touchScale, 0, canvasWidth)
@@ -492,17 +539,33 @@ function onStart(e) {
     cursorLineIndex = Math.round(cursorY/fontHeight) + offsetY
     cursorColIndex = Math.round(cursorX/fontWidth) + offsetX
     firstMove = false
+    if (cursorType == "select") {
+      selectedRegion.stopX = cursorColIndex
+      selectedRegion.stopY = cursorLineIndex
+    }
     render()
     return false
   }
   var onEnd = function(e) {
-    if (!moved) {
-      theText.focus()
-      theText.setSelectionRange(cursorColIndex, cursorColIndex)
-    }
-    document.body.removeEventListener("touchmove", onMove)
-    document.body.removeEventListener("touchend", onEnd)
-  }
+    clearTimeout(selectTimeout)
+    // it's not straightforward to do a setTimeout
+    // here because iOS Safari doesn't like to focus
+    // text elements when not responding to user action
+    // maybe there are workarounds.
+    //tapTimeout = setTimeout(function() {
+      if (!moved && cursorType == "move") {
+        log("calling focus")
+        offsetY = bind(cursorLineIndex - 5, 0, cursorLineIndex)
+        updateCursorXY()
+        theText.focus()
+        theText.setSelectionRange(cursorColIndex, cursorColIndex)
+      } 
+      document.body.removeEventListener("touchmove", onMove)
+      document.body.removeEventListener("touchend", onEnd)
+      cursorType = "move"
+      render()
+    //}, 100)
+  } 
   document.body.addEventListener("touchmove", onMove)
   document.body.addEventListener("touchend", onEnd)
 }
