@@ -65,15 +65,18 @@ style="width: 375px; height:500px;"
 ontouchstart=onStart(event)
 ></canvas>
 <div id=toolbar>
+  <div onclick=insertLine()>new</div>
+  <div onclick=del()>del</div>
+  <div onclick=paste()>paste</div>
+  <div onclick=dup()>dup</div>
+  <!-- copy is just a dup del -->
+  <!-- <div onclick=copy()>copy</div>
+  -->
   <div onclick=toggleLog()>log</div>
   <div onclick=findDown()>find down</div>
   <div onclick=findUp()>find up</div>
   <div onclick=undo()>undo</div>
   <div onclick=redo()>redo</div>
-  <div onclick=dup()>dup</div>
-  <div onclick=del()>del</div>
-  <div onclick=copy()>copy</div>
-  <div onclick=paste()>paste</div>
   <div>replace</div>
 </div>
 
@@ -143,9 +146,40 @@ function toggleLog() {
  }
  render()
 }
+// check for A-Za-z0-9_
+function isWordy(a) {
+  return (
+     (a >= 65 && a <= 90) ||  // A-Z
+     (a >= 97 && a <= 122) || // a-z
+     (a >= 48 && a <= 57) ||  // 0-9
+     (a == 95)                // _
+  ) 
+}
+function getWordAtCursor() {
+  var line = lines[cursorLineIndex]
+  log("getting word: " + line)
+  for (var startIndex=cursorColIndex-1; startIndex>=0; startIndex--) {
+    if (!isWordy(line.charCodeAt(startIndex))) {
+       startIndex += 1
+       break
+    }
+  }
+  for (var endIndex=cursorColIndex; endIndex < line.length; endIndex++) {
+    if (!isWordy(line.charCodeAt(endIndex))) {
+      break
+    }
+  }
+  log(`start: ${startIndex} end: ${endIndex}`)
+  //if (startIndex < endIndex) {
+    return line.substring(startIndex, endIndex)
+  //}
+  return ""
+}
 function findDown() {
+  if (searchText.value == "") {
+    searchText.value = getWordAtCursor()
+  }
   log("searching for: " + searchText.value)
-  
   for (var i=cursorLineIndex; i<lines.length; i++) {
     var lineToSearch = lines[i]
     if (i == cursorLineIndex) {
