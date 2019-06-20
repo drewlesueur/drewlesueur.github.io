@@ -34,7 +34,7 @@ onfocus=handleFocusBefore()
 onblur=handleBlur()
 >
 <input id=theText class=text
-style="font: 20px Courier;
+style="font: 16px Courier;
 width: 375px;
 height:30px;
 "
@@ -108,9 +108,9 @@ var version = 0
 var savedVersion = 0
 var savingVersion = -1
 var saveEveryMS = 5000
-var fontHeight=48
-var fontWidth=26
-var fontCSS = "40px 'Courier'"
+var fontHeight=36
+var fontWidth=18
+var fontCSS = "30px 'Courier'"
 var cursorX=0
 var cursorY=0
 var offsetX = 0
@@ -269,6 +269,18 @@ function paste() {
 }
 
 function del() {
+  if (selectedRegions.length>0) {
+    var r = selectedRegions[0]
+    copyBuffer = lines[r.startY].slice(r.startX) +
+      lines.slice(r.startY + 1, r.stopY).join("\n") +
+      lines[r.stopY].slice(0, r.stopX)
+    lines[r.startY] = lines[r.startY].slice(0, r.startX) + 
+      lines[r.stopY].slice(r.stopX)
+    lines.splice(r.startY + 1, r.stopY-r.startY)
+    render()
+    docChanged()
+    return
+  } 
   copyBuffer = lines[cursorLineIndex]
   lines.splice(cursorLineIndex, 1)
   render()
@@ -432,7 +444,7 @@ function render() {
     for (var y=r.startY-offsetY; y<=r.stopY-offsetY; y++) {
       var line = lines[y + offsetY] || ""
       if (y==r.startY-offsetY) {
-        t.fillRect((r.startX-offsetX)*fontWidth, y*fontHeight, line.length*fontWidth, fontHeight)  
+        t.fillRect((r.startX-offsetX)*fontWidth, y*fontHeight, (line.length-r.startX)*fontWidth, fontHeight)  
       } else if (y==r.stopY-offsetY) {
         t.fillRect((0-offsetX)*fontWidth, y*fontHeight, r.stopX*fontWidth, fontHeight)  
       } else {
@@ -442,10 +454,13 @@ function render() {
   }
   t.font = fontCSS
   t.textBaseline = "top"
+  var r = selectedRegions[0]
   s.innerHTML = "docver:" + version + 
     " savedver:" + savedVersion +
     " savingver:" + savingVersion +
-    " x,y:" + cursorX + "," + cursorY
+    " x,y:" + cursorX + "," + cursorY + 
+    "<br>" +
+    (r ? ` ${r.startX}, ${r.startY};${r.stopX},${r.stopY}` : "--")
   for (var y=0; y <= maxLines; y++) {
     var lineNumber = (y+offsetY).toString().padStart(4, " ")
     if (offsetX < -1) {
@@ -565,6 +580,7 @@ function onStart(e) {
     if (cursorType == "select") {
       selectedRegion.stopX = cursorColIndex
       selectedRegion.stopY = cursorLineIndex
+      selectedRegion.stopped = true
     }
     render()
     if (document.activeElement==theText) {
@@ -589,6 +605,9 @@ function onStart(e) {
       document.body.removeEventListener("touchmove", onMove)
       document.body.removeEventListener("touchend", onEnd)
       cursorType = "move"
+      if (!selectedRegion.stopped) {
+        selectedRegions = []
+      }
       render()
     //}, 100)
   } 
