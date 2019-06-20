@@ -69,9 +69,7 @@ ontouchstart=onStart(event)
   <div onclick=del()>del</div>
   <div onclick=paste()>paste</div>
   <div onclick=dup()>dup</div>
-  <!-- copy is just a dup del -->
-  <!-- <div onclick=copy()>copy</div>
-  -->
+  <div onclick=copy()>copy</div>
   <div onclick=toggleLog()>log</div>
   <div onclick=clearLog()>clear</div>
   <div onclick=findDown()>find down</div>
@@ -420,7 +418,7 @@ function render() {
   t.fillRect(cursorX, cursorY, 6, fontHeight)
   var yPos = (cursorLineIndex - offsetY) * fontHeight
   var xPos = (cursorColIndex - offsetX) * fontWidth
-  t.fillStyle = "rgba(0, 0, 255, 0.1)"
+  t.fillStyle = "rgba(0, 255, 255, 0.2)"
   t.fillRect(0, yPos, canvasWidth, fontHeight)
   t.fillStyle = cursorType == "move" ? "red" : "cyan"
   t.fillRect(xPos, yPos, 6, fontHeight)
@@ -433,8 +431,13 @@ function render() {
     t.fillStyle = "blue"
     for (var y=r.startY-offsetY; y<=r.stopY-offsetY; y++) {
       var line = lines[y + offsetY] || ""
-      
-      t.fillRect((0-offsetX)*fontWidth  , y*fontHeight, line.length*fontWidth, fontHeight) 
+      if (y==r.startY-offsetY) {
+        t.fillRect((r.startX-offsetX)*fontWidth, y*fontHeight, line.length*fontWidth, fontHeight)  
+      } else if (y==r.stopY-offsetY) {
+        t.fillRect((0-offsetX)*fontWidth, y*fontHeight, r.stopX*fontWidth, fontHeight)  
+      } else {
+        t.fillRect((0-offsetX)*fontWidth  , y*fontHeight, line.length*fontWidth, fontHeight) 
+      }
     } 
   }
   t.font = fontCSS
@@ -564,6 +567,9 @@ function onStart(e) {
       selectedRegion.stopY = cursorLineIndex
     }
     render()
+    if (document.activeElement==theText) {
+      theText.setSelectionRange(cursorColIndex, cursorColIndex)
+    }
     return false
   }
   var onEnd = function(e) {
