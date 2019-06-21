@@ -7,7 +7,7 @@ body { background-color: black; }
 .text { border: none; color: cyan;
 /*border: 1px solid lime;*/
 }
-#toolbar {
+.toolbar {
   display: flex;
   flex-flow: row nowrap;
   --flex-flow: row wrap;
@@ -15,7 +15,7 @@ body { background-color: black; }
   overflow: scroll;
   -webkit-overflow-scrolling: touch;
 }
-#toolbar div {
+.toolbar div {
   font-family: 'Courier';
   background-color: #077;
   border: 0px solid cyan;
@@ -31,7 +31,7 @@ body { background-color: black; }
 <!-- status bar -->
 <div id=s style="font-size: 12px;
 position: absolute;
-bottom: 44px; right:0;
+bottom: 74px; right:0;
 z-index: 999;
 color: cyan;
 "></div>
@@ -75,17 +75,18 @@ so it has to be at least as big as the biggest canvasHeight x canvasWith size.
 Also note that the css width needs to be 1/3 of
 the with attribute, and same for height.
 -->
-<canvas id=c width=1125 height=1680
-style="width: 375px; height:560px;
+<canvas id=c width=1125 height=1590
+style="width: 375px; height:530px;
 border: 0px solid lime;;
 "
 ontouchstart=onStart(event)
 ></canvas>
-<div id=toolbar>
+<div class=toolbar>
   <div onclick=findDown()>nxt</div>
-  <div onclick=clearSearch()>cl</div>
+  <div onclick=clearSearch()>csr</div>
   <div onclick=insertLine()>new</div>
   <div onclick=del()>del</div>
+  <div onclick=deleteWord()>dlw</div>
   <div onclick=paste()>pst</div>
   <div onclick=dup()>dup</div>
   <div onclick=copy()>cpy</div>
@@ -93,6 +94,7 @@ ontouchstart=onStart(event)
   <div onclick=clearLog()>clear</div>
   <div onclick=findUp()>find up</div>
   <div onclick=undo()>undo</div>
+  <div onclick=redo()>redo</div>
   <div onclick=indent()>indent</div>
   <div onclick=dedent()>dedent</div>
   <div onclick=join()>join</div>
@@ -100,6 +102,20 @@ ontouchstart=onStart(event)
   <div onclick=replace()>replace</div>
   <div onclick=selStart()>selstart</div>
   <div onclick=rselEnd()>selEnd</div>
+</div>
+<div class=toolbar>
+  <div onclick=deleteCharacter()>dlc</div>
+  <div onclick=addSpace()>spc</div>
+  <div onclick=jsFunc()>jsf</div>
+  <div onclick=addSpace()>spc</div>
+  <div onclick=addSpace()>spc</div>
+  <div onclick=addSpace()>spc</div>
+  <div onclick=addSpace()>spc</div>
+  <div onclick=addSpace()>spc</div>
+  <div onclick=addSpace()>spc</div>
+  <div onclick=addSpace()>spc</div>
+  <div onclick=addSpace()>spc</div>
+  <div onclick=addSpace()>spc</div>
 </div>
 
 <div>
@@ -165,8 +181,6 @@ var cursorType = "move"
 // cursorType can be 
 // * move
 // * select
-// * line-select
-// * vertical-select
 
 var selectTimeout
 var selectTimeoutMillis = 500
@@ -226,13 +240,13 @@ function getWordAtCursor() {
   }
   log(`start: ${startIndex} end: ${endIndex}`)
   //if (startIndex < endIndex) {
-    return line.substring(startIndex, endIndex)
+    return {start: startIndex, end: endIndex, word: line.substring(startIndex, endIndex)}
   //}
-  return ""
+  return {start: -1, end: -1, word: ""}
 }
 function findDown() {
   if (searchText.value == "") {
-    searchText.value = getWordAtCursor()
+    searchText.value = getWordAtCursor().word
   }
   log("searching for: " + searchText.value)
   for (var i=cursorLineIndex; i<lines.length; i++) {
@@ -254,6 +268,12 @@ function findDown() {
 }
 function clearSearch() {
   searchText.value = ""
+}
+
+function jsFunc() {
+  selectMode
+  render()
+  docChanged()
 }
 
 function updateCursorXY() {
@@ -326,6 +346,9 @@ function del() {
       lines[cursorLineIndex] = lines[cursorLineIndex].substr(0, r.startX) +
         lines[cursorLineIndex].substr(r.stopX)
       selectedRegions = []
+      cursorLineIndex = r.startY
+      cursorColIndex = r.startX
+      updateCursorXY()
       render()
       docChanged()
       return
@@ -342,8 +365,11 @@ function del() {
     if (lines[r.startY] == "") {
       lines.splice(r.startY, 1)
     }
-    render()
+    cursorLineIndex = r.startY
+    cursorColIndex = r.startX
+    updateCursorXY()
     selectedRegions = []
+    render()
     docChanged()
     return
   }
@@ -353,9 +379,20 @@ function del() {
   render()
   docChanged()
 }
+function deleteWord(e) {
+  var w = getWordAtCursor()
+  if (w.word == "") {
+    return
+  }
+  var line = lines[cursorLineIndex]
+  lines[cursorLineIndex] = line.slice(0, w.start) + line.slice(w.end)
+  cursorColIndex = w.start
+  updateCursorXY()
+  render()
+  docChanged()
+}
 
-function newLine(e) {
-  e.preventDefault()
+function insertLine(e) {
   theLine = lines[cursorLineIndex]
   lines.splice(cursorLineIndex + 1, 0, theLine.substr(theText.selectionStart))
   lines[cursorLineIndex] = theLine.substr(0, theText.selectionStart)
@@ -366,6 +403,10 @@ function newLine(e) {
   theText.focus()
   theText.setSelectionRange(cursorColIndex, cursorColIndex)
   docChanged()
+}
+function newLine(e) {
+  e.preventDefault()
+  insertLine()
   return false
 }
 
@@ -496,21 +537,13 @@ function render() {
   var selStart = theText.selectionStart
   var selEnd = theText.selectionEnd
   c.width = c.width // one way to clear
-  t.fillStyle = "rgba(255, 0, 0, 0.5)"
-  t.fillRect(cursorX, cursorY, 6, fontHeight)
-  var yPos = (cursorLineIndex - offsetY) * fontHeight
-  var xPos = (cursorColIndex - offsetX) * fontWidth
-  t.fillStyle = "rgba(0, 255, 255, 0.2)"
-  t.fillRect(0, yPos, canvasWidth, fontHeight)
-  t.fillStyle = cursorType == "move" ? "red" : "cyan"
-  t.fillRect(xPos, yPos, 6, fontHeight)
 
   // the selected areas
   for (var i=0; i<selectedRegions.length;i++) {
     // todo: normalize region start and stop
     // todo: draw the cursors after the selected regions
     var r = selectedRegions[i]
-    t.fillStyle = "blue"
+    t.fillStyle = "magenta"
     for (var y=r.startY-offsetY; y<=r.stopY-offsetY; y++) {
       var line = lines[y + offsetY] || ""
       if (r.startY == r.stopY) {
@@ -524,6 +557,16 @@ function render() {
       }
     } 
   }
+
+  t.fillStyle = "rgba(255, 0, 0, 0.5)"
+  t.fillRect(cursorX, cursorY, 6, fontHeight)
+  var yPos = (cursorLineIndex - offsetY) * fontHeight
+  var xPos = (cursorColIndex - offsetX) * fontWidth
+  //t.fillStyle = "rgba(0, 128, 128, 0.5)"
+  //t.fillRect(0, yPos, canvasWidth, fontHeight)
+  t.fillStyle = cursorType == "move" ? "cyan" : "white"
+  t.fillRect(xPos, yPos, 6, fontHeight)
+
   t.font = fontCSS
   t.textBaseline = "top"
   var r = selectedRegions[0]
