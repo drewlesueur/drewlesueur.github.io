@@ -1,10 +1,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 * { margin: 0; padding: 0; 
-background-color: black; color: white;
+  background-color: black; color: white;
 }
 body { background-color: black; }
-.text { border: none; color: lime;
+.text { border: none; color: cyan;
 /*border: 1px solid lime;*/
 }
 #toolbar {
@@ -16,15 +16,25 @@ body { background-color: black; }
   -webkit-overflow-scrolling: touch;
 }
 #toolbar div {
-  background-color: navy;
+  font-family: 'Courier';
+  background-color: #077;
+  border: 0px solid cyan;
+  color: white;
   padding: 10px;
   margin: 1px;
   flex: 1 0 auto;
+  font-size: 12px;
 
 }
 </style>
 <div id=topPadding style="height: 0px;"></div>
-<div id=s style="font-size: 12px;"></div>
+<!-- status bar -->
+<div id=s style="font-size: 12px;
+position: absolute;
+bottom: 44px; right:0;
+z-index: 999;
+color: cyan;
+"></div>
 
 <form onsubmit=newLine(event)>
 
@@ -32,14 +42,15 @@ body { background-color: black; }
 style="font: 8px Courier;
 width: 375px;
 /* display: none; see what it looks like without */
+height:1px; overflow: hidden;
 "
 onfocus=handleFocusBefore()
 onblur=handleBlur()
 >
 <input id=theText class=text
 style="font: 16px Courier;
-width: 375px;
-height:30px;
+width: 375px; height:30px;
+--position:absolute; top: 100px;
 "
 onfocus=handleFocusIn()
 onblur=handleBlur()
@@ -50,6 +61,7 @@ onkeydown=handleKeydown(event)
 style="font: 8px Courier;
 width: 375px;
 /* display: none; see what it looks like without */
+height:1px; overflow: hidden;
 "
 onfocus=handleFocusAfter()
 onblur=handleBlur()
@@ -63,17 +75,20 @@ so it has to be at least as big as the biggest canvasHeight x canvasWith size.
 Also note that the css width needs to be 1/3 of
 the with attribute, and same for height.
 -->
-<canvas id=c width=1125 height=1500
-style="width: 375px; height:500px;"
+<canvas id=c width=1125 height=1680
+style="width: 375px; height:560px;
+border: 0px solid lime;;
+"
 ontouchstart=onStart(event)
 ></canvas>
 <div id=toolbar>
-  <div onclick=findDown()>find down</div>
+  <div onclick=findDown()>nxt</div>
+  <div onclick=clearSearch()>cl</div>
   <div onclick=insertLine()>new</div>
   <div onclick=del()>del</div>
-  <div onclick=paste()>paste</div>
+  <div onclick=paste()>pst</div>
   <div onclick=dup()>dup</div>
-  <div onclick=copy()>copy</div>
+  <div onclick=copy()>cpy</div>
   <div onclick=toggleLog()>log</div>
   <div onclick=clearLog()>clear</div>
   <div onclick=findUp()>find up</div>
@@ -91,7 +106,7 @@ ontouchstart=onStart(event)
 <input type=text id=searchText
   style="font-size: 20px"
 >
-<div id=bottomPadding style="height: 600px;"></div>
+<div id=bottomPadding style="height: 0px;"></div>
 </div>
 
 </div>
@@ -131,7 +146,7 @@ var marginLeft = 5
 // the width and height of the canvas tag attribute.
 var canvasWidth=1125
 var canvasHeightKeyboard=800
-var canvasHeightFull=1575
+var canvasHeightFull=c.height
 var maxLines = 0
 var maxCols = Math.ceil(canvasWidth / fontWidth)
 var canvasHeight = 0
@@ -237,11 +252,13 @@ function findDown() {
   }
   alert("not found")
 }
+function clearSearch() {
+  searchText.value = ""
+}
 
 function updateCursorXY() {
   cursorY = (cursorLineIndex - offsetY) * fontHeight
 }
-
 
 function dup() {
   copy()
@@ -265,7 +282,8 @@ function copy() {
     selectedRegions = []
     render()
     return
-  } 
+  }
+  selectMode = "line" 
   copyBuffer = [lines[cursorLineIndex]]
 }
 
@@ -287,7 +305,7 @@ function paste() {
     if (copyBuffer.length == 1) {
       lines[cursorLineIndex] = lines[cursorLineIndex].slice(0, cursorColIndex) +
         copyBuffer[0] +
-        lines[cursorLineIndex].slice(cursorColindex)
+        lines[cursorLineIndex].slice(cursorColIndex)
     } else {
       var line = lines[cursorLineIndex]
       lines[cursorLineIndex] = line.slice(0, cursorColIndex) +
@@ -328,7 +346,8 @@ function del() {
     selectedRegions = []
     docChanged()
     return
-  } 
+  }
+  selectMode = "line" 
   copyBuffer = [lines[cursorLineIndex]]
   lines.splice(cursorLineIndex, 1)
   render()
@@ -387,8 +406,8 @@ function handleFocusIn() {
 
 function handleBlur() {
   //topPadding.style.height = "100px"
-  window.scrollTo(0, 0)
-  setTimeout(() => {window.scrollTo(0,100)}, 100) 
+  //window.scrollTo(0, 0)
+  //setTimeout(() => {window.scrollTo(0,100)}, 100) 
   setCanvasHeight(canvasHeightFull)
   render()
 }
@@ -508,16 +527,17 @@ function render() {
   t.font = fontCSS
   t.textBaseline = "top"
   var r = selectedRegions[0]
-  s.innerHTML = "docver:" + version + 
-    " savedver:" + savedVersion +
-    " savingver:" + savingVersion +
-    " x,y:" + cursorX + "," + cursorY + 
-    " " + (r ? ` ${r.startX}, ${r.startY};${r.stopX},${r.stopY}` : "--") +
+  s.innerHTML = version + "/" + savedVersion +
+    "/" + savingVersion +
+    " p:" + cursorX + "," + cursorY + 
+    " c:" + cursorColIndex + "," + cursorLineIndex + 
+    " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
     " " + selectMode
   for (var y=0; y <= maxLines; y++) {
     var lineNumber = (y+offsetY).toString().padStart(4, " ")
     if (offsetX < -1) {
-      t.fillStyle = "magenta"
+      //t.fillStyle = "magenta"
+      t.fillStyle = "cyan"
       for (var i=0; i<-offsetX-1; i++) {
         var lineNumberIndex = offsetX + marginLeft + i
         t.fillText(lineNumber.charAt(lineNumberIndex), i*fontWidth, y*fontHeight)
