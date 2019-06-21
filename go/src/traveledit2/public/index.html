@@ -9,10 +9,10 @@ body { background-color: black; }
 }
 #toolbar {
   display: flex;
-  --flex-flow: row nowrap;
-  flex-flow: row wrap;
+  flex-flow: row nowrap;
+  --flex-flow: row wrap;
   width: 375px;
-  --overflow: scroll;
+  overflow: scroll;
   -webkit-overflow-scrolling: touch;
 }
 #toolbar div {
@@ -23,7 +23,8 @@ body { background-color: black; }
 
 }
 </style>
-<div id=s style="display: block;"></div>
+<div id=topPadding style="height: 0px;"></div>
+<div id=s style="font-size: 12px;"></div>
 
 <form onsubmit=newLine(event)>
 
@@ -67,6 +68,7 @@ style="width: 375px; height:500px;"
 ontouchstart=onStart(event)
 ></canvas>
 <div id=toolbar>
+  <div onclick=findDown()>find down</div>
   <div onclick=insertLine()>new</div>
   <div onclick=del()>del</div>
   <div onclick=paste()>paste</div>
@@ -74,7 +76,6 @@ ontouchstart=onStart(event)
   <div onclick=copy()>copy</div>
   <div onclick=toggleLog()>log</div>
   <div onclick=clearLog()>clear</div>
-  <div onclick=findDown()>find down</div>
   <div onclick=findUp()>find up</div>
   <div onclick=undo()>undo</div>
   <div onclick=indent()>indent</div>
@@ -84,19 +85,13 @@ ontouchstart=onStart(event)
   <div onclick=replace()>replace</div>
   <div onclick=selStart()>selstart</div>
   <div onclick=rselEnd()>selEnd</div>
-  <div onclick=replace()>replace</div>
-  <div onclick=replace()>replace</div>
-  <div onclick=replace()>replace</div>
-  <div onclick=replace()>replace</div>
-  <div onclick=replace()>replace</div>
-  <div onclick=replace()>replace</div>
-  <div onclick=replace()>replace</div>
 </div>
 
 <div>
 <input type=text id=searchText
   style="font-size: 20px"
 >
+<div id=bottomPadding style="height: 600px;"></div>
 </div>
 
 </div>
@@ -121,7 +116,7 @@ var t = c.getContext("2d")
 var version = 0
 var savedVersion = 0
 var savingVersion = -1
-var saveEveryMS = 5000
+var saveEveryMS = 3000
 var fontHeight=36
 var fontWidth=18
 var fontCSS = "30px 'Courier'"
@@ -150,6 +145,7 @@ var cursorColIndex = 0
 // TODO: reconcile inEdit and document.activeElement usage
 var inEdit = false
 var copyBuffer = []
+var selectMode = "line"
 var cursorType = "move"
 // cursorType can be 
 // * move
@@ -248,13 +244,28 @@ function updateCursorXY() {
 
 
 function dup() {
-  lines.splice(cursorLineIndex, 0, lines[cursorLineIndex])
-  cursorLineIndex += 1
-  render()
-  docChanged()
+  copy()
+  paste() 
 }
 
 function copy() {
+  if (selectedRegions.length>0) {
+    var r = selectedRegions[0]
+    if (r.startY == r.stopY) {
+      copyBuffer = [lines[cursorLineIndex].slice(r.startX, r.stopX)]  
+      selectedRegions = []
+      render()
+      return
+    }
+    copyBuffer = [
+      lines[r.startY].slice(r.startX),
+      ...lines.slice(r.startY + 1, r.stopY),
+      lines[r.stopY].slice(0, r.stopX)
+    ]
+    selectedRegions = []
+    render()
+    return
+  } 
   copyBuffer = [lines[cursorLineIndex]]
 }
 
@@ -269,8 +280,22 @@ function setCanvasHeight(h) {
 }
 
 function paste() {
-  lines.splice(cursorLineIndex + 1, 0, ...copyBuffer)
-  cursorLineIndex += 1
+  if (selectMode == "line") {
+    lines.splice(cursorLineIndex + 1, 0, ...copyBuffer)
+    cursorLineIndex += 1
+  } else if (selectMode == "char") {
+    if (copyBuffer.length == 1) {
+      lines[cursorLineIndex] = lines[cursorLineIndex].slice(0, cursorColIndex) +
+        copyBuffer[0] +
+        lines[cursorLineIndex].slice(cursorColindex)
+    } else {
+      var line = lines[cursorLineIndex]
+      lines[cursorLineIndex] = line.slice(0, cursorColIndex) +
+        copyBuffer[0]
+      copyBuffer[copyBuffer.length-1] += line.slice(cursorColIndex)
+      lines.splice(cursorLineIndex+1, 0, ...copyBuffer.slice(1))
+    }
+  }
   render()
   docChanged()
 }
@@ -279,7 +304,6 @@ function del() {
   if (selectedRegions.length>0) {
     var r = selectedRegions[0]
     if (r.startY == r.stopY) {
-      copyMode = "char"
       copyBuffer = [lines[cursorLineIndex].slice(r.startX, r.stopX)]  
       lines[cursorLineIndex] = lines[cursorLineIndex].substr(0, r.startX) +
         lines[cursorLineIndex].substr(r.stopX)
@@ -293,20 +317,19 @@ function del() {
       ...lines.slice(r.startY + 1, r.stopY),
       lines[r.stopY].slice(0, r.stopX)
     ]
+
     lines[r.startY] = lines[r.startY].slice(0, r.startX) + 
       lines[r.stopY].slice(r.stopX)
     lines.splice(r.startY + 1, r.stopY-r.startY)
     if (lines[r.startY] == "") {
       lines.splice(r.startY, 1)
     }
-    copyMode = r.startX == 0 ? "line" : "char"
     render()
     selectedRegions = []
     docChanged()
     return
   } 
   copyBuffer = [lines[cursorLineIndex]]
-  copyMode = "line"
   lines.splice(cursorLineIndex, 1)
   render()
   docChanged()
@@ -363,6 +386,9 @@ function handleFocusIn() {
 }
 
 function handleBlur() {
+  //topPadding.style.height = "100px"
+  window.scrollTo(0, 0)
+  setTimeout(() => {window.scrollTo(0,100)}, 100) 
   setCanvasHeight(canvasHeightFull)
   render()
 }
@@ -486,8 +512,8 @@ function render() {
     " savedver:" + savedVersion +
     " savingver:" + savingVersion +
     " x,y:" + cursorX + "," + cursorY + 
-    "<br>" +
-    (r ? ` ${r.startX}, ${r.startY};${r.stopX},${r.stopY}` : "--")
+    " " + (r ? ` ${r.startX}, ${r.startY};${r.stopX},${r.stopY}` : "--") +
+    " " + selectMode
   for (var y=0; y <= maxLines; y++) {
     var lineNumber = (y+offsetY).toString().padStart(4, " ")
     if (offsetX < -1) {
@@ -555,12 +581,18 @@ function onStart(e) {
     var line = lines[cursorLineIndex] || ""
     selectedRegion.startX = bind(cursorColIndex, 0, line.length)
     selectedRegion.startY = bind(cursorLineIndex, 0, lines.length-1)
-    
     // Note how thr stopY is inclusive
     // But the stopX is exclusive.
     // for some reason seemed natural to do it like that
     selectedRegion.stopX = bind(cursorColIndex, 0, line.length)
     selectedRegion.stopY = bind(cursorLineIndex, 0, lines.length - 1)
+    if (cursorColIndex < 0) {
+      selectMode = "line"
+      selectedRegion.stopX = (lines[cursorLineIndex]  || "").length
+    } else {
+      selectMode = "char"
+    }
+
     selectedRegions.push(selectedRegion)
     hasSelected = true
     render()
@@ -625,6 +657,10 @@ function onStart(e) {
       selectedRegion.stopX = bind(cursorColIndex, 0, line.length)
       selectedRegion.stopY = bind(cursorLineIndex, 0, lines.length-1)
       selectedRegion.stopped = true
+      if (cursorColIndex < 0) {
+        selectedRegion.stopX = (lines[cursorLineIndex] || "").length
+      }
+
     }
     render()
     if (document.activeElement==theText) {
@@ -643,6 +679,7 @@ function onStart(e) {
         log("calling focus")
         offsetY = bind(cursorLineIndex - 5, 0, cursorLineIndex)
         updateCursorXY()
+        //topPadding.style.height=0
         theText.focus()
         theText.setSelectionRange(cursorColIndex, cursorColIndex)
       } 
@@ -658,4 +695,5 @@ function onStart(e) {
   document.body.addEventListener("touchmove", onMove)
   document.body.addEventListener("touchend", onEnd)
 }
+render()
 </script>
