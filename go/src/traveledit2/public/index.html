@@ -255,7 +255,7 @@ function dup() {
 }
 
 function copy() {
-  copyBuffer = lines[cursorLineIndex]
+  copyBuffer = [lines[cursorLineIndex]]
 }
 
 function docChanged() {
@@ -269,7 +269,7 @@ function setCanvasHeight(h) {
 }
 
 function paste() {
-  lines.splice(cursorLineIndex + 1, 0, copyBuffer)
+  lines.splice(cursorLineIndex + 1, 0, ...copyBuffer)
   cursorLineIndex += 1
   render()
   docChanged()
@@ -278,17 +278,35 @@ function paste() {
 function del() {
   if (selectedRegions.length>0) {
     var r = selectedRegions[0]
-    copyBuffer = lines[r.startY].slice(r.startX) + "\n" +
-      lines.slice(r.startY + 1, r.stopY).join("\n") +
+    if (r.startY == r.stopY) {
+      copyMode = "char"
+      copyBuffer = [lines[cursorLineIndex].slice(r.startX, r.stopX)]  
+      lines[cursorLineIndex] = lines[cursorLineIndex].substr(0, r.startX) +
+        lines[cursorLineIndex].substr(r.stopX)
+      selectedRegions = []
+      render()
+      docChanged()
+      return
+    }
+    copyBuffer = [
+      lines[r.startY].slice(r.startX),
+      ...lines.slice(r.startY + 1, r.stopY),
       lines[r.stopY].slice(0, r.stopX)
+    ]
     lines[r.startY] = lines[r.startY].slice(0, r.startX) + 
       lines[r.stopY].slice(r.stopX)
     lines.splice(r.startY + 1, r.stopY-r.startY)
+    if (lines[r.startY] == "") {
+      lines.splice(r.startY, 1)
+    }
+    copyMode = r.startX == 0 ? "line" : "char"
     render()
+    selectedRegions = []
     docChanged()
     return
   } 
-  copyBuffer = lines[cursorLineIndex]
+  copyBuffer = [lines[cursorLineIndex]]
+  copyMode = "line"
   lines.splice(cursorLineIndex, 1)
   render()
   docChanged()
