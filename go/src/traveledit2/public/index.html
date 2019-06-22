@@ -712,28 +712,21 @@ function min(a, b) {
 function max(a, b) {
   a > b ? b : a
 }
+
+// TODO: keep tapping when in "insert mode" to toggle words
+// look for the closest word. go up, down, up down
+// but also make the first one delete the word.
 function onStart(e) {
   e.preventDefault()
-  var startTouchX = e.touches[0].pageX
-  var startTouchY = e.touches[0].pageY
-  var startX = cursorX
-  var startY = cursorY
-  var hasSelected = false
-
-  var lastTouchX = startTouchX
-  var lastTouchY = startTouchY
-  var lastTime = Date.now()
-  var firstMove = true
-  var moved = false
-  render()
-  var selectedRegion = {}
+  // this handles all the touch interactions
+  // first define the closuure functions
   var selectAction = function() {
     selectedRegions = []
     cursorType = "select"
     var line = lines[cursorLineIndex] || ""
     selectedRegion.startX = bind(cursorColIndex, 0, line.length)
     selectedRegion.startY = bind(cursorLineIndex, 0, lines.length-1)
-    // Note how thr stopY is inclusive
+    // Note how the stopY is inclusive
     // But the stopX is exclusive.
     // for some reason seemed natural to do it like that
     selectedRegion.stopX = bind(cursorColIndex, 0, line.length)
@@ -747,9 +740,6 @@ function onStart(e) {
     selectedRegions.push(selectedRegion)
     hasSelected = true
     render()
-  }
-  if (!hasSelected) {
-    selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
   }
   var onMove = function(e) {
     if (!hasSelected) {
@@ -786,7 +776,6 @@ function onStart(e) {
       changedY = true
       if (offsetY < 0) offsetY = 0
     }
-
     if (cursorX > canvasWidth) {
       var extendX = cursorX - canvasWidth
       cursorX = canvasWidth //Math.round(canvasHeight - (canvasHeight/4))
@@ -825,26 +814,78 @@ function onStart(e) {
     // here because iOS Safari doesn't like to focus
     // text elements when not responding to user action
     // maybe there are workarounds.
-    //tapTimeout = setTimeout(function() {
-      if (!moved && cursorType == "move") {
-        log("calling focus")
-        offsetY = bind(cursorLineIndex - 5, 0, cursorLineIndex)
-        updateCursorXY()
-        //topPadding.style.height=0
-        theText.focus()
-        theText.setSelectionRange(cursorColIndex, cursorColIndex)
-      } 
-      document.body.removeEventListener("touchmove", onMove)
-      document.body.removeEventListener("touchend", onEnd)
-      cursorType = "move"
-      if (!selectedRegion.stopped) {
-        selectedRegions = []
-      }
-      render()
-    //}, 100)
+    if (!moved && cursorType == "move") {
+      log("calling focus")
+      offsetY = bind(cursorLineIndex - 5, 0, cursorLineIndex)
+      updateCursorXY()
+      //topPadding.style.height=0
+      theText.focus()
+      theText.setSelectionRange(cursorColIndex, cursorColIndex)
+    } 
+    document.body.removeEventListener("touchmove", onMove)
+    document.body.removeEventListener("touchend", onEnd)
+    cursorType = "move"
+    if (!selectedRegion.stopped) {
+      selectedRegions = []
+    }
+    render()
   } 
-  document.body.addEventListener("touchmove", onMove)
-  document.body.addEventListener("touchend", onEnd)
+
+  var onMoveWhileSelected = function(e) {
+    moved = true
+    var diffStartTouchX = e.touches[0].pageX - startTouchX
+    var diffStartTouchY = e.touches[0].pageY - startTouchY
+    lastTouchX = e.touches[0].pageX
+    lastTouchY = e.touches[0].pageY
+    if (Math.abs(diffStartTouchX) < 5 && Math.abs(diffStartTouchY) < 5) {
+      return
+    }
+    if (Math.abs(diffStartTouchX) > Math.abs(diffStartTouchY)) {
+      if (diffStartTouchX < 0) {
+        dedent()
+      } else {
+        indent()
+      } 
+    } else {
+      if (diffStartTouchY < 0) {
+        del()
+      } else {
+        copy()
+      }
+    }
+    // stop handling it once it's handled
+    document.body.removeEventListener("touchmove", onMoveWhileSelected)
+  }
+  var onEndWhileSelected = function(e) {
+    selectedRegions = []
+    document.body.removeEventListener("touchmove", onMoveWhileSelected)
+    document.body.removeEventListener("touchend", onEndWhileSelected)
+    render()
+  }
+
+  var startTouchX = e.touches[0].pageX
+  var startTouchY = e.touches[0].pageY
+  var startX = cursorX
+  var startY = cursorY
+  var lastTouchX = startTouchX
+  var lastTouchY = startTouchY
+  var lastTime = Date.now()
+  var firstMove = true
+  var moved = false
+  var hasSelected = false
+  var selectedRegion = {}
+
+  if (selectedRegions.length) {
+    // idea: if 2 touches while selected
+    // do something else like comment
+    document.body.addEventListener("touchmove", onMoveWhileSelected)
+    document.body.addEventListener("touchend", onEndWhileSelected)
+  } else {
+    selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
+    document.body.addEventListener("touchmove", onMove)
+    document.body.addEventListener("touchend", onEnd)
+  }  
+  render()
 }
 render()
 </script>
