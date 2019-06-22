@@ -63,6 +63,13 @@ need to support multibyte chars like emojis.
 you'll need to make the chars an array too
 that will take more time but doable.
 
+it saved an empty file!
+This was when I was driving to payson and working on it
+I did get js alerts about network issues
+but weird that it would have saved an empty file
+Maybe I need to send a hash of the file too.
+or at least content length.
 
+todo: offline mode
 
 halt
