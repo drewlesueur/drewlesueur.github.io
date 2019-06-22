@@ -50,4 +50,19 @@ move cursor back to top when done deleting
 selecting should select the text box too
 paste from outside source (more than 1 line)
 
+ui and flow of not going past the end of the file
+right side will be a word selector based on all the words 
+
+when something is selected when you
+paste, it needs to delete that.
+you need a command line component.
+you maybe dont need full terminal emulation
+but a way to run commands
+
+need to support multibyte chars like emojis.
+you'll need to make the chars an array too
+that will take more time but doable.
+
+
+
 halt
