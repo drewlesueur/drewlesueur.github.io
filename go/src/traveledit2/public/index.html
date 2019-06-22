@@ -134,13 +134,6 @@ window.onerror = function(message, url, lineNumber, columnNumber, error) {
 }
 </script>
 <script>
-var lines = []
-var logLines = []
-var logShown = false
-// the actual lines will be put here by the server
-// LINES GO HERE
-var contentLines = lines
-var undoStack = [lines.join("\n")]
 var undoIndex = 0
 var maxUndos = 30
 </script>
@@ -182,6 +175,7 @@ var cursorColIndex = 0
 var inEdit = false
 var copyBuffer = []
 var selectMode = "line"
+var selectAction 
 var cursorType = "move"
 // cursorType can be 
 // * move
@@ -717,34 +711,44 @@ function max(a, b) {
 // look for the closest word. go up, down, up down
 // but also make the first one delete the word.
 function onStart(e) {
+  log("start touch called and there are " + e.touches.length + " touches")
   e.preventDefault()
   // this handles all the touch interactions
   // first define the closuure functions
-  var selectAction = function() {
-    selectedRegions = []
-    cursorType = "select"
-    var line = lines[cursorLineIndex] || ""
-    selectedRegion.startX = bind(cursorColIndex, 0, line.length)
-    selectedRegion.startY = bind(cursorLineIndex, 0, lines.length-1)
-    // Note how the stopY is inclusive
-    // But the stopX is exclusive.
-    // for some reason seemed natural to do it like that
-    selectedRegion.stopX = bind(cursorColIndex, 0, line.length)
-    selectedRegion.stopY = bind(cursorLineIndex, 0, lines.length - 1)
-    if (cursorColIndex < 0) {
-      selectMode = "line"
-      selectedRegion.stopX = (lines[cursorLineIndex]  || "").length
-    } else {
-      selectMode = "char"
+  
+  // this is global
+  if (e.touches.length == 1) {
+    selectAction = function() {
+      log("select called and there are " + e.touches.length + " touches")
+      selectedRegions = []
+      cursorType = "select"
+      var line = lines[cursorLineIndex] || ""
+      selectedRegion.startX = bind(cursorColIndex, 0, line.length)
+      selectedRegion.startY = bind(cursorLineIndex, 0, lines.length-1)
+      // Note how the stopY is inclusive
+      // But the stopX is exclusive.
+      // for some reason seemed natural to do it like that
+      selectedRegion.stopX = bind(cursorColIndex, 0, line.length)
+      selectedRegion.stopY = bind(cursorLineIndex, 0, lines.length - 1)
+      if (cursorColIndex < 0) {
+        selectMode = "line"
+        selectedRegion.stopX = (lines[cursorLineIndex]  || "").length
+      } else {
+        selectMode = "char"
+      }
+      selectedRegions.push(selectedRegion)
+      hasSelected = true
+      render()
     }
-    selectedRegions.push(selectedRegion)
-    hasSelected = true
-    render()
   }
   var onMove = function(e) {
+    log("move called and there are " + e.touches.length + " touches")
+    if (e.touches.length == 2) {
+      return
+    }
     if (!hasSelected) {
       clearTimeout(selectTimeout)
-      selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
+      //selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
     }
     //var diffTouchX = e.touches[0].pageX - startTouchX
     //var diffTouchY = e.touches[0].pageY - startTouchY
@@ -809,12 +813,30 @@ function onStart(e) {
     return false
   }
   var onEnd = function(e) {
+    log("end called and there are " + e.touches.length + " touches")
+    if (e.touches.length == 1) {
+      return
+    }
     clearTimeout(selectTimeout)
     // it's not straightforward to do a setTimeout
     // here because iOS Safari doesn't like to focus
     // text elements when not responding to user action
     // maybe there are workarounds.
+    // TODO: hasSelected is about the same as cursorType == "move" 
     if (!moved && cursorType == "move") {
+      // 
+      if (cursorColIndex == -5) {
+        paste()
+        return
+      }
+      if (cursorColIndex == -4) {
+        del()
+        return
+      }
+      if (cursorColIndex == -1) {
+        insertLine()
+        return
+      } 
       log("calling focus")
       offsetY = bind(cursorLineIndex - 5, 0, cursorLineIndex)
       updateCursorXY()
@@ -874,6 +896,7 @@ function onStart(e) {
   var moved = false
   var hasSelected = false
   var selectedRegion = {}
+  
 
   if (selectedRegions.length) {
     // idea: if 2 touches while selected
@@ -881,11 +904,34 @@ function onStart(e) {
     document.body.addEventListener("touchmove", onMoveWhileSelected)
     document.body.addEventListener("touchend", onEndWhileSelected)
   } else {
-    selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
+    if (e.touches.length == 2) {
+      // this selectAction is the one from the first touch
+      // select action will not get set on the second touch
+      selectAction()
+      return
+    }
+    if (e.touches.length == 3) {
+       paste()
+       return
+    }
+    //selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
     document.body.addEventListener("touchmove", onMove)
     document.body.addEventListener("touchend", onEnd)
   }  
   render()
 }
+
+
+var lines = []
+var logLines = []
+var logShown = false
+// the actual lines will be put here by the server
+// LINES GO HERE
+var contentLines = lines
+var undoStack = [lines.join("\n")]
 render()
+// make sure when selecting in the margin
+// that the selectMode is   line!
+// bug with log and missing data??!!
 </script>
+
