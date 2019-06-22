@@ -101,6 +101,8 @@ ontouchstart=onStart(event)
 <div class=toolbar>
   <div onclick=indent()>indent</div>
   <div onclick=dedent()>dedent</div>
+  <div onclick=comment()>//</div>
+  <div onclick=unComment()>un //</div>
   <div onclick=pasteLastWord()>last word</div>
   <div onclick=deleteCharacter()>delete char</div>
   <div onclick=addSpace()>add space</div>
@@ -135,6 +137,7 @@ window.onerror = function(message, url, lineNumber, columnNumber, error) {
 var lines = []
 var logLines = []
 var logShown = false
+// the actual lines will be put here by the server
 // LINES GO HERE
 var contentLines = lines
 var undoStack = [lines.join("\n")]
@@ -162,7 +165,8 @@ var marginLeft = 5
 // Note that the width and height need to match
 // the width and height of the canvas tag attribute.
 var canvasWidth=1125
-var canvasHeightKeyboard=800
+// I turned off "Predictive" to get more vertical space
+var canvasHeightKeyboard=1000
 var canvasHeightFull=c.height
 var maxLines = 0
 var maxCols = Math.ceil(canvasWidth / fontWidth)
@@ -288,36 +292,58 @@ function dup() {
   copy()
   paste() 
 }
+
 function indent() {
- if (selectedRegions.length > 0) {
-   var r = selectedRegions[0]
-   for (var y=r.startY; y<=r.stopY; y++) {
-     lines[y] = " " + lines[y]
-   }
- } else {
-   lines[cursorLineIndex] = " " + lines[cursorLineIndex]
- }
- render()
- docChanged()
+  addPrefix(" ")
 }
 function dedent() {
+  stripPrefixes(["\t", " "])
+}
+
+function comment() {
+  addPrefix("//")
+}
+function unComment() {
+  stripPrefixes(["\t", " "])
+}
+
+function addPrefix(prefix) {
  if (selectedRegions.length > 0) {
    var r = selectedRegions[0]
    for (var y=r.startY; y<=r.stopY; y++) {
-     if (lines[y].charAt(0) == " " || lines[y].charAt(0) == "\t") {
-       lines[y] = lines[y].slice(1)
-     }
+     lines[y] = prefix + lines[y]
    }
  } else {
-   lines[cursorLineIndex] = " " + lines[cursorLineIndex]
-   var line = lines[cursorLineIndex]
-   if (line.charAt(0) == " " || line.charAt(0) == "\t") {
-     lines[cursorLineIndex] = line.slice(1)
-   }
+   lines[cursorLineIndex] = prefix + lines[cursorLineIndex]
  }
  render()
  docChanged()
 }
+
+function stripPrefixes(prefixes) {
+ if (selectedRegions.length > 0) {
+   var r = selectedRegions[0]
+   for (var y=r.startY; y<=r.stopY; y++) {
+     lines[y] = stripPrefixesInner(lines[y], prefixes)
+   }
+ } else {
+   var line = lines[cursorLineIndex]
+   lines[cursorLineIndex] = stripPrefixesInner(line, prefixes)
+ }
+ render()
+ docChanged()
+}
+
+function stripPrefixesInner(line, prefixes) {
+  for (var i=0; i<prefixes.length; i++) {
+    var prefix = prefixes[i]
+    if (line.startsWith(prefix)) {
+      return line.slice(prefix.length)
+    } 
+  }
+  return line 
+}
+
 function copy() {
   if (selectedRegions.length>0) {
     var r = selectedRegions[0]
@@ -387,7 +413,7 @@ function pasteLastWord() {
   selectMode = oldSelectMode
 }
 
-function space() {
+function addSpace() {
   var line = lines[cursorLineIndex]
   lines[cursorLineIndex] = line.slice(0, cursorLineIndex) + 
     " " + line.slice(cursorLineIndex)
@@ -460,7 +486,6 @@ function insertLine(e) {
   theLine = lines[cursorLineIndex]
   lines.splice(cursorLineIndex + 1, 0, theLine.substr(theText.selectionStart))
   lines[cursorLineIndex] = theLine.substr(0, theText.selectionStart)
-
   cursorLineIndex += 1
   cursorColIndex = 0
   render()

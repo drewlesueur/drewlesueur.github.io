@@ -69,7 +69,68 @@ I did get js alerts about network issues
 but weird that it would have saved an empty file
 Maybe I need to send a hash of the file too.
 or at least content length.
-
+todo: ability to turn off auto save
+todo: add a formal save button
 todo: offline mode
+todo: a way to copy the text out? 
+
+when you keep tapping in insert mode it toggles
+the word. gets closest words. up down up down.
+maybe it deletes the word first?
+
+re-visit last word feature? good idea. too heavy
+
+more gestures, fewer buttons?
+after selecting - you could hit a letter?
+or gesture
+after selecting -
+* up - cut
+* left - dedent
+* right - indent
+* down - copy
+* single tap - unselect
+* upright - comment
+* upleft uncomment
+
+when navigating cursor - tapping in left margin
+makes a new line - actually what if it pasted
+and two finger tap is a new line
+nah, but then you can't paste inside a line
+2 touch paste should be good.
+
+
+long press in margin for selecting whole lines
+
+swipe all the way left twice does search
+
+second finger selects
+margin selects whole line
+
+keyboard shortcuts for for loops functions
+you type replacement text like zfn zfor
+
+when cursor is at word:
+* single tap on bottom right of screen:
+  search down for that word
+* single tap on bottom left of screen:
+  first time delete, the subsequent toggles
+* single tap in big moddle area: edit
+* single tap too right: search up
+
+
+larger todo: have a more sophisticated undo and redo.
+undo? move cursor back and forth
+redo?
+
+
+5 margin positions
+paste copy cut duplicate newline
+
+
+
+
+
+
+
 
 halt
