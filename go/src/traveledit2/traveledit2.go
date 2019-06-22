@@ -54,6 +54,13 @@ func main() {
             fmt.Fprintf(w, "%s", htmlString)
         } else if r.Method == "POST" {
             content := r.FormValue("content")
+            // added this because once when I was traveling and
+            // lost network connection while it was trying to save
+            // it somehow saved an empty file. Partial request?
+            if len(content) == 0 {
+                http.Error(w, "empty content", http.StatusBadRequest)
+                return
+            } 
             s := SaveResponse{}
             err := ioutil.WriteFile(r.URL.Path[1:], []byte(content), 0644)
             if err != nil {
