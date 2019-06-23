@@ -449,6 +449,7 @@ function del() {
         updateCursorXY()
         docChanged()
         render()
+        theText.setSelectionRange(r.startX, r.startX)
         return
       }
     }
@@ -470,6 +471,7 @@ function del() {
     selectedRegions = []
     docChanged()
     render()
+    theText.setSelectionRange(r.startX, r.startX)
     return
   }
   selectMode = "line" 
@@ -510,7 +512,6 @@ function insertLine(e) {
     lines.splice(cursorLineIndex + 1, 0, theIndent + "}")
     theIndent += "  "
   }
-  theIndent = "" 
   lines.splice(cursorLineIndex + 1, 0, theIndent + theLine.substr(theText.selectionStart))
   lines[cursorLineIndex] = theLine.substr(0, theText.selectionStart)
   cursorLineIndex += 1
@@ -865,8 +866,10 @@ function onStart(e) {
     // maybe there are workarounds.
     // TODO: hasSelected is about the same as cursorType == "move" 
     if (!moved && cursorType == "move") {
-      // 
       if (cursorColIndex == -5) {
+        // since we are in the margin, let's force it
+        // to paste line-style.
+        selectMode = "line"
         paste()
         return
       }
@@ -889,7 +892,15 @@ function onStart(e) {
     document.body.removeEventListener("touchend", onEnd)
     cursorType = "move"
     if (!selectedRegion.stopped) {
-      selectedRegions = []
+      var w = getWordAtCursor()
+      if (w.word != "") {
+        selectedRegion.startY = cursorLineIndex
+        selectedRegion.startX = w.start
+        selectedRegion.stopY = cursorLineIndex
+        selectedRegion.stopX = w.end
+      } else {
+        selectedRegions = []
+      }
     }
     render()
   } 
