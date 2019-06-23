@@ -99,6 +99,7 @@ ontouchstart=onStart(event)
   <div onclick=copy()>copy</div>
 </div>
 <div class=toolbar>
+  <div onclick=doEval()>eval</div>
   <div onclick=indent()>indent</div>
   <div onclick=dedent()>dedent</div>
   <div onclick=comment()>//</div>
@@ -171,7 +172,6 @@ var touchScale=2 // was 3 for a while
 var cursorLineIndex = 0
 var cursorColIndex = 0
 
-// TODO: reconcile inEdit and document.activeElement usage
 var inEdit = false
 var copyBuffer = []
 var selectMode = "line"
@@ -185,6 +185,11 @@ var selectTimeout
 var selectTimeoutMillis = 500
 var selectedRegions = []
 
+function doEval() {
+  var code = prompt("code")
+  var resp =  eval(code)
+  alert(resp)
+}
 function log(v) {
   logLines.push(v)
 }
@@ -279,6 +284,7 @@ function jsFunc() {
 }
 
 function updateCursorXY() {
+  cursorX = (cursorColIndex - offsetX) * fontWidth
   cursorY = (cursorLineIndex - offsetY) * fontHeight
 }
 
@@ -427,24 +433,23 @@ function del() {
     var r = selectedRegions[0]
     if (r.startY == r.stopY) {
       if (r.startX == 0 && r.stopX == lines[r.startY].length) {
-   selectMode = "line" 
-   copyBuffer = [lines[r.startY]]
-   lines.splice(r.startY, 1)
-   docChanged()
-   render()
-   return
+        selectMode = "line" 
+        copyBuffer = [lines[r.startY]]
+        lines.splice(r.startY, 1)
+        docChanged()
+        render()
+        return
       } else {
-
-      copyBuffer = [lines[r.startY].slice(r.startX, r.stopX)]  
-     lines[r.startY] = lines[r.startY].substr(0, r.startX) +
-       lines[r.startY].substr(r.stopX)
-      selectedRegions = []
-      cursorLineIndex = r.startY
-      cursorColIndex = r.startX
-      updateCursorXY()
-      docChanged()
-      render()
-      return
+        copyBuffer = [lines[r.startY].slice(r.startX, r.stopX)]  
+        lines[r.startY] = lines[r.startY].substr(0, r.startX) +
+        lines[r.startY].substr(r.stopX)
+        selectedRegions = []
+        cursorLineIndex = r.startY
+        cursorColIndex = r.startX
+        updateCursorXY()
+        docChanged()
+        render()
+        return
       }
     }
     copyBuffer = [
@@ -505,12 +510,12 @@ function insertLine(e) {
     lines.splice(cursorLineIndex + 1, 0, theIndent + "}")
     theIndent += "  "
   }
+  theIndent = "" 
   lines.splice(cursorLineIndex + 1, 0, theIndent + theLine.substr(theText.selectionStart))
   lines[cursorLineIndex] = theLine.substr(0, theText.selectionStart)
   cursorLineIndex += 1
   cursorColIndex = theIndent.length
   updateCursorXY()
-  docChanged()
   docChanged()
   render()
 }
@@ -615,6 +620,8 @@ function handleKeydown(e) {
     cursorLineIndex -= 1
     var prevLine = lines[cursorLineIndex]
     lines[cursorLineIndex] = lines[cursorLineIndex] + theLine
+    cursorColIndex = prevLine.length
+    updateCursorXY()
     docChanged()
     render()
     theText.setSelectionRange(prevLine.length, prevLine.length)
@@ -623,14 +630,18 @@ function handleKeydown(e) {
 }
 
 function saveLine() {
+  // TODO: consider auto-closing parens.
   cursorColIndex = theText.selectionStart
   lines[cursorLineIndex] = theText.value
   cursorX = (cursorColIndex - offsetX) * fontWidth
   cursorY = (cursorLineIndex - offsetY) * fontHeight
-  inEdit = true
-  inEdit = false
   docChanged()
+
+  // you need to tell the render to not update the text area
+  // weird bigs will happen without this
+  inEdit = true
   render()
+  inEdit = false
 }
 function bind(v, min, max) {
   if (v < min) v = min
@@ -773,7 +784,7 @@ function onStart(e) {
   }
   var onMove = function(e) {
     log("move called and there are " + e.touches.length + " touches")
-    if (e.touches.length == 2) {
+    if (e.touches.length > 1) {
       return
     }
     if (!hasSelected) {
@@ -844,7 +855,7 @@ function onStart(e) {
   }
   var onEnd = function(e) {
     log("end called and there are " + e.touches.length + " touches")
-    if (e.touches.length == 1) {
+    if (e.touches.length != 0) {
       return
     }
     clearTimeout(selectTimeout)

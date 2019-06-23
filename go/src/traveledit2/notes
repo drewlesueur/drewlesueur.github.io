@@ -131,8 +131,11 @@ pasting sub lines not working so well?
 
 three finger paste not working
 
-
-
+while in edit mode
+* if tap while cursor is at end of word -- autocomplete
+* if tap while cursor is inside word -- find close words
+* if tap while cursor is at start, delete?
+* if tap while cursor is in space, find close words
 
 
 halt
