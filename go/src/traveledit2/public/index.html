@@ -229,17 +229,20 @@ function isWordy(a) {
   ) 
 }
 function getWordAtCursor() {
-  var line = lines[cursorLineIndex]
+  return getWordAt(cursorLineIndex, cursorColIndex)  
+}
+function getWordAt(y, x) {
+  var line = lines[y]
   if (!line) return {start: -1, end: -1, word: ""}
   log("getting word: " + line)
-  for (var startIndex=cursorColIndex-1; startIndex>=0; startIndex--) {
+  for (var startIndex=x-1; startIndex>=0; startIndex--) {
     if (!isWordy(line.charCodeAt(startIndex))) {
        startIndex += 1
        break
     }
   }
   if (startIndex < 0) startIndex = 0
-  for (var endIndex=cursorColIndex; endIndex < line.length; endIndex++) {
+  for (var endIndex=x; endIndex < line.length; endIndex++) {
     if (!isWordy(line.charCodeAt(endIndex))) {
       break
     }
@@ -880,13 +883,16 @@ function onStart(e) {
       if (cursorColIndex == -1) {
         insertLine()
         return
-      } 
-      log("calling focus")
-      offsetY = bind(cursorLineIndex - 5, 0, cursorLineIndex)
-      updateCursorXY()
-      //topPadding.style.height=0
-      theText.focus()
-      theText.setSelectionRange(cursorColIndex, cursorColIndex)
+      }
+      
+      if (document.activeElement != theText) {
+        log("calling focus")
+        offsetY = bind(cursorLineIndex - 5, 0, cursorLineIndex)
+        updateCursorXY()
+        //topPadding.style.height=0
+        theText.focus()
+        theText.setSelectionRange(cursorColIndex, cursorColIndex)
+      }  
     } 
     document.body.removeEventListener("touchmove", onMove)
     document.body.removeEventListener("touchend", onEnd)
@@ -962,14 +968,119 @@ function onStart(e) {
       selectAction()
       return
     }
-    if (e.touches.length == 3) {
-       paste()
-       return
+    if (document.activeElement == theText) {
+      toggleWord()
     }
     //selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
     document.body.addEventListener("touchmove", onMove)
     document.body.addEventListener("touchend", onEnd)
   }  
+  render()
+}
+
+function resetFindWord() {
+  findWordCount = 0
+  findWordUpY = 0
+  findWordUpX = 0
+  findWordDownY = 0
+  findWordDownX = 0
+  findWordY = -1
+  findWordX = -1
+  findWordPrefix = ""
+  findWordEndY = -1
+  findWordEndX = -1
+}
+
+var findWordCount = 0
+var findWordUpY = 0
+var findWordUpX = 0
+var findWordDownY = 0
+var findWordDownX = 0
+var findWordY = -1
+var findWordX = -1
+var findWordEndY = -1
+var findWordEndX = -1
+var findWordPrefix = ""
+// replaceFindWord will be like delete and Paste
+// calls that we aleeady have (jist copy functionality
+// for now.
+function findWordUp() {
+  var w
+  for (findWordUpY; findWordUpY>=0; findWordUpY--)
+    var line = lines[findWordUpY]
+    if (!line) {
+      return []  
+    }
+    for (findWordUpX; findWordUpX>=0; findWordUpX--) {
+      w = getWordAtIndex(findWordUpY, findWordUpX)
+      if (w.word != "") {
+        findWordUpX = w.start - 1
+        break
+      }
+    }
+  }
+  
+  findWordUpY -= 1
+  return w
+}
+
+// if it's at 0 (or only ondented) you could do
+// if, func, for, var!!
+
+function replaceFindWord(r) {
+  findWordEndY = findWordStartY + r.length - 1
+  if (findWordY == findWordEndY) {
+    findWordEndX = findWordX + r[0].length
+  } else {
+    findWordEndX = r[r.length - 1].length     
+  }
+ 
+}
+function toggleWord() {
+  if (findWordY == cursorLineIndex && findWordX == cursorColIndex) {
+  } else {
+    resetFindWord()
+    var w = getWordAtCursor()
+    findWordY = cursorLineIndex
+    findWordX = cursorColIndex
+    findWordUpY = cursorLineIndex
+    findWordUpX = cursorColIndex - 1
+    findWordDownY = cursorLineIndex
+    findWordDownX = cursorColIndex + w.end
+    
+    if (w.word != "") {
+      if (w.end == cursorColIndex) {
+        findWordPrefix = w.word 
+      } else {
+        findWordX = w.start
+        cursorLineIndex = w.start
+        updateCursorXY()
+      }
+    }
+  }
+ 
+  // for loop to simulate goto
+  for (var s=0; s<1; s++) {
+    if (findWordCount == 0) {
+      replaceFindWord([""])
+      break
+    }
+    if (findWordCount == 1) {
+      replaceFindWord(copyBuffer)
+      break
+    }
+    if (findWordCount % 2 == 0) {
+      var w = findWordUp()
+      replaceFindWord([w.word])
+      break 
+    }
+    var w = findWordDown()
+    replaceFindWord([w.word])
+    break 
+  }  
+  
+  findWordCount += 1
+  docChanged()
   render()
 }
 
@@ -984,6 +1095,7 @@ var undoStack = [lines.join("\n")]
 render()
 // make sure when selecting in the margin
 // that the selectMode is   line!
-// bug with log and missing data??!!
+// bug with log and missing data??!
+// add a threshold for move, like 5px or something.
 </script>
 
