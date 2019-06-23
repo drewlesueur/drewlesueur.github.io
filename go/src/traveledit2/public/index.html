@@ -297,10 +297,10 @@ function dup() {
 }
 
 function indent() {
-  addPrefix(" ")
+  addPrefix("  ")
 }
 function dedent() {
-  stripPrefixes(["\t", " "])
+  stripPrefixes(["\t", "  "])
 }
 
 function comment() {
@@ -439,6 +439,7 @@ function del() {
         selectMode = "line" 
         copyBuffer = [lines[r.startY]]
         lines.splice(r.startY, 1)
+        selectedRegions = []
         docChanged()
         render()
         return
@@ -450,6 +451,7 @@ function del() {
         cursorLineIndex = r.startY
         cursorColIndex = r.startX
         updateCursorXY()
+        selectedRegions = []
         docChanged()
         render()
         theText.setSelectionRange(r.startX, r.startX)
@@ -508,10 +510,10 @@ function getIndent(line) {
   }
   return theIndent  
 }
-function insertLine(e) {
+function insertLine(closeCurly) {
   theLine = lines[cursorLineIndex]
   var theIndent = getIndent(theLine)
-  if (theLine.endsWith("{")) {
+  if (closeCurly && theLine.endsWith("{")) {
     lines.splice(cursorLineIndex + 1, 0, theIndent + "}")
     theIndent += "  "
   }
@@ -525,7 +527,7 @@ function insertLine(e) {
 }
 function newLine(e) {
   e.preventDefault()
-  insertLine()
+  insertLine(true)
   theText.focus()
   theText.setSelectionRange(cursorColIndex, cursorColIndex)
   return false
@@ -787,7 +789,6 @@ function onStart(e) {
     }
   }
   var onMove = function(e) {
-    log("move called and there are " + e.touches.length + " touches")
     if (e.touches.length > 1) {
       return
     }
@@ -937,7 +938,9 @@ function onStart(e) {
     document.body.removeEventListener("touchmove", onMoveWhileSelected)
   }
   var onEndWhileSelected = function(e) {
-    selectedRegions = []
+    if (!moved && selectedRegions.length) {
+       selectedRegions = []
+    }
     document.body.removeEventListener("touchmove", onMoveWhileSelected)
     document.body.removeEventListener("touchend", onEndWhileSelected)
     render()
@@ -1001,12 +1004,14 @@ var findWordX = -1
 var findWordEndY = -1
 var findWordEndX = -1
 var findWordPrefix = ""
+var findWordUpDone = false
+var findWordDownDone = false
 // replaceFindWord will be like delete and Paste
 // calls that we aleeady have (jist copy functionality
 // for now.
 function findWordUp() {
   var w
-  for (findWordUpY; findWordUpY>=0; findWordUpY--)
+  for (findWordUpY; findWordUpY>=0; findWordUpY--) {
     var line = lines[findWordUpY]
     if (!line) {
       return []  
@@ -1028,7 +1033,7 @@ function findWordUp() {
 // if, func, for, var!!
 
 function replaceFindWord(r) {
-  findWordEndY = findWordStartY + r.length - 1
+  findWordEndY = findWordY + r.length - 1
   if (findWordY == findWordEndY) {
     findWordEndX = findWordX + r[0].length
   } else {
