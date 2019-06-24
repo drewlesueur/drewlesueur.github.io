@@ -691,8 +691,8 @@ function render() {
   t.fillRect(cursorX, cursorY, 6, fontHeight)
   var yPos = (cursorLineIndex - offsetY) * fontHeight
   var xPos = (cursorColIndex - offsetX) * fontWidth
-  //t.fillStyle = "rgba(0, 128, 128, 0.5)"
-  //t.fillRect(0, yPos, canvasWidth, fontHeight)
+  t.fillStyle = "rgba(0, 128, 128, 0.5)"
+  t.fillRect(0, yPos, canvasWidth, fontHeight)
   t.fillStyle = cursorType == "move" ? "cyan" : "white"
   t.fillRect(xPos, yPos, 6, fontHeight)
 
@@ -859,10 +859,12 @@ function onStart(e) {
     return false
   }
   var onEnd = function(e) {
-    log("end called and there are " + e.touches.length + " touches")
     if (e.touches.length != 0) {
       return
     }
+    document.body.removeEventListener("touchmove", onMove)
+    document.body.removeEventListener("touchend", onEnd)
+    log("end called and there are " + e.touches.length + " touches")
     clearTimeout(selectTimeout)
     // it's not straightforward to do a setTimeout
     // here because iOS Safari doesn't like to focus
@@ -895,10 +897,8 @@ function onStart(e) {
         theText.setSelectionRange(cursorColIndex, cursorColIndex)
       }  
     } 
-    document.body.removeEventListener("touchmove", onMove)
-    document.body.removeEventListener("touchend", onEnd)
     cursorType = "move"
-    if (!selectedRegion.stopped) {
+    if (!selectedRegion.stopped) {// this only matters if it is selected I think
       var w = getWordAtCursor()
       if (w.word != "") {
         selectedRegion.startY = cursorLineIndex
@@ -965,7 +965,7 @@ function onStart(e) {
     document.body.addEventListener("touchmove", onMoveWhileSelected)
     document.body.addEventListener("touchend", onEndWhileSelected)
   } else {
-    if (e.touches.length == 2) {
+    if (e.touches.length > 1) {
       // this selectAction is the one from the first touch
       // select action will not get set on the second touch
       selectAction()
@@ -1058,7 +1058,7 @@ function toggleWord() {
         findWordPrefix = w.word 
       } else {
         findWordX = w.start
-        cursorLineIndex = w.start
+        cursorColIndex = w.start
         updateCursorXY()
       }
     }
