@@ -601,6 +601,7 @@ function handleBlur() {
   //window.scrollTo(0, 0)
   //setTimeout(() => {window.scrollTo(0,100)}, 100) 
   setCanvasHeight(canvasHeightFull)
+  resetFindWord()
   render()
 }
 
@@ -1065,23 +1066,25 @@ function findWordUp() {
     return w
   }
   outer:
-  for (findWordUpY; findWordUpY>=0; findWordUpY--) {
+  for (findWordUpY=findWordUpY; findWordUpY>=0; findWordUpY--) {
     var line = lines[findWordUpY]
-    if (!line) {
-      findWordUpDone = true 
-      return {start: -1, end: -1, word: ""}  
+    if (findWordUpX < 0) {
+      findWordUpX = line.length
     }
     for (findWordUpX; findWordUpX>=0; findWordUpX--) {
       log("iteration: " + findWordUpY + "/" + findWordUpX)
       w = getWordAt(findWordUpY, findWordUpX)
-      if (w.word != "") {
+      if (w.word != "" && w.word != findWordFoundWord) {
         findWordUpX = w.start - 1
-        break outer
+        if (findWordUpX < 0) {
+          findWordUpY -= 1
+        }
+        return w
       }
     }
   }
-  
-  findWordUpY -= 1
+
+  findWordUpDone = true 
   return w
 }
 
@@ -1154,6 +1157,7 @@ function toggleWord() {
         findWordX = w.start
         cursorColIndex = w.start
         findWordEndX = w.end
+        findWordUpX = cursorColIndex - 1
         updateCursorXY()
       }
     }
@@ -1166,7 +1170,7 @@ function toggleWord() {
       replaceFindWord([""])
       break
     }
-    if (false && findWordCount == 1) {
+    if (findWordCount == 1) {
       replaceFindWord(copyBuffer)
       break
     }
