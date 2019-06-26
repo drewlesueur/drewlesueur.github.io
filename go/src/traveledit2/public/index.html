@@ -1,4 +1,5 @@
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
+
 <meta charset='utf-8'>
 <style>
 * { margin: 0; padding: 0; 
@@ -107,33 +108,14 @@ onblur=handleBlur()
 <div class=toolbar>
   <div onclick=findDown()>find down</div>
   <div onclick=clearSearch()>clear search</div>
-  <div onclick=insertLine()>new<br>line</div>
-  <div onclick=del()>delete line</div>
-  <div onclick=deleteWord()>delete word</div>
-  <div onclick=paste()>paste</div>
-  <div onclick=dup()>duplicate line</div>
-  <div onclick=copy()>copy</div>
-</div>
-<div class=toolbar>
   <div onclick=doEval()>eval</div>
-  <div onclick=indent()>indent</div>
-  <div onclick=dedent()>dedent</div>
   <div onclick=comment()>//</div>
   <div onclick=unComment()>un //</div>
-  <div onclick=pasteLastWord()>last word</div>
-  <div onclick=deleteCharacter()>delete char</div>
-  <div onclick=addSpace()>add space</div>
-  <div onclick=jsFunc()>js func</div>
-  <div onclick=toggleLog()>toggle log</div>
   <div onclick=clearLog()>clear log</div>
-  <div onclick=findUp()>find up</div>
   <div onclick=undo()>undo</div>
   <div onclick=redo()>redo</div>
-  <div onclick=join()>join</div>
-  <div onclick=custom('func')>js func</div>
-  <div onclick=replace()>replace</div>
-  <div onclick=selStart()>select start</div>
-  <div onclick=rselEnd()>select end</div>
+</div>
+<div class=toolbar>
 </div>
 
 <div>
@@ -261,7 +243,6 @@ function getWordAtCursor() {
 }
 function getWordAt(line, x) {
   if (!line) return {start: -1, end: -1, word: ""}
-  log("getting word: " + line)
   for (var startIndex=x-1; startIndex>=0; startIndex--) {
     if (!isWordy(line.charCodeAt(startIndex))) {
        startIndex += 1
@@ -275,7 +256,6 @@ function getWordAt(line, x) {
     }
   }
   if (endIndex == lines.length - 1) endIndex = lines.length
-  log(`start: ${startIndex} end: ${endIndex}`)
   //if (startIndex < endIndex) {
     return {start: startIndex, end: endIndex, word: line.substring(startIndex, endIndex)}
   //}
@@ -403,6 +383,15 @@ function docChanged() {
    if (maybeLastWord != "") {
      lastWord = maybeLastWord
    }
+  if (undoIndex != undoStack.length - 1) {
+      undoStack.splice(undoIndex + 1, undoStack.length - undoStack +1)
+  }
+  undoIndex += 1
+  undoStack.push(lines.join("\n"))
+  if (undoStack.length > maxUndos) {
+    undoStack.shift()
+    undoIndex -= 1
+  }
 }
 
 function setCanvasHeight(h) {
@@ -613,15 +602,6 @@ function save() {
       if (savedVersion == version) {
         break
       }
-      if (undoIndex != undoStack.length - 1) {
-          undoStack.splice(undoIndex + 1, undoStack.length - undoStack +1)
-      }
-      undoIndex += 1
-      undoStack.push(lines.join("\n"))
-      if (undoStack.length > maxUndos) {
-        undoStack.shift()
-        undoIndex -= 1
-      }
       savingVersion = version
       fetch(location.href, {
         method: "POST",
@@ -690,7 +670,24 @@ function charAt(lines, y, x) {
   return theChar
 }
 
+var waitingRender = false
+var lastRender = 0
+var maxFrameRate = 16
 function render() {
+  var timeSinceRender = Date.now() - lastRender
+  if (timeSinceRender < maxFrameRate) {
+    if (!waitingRender) {
+      waitingRender = true
+      setTimeout(function () {
+        waitingRender = false
+        render() 
+      }, maxFrameRate - timeSinceRender) 
+    }
+    return    
+  }
+  
+  log("time since render: " + timeSinceRender)
+  lastRender = Date.now()
   var selStart = theText.selectionStart
   var selEnd = theText.selectionEnd
   c.width = c.width // one way to clear
