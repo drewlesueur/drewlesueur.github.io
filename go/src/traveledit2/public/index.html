@@ -43,7 +43,12 @@ bottom: 80px; right:0;
 z-index: 999;
 color: cyan;
 "></div>
-
+<form onsubmit=findDownForm(event)>
+  <input type=search id=searchText
+    style="font-size: 20px"
+  >
+  <input type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
+</form>
 <form onsubmit=newLine(event)>
 
 <input id=theTextBefore class=text
@@ -83,11 +88,11 @@ onblur=handleBlur()
   so it has to be at least as big as the biggest canvasHeight x canvasWith size.
   Also note that the css width needs to be 1/3 of
   the with attribute, and same for height.
-  <canvas id=c width=600 height=1560
-  style="width: 200px; height:520px;
-  -->
   <canvas id=c width=1125 height=1560
   style="width: 375px; height:520px;
+  -->
+  <canvas id=c width=600 height=1560
+  style="width: 200px; height:520px;
   border: 0px solid lime;;
   "
   ontouchstart=onStart(event)
@@ -119,9 +124,6 @@ onblur=handleBlur()
 </div>
 
 <div>
-<input type=text id=searchText
-  style="font-size: 20px"
->
 <textarea id=pasteEl 
 style="width:100%; height:100px;"
 oninput=importPaste()></textarea>
@@ -159,7 +161,8 @@ var marginLeft = 5
 
 // Note that the width and height need to match
 // the width and height of the canvas tag attribute.
-var canvasWidth=1125
+//var canvasWidth=1125
+var canvasWidth=600
 // I turned off "Predictive" to get more vertical space
 var canvasHeightKeyboard=1000
 var canvasHeightFull=c.height
@@ -260,6 +263,12 @@ function getWordAt(line, x) {
     return {start: startIndex, end: endIndex, word: line.substring(startIndex, endIndex)}
   //}
   return {start: -1, end: -1, word: ""}
+}
+function findDownForm(e) {
+   // TODO: why doesnt preventDefault autocomplete sometimes?
+   e.preventDefault()
+   findDown()
+   return false 
 }
 function findDown() {
   if (searchText.value == "") {
@@ -686,7 +695,6 @@ function render() {
     return    
   }
   
-  log("time since render: " + timeSinceRender)
   lastRender = Date.now()
   var selStart = theText.selectionStart
   var selEnd = theText.selectionEnd
@@ -732,20 +740,20 @@ function render() {
     " " + selectMode
   findWordEl.innerHTML = `
     <pre>
-    wordAtCursor: ${JSON.stringify(getWordAtCursor().word)}
-    findWordCount: ${findWordCount}
-    findWordUpY: ${findWordUpY}
-    findWordUpX: ${findWordUpX}
-    findWordDownY: ${findWordDownY}
-    findWordDownX: ${findWordDownX}
-    findWordY: ${findWordY}
-    findWordX: ${findWordX}
-    findWordEndY: ${findWordEndY}
-    findWordEndX: ${findWordEndX}
-    findWordPrefix: ${findWordPrefix}
-    findWordUpDone: ${findWordUpDone}
-    findWordDownDone: ${findWordDownDone}
-    findWordFoundWord: ${JSON.stringify(findWordFoundWord)}
+  wordAtCursor: ${JSON.stringify(getWordAtCursor().word)}
+  findWordCount: ${findWordCount}
+  findWordUpY: ${findWordUpY}
+  findWordUpX: ${findWordUpX}
+  findWordDownY: ${findWordDownY}
+  findWordDownX: ${findWordDownX}
+  findWordY: ${findWordY}
+  findWordX: ${findWordX}
+  findWordEndY: ${findWordEndY}
+  findWordEndX: ${findWordEndX}
+  findWordPrefix: ${findWordPrefix}
+  findWordUpDone: ${findWordUpDone}
+  findWordDownDone: ${findWordDownDone}
+  findWordFoundWord: ${JSON.stringify(findWordFoundWord)}
     </pre>
   `
   for (var y=0; y <= maxLines; y++) {
@@ -1081,11 +1089,13 @@ function findWordUp() {
       findWordUpX = line.length
     }
     for (findWordUpX; findWordUpX>=0; findWordUpX--) {
-      log("iteration: " + findWordUpY + "/" + findWordUpX)
+      // log("up iteration: " + findWordUpY + "/" + findWordUpX)
       w = getWordAt(line, findWordUpX)
+      if (w.word != "") {
+        findWordUpX = w.start - 1
+      }
       if (w.word != "" && w.word != findWordFoundWord &&
            (findWordPrefix == "" || (w.word != findWordPrefix && w.word.startsWith(findWordPrefix)))) {
-        findWordUpX = w.start - 1
         if (findWordUpX < 0) {
           findWordUpY -= 1
         }
@@ -1096,6 +1106,7 @@ function findWordUp() {
   findWordUpDone = true 
   return {start: -1, end: -1, word: ""}
 }
+
 function findWordDown() {
   var w = {start: -1, end: -1, word: ""}
   if (findWordDownDone) {
@@ -1104,10 +1115,13 @@ function findWordDown() {
   for (findWordDownY; findWordDownY<lines.length; findWordDownY++) {
     var line = lines[findWordDownY]
     for (findWordDownX; findWordDownX < line.length; findWordDownX++) {
+      //log("down iteration: " + findWordDownY + "/" + findWordDownX)
       w = getWordAt(line, findWordDownX)
+      if (w.word != "") {
+        findWordDownX = w.end + 1
+      }
       if (w.word != "" && w.word != findWordFoundWord &&
            (findWordPrefix == "" || (w.word != findWordPrefix && w.word.startsWith(findWordPrefix)))) {
-        findWordDownX = w.end + 1
         if (findWordDownX >= line.length) {
           findWordDownY += 1
           findWordDownX = 0 
@@ -1115,6 +1129,7 @@ function findWordDown() {
         return w
       }
     }
+    findWordDownX = 0
   }
   findWordDownDone = true 
   return {start: -1, end: -1, word: ""}
@@ -1181,6 +1196,7 @@ function toggleWord() {
     findWordUpX = lines[cursorLineIndex].length
     findWordDownY = cursorLineIndex + 1
     findWordDownX = 0
+    findWordSpecialLine = lines[findWordY]
     
     if (w.word != "") {
       if (w.end == cursorColIndex) {
@@ -1199,7 +1215,6 @@ function toggleWord() {
   for (var s=0; s<1; s++) {
     if (findWordCount == 0 && !findWordPrefix) {
       replaceFindWord([""])
-      findWordSpecialLine = lines[findWordY]
       break
     }
     if (findWordCount == 1 && !findWordPrefix && copyBuffer.length) {
