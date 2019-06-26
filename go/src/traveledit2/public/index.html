@@ -82,11 +82,11 @@ onblur=handleBlur()
   so it has to be at least as big as the biggest canvasHeight x canvasWith size.
   Also note that the css width needs to be 1/3 of
   the with attribute, and same for height.
-  <canvas id=c width=1125 height=1560
-  style="width: 375px; height:520px;
-  -->
   <canvas id=c width=600 height=1560
   style="width: 200px; height:520px;
+  -->
+  <canvas id=c width=1125 height=1560
+  style="width: 375px; height:520px;
   border: 0px solid lime;;
   "
   ontouchstart=onStart(event)
@@ -257,10 +257,9 @@ function isWordy(a) {
   ) 
 }
 function getWordAtCursor() {
-  return getWordAt(cursorLineIndex, cursorColIndex)  
+  return getWordAt(lines[cursorLineIndex], cursorColIndex)  
 }
-function getWordAt(y, x) {
-  var line = lines[y]
+function getWordAt(line, x) {
   if (!line) return {start: -1, end: -1, word: ""}
   log("getting word: " + line)
   for (var startIndex=x-1; startIndex>=0; startIndex--) {
@@ -843,12 +842,15 @@ function onStart(e) {
       clearTimeout(selectTimeout)
       //selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
     }
-    //var diffTouchX = e.touches[0].pageX - startTouchX
-    //var diffTouchY = e.touches[0].pageY - startTouchY
+    var diffTouchX = e.touches[0].pageX - startTouchX
+    var diffTouchY = e.touches[0].pageY - startTouchY
     //cursorX = bind(startX + diffTouchX*touchScale, 0, canvasWidth)
     //cursorY = bind(startY + diffTouchY*touchScale, 0, canvasHeight)
     
     moved = true
+    if (diffTouchX > 10 || diffTouchY > 10) {
+      movedWithBuffer = true
+    }
     var diffLastTouchX = e.touches[0].pageX - lastTouchX
     var diffLastTouchY = e.touches[0].pageY - lastTouchY
     var signX = diffLastTouchX < 0 ? -1: 1
@@ -948,7 +950,11 @@ function onStart(e) {
         theText.focus()
         theText.setSelectionRange(cursorColIndex, cursorColIndex)
       }  
-    } 
+    }
+    if (movedWithBuffer) {
+      resetFindWord()
+    }
+     
     cursorType = "move"
     if (!selectedRegion.stopped) {// this only matters if it is selected I think
       var w = getWordAtCursor()
@@ -1007,6 +1013,7 @@ function onStart(e) {
   var lastTime = Date.now()
   var firstMove = true
   var moved = false
+  var movedWithBuffer = false
   var hasSelected = false
   var selectedRegion = {}
   
@@ -1044,6 +1051,7 @@ function resetFindWord() {
   findWordUpDone = false
   findWordDownDone = false
   findWordFoundWord = ""
+  findWordSpecialLine = ""
 }
 
 var findWordCount = 0
@@ -1059,22 +1067,27 @@ var findWordPrefix = ""
 var findWordUpDone = false
 var findWordDownDone = false
 var findWordFoundWord = "" // for logging purposes
+var findWordSpecialLine = ""
 
 function findWordUp() {
   var w = {start: -1, end: -1, word: ""}
   if (findWordUpDone) {
     return w
   }
-  outer:
   for (findWordUpY=findWordUpY; findWordUpY>=0; findWordUpY--) {
     var line = lines[findWordUpY]
+    // so word being changed doesn't affect cursor
+    if (findWordY == findWordUpY) {
+      line = findWordSpecialLine
+    }
     if (findWordUpX < 0) {
       findWordUpX = line.length
     }
     for (findWordUpX; findWordUpX>=0; findWordUpX--) {
       log("iteration: " + findWordUpY + "/" + findWordUpX)
-      w = getWordAt(findWordUpY, findWordUpX)
-      if (w.word != "" && w.word != findWordFoundWord) {
+      w = getWordAt(line, findWordUpX)
+      if (w.word != "" && w.word != findWordFoundWord &&
+           (findWordPrefix == "" || (w.word != findWordPrefix && w.word.startsWith(findWordPrefix)))) {
         findWordUpX = w.start - 1
         if (findWordUpX < 0) {
           findWordUpY -= 1
@@ -1083,9 +1096,31 @@ function findWordUp() {
       }
     }
   }
-
   findWordUpDone = true 
-  return w
+  return {start: -1, end: -1, word: ""}
+}
+function findWordDown() {
+  var w = {start: -1, end: -1, word: ""}
+  if (findWordDownDone) {
+    return w
+  }
+  for (findWordDownY; findWordDownY<lines.length; findWordDownY++) {
+    var line = lines[findWordDownY]
+    for (findWordDownX; findWordDownX < line.length; findWordDownX++) {
+      w = getWordAt(line, findWordDownX)
+      if (w.word != "" && w.word != findWordFoundWord &&
+           (findWordPrefix == "" || (w.word != findWordPrefix && w.word.startsWith(findWordPrefix)))) {
+        findWordDownX = w.end + 1
+        if (findWordDownX >= line.length) {
+          findWordDownY += 1
+          findWordDownX = 0 
+        }
+        return w
+      }
+    }
+  }
+  findWordDownDone = true 
+  return {start: -1, end: -1, word: ""}
 }
 
 // if it's at 0 (or only ondented) you could do
@@ -1146,9 +1181,9 @@ function toggleWord() {
     findWordEndY = cursorLineIndex
     findWordEndX = cursorColIndex
     findWordUpY = cursorLineIndex
-    findWordUpX = cursorColIndex - 1
-    findWordDownY = cursorLineIndex
-    findWordDownX = cursorColIndex + w.end
+    findWordUpX = lines[cursorLineIndex].length
+    findWordDownY = cursorLineIndex + 1
+    findWordDownX = 0
     
     if (w.word != "") {
       if (w.end == cursorColIndex) {
@@ -1157,7 +1192,6 @@ function toggleWord() {
         findWordX = w.start
         cursorColIndex = w.start
         findWordEndX = w.end
-        findWordUpX = cursorColIndex - 1
         updateCursorXY()
       }
     }
@@ -1166,28 +1200,47 @@ function toggleWord() {
  
   // for loop to simulate goto
   for (var s=0; s<1; s++) {
-    if (findWordCount == 0) {
+    if (findWordCount == 0 && !findWordPrefix) {
       replaceFindWord([""])
+      findWordSpecialLine = lines[findWordY]
       break
     }
-    if (findWordCount == 1) {
+    if (findWordCount == 1 && !findWordPrefix && copyBuffer.length) {
       replaceFindWord(copyBuffer)
       break
     }
-    // if (findWordCount % 2 == 0) {
+    if ((findWordCount%2 == 0) && !findWordUpDone) {
+      var w = findWordUp()
+      findWordFoundWord = w.word
+      if (w.word) {
+        if (findWordPrefix) w.word = w.word.substr(findWordPrefix.length)
+        replaceFindWord([w.word])
+        break 
+      }
+    }
+    if (!findWordDownDone) {
+      var w = findWordDown()
+      findWordFoundWord = w.word
+      if (w.word) {
+        if (findWordPrefix) w.word = w.word.substr(findWordPrefix.length)
+        replaceFindWord([w.word])
+        break
+      }
+    }
     if (!findWordUpDone) {
       var w = findWordUp()
       findWordFoundWord = w.word
       if (w.word) {
+        if (findWordPrefix) w.word = w.word.substr(findWordPrefix.length)
         replaceFindWord([w.word])
+        break
       }
-      break 
     }
     
-    break // todo remove this
-    var w = findWordDown()
-    replaceFindWord([w.word])
-    break 
+    if (findWordDownDone && findWordUpDone) {
+      //resetFindWord()
+    } 
+    
   }  
   
   findWordCount += 1
@@ -1208,5 +1261,7 @@ render()
 // that the selectMode is   line!
 // bug with log and missing data??!
 // add a threshold for move, like 5px or something.
+// todo: in select mode, swipe down is paste. even paste over
+// you can double tap not in a word and be in select mode of 0 size
 </script>
 
