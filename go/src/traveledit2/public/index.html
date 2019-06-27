@@ -1,5 +1,4 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
-
 <meta charset='utf-8'>
 <style>
 * { margin: 0; padding: 0; 
@@ -88,11 +87,11 @@ onblur=handleBlur()
   so it has to be at least as big as the biggest canvasHeight x canvasWith size.
   Also note that the css width needs to be 1/3 of
   the with attribute, and same for height.
-  <canvas id=c width=1125 height=1560
-  style="width: 375px; height:520px;
-  -->
   <canvas id=c width=600 height=1560
   style="width: 200px; height:520px;
+  -->
+  <canvas id=c width=1125 height=1560
+  style="width: 375px; height:520px;
   border: 0px solid lime;;
   "
   ontouchstart=onStart(event)
@@ -161,8 +160,8 @@ var marginLeft = 5
 
 // Note that the width and height need to match
 // the width and height of the canvas tag attribute.
-//var canvasWidth=1125
-var canvasWidth=600
+canvasWidth=1125
+//var canvasWidth=600
 // I turned off "Predictive" to get more vertical space
 var canvasHeightKeyboard=1000
 var canvasHeightFull=c.height
@@ -1074,6 +1073,10 @@ var findWordDownDone = false
 var findWordFoundWord = "" // for logging purposes
 var findWordSpecialLine = ""
 
+// TODO: I think it might be more readable of these functions
+// had a single loop instead of 2 loops.
+// It's a little strange because when they return early
+// we still want to remember the loop variables (which are globale
 function findWordUp() {
   var w = {start: -1, end: -1, word: ""}
   if (findWordUpDone) {
