@@ -183,7 +183,7 @@ var cursorType = "move"
 // * select
 
 var selectTimeout
-var selectTimeoutMillis = 1000
+var selectTimeoutMillis = 750
 var selectedRegions = []
 
 var moveListenerCount = 0
@@ -756,7 +756,7 @@ function render() {
   var xPos = (cursorColIndex - offsetX) * fontWidth
   t.fillStyle = "rgba(0, 128, 128, 0.5)"
   t.fillRect(0, yPos, canvasWidth, fontHeight)
-  t.fillStyle = cursorType == "move" ? "cyan" : "white"
+  t.fillStyle = cursorType == "move" ? "cyan" : "yellow"
   t.fillRect(xPos, yPos, 6, fontHeight)
 
   t.font = fontCSS
@@ -846,6 +846,10 @@ function onStart(e) {
   // this is global
   if (e.touches.length == 1) {
     selectAction = function() {
+      // return early in case we are already selecting
+      if (cursorType == "select") {
+        return
+      }
       log("select called and there are " + e.touches.length + " touches")
       selectedRegions = []
       cursorType = "select"
@@ -865,16 +869,15 @@ function onStart(e) {
         selectMode = "char"
       }
       selectedRegions.push(selectedRegion)
-      hasSelected = true
       render()
     }
   }
   var onMove = function(e) {
+    clearTimeout(selectTimeout)
     if (e.touches.length > 1) {
       return
     }
-    if (!hasSelected) {
-      clearTimeout(selectTimeout)
+    if (cursorType != "select") {
       selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
     }
     var diffTouchX = e.touches[0].pageX - startTouchX
@@ -943,6 +946,7 @@ function onStart(e) {
     return false
   }
   var onEnd = function(e) {
+    clearTimeout(selectTimeout)
     if (e.touches.length != 0) {
       return
     }
@@ -951,12 +955,10 @@ function onStart(e) {
     document.body.removeEventListener("touchend", onEnd)
     endListenerCount = max(endListenerCount-1, 0)
     log("end called and there are " + e.touches.length + " touches")
-    clearTimeout(selectTimeout)
     // it's not straightforward to do a setTimeout
     // here because iOS Safari doesn't like to focus
     // text elements when not responding to user action
     // maybe there are workarounds.
-    // TODO: hasSelected is about the same as cursorType == "move" 
     if (!moved && cursorType == "move") {
       if (cursorColIndex == -5) {
         // since we are in the margin, let's force it
@@ -973,7 +975,6 @@ function onStart(e) {
         insertLine()
         return
       }
-      
       
       if (document.activeElement == theText) {
         toggleWord()
@@ -1065,7 +1066,7 @@ function onStart(e) {
     document.body.addEventListener("touchend", onEndWhileSelected)
     endListenerCount += 1
   } else {
-    if (e.touches.length > 1 && !hasSelected) {
+    if (e.touches.length > 1 && cursorType != "select") {
       // this selectAction is the one from the first touch
       // select action will not get set on the second touch
       selectAction()
