@@ -138,8 +138,6 @@ window.onerror = function(message, url, lineNumber, columnNumber, error) {
 }
 </script>
 <script>
-var undoIndex = 0
-var maxUndos = 30
 </script>
 <script>
 var t = c.getContext("2d")
@@ -185,7 +183,7 @@ var cursorType = "move"
 // * select
 
 var selectTimeout
-var selectTimeoutMillis = 500
+var selectTimeoutMillis = 1000
 var selectedRegions = []
 
 var moveListenerCount = 0
@@ -202,35 +200,59 @@ function doEval() {
   alert(resp)
 }
 function log(v) {
-  logLines.push(v)
   var d = document.createElement("div")
   d.style.border = "1px solid blue"
   d.innerText = v
   logEl.appendChild(d)
 }
-function toggleLog() {
- logShown = !logShown
- if (logShown) {
-   lines = logLines
- } else {
-   lines = contentLines
- }
- render()
+
+function docChanged() {
+   if (logShown) return
+   version += 1
+   var maybeLastWord = getWordAtCursor().word
+   if (maybeLastWord != "") {
+     lastWord = maybeLastWord
+   }
+  if (undoIndex != undoStack.length - 1) {
+      undoStack.splice(undoIndex + 1, undoStack.length - undoStack +1)
+      undoYStack.splice(undoIndex + 1, undoYStack.length - undoYStack +1)
+      undoXStack.splice(undoIndex + 1, undoXStack.length - undoXStack +1)
+  }
+  undoIndex += 1
+  undoStack.push(lines.join("\n"))
+  undoYStack.push(cursorLineIndex)
+  undoXStack.push(cursorColIndex)
+  if (undoStack.length > maxUndos) {
+    undoStack.shift()
+    undoYStack.shift()
+    undoXStack.shift()
+    undoIndex -= 1
+  }
+}
+function repositionUndo() {
+  lines = undoStack[undoIndex].split("\n")
+  cursorColIndex = undoXStack[undoIndex]
+  cursorLineIndex = undoYStack[undoIndex]
+  if (cursorLineIndex < offsetY || cursorLineIndex > offsetY+maxLines) {
+    offsetY = max(0, cursorLineIndex - 5)  
+  }
+  if (cursorColIndex < offsetX || cursorColIndex > offsetX+maxCols) {
+    offsetX = max(0, curorColIndex - 5)  
+  }
+  updateCursorXY()
+  render()
 }
 
 function undo() {
   undoIndex = bind(undoIndex-1, 0, undoIndex)
-  lines = undoStack[undoIndex].split("\n")
-  render()
+  repositionUndo()
 }
 
 function redo() {
   undoIndex = bind(undoIndex+1, undoIndex, undoStack.length-1)
-  lines = undoStack[undoIndex].split("\n")
-  render()
+  repositionUndo()
 }
 function clearLog() {
-  logLines = []
   if (logShown) lines = logLines
   logEl.innerHTML = ""
   render()
@@ -410,23 +432,6 @@ function copy() {
   copyBuffer = [lines[cursorLineIndex]]
 }
 
-function docChanged() {
-   if (logShown) return
-   version += 1
-   var maybeLastWord = getWordAtCursor().word
-   if (maybeLastWord != "") {
-     lastWord = maybeLastWord
-   }
-  if (undoIndex != undoStack.length - 1) {
-      undoStack.splice(undoIndex + 1, undoStack.length - undoStack +1)
-  }
-  undoIndex += 1
-  undoStack.push(lines.join("\n"))
-  if (undoStack.length > maxUndos) {
-    undoStack.shift()
-    undoIndex -= 1
-  }
-}
 
 function setCanvasHeight(h) {
   canvasHeight = h
@@ -832,9 +837,6 @@ function max(a, b) {
   return a > b ? a : b
 }
 
-// TODO: keep tapping when in "insert mode" to toggle words
-// look for the closest word. go up, down, up down
-// but also make the first one delete the word.
 function onStart(e) {
   log("start touch called and there are " + e.touches.length + " touches")
   e.preventDefault()
@@ -873,7 +875,7 @@ function onStart(e) {
     }
     if (!hasSelected) {
       clearTimeout(selectTimeout)
-      //selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
+      selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
     }
     var diffTouchX = e.touches[0].pageX - startTouchX
     var diffTouchY = e.touches[0].pageY - startTouchY
@@ -1052,7 +1054,6 @@ function onStart(e) {
   var firstMove = true
   var moved = false
   var movedWithBuffer = false
-  var hasSelected = false
   var selectedRegion = {}
   
 
@@ -1064,13 +1065,13 @@ function onStart(e) {
     document.body.addEventListener("touchend", onEndWhileSelected)
     endListenerCount += 1
   } else {
-    if (e.touches.length > 1) {
+    if (e.touches.length > 1 && !hasSelected) {
       // this selectAction is the one from the first touch
       // select action will not get set on the second touch
       selectAction()
       return
     }
-    //selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
+    selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
     document.body.addEventListener("touchmove", onMove)
     moveListenerCount += 1
     document.body.addEventListener("touchend", onEnd)
@@ -1302,19 +1303,19 @@ function toggleWord() {
 }
 
 
+var undoYStack = [0]
+var undoXStack = [0]
+var undoIndex = 0
+var maxUndos = 30
 var lines = []
-var logLines = []
 var logShown = false
 // the actual lines will be put here by the server
 // LINES GO HERE
-var contentLines = lines
 var undoStack = [lines.join("\n")]
 render()
 // make sure when selecting in the margin
 // that the selectMode is   line!
-// bug with log and missing data??!
 // add a threshold for move, like 5px or something.
 // todo: in select mode, swipe down is paste. even paste over
-// you can double tap not in a word and be in select mode of 0 size
 </script>
 
