@@ -16,6 +16,7 @@ type SaveResponse struct {
 
 func main() {
 	port := flag.String("p", "8000", "port to listen on")
+	indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
 	flag.Parse()
 
 	mux := http.NewServeMux()
@@ -24,7 +25,7 @@ func main() {
 
     mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == "/" {
-            http.ServeFile(w, r, "./public/index.html")
+            http.ServeFile(w, r, *indexFile)
             return
         }
         if strings.Contains("..", r.URL.Path) {
@@ -68,6 +69,7 @@ func main() {
             } else {
                 s.Saved = true
             }
+            
             w.Header().Set("Content-Type", "application/json")
             json.NewEncoder(w).Encode(s)
         }
@@ -80,6 +82,14 @@ func main() {
 		WriteTimeout: 20 * time.Second,
 	}
 	log.Printf("listening on :" + *port)
-	log.Fatal(srv.ListenAndServe())
+	go log.Fatal(srv.ListenAndServe())
+
+
+  httpsServer := &http.Server{
+  		Addr:         ":443",
+  		ReadTimeout:  30 * time.Second,
+  		WriteTimeout: 30 * time.Second,
+  		Handler:      authenticate(gziphandler.GzipHandler(mux)),
+  	}
 
 }

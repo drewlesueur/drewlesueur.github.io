@@ -45,6 +45,7 @@ color: cyan;
 <form onsubmit=findDownForm(event)>
   <input type=search id=searchText
     style="font-size: 20px"
+    onfocus="this.setSelectionRange(0, this.value.length)"
   >
   <input type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
@@ -319,20 +320,30 @@ function dedent() {
 }
 
 function comment() {
-  addPrefix("//")
+  addPrefix("// ")
 }
 function unComment() {
-  stripPrefixes(["\t", " "])
+  stripPrefixes(["// ", "//"])
 }
 
 function addPrefix(prefix) {
  if (selectedRegions.length > 0) {
    var r = selectedRegions[0]
+   var firstIndent = ""
+   var line = lines[r.startY]
+   var firstNonSpace = 0
+   for (var i=0; i<line.length; i++) {
+     var chr = line.charAt(i)
+     if (chr != " " && chr != "\t") {
+       firstNonSpace = i
+       break
+     }
+   }
    for (var y=r.startY; y<=r.stopY; y++) {
-     lines[y] = prefix + lines[y]
+     lines[y] = lines[y].slice(0, firstNonSpace) + prefix + lines[y].slice(firstNonSpace)
    }
  } else {
-   lines[cursorLineIndex] = prefix + lines[cursorLineIndex]
+   lines[cursorLineIndex] = lines[cursorLineIndex].slice(0, firstNonSpace) + prefix + lines[cursorLineIndex].slice(firstNonSpace)
  }
  docChanged()
  render()
@@ -352,12 +363,24 @@ function stripPrefixes(prefixes) {
  render()
 }
 
+function isWhiteSpace(str) {
+  for (var i=0; i<str.length; i++) {
+    var chr = str.charAt(i)
+    if (chr != " " && chr != "\t") {
+      return false
+    }
+  }
+  return true
+}
 function stripPrefixesInner(line, prefixes) {
   for (var i=0; i<prefixes.length; i++) {
     var prefix = prefixes[i]
-    if (line.startsWith(prefix)) {
-      return line.slice(prefix.length)
-    } 
+    var prefixPos = line.indexOf(prefix)
+    if (prefixPos != -1) {
+      if (isWhiteSpace(line.slice(0, prefixPos))) {
+        line = line.slice(0, prefixPos) + line.slice(prefixPos + prefix.length)
+      }
+    }
   }
   return line 
 }
