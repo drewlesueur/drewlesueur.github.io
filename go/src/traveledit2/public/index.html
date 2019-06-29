@@ -688,6 +688,7 @@ function saveLine() {
   lines[cursorLineIndex] = theText.value
   cursorX = (cursorColIndex - offsetX) * fontWidth
   cursorY = (cursorLineIndex - offsetY) * fontHeight
+  initiateFindWord()
   docChanged()
 
   // you need to tell the render to not update the text area
@@ -978,6 +979,8 @@ function onStart(e) {
       
       if (document.activeElement == theText) {
         toggleWord()
+      } else {
+        initiateFindWord()
       }
       
       if (document.activeElement != theText) {
@@ -989,8 +992,8 @@ function onStart(e) {
         theText.setSelectionRange(cursorColIndex, cursorColIndex)
       }  
     }
-    if (movedWithBuffer) {
-      resetFindWord()
+    if (moved) {
+      initiateFindWord()
     }
      
     cursorType = "move"
@@ -1194,9 +1197,6 @@ function replaceFindWord(r) {
     lines[findWordY] = lines[findWordY].slice(0, findWordX) + 
       lines[findWordEndY].slice(findWordEndX)
     lines.splice(findWordY + 1, findWordEndY-findWordY)
-    // if (lines[r.startY] == "") {
-    //  lines.splice(r.startY, 1)
-    // }
   }
   
   findWordEndY = findWordY + r.length - 1
@@ -1219,40 +1219,43 @@ function replaceFindWord(r) {
     lines.splice(findWordY+1, 0, ...r.slice(1))
   }
   
+  cursorLineIndex = findWordEndY
+  cursorColIndex = findWordEndX
+  updateCursorXY()
   docChanged()
   render()
-  theText.setSelectionRange(findWordX, findWordX)
+  theText.setSelectionRange(findWordEndX, findWordEndX)
+}
+
+function initiateFindWord() {
+  log("initiate find word")
+  resetFindWord()
+  if (cursorLineIndex >= lines.length) {
+    return
+  }
+  var w = getWordAtCursor()
+  findWordY = cursorLineIndex
+  findWordX = cursorColIndex
+  findWordEndY = cursorLineIndex
+  findWordEndX = cursorColIndex
+  findWordUpY = cursorLineIndex
+  findWordUpX = lines[cursorLineIndex].length
+  findWordDownY = cursorLineIndex + 1
+  findWordDownX = 0
+  findWordSpecialLine = lines[findWordY]
+  
+  if (w.word != "") {
+    if (w.end == cursorColIndex) {
+      findWordPrefix = w.word 
+    } else {
+      findWordX = w.start
+      findWordEndX = w.end
+    }
+  }
+  log("starting findword: " + JSON.stringify(w))
 }
 
 function toggleWord() {
-  if (findWordY == cursorLineIndex && findWordX == cursorColIndex) {
-    log("continuing findword: ")
-  } else {
-    
-    resetFindWord()
-    var w = getWordAtCursor()
-    findWordY = cursorLineIndex
-    findWordX = cursorColIndex
-    findWordEndY = cursorLineIndex
-    findWordEndX = cursorColIndex
-    findWordUpY = cursorLineIndex
-    findWordUpX = lines[cursorLineIndex].length
-    findWordDownY = cursorLineIndex + 1
-    findWordDownX = 0
-    findWordSpecialLine = lines[findWordY]
-    
-    if (w.word != "") {
-      if (w.end == cursorColIndex) {
-        findWordPrefix = w.word 
-      } else {
-        findWordX = w.start
-        cursorColIndex = w.start
-        findWordEndX = w.end
-        updateCursorXY()
-      }
-    }
-    log("starting findword: " + JSON.stringify(w))
-  }
  
   // for loop to simulate goto
   for (var s=0; s<1; s++) {
