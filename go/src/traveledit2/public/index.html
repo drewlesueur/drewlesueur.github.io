@@ -158,7 +158,6 @@ var offsetX = 0
 var offsetY = 0
 // 4 chars for line number and 1 for space
 var marginLeft = 5
-
 // Note that the width and height need to match
 // the width and height of the canvas tag attribute.
 canvasWidth=1125
@@ -188,6 +187,10 @@ var cursorType = "move"
 var selectTimeout
 var selectTimeoutMillis = 500
 var selectedRegions = []
+
+var moveListenerCount = 0
+var endListenerCount = 0
+var startListenerCount = 0
 
 function importPaste() {
   copyBuffer = pasteEl.value.split("\n")
@@ -776,6 +779,9 @@ function render() {
   findWordUpDone: ${findWordUpDone}
   findWordDownDone: ${findWordDownDone}
   findWordFoundWord: ${JSON.stringify(findWordFoundWord)}
+  
+  moveListenerCount: ${moveListenerCount}
+  endListenerCount: ${endListenerCount}
     </pre>
   `
   for (var y=0; y <= maxLines; y++) {
@@ -819,11 +825,11 @@ function ensureSign(sign, v) {
 
 // todo: use min, max in some places where you ised bind
 function min(a, b) {
-  a < b ? a : b
+  return a < b ? a : b
 }
 
 function max(a, b) {
-  a > b ? b : a
+  return a > b ? a : b
 }
 
 // TODO: keep tapping when in "insert mode" to toggle words
@@ -939,7 +945,9 @@ function onStart(e) {
       return
     }
     document.body.removeEventListener("touchmove", onMove)
+    moveListenerCount = max(moveListenerCount-1, 0)
     document.body.removeEventListener("touchend", onEnd)
+    endListenerCount = max(endListenerCount-1, 0)
     log("end called and there are " + e.touches.length + " touches")
     clearTimeout(selectTimeout)
     // it's not straightforward to do a setTimeout
@@ -1021,13 +1029,16 @@ function onStart(e) {
     }
     // stop handling it once it's handled
     document.body.removeEventListener("touchmove", onMoveWhileSelected)
+    moveListenerCount = max(moveListenerCount-1, 0)
   }
   var onEndWhileSelected = function(e) {
     if (!moved && selectedRegions.length) {
        selectedRegions = []
     }
     document.body.removeEventListener("touchmove", onMoveWhileSelected)
+    moveListenerCount = max(moveListenerCount-1, 0)
     document.body.removeEventListener("touchend", onEndWhileSelected)
+    endListenerCount = max(endListenerCount-1, 0)
     render()
   }
 
@@ -1049,7 +1060,9 @@ function onStart(e) {
     // idea: if 2 touches while selected
     // do something else like comment
     document.body.addEventListener("touchmove", onMoveWhileSelected)
+    moveListenerCount += 1
     document.body.addEventListener("touchend", onEndWhileSelected)
+    endListenerCount += 1
   } else {
     if (e.touches.length > 1) {
       // this selectAction is the one from the first touch
@@ -1059,7 +1072,9 @@ function onStart(e) {
     }
     //selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
     document.body.addEventListener("touchmove", onMove)
+    moveListenerCount += 1
     document.body.addEventListener("touchend", onEnd)
+    endListenerCount += 1
   }  
   render()
 }

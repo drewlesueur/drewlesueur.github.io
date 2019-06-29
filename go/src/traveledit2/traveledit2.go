@@ -85,11 +85,11 @@ func main() {
 	go log.Fatal(srv.ListenAndServe())
 
 
-  httpsServer := &http.Server{
-  		Addr:         ":443",
-  		ReadTimeout:  30 * time.Second,
-  		WriteTimeout: 30 * time.Second,
-  		Handler:      authenticate(gziphandler.GzipHandler(mux)),
-  	}
+ httpsServer := &http.Server{
+ 		Addr:         ":443",
+ 		ReadTimeout:  30 * time.Second,
+ 		WriteTimeout: 30 * time.Second,
+ 		Handler:      authenticate(gziphandler.GzipHandler(mux)),
+ 	}
 
 }
