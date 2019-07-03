@@ -65,7 +65,7 @@ func main() {
 				http.Error(w, "error reading index file", http.StatusInternalServerError)
 				return
 			}
-			c, err := ioutil.ReadFile(location + "/" + r.URL.Path[1:])
+			c, err := ioutil.ReadFile(*location + "/" + r.URL.Path[1:])
 			if err != nil {
 				http.Error(w, "error reading requested file", http.StatusInternalServerError)
 				return
@@ -90,7 +90,7 @@ func main() {
 				return
 			}
 			s := SaveResponse{}
-			err := ioutil.WriteFile(location + "/" + r.URL.Path[1:], []byte(content), 0644)
+			err := ioutil.WriteFile(*location + "/" + r.URL.Path[1:], []byte(content), 0644)
 			if err != nil {
 				s.Error = err.Error()
 			} else {
