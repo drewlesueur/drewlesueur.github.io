@@ -40,6 +40,7 @@ func BasicAuth(handler http.Handler) http.HandlerFunc {
 func main() {
 	port := flag.String("p", "8000", "port to listen on")
 	indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
+	location := flag.String("location", ".", "path to directory to serve")
 
 	certFile := os.Getenv("CERTFILE")
 	keyFile := os.Getenv("KEYFILE")
@@ -64,7 +65,7 @@ func main() {
 				http.Error(w, "error reading index file", http.StatusInternalServerError)
 				return
 			}
-			c, err := ioutil.ReadFile(r.URL.Path[1:])
+			c, err := ioutil.ReadFile(location + "/" + r.URL.Path[1:])
 			if err != nil {
 				http.Error(w, "error reading requested file", http.StatusInternalServerError)
 				return
@@ -89,7 +90,7 @@ func main() {
 				return
 			}
 			s := SaveResponse{}
-			err := ioutil.WriteFile(r.URL.Path[1:], []byte(content), 0644)
+			err := ioutil.WriteFile(location + "/" + r.URL.Path[1:], []byte(content), 0644)
 			if err != nil {
 				s.Error = err.Error()
 			} else {
