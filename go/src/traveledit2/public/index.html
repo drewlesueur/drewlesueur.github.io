@@ -1,4 +1,6 @@
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
+<!doctype html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
 <meta charset='utf-8'>
 <style>
 * { margin: 0; padding: 0; 
@@ -34,6 +36,8 @@ body { background-color: black; }
 
 }
 </style>
+</head>
+<body>
 <div id=topPadding style="height: 0px;"></div>
 <!-- status bar -->
 <div id=s style="font-size: 12px;
@@ -56,7 +60,7 @@ style="font: 8px Courier;
 width: 375px;
 /* display: none; see what it looks like without */
 height:1px; overflow: hidden;
-"
+display: block;"
 onfocus=handleFocusBefore()
 onblur=handleBlur()
 >
@@ -64,6 +68,7 @@ onblur=handleBlur()
 style="font: 16px Courier;
 width: 375px; height:30px;
 --position:absolute; top: 100px;
+display: block;
 "
 onfocus=handleFocusIn()
 onblur=handleBlur()
@@ -75,6 +80,7 @@ style="font: 8px Courier;
 width: 375px;
 /* display: none; see what it looks like without */
 height:1px; overflow: hidden;
+display: block;
 "
 onfocus=handleFocusAfter()
 onblur=handleBlur()
@@ -120,18 +126,20 @@ onblur=handleBlur()
   <div onclick=undo()>undo</div>
   <div onclick=redo()>redo</div>
 </div>
-<div class=toolbar>
-</div>
-
+<div id=docTitleEl></div>
 <div>
 <textarea id=pasteEl 
 style="width:100%; height:100px;"
-oninput=importPaste()></textarea>
+oninput=importPaste()
+ placeholder="when you add text here it will be copied"
+></textarea>
 
 <textarea id=copyEl
 contenteditable
 onfocus="this.setSelectionRange(0, this.value.length)" 
-style="width:100%; height:100px;"></textarea>
+style="width:100%; height:100px;"
+ placeholder="when you copy something, it will show up here"
+></textarea>
 
 <div id=bottomPadding style="height: 0px;"></div>
 </div>
@@ -142,8 +150,6 @@ style="width:100%; height:100px;"></textarea>
 window.onerror = function(message, url, lineNumber, columnNumber, error) {
     alert(lineNumber + ": " + message)
 }
-</script>
-<script>
 </script>
 <script>
 var t = c.getContext("2d")
@@ -196,6 +202,8 @@ var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
 
+
+docTitleEl.innerText = location.href
 function importPaste() {
   copyBuffer = pasteEl.value.split("\n")
   selectMode = "line"
