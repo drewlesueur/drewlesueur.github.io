@@ -126,8 +126,14 @@ onblur=handleBlur()
   <div onclick=undo()>undo</div>
   <div onclick=redo()>redo</div>
 </div>
-<div id=docTitleEl></div>
-<div>
+
+<form method=GET action="" target=_blank>
+  <input id=docTitleEl
+    style="width: 300px;"
+    oninput="this.form.action=this.value"></div>
+  <input type=submit value=Open>
+</form>
+
 <textarea id=pasteEl 
 style="width:100%; height:100px;"
 oninput=importPaste()
@@ -203,7 +209,7 @@ var endListenerCount = 0
 var startListenerCount = 0
 
 
-docTitleEl.innerText = location.href
+docTitleEl.value = location.pathname
 function importPaste() {
   copyBuffer = pasteEl.value.split("\n")
   selectMode = "line"
@@ -596,7 +602,7 @@ function getIndent(line) {
 function insertLine(closeCurly) {
   theLine = lines[cursorLineIndex]
   var theIndent = getIndent(theLine)
-  if (closeCurly && theLine.endsWith("{")) {
+  if (closeCurly && theLine.endsWith("{") && cursorColIndex == theLine.length) {
     lines.splice(cursorLineIndex + 1, 0, theIndent + "}")
     theIndent += "  "
   }

@@ -45,6 +45,8 @@ func main() {
 	certFile := os.Getenv("CERTFILE")
 	keyFile := os.Getenv("KEYFILE")
 	flag.Parse()
+    log.Printf("certFile: %s", certFile)
+    log.Printf("keyfile: %s", keyFile)
 
 	mux := http.NewServeMux()
 	// fs := http.FileServer(http.Dir("./public"))
@@ -113,7 +115,7 @@ func main() {
 		WriteTimeout: 20 * time.Second,
 	}
 	httpsServer := &http.Server{
-		Addr:         ":443",
+		Addr:         ":" + *port,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		Handler:      mainMux,
@@ -124,7 +126,6 @@ func main() {
 		return
 	}
 
-	go log.Fatal(httpServer.ListenAndServe())
 	log.Fatal(httpsServer.ListenAndServeTLS(certFile, keyFile))
 	return
 
