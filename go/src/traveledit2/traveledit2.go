@@ -62,14 +62,20 @@ func main() {
 			return
 		}
 		if r.Method == "GET" {
-			b, err := ioutil.ReadFile("./public/index.html")
-			if err != nil {
-				http.Error(w, "error reading index file", http.StatusInternalServerError)
-				return
-			}
 			c, err := ioutil.ReadFile(*location + "/" + r.URL.Path[1:])
 			if err != nil {
 				http.Error(w, "error reading requested file", http.StatusInternalServerError)
+				return
+			}
+			
+			if r.FormValue("raw") == "1" {
+			  w.Write(c)
+			  return
+			}
+			
+			b, err := ioutil.ReadFile("./public/index.html")
+			if err != nil {
+				http.Error(w, "error reading index file", http.StatusInternalServerError)
 				return
 			}
 			htmlString := string(b)

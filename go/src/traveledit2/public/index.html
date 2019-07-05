@@ -33,7 +33,18 @@ body { background-color: black; }
   align-items: center;
   justify-content: center;
   text-align: center;
+}
 
+input[type="text"] {
+  font-size: 16px;
+}
+
+#searchText::placeholder {
+  color: lime;
+}
+
+#searchText {
+  border: none;
 }
 </style>
 </head>
@@ -47,8 +58,8 @@ z-index: 999;
 color: cyan;
 "></div>
 <form onsubmit=findDownForm(event)>
-  <input type=search id=searchText
-    style="font-size: 16px"
+  <input type=text id=searchText
+    style="font-size: 16px; width: 300px"
     onfocus="this.setSelectionRange(0, this.value.length)"
   >
   <input type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
@@ -109,8 +120,12 @@ onblur=handleBlur()
   -webkit-overflow-scrolling: touch;
   font-size:10px;"
   ></div>
+<!--</td><td valign=top>
+  <iframe src="http://duckduckgo.com"
+    style="width: 375px; height: 520px;"
+  ></iframe>-->
 </td><td valign=top>
-  <div id=logEl style="height: 200px; width:175;
+  <div id=logEl style="height: 200px; width:240px;
   overflow:scroll;
   -webkit-overflow-scrolling: touch;
   font-size:10px;"
@@ -120,18 +135,27 @@ onblur=handleBlur()
   <div onclick=findDown()>find down</div>
   <div onclick=clearSearch()>clear search</div>
   <div onclick=doEval()>eval</div>
+  <div onclick=cmd()>cmd</div>
+  <div onclick=addFile()>add file</div>
   <div onclick=comment()>//</div>
   <div onclick=unComment()>un //</div>
   <div onclick=clearLog()>clear log</div>
   <div onclick=undo()>undo</div>
   <div onclick=redo()>redo</div>
+  <div onclick=closeFile()>close</div>
+</div>
+<div class=toolbar id=fileRow onclick=selectFileRow(event)>
 </div>
 
+<form onsubmit="addFile(this.fullPath.value); return false;">
+  <input type=text style="width: 275px;" name=fullPath></div>
+  <input type=submit value="Add Pane">
+</form>
 <form method=GET action="" target=_blank>
-  <input id=docTitleEl
-    style="width: 300px;"
+  <input type=text id=docTitleEl
+    style="width: 275px;"
     oninput="this.form.action=this.value"></div>
-  <input type=submit value=Open>
+  <input type=submit value="Add Tab">
 </form>
 
 <textarea id=pasteEl 
@@ -210,19 +234,60 @@ var startListenerCount = 0
 
 
 docTitleEl.value = location.pathname
+searchText.setAttribute("placeholder", location.pathname + " (search)")
 function importPaste() {
   copyBuffer = pasteEl.value.split("\n")
   selectMode = "line"
 }
+
+function closeFile() {
+  for (var i=0; i<files.length; i++) {
+    var file = files[i]
+    if (file == currentFile) {
+      files.splice(i, 1)
+      break
+    }  
+  }
+  setCurrentFile(files[i-1] || files[i])
+  render()
+  renderFileDropdown()
+}
+
+function addFile(fullPath) {
+  if (!fullPath) {
+    fullPath = prompt("full path", location.pathname)
+  }
+  if (fullPath == "") {
+    return
+  }
+  if (fullPath.charAt(0) != "/") {
+    fullPath = "/" + fullPath
+  }
+  // TODO: special case if the file is already in the list of open files.
+  // then let it have a reference to the existing lines, like vim does.
+  fetch((fullPath) + "?raw=1", {
+    cache: "no-cache"
+  }).then(r => r.text()).then(b => {
+     var file = makeFile(fullPath, b)
+     addFileToList(file)
+     setCurrentFile(file)  
+  }).catch(e => alert("Error loading file " + e))
+}
+
 function doEval() {
   var code = prompt("code")
   var resp =  eval(code)
   alert(resp)
 }
 function log(v) {
-  var d = document.createElement("div")
+  var d = document.createElement("pre")
+  d.style.display = "block"
   d.style.border = "1px solid blue"
-  d.innerText = v
+  if (typeof v == "object") {
+    d.innerText = JSON.stringify(v, "", "    ")
+  } else {
+    d.innerText = v
+  }
   logEl.appendChild(d)
 }
 
@@ -1341,16 +1406,94 @@ function toggleWord() {
 }
 
 
-var undoYStack = [0]
-var undoXStack = [0]
-var undoIndex = 0
-var maxUndos = 30
-var lines = []
+function selectFileRow(e) {
+  var index = e.target.getAttribute("data-index")
+  var file = files[index]
+  setCurrentFile(file)
+}
+function makeFile(fullPath, contents) {
+  var theLines = contents.split("\n")
+  return {
+    fullPath: fullPath,
+    undoStack: [contents],
+    undoXStack: [0],
+    undoYStack: [0],
+    lines: theLines,
+    cursorLineIndex: 0,
+    cursorColIndex: 0,
+    offsetY: 0,
+    offsetX: 0,
+  }
+}
+function addFileToList(file) {
+  files.push(file)
+  renderFileDropdown()
+}
+
+function renderFileDropdown() {
+   fileRow.innerHTML = ""
+   for (var fileI=0; fileI<files.length; fileI++) {
+     var file = files[fileI]
+     var button = document.createElement("div")
+     button.setAttribute("data-index", fileI)
+     button.innerText = file.fullPath.slice(1)
+     if (currentFile == file) {
+       button.style.backgroundColor = "black"
+     }
+     fileRow.appendChild(button)
+   }
+   
+}
+
+function setCurrentFile(file) {
+  // Note: it might be nice to have a single global
+  // "currentFile" variable, instead of a handful of globals
+  // that have to be saved/restored
+  
+  // currentFile will only be null the very first time.
+  if (currentFile) { 
+    currentFile.undoStack = undoStack
+    currentFile.undoXStack = undoXStack
+    currentFile.undoYStack = undoYStack
+    currentFile.lines = lines
+    currentFile.cursorLineIndex = cursorLineIndex
+    currentFile.cursorColIndex = cursorColIndex
+    currentFile.offsetY = offsetY
+    currentFile.offsetX = offsetX
+  }
+  
+  undoStack = file.undoStack
+  undoXStack = file.undoXStack
+  undoYStack = file.undoYStack
+  lines = file.lines
+  cursorLineIndex = file.cursorLineIndex
+  cursorColIndex = file.cursorColIndex
+  offsetY = file.offsetY
+  offsetX = file.offsetX
+  currentFile = file
+  render()
+  renderFileDropdown()
+}
+
 var logShown = false
+var maxUndos = 30
+
+var currentFile
+var undoStack
+var undoXStack
+var undoYStack
+
+var files = []
+
+var lines = []
 // the actual lines will be put here by the server
 // LINES GO HERE
-var undoStack = [lines.join("\n")]
-render()
+// ay, joining just to split again. Clean up.
+var file = makeFile(location.pathname, lines.join("\n"))
+addFileToList(file)
+setCurrentFile(file)
+
+
 // make sure when selecting in the margin
 // that the selectMode is   line!
 // add a threshold for move, like 5px or something.
