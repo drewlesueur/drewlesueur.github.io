@@ -135,7 +135,7 @@ onblur=handleBlur()
   <div onclick=findDown()>find down</div>
   <div onclick=clearSearch()>clear search</div>
   <div onclick=doEval()>eval</div>
-  <div onclick=cmd()>cmd</div>
+  <div onclick=addCmdTab()>cmd</div>
   <div onclick=comment()>//</div>
   <div onclick=unComment()>un //</div>
   <div onclick=clearLog()>clear log</div>
@@ -230,6 +230,7 @@ var selectedRegions = []
 var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
+var bashMode = false
 
 
 docTitleEl.value = location.pathname
@@ -252,6 +253,12 @@ function closeFile() {
   renderFileDropdown()
 }
 
+function addCmdTab() {
+ var file = makeFile("cmd", "")
+ file.bashMode = true
+ addFileToList(file)
+ setCurrentFile(file)  
+}
 function addFile(fullPath) {
   if (!fullPath) {
     fullPath = prompt("full path", location.pathname)
@@ -291,7 +298,6 @@ function log(v) {
 }
 
 function docChanged() {
-   if (logShown) return
    version += 1
    var maybeLastWord = getWordAtCursor().word
    if (maybeLastWord != "") {
@@ -337,7 +343,6 @@ function redo() {
   repositionUndo()
 }
 function clearLog() {
-  if (logShown) lines = logLines
   logEl.innerHTML = ""
   render()
 }
@@ -676,14 +681,31 @@ function insertLine(closeCurly) {
   cursorColIndex = theIndent.length
   updateCursorXY()
   docChanged()
+  
   render()
 }
 function newLine(e) {
   e.preventDefault()
   insertLine(true)
+  
+  if (bashMode) {
+    runBashCommand(theLine)
+    return false 
+  }
   theText.focus()
   theText.setSelectionRange(cursorColIndex, cursorColIndex)
   return false
+}
+
+function runBashCommand(line) {
+  fetch("/mybash?cmd=" + encodeURIComponent(line), {
+    cache: "no-cache"
+  }).then(r => r.text()).then(r => {
+    var copyBuffer = r.split("\n")
+    copyBuffer.push("\n")
+    paste()
+  })
+  
 }
 
 function handleFocusAfter() {
@@ -734,8 +756,8 @@ function save() {
     // using a single for loop to
     // simulate a goto
     // breaks will make sure the 'cleanup' step gets called
-    for (var s=0; s<1; s++) { 
-      if (logShown) break
+    for (var s=0; s<1; s++) {
+      if (bashMode) break 
       if (savedVersion == version) {
         break
       }
@@ -1423,6 +1445,7 @@ function makeFile(fullPath, contents) {
     cursorColIndex: 0,
     offsetY: 0,
     offsetX: 0,
+    bashMode: false,
   }
 }
 function addFileToList(file) {
@@ -1461,6 +1484,7 @@ function setCurrentFile(file) {
     currentFile.cursorColIndex = cursorColIndex
     currentFile.offsetY = offsetY
     currentFile.offsetX = offsetX
+    currentFile.bashMode = bashMode
   }
   
   undoStack = file.undoStack
@@ -1472,12 +1496,12 @@ function setCurrentFile(file) {
   cursorColIndex = file.cursorColIndex
   offsetY = file.offsetY
   offsetX = file.offsetX
+  bashMode = file.bashMode
   currentFile = file
   render()
   renderFileDropdown()
 }
 
-var logShown = false
 var maxUndos = 30
 
 var currentFile
