@@ -41,7 +41,7 @@ func BasicAuth(handler http.Handler) http.HandlerFunc {
 func main() {
 	port := flag.String("p", "8000", "port to listen on")
 	indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
-	location := flag.String("location", ".", "path to directory to serve")
+	location := flag.String("location", "", "path to directory to serve")
 
 	certFile := os.Getenv("CERTFILE")
 	keyFile := os.Getenv("KEYFILE")
@@ -49,6 +49,15 @@ func main() {
     log.Printf("certFile: %s", certFile)
     log.Printf("keyfile: %s", keyFile)
 
+ if (*location == "") {
+	  cmd := exec.Command("bash", "-c", "pwd")
+	  ret, err := cmd.Output()
+	  if err != nil {
+	    log.Fatal("could not get cwd")
+	  }
+   *location = strings.TrimSpace(string(ret))
+ }
+ log.Printf("location: %s", *location)
 	mux := http.NewServeMux()
 	// fs := http.FileServer(http.Dir("./public"))
 	//mux.Handle("/", http.StripPrefix("/", fs))
@@ -62,6 +71,9 @@ func main() {
   })
 	mux.HandleFunc("/mybash", func(w http.ResponseWriter, r *http.Request) {
 	  cmdString := r.FormValue("cmd")
+	  if cmdString == "" {
+	    cmdString = ":"
+	  }
 	  cwd := r.FormValue("cwd") // current working directory
 	  
    // add the cwd so the client can remember it
@@ -113,6 +125,9 @@ func main() {
 			contentLinesJSON, err := json.MarshalIndent(contentLines, "", " ")
 			contentLinesJSONString := string(contentLinesJSON)
 			htmlString = strings.Replace(htmlString, "// LINES GO HERE", "var lines = "+contentLinesJSONString, 1)
+			
+			// TODO: when bash mode is disabled, don't do this part.
+			htmlString = strings.Replace(htmlString, "// ROOTLOCATION GOES HERE", "var rootLocation = \""+*location + "\"", 1)
 			if r.FormValue("src") != "1" {
 				w.Header().Set("Content-Type", "text/html")
 			}

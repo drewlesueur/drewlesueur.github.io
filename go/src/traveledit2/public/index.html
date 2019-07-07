@@ -754,7 +754,7 @@ function runBashCommand(line) {
     cursorLineIndex += 1
     cursorColIndex = 0
     scrollToBottom()
-    addFile(fileToLoad, true)
+    addFile(trimPrefix(bashCWD, rootLocation) + "/" + fileToLoad, true)
     return  
   }
   
@@ -764,6 +764,7 @@ function runBashCommand(line) {
     return r.text()
   }).then(r => {
     copyBuffer = r.split("\n")
+    copyBuffer.unshift("") // leading newline
     cursorLineIndex += copyBuffer.length
     cursorColIndex = 0
     updateCursorXY()
@@ -781,6 +782,13 @@ function runBashCommand(line) {
     alert("There was an error running the command: " + e)
   })
   
+}
+
+function trimPrefix(str, prefix) {
+  if (str.startsWith(prefix)) {
+    return str.slice(prefix.length)
+  }
+  return str
 }
 
 function handleFocusAfter() {
@@ -1605,6 +1613,9 @@ var lines = []
 // LINES GO HERE
 // ay, joining just to split again. Clean up.
 
+var rootLocation = "" // will be set server side
+// ROOTLOCATION GOES HERE
+var bashCWD = rootLocation
 var paths = location.pathname.split(",")
 
 // The first one get's "hydrated" by the server
