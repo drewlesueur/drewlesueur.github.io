@@ -308,7 +308,9 @@ function addFile(fullPath, changeURL) {
 }
 
 function renderURL() {
- var theNewPath = "/" + files.map(f => f.fullPath.slice(1)).join(",")
+ // For now we don't get files with bash mode.
+ var filtered = files.filter(f => !f.bashMode)
+ var theNewPath = "/" + filtered.map(f => f.fullPath.slice(1)).join(",")
  history.replaceState({}, "", theNewPath) 
 }
 
