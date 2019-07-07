@@ -93,28 +93,29 @@ func main() {
 	  w.Write(ret)
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			http.ServeFile(w, r, *indexFile)
-			return
-		}
 		if strings.Contains("..", r.URL.Path) {
 			http.Error(w, "the path has a .. in it", http.StatusBadRequest)
 			return
 		}
 		if r.Method == "GET" {
-			parts := strings.Split(r.URL.Path, ",")
-			c, err := ioutil.ReadFile(*location + "/" + parts[0][1:])
-			if err != nil {
-				http.Error(w, "error reading r equested file", http.StatusInternalServerError)
-				return
+			var c []byte
+			if r.URL.Path == "/" {
+			  c = []byte{}
+			} else {
+			  parts := strings.Split(r.URL.Path, ",")
+			  c2, err := ioutil.ReadFile(*location + "/" + parts[0][1:])
+			  if err != nil {
+			  	http.Error(w, "error reading r equested file", http.StatusInternalServerError)
+			  	return
+			  }
+			  c = c2
 			}
-			
 			if r.FormValue("raw") == "1" {
 			  w.Write(c)
 			  return
 			}
 			
-			b, err := ioutil.ReadFile("./public/index.html")
+			b, err := ioutil.ReadFile(*indexFile)
 			if err != nil {
 				http.Error(w, "error reading index file", http.StatusInternalServerError)
 				return
@@ -124,13 +125,15 @@ func main() {
 			contentLines := strings.Split(contentString, "\n")
 			contentLinesJSON, err := json.MarshalIndent(contentLines, "", " ")
 			contentLinesJSONString := string(contentLinesJSON)
+			htmlString = strings.Replace(htmlString, "// ROOTLOCATION GOES HERE", "var rootLocation = \""+*location + "\"", 1)
 			htmlString = strings.Replace(htmlString, "// LINES GO HERE", "var lines = "+contentLinesJSONString, 1)
 			
 			// TODO: when bash mode is disabled, don't do this part.
-			htmlString = strings.Replace(htmlString, "// ROOTLOCATION GOES HERE", "var rootLocation = \""+*location + "\"", 1)
+			log.Printf("yea I set rootLocation to be: %s", *location)
 			if r.FormValue("src") != "1" {
 				w.Header().Set("Content-Type", "text/html")
 			}
+            ioutil.WriteFile("tmp", []byte(htmlString), 0777)
 			fmt.Fprintf(w, "%s", htmlString)
 		} else if r.Method == "POST" {
 			content := r.FormValue("content")
