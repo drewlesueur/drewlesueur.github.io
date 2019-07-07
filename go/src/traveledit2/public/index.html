@@ -730,7 +730,12 @@ function newLine(e) {
   theText.setSelectionRange(cursorColIndex, cursorColIndex)
   return false
 }
-
+function scrollToBottom() {
+  if (cursorLineIndex > offsetY + maxLines) {
+    offsetY = cursorLineIndex - maxLines + 1  
+    render()
+  }
+}
 function runBashCommand(line) {
   if (line == "clear") {
     lines = []
@@ -742,6 +747,16 @@ function runBashCommand(line) {
     return
   }
   
+  if (line.startsWith("open ")) {
+    var fileToLoad = line.split(" ")[1]
+    copyBuffer = [""]
+    paste()
+    cursorLineIndex += 1
+    cursorColIndex = 0
+    scrollToBottom()
+    addFile(fileToLoad, true)
+    return  
+  }
   
   fetch("/mybash?cwd="+encodeURIComponent(bashCWD)+"&cmd="+encodeURIComponent(line), {
     cache: "no-cache"
@@ -760,9 +775,7 @@ function runBashCommand(line) {
       oY: ${offsetY}
       maxLines: ${maxLines}
     `) 
-    if (cursorLineIndex > offsetY + maxLines) {
-      offsetY = cursorLineIndex - maxLines + 1  
-    }
+    scrollToBottom()
     paste()
   }).catch(e => {
     alert("There was an error running the command: " + e)
