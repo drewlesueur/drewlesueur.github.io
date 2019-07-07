@@ -61,12 +61,23 @@ func main() {
     http.ServeFile(w, r, "./public/yo.html")  
   })
 	mux.HandleFunc("/mybash", func(w http.ResponseWriter, r *http.Request) {
-	  cmd := exec.Command("bash", "-c", r.FormValue("cmd"))
+	  cmdString := r.FormValue("cmd")
+	  cwd := r.FormValue("cwd") // current working directory
+	  
+   // add the cwd so the client can remember it
+	  cmdString = "cd "+cwd+";\n"+cmdString+ ";\necho ''; pwd" 
+	  
+	  log.Printf("the command we want is: %s", cmdString)
+	  cmd := exec.Command("bash", "-c", cmdString)
 	  ret, err := cmd.CombinedOutput()
 	  if err != nil {
+	    log.Printf("there was and error running command: %s", cmdString)
 	    http.Error(w, err.Error(), http.StatusInternalServerError)
 	    return
 	  }
+	  //lines := strings.Split(string(r), "\n")
+	  
+	  log.Printf("the combined output of the command is: %s", string(ret))
 	  w.Write(ret)
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

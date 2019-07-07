@@ -1,4 +1,5 @@
 <!doctype html>
+<!doctype html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
 <meta charset='utf-8'>
@@ -8,7 +9,6 @@
 }
 body { background-color: black; }
 .text { border: none; color: cyan;
-/*border: 1px solid lime;*/
 }
 .toolbar {
   display: flex;
@@ -37,10 +37,7 @@ body { background-color: black; }
 
 input[type="text"] {
   font-size: 16px;
-}
-
-#searchText::placeholder {
-  color: lime;
+  --border: 1px solid cyan;
 }
 
 #searchText {
@@ -53,20 +50,23 @@ input[type="text"] {
 <!-- status bar -->
 <div id=s style="font-size: 12px;
 position: absolute;
-bottom: 80px; right:0;
+top: 0px; right:0;
 z-index: 999;
 color: cyan;
 "></div>
+
 <form onsubmit=findDownForm(event)>
   <input type=text id=searchText
     style="font-size: 16px; width: 300px"
-    onfocus="this.setSelectionRange(0, this.value.length)"
+      onfocus="focusSearchText()"
+      onblur="blurSearchText()"
   >
   <input type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
+
 <form onsubmit=newLine(event)>
 
-<input id=theTextBefore class=text
+<input id=theTextBefore class=text type=text
 style="font: 8px Courier;
 width: 375px;
 /* display: none; see what it looks like without */
@@ -75,9 +75,9 @@ display: block;"
 onfocus=handleFocusBefore()
 onblur=handleBlur()
 >
-<input id=theText class=text
+<input id=theText class=text type=text
 style="font: 16px Courier;
-width: 375px; height:30px;
+width: 375px;
 --position:absolute; top: 100px;
 display: block;
 "
@@ -86,7 +86,7 @@ onblur=handleBlur()
 oninput=saveLine()
 onkeydown=handleKeydown(event)
 >
-<input id=theTextAfter class=text
+<input id=theTextAfter class=text type=text
 style="font: 8px Courier;
 width: 375px;
 /* display: none; see what it looks like without */
@@ -131,9 +131,12 @@ onblur=handleBlur()
   font-size:10px;"
   ></div>
 </td></tr></table> 
+
+
 <div class=toolbar>
   <div onclick=findDown()>find down</div>
   <div onclick=clearSearch()>clear search</div>
+  <div onclick=editSearch()>edit search</div>
   <div onclick=doEval()>eval</div>
   <div onclick=addCmdTab()>cmd</div>
   <div onclick=comment()>//</div>
@@ -202,10 +205,11 @@ var marginLeft = 5
 canvasWidth=1125
 //var canvasWidth=600
 // I turned off "Predictive" to get more vertical space
-var canvasHeightKeyboard=1000
+var canvasHeightKeyboard=930
 var canvasHeightFull=c.height
+//var canvasHeightFull=1000
 var maxLines = 0
-var maxCols = Math.ceil(canvasWidth / fontWidth)
+var maxCols = Math.floor(canvasWidth / fontWidth)
 var canvasHeight = 0
 setCanvasHeight(canvasHeightFull)
 var pointWidth=325
@@ -231,6 +235,7 @@ var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
 var bashMode = false
+var bashCWD = "."
 
 
 docTitleEl.value = location.pathname
@@ -238,6 +243,22 @@ searchText.setAttribute("placeholder", location.pathname + " (search)")
 function importPaste() {
   copyBuffer = pasteEl.value.split("\n")
   selectMode = "line"
+}
+
+function editSearch() {
+  searchText.focus()
+}
+function focusSearchText() {
+  searchText.style.position = "absolute"
+  searchText.style.top = "0px"
+  searchText.style.left = "0px"
+  window.scrollTo(0, 0)
+  searchText.setSelectionRange(0, searchText.value.length)
+}
+function blurSearchText() {
+  searchText.style.position = ""
+  searchText.style.top = ""
+  searchText.style.left = ""
 }
 
 function closeFile() {
@@ -255,8 +276,10 @@ function closeFile() {
 }
 
 function addCmdTab() {
- var file = makeFile("cmd", "")
+ var file = makeFile("/cmd", "")
  file.bashMode = true
+ // It adopts the last bashCWD
+ file.bashCWD = bashCWD
  addFileToList(file, false)
  setCurrentFile(file)  
 }
@@ -547,13 +570,13 @@ function copy() {
 
 function setCanvasHeight(h) {
   canvasHeight = h
-  maxLines = Math.ceil(canvasHeight / fontHeight)
+  //maxLines = Math.ceil(canvasHeight / fontHeight)
+  maxLines = Math.floor(canvasHeight / fontHeight)
 }
 
 function paste() {
   if (selectMode == "line") {
     lines.splice(cursorLineIndex + 1, 0, ...copyBuffer)
-    cursorLineIndex += 1
   } else if (selectMode == "char") {
     if (copyBuffer.length == 1) {
       lines[cursorLineIndex] = lines[cursorLineIndex].slice(0, cursorColIndex) +
@@ -678,7 +701,7 @@ function getIndent(line) {
   return theIndent  
 }
 function insertLine(closeCurly) {
-  theLine = lines[cursorLineIndex]
+  var theLine = lines[cursorLineIndex]
   var theIndent = getIndent(theLine)
   if (closeCurly && theLine.endsWith("{") && cursorColIndex == theLine.length) {
     lines.splice(cursorLineIndex + 1, 0, theIndent + "}")
@@ -694,25 +717,51 @@ function insertLine(closeCurly) {
   render()
 }
 function newLine(e) {
+  var theLine = lines[cursorLineIndex]
   e.preventDefault()
-  insertLine(true)
-  
   if (bashMode) {
     runBashCommand(theLine)
     return false 
   }
+  insertLine(true)
   theText.focus()
   theText.setSelectionRange(cursorColIndex, cursorColIndex)
   return false
 }
 
 function runBashCommand(line) {
-  fetch("/mybash?cmd=" + encodeURIComponent(line), {
+  if (line == "clear") {
+    lines = []
+    cursorLineIndex = 0
+    cursorColIndex = 0
+    updateCursorXY()
+    offsetY = 0
+    render()
+    return
+  }
+  fetch("/mybash?cwd="+encodeURIComponent(bashCWD)+"&cmd="+encodeURIComponent(line), {
     cache: "no-cache"
-  }).then(r => r.text()).then(r => {
-    var copyBuffer = r.split("\n")
-    copyBuffer.push("\n")
+  }).then(r => {
+    return r.text()
+  }).then(r => {
+    copyBuffer = r.split("\n")
+    cursorLineIndex += copyBuffer.length
+    cursorColIndex = 0
+    updateCursorXY()
+    // Last item is a newline
+    // Second to last item is cwd
+    bashCWD = copyBuffer[copyBuffer.length - 2]
+    log(`
+      cli: ${cursorLineIndex}
+      oY: ${offsetY}
+      maxLines: ${maxLines}
+    `) 
+    if (cursorLineIndex > offsetY + maxLines) {
+      offsetY = cursorLineIndex - maxLines + 1  
+    }
     paste()
+  }).catch(e => {
+    alert("There was an error running the command: " + e)
   })
   
 }
@@ -919,7 +968,7 @@ function render() {
   endListenerCount: ${endListenerCount}
     </pre>
   `
-  for (var y=0; y <= maxLines; y++) {
+  for (var y=0; y < maxLines; y++) {
     var lineNumber = (y+offsetY+1).toString().padStart(4, " ")
     if (offsetX < -1) {
       //t.fillStyle = "magenta"
@@ -931,7 +980,7 @@ function render() {
     }
 
     t.fillStyle = "white"
-    for (var x=0; x <= maxCols; x++) {  
+    for (var x=0; x < maxCols; x++) {  
       t.fillText( charAt(lines, y+offsetY, x+offsetX), x*fontWidth, y*fontHeight)
     }
   }
@@ -1030,9 +1079,11 @@ function onStart(e) {
     lastTouchY = e.touches[0].pageY
 
     var changedY = false
-    if (cursorY > canvasHeight) {
-      var extendY = cursorY - canvasHeight
-      cursorY = canvasHeight //Math.round(canvasHeight - (canvasHeight/4))
+    //var maxHeight = canvasHeight
+    var maxHeight = (maxLines -1 ) * fontHeight
+    if (cursorY > maxHeight) {
+      var extendY = cursorY - maxHeight
+      cursorY = maxHeight
       offsetY += Math.ceil(extendY/fontHeight)
       if (offsetY > lines.length - 10) offsetY = lines.length - 10
       changedY = true
@@ -1043,10 +1094,12 @@ function onStart(e) {
       changedY = true
       if (offsetY < 0) offsetY = 0
     }
-    if (cursorX > canvasWidth) {
-      var extendX = cursorX - canvasWidth
-      cursorX = canvasWidth //Math.round(canvasHeight - (canvasHeight/4))
-      
+    
+    var maxWidth = (maxCols -1) * fontWidth
+    //var maxWidth = canvasWidth
+    if (cursorX > maxWidth) {
+      var extendX = cursorX - maxWidth
+      cursorX = maxWidth
       // if (!changedY) offsetX += Math.round(extendX/fontWidth)
       if (!changedY) offsetX += Math.ceil(extendX/fontWidth)
     } else if (cursorX < 0) {
@@ -1461,6 +1514,7 @@ function makeFile(fullPath, contents) {
     offsetY: 0,
     offsetX: 0,
     bashMode: false,
+    bashCWD: bashCWD,
   }
 }
 function addFileToList(file) {
@@ -1500,6 +1554,7 @@ function setCurrentFile(file) {
     currentFile.offsetY = offsetY
     currentFile.offsetX = offsetX
     currentFile.bashMode = bashMode
+    currentFile.bashCWD = bashCWD
   }
   
   undoStack = file.undoStack
@@ -1512,6 +1567,7 @@ function setCurrentFile(file) {
   offsetY = file.offsetY
   offsetX = file.offsetX
   bashMode = file.bashMode
+  bashCWD = file.bashCWD
   currentFile = file
   render()
   renderFileDropdown()
