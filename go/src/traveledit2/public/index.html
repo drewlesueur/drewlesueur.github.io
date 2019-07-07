@@ -205,7 +205,7 @@ var marginLeft = 5
 canvasWidth=1125
 //var canvasWidth=600
 // I turned off "Predictive" to get more vertical space
-var canvasHeightKeyboard=930
+var canvasHeightKeyboard=1040
 var canvasHeightFull=c.height
 //var canvasHeightFull=1000
 var maxLines = 0
@@ -741,6 +741,8 @@ function runBashCommand(line) {
     render()
     return
   }
+  
+  
   fetch("/mybash?cwd="+encodeURIComponent(bashCWD)+"&cmd="+encodeURIComponent(line), {
     cache: "no-cache"
   }).then(r => {
