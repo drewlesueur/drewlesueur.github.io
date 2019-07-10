@@ -137,6 +137,7 @@ onblur=handleBlur()
   <div onclick=findDown()>find down</div>
   <div onclick=clearSearch()>clear search</div>
   <div onclick=editSearch()>edit search</div>
+  <div onclick=saveButton()>save</div>
   <div onclick=doEval()>eval</div>
   <div onclick=addCmdTab()>cmd</div>
   <div onclick=comment()>//</div>
@@ -236,7 +237,7 @@ var endListenerCount = 0
 var startListenerCount = 0
 var bashMode = false
 var bashCWD = "."
-
+var autoSave = true
 
 docTitleEl.value = location.pathname
 searchText.setAttribute("placeholder", location.pathname + " (search)")
@@ -309,7 +310,7 @@ function addFile(fullPath, changeURL) {
 
 function renderURL() {
  // For now we don't get files with bash mode.
- var filtered = files.filter(f => !f.bashMode)
+ var filtered = files.filter(f => !f.bashMode && f.name != "/")
  var theNewPath = "/" + filtered.map(f => f.fullPath.slice(1)).join(",")
  history.replaceState({}, "", theNewPath) 
 }
@@ -439,7 +440,7 @@ function findDown() {
       return
     }
   }
-  alert("not found")
+  // alert("not found")
 }
 function clearSearch() {
   searchText.value = ""
@@ -835,6 +836,11 @@ function handleBlur() {
   render()
 }
 
+// pressing the save button disables autosave
+function saveButton() {
+  autoSave = false
+  save()
+}
 function save() {
     // using a single for loop to
     // simulate a goto
@@ -862,10 +868,14 @@ function save() {
       .catch(e => alert(e))
       render()
     }
-    setTimeout(save, saveEveryMS)
+    
+    if (autoSave) {
+      setTimeout(save, saveEveryMS)
+    }
 }
-setTimeout(save, saveEveryMS)
-
+if (autoSave) {
+  setTimeout(save, saveEveryMS)
+}
 function handleKeydown(e) {
   // 8 means backspace
   if (e.keyCode == 8 && theText.selectionStart == 0 && cursorLineIndex != 0) {
@@ -1526,6 +1536,18 @@ function selectFileRow(e) {
 }
 function makeFile(fullPath, contents) {
   var theLines = contents.split("\n")
+  // because this editor intentionally does not support tabs
+  // (for implementation simplicity)
+  // we convert tabs to 4 spaces
+  // In practice for me. this only matters for
+  // * go files (which get go fmt'ed)
+  // * Makefiles (that I hardly write)
+  // * the <<- operator in bash.
+  for (var i=0; i<theLines.length; i++) {
+    var line = theLines[i]
+    // replace leading tabs with 4 times that many spaces
+    theLines[i] = line.replace(/^\t*/, (x)=> "    ".repeat(x.length))
+  }
   return {
     // fullPath should have the leading slash
     fullPath: fullPath,
@@ -1611,7 +1633,6 @@ var files = []
 var lines = []
 // the actual lines will be put here by the server
 // LINES GO HERE
-// ay, joining just to split again. Clean up.
 
 var rootLocation = "" // will be set server side
 // ROOTLOCATION GOES HERE
@@ -1619,6 +1640,7 @@ var bashCWD = rootLocation
 var paths = location.pathname.split(",")
 
 // The first one get's "hydrated" by the server
+// ay, joining just to split again. Clean up.
 var file = makeFile(paths[0], lines.join("\n"))
 addFileToList(file)
 setCurrentFile(file)
