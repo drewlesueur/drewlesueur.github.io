@@ -1,5 +1,4 @@
 <!doctype html>
-<!doctype html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
 <meta charset='utf-8'>
@@ -235,8 +234,12 @@ var selectedRegions = []
 var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
+// can't be bashMode and directoryMode at the same time
+// so consider combining these variables
 var bashMode = false
+var directoryMode = false
 var bashCWD = "."
+var directoryCWD = "." // todo: remove this
 var autoSave = true
 
 docTitleEl.value = location.pathname
@@ -296,10 +299,19 @@ function addFile(fullPath, changeURL) {
   }
   // TODO: special case if the file is already in the list of open files.
   // then let it have a reference to the existing lines, like vim does.
+  var isDir = false
   fetch((fullPath) + "?raw=1", {
     cache: "no-cache"
-  }).then(r => r.text()).then(b => {
+  }).then(r => {
+    if (r.headers.get("X-Is-Dir") == "1") {
+      isDir = true
+    }
+    return r.text()
+  }).then(b => {
      var file = makeFile(fullPath, b)
+     if (isDir) {
+       file.directoryMode = true
+     }
      addFileToList(file)
      setCurrentFile(file)
      if (changeURL) {
@@ -310,7 +322,7 @@ function addFile(fullPath, changeURL) {
 
 function renderURL() {
  // For now we don't get files with bash mode.
- var filtered = files.filter(f => !f.bashMode && f.name != "/")
+ var filtered = files.filter(f => !f.bashMode)
  var theNewPath = "/" + filtered.map(f => f.fullPath.slice(1)).join(",")
  history.replaceState({}, "", theNewPath) 
 }
@@ -431,9 +443,16 @@ function findDown() {
     }
     var pos = lineToSearch.indexOf(searchText.value)
     if (pos != -1) {
-      offsetY = i
+      // this is so if the keyboard is up during search
+      // There is probably a more elegant way to handle this
+      var maxLinesSearch = maxLines/2
+      if (i < offsetY || i > offsetY+maxLinesSearch) {
+        offsetY = i
+      }
       cursorLineIndex = i
-      offsetX = pos
+      if (pos < offsetX || pos > offsetX+maxCols) {
+        offsetX = max(0, pos - Math.floor(maxCols/2))
+      }
       cursorColIndex = pos + searchText.value.length
       updateCursorXY()
       render()
@@ -847,6 +866,7 @@ function save() {
     // breaks will make sure the 'cleanup' step gets called
     for (var s=0; s<1; s++) {
       if (bashMode) break 
+      if (directoryMode) break 
       if (savedVersion == version) {
         break
       }
@@ -1173,11 +1193,23 @@ function onStart(e) {
     document.body.removeEventListener("touchend", onEnd)
     endListenerCount = max(endListenerCount-1, 0)
     log("end called and there are " + e.touches.length + " touches")
+    
     // it's not straightforward to do a setTimeout
     // here because iOS Safari doesn't like to focus
     // text elements when not responding to user action
     // maybe there are workarounds.
     if (!moved && cursorType == "move") {
+      if (directoryMode) {
+        var prefix = currentFile.fullPath
+        // To prevent leading double slash
+        if (prefix == "/") {
+          prefix = ""
+        }
+        var newFullPath = prefix + "/" + lines[cursorLineIndex]
+        addFile(newFullPath, true)
+        return
+      }
+      
       if (cursorColIndex == -5) {
         // since we are in the margin, let's force it
         // to paste line-style.
@@ -1561,7 +1593,12 @@ function makeFile(fullPath, contents) {
     offsetY: 0,
     offsetX: 0,
     bashMode: false,
+    directoryMode: false,
     bashCWD: bashCWD,
+    directoryCWD: directoryCWD,
+    version: 0,
+    savedVersion: 0,
+    savingVersion: -1,
   }
 }
 function addFileToList(file) {
@@ -1601,7 +1638,12 @@ function setCurrentFile(file) {
     currentFile.offsetY = offsetY
     currentFile.offsetX = offsetX
     currentFile.bashMode = bashMode
+    currentFile.directoryMode = directoryMode
     currentFile.bashCWD = bashCWD
+    currentFile.directoryCWD = directoryCWD
+    currentFile.version = version
+    currentFile.savedVersion = savedVersion
+    currentFile.savingVersion = savingVersion
   }
   
   undoStack = file.undoStack
@@ -1614,7 +1656,12 @@ function setCurrentFile(file) {
   offsetY = file.offsetY
   offsetX = file.offsetX
   bashMode = file.bashMode
+  directoryMode = file.directoryMode
   bashCWD = file.bashCWD
+  directoryCWD = file.directoryCWD
+  version = file.version
+  savedVersion = file.savedVersion
+  savingVersion = file.savingVersion
   currentFile = file
   render()
   renderFileDropdown()
@@ -1634,6 +1681,9 @@ var lines = []
 // the actual lines will be put here by the server
 // LINES GO HERE
 
+// DIRECTORYCWD GOES HERE
+// DIRECTORYMODE TRUE GOES HERE
+
 var rootLocation = "" // will be set server side
 // ROOTLOCATION GOES HERE
 var bashCWD = rootLocation
@@ -1642,6 +1692,8 @@ var paths = location.pathname.split(",")
 // The first one get's "hydrated" by the server
 // ay, joining just to split again. Clean up.
 var file = makeFile(paths[0], lines.join("\n"))
+file.directoryMode = directoryMode
+
 addFileToList(file)
 setCurrentFile(file)
 
