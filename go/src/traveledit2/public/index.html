@@ -17,13 +17,29 @@ body { background-color: black; }
   overflow: scroll;
   -webkit-overflow-scrolling: touch;
 }
-.toolbar div {
+.toolbar .square {
   --font-family: 'Courier';
   background-color: #077;
   border: 0px solid cyan;
   color: white;
   padding: 0px;
   width: 40px;
+  height: 40px;
+  margin: 1px;
+  flex: 1 0 auto;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.toolbar .longButton {
+  --font-family: 'Courier';
+  background-color: #077;
+  border: 0px solid cyan;
+  color: white;
+  padding: 0px;
+  width: 80px;
   height: 40px;
   margin: 1px;
   flex: 1 0 auto;
@@ -133,18 +149,18 @@ onblur=handleBlur()
 
 
 <div class=toolbar>
-  <div onclick=findDown()>find down</div>
-  <div onclick=clearSearch()>clear search</div>
-  <div onclick=editSearch()>edit search</div>
-  <div onclick=saveButton()>save</div>
-  <div onclick=doEval()>eval</div>
-  <div onclick=addCmdTab()>cmd</div>
-  <div onclick=comment()>//</div>
-  <div onclick=unComment()>un //</div>
-  <div onclick=clearLog()>clear log</div>
-  <div onclick=undo()>undo</div>
-  <div onclick=redo()>redo</div>
-  <div onclick=closeFile()>close</div>
+  <div class=square onclick=findDown()>find down</div>
+  <div class=square onclick=clearSearch()>clear search</div>
+  <div class=square onclick=editSearch()>edit search</div>
+  <div class=square onclick=saveButton()>save</div>
+  <div class=square  onclick=doEval()>eval</div>
+  <div class=square onclick=addCmdTab()>cmd</div>
+  <div class=square onclick=comment()>//</div>
+  <div class=square onclick=unComment()>un //</div>
+  <div class=square onclick=clearLog()>clear log</div>
+  <div class=square onclick=undo()>undo</div>
+  <div class=square onclick=redo()>redo</div>
+  <div class=square onclick=closeFile()>close</div>
 </div>
 <div class=toolbar id=fileRow onclick=selectFileRow(event)>
 </div>
@@ -1611,8 +1627,11 @@ function renderFileDropdown() {
    for (var fileI=0; fileI<files.length; fileI++) {
      var file = files[fileI]
      var button = document.createElement("div")
+     button.className = "longButton"
      button.setAttribute("data-index", fileI)
-     button.innerText = file.fullPath.slice(1)
+     var parts = file.fullPath.split("/")
+     var theName = parts[parts.length - 1]
+     button.innerText = theName.substr(0, 15)
      if (currentFile == file) {
        button.style.backgroundColor = "black"
      }
