@@ -216,7 +216,7 @@ func main() {
           r.URL.Path = "/"
         }
         if r.URL.Path[0:1] != "/" {
-          r.URL.Path = "/" + part
+          r.URL.Path = "/" + r.URL.Path
         }
         log.Printf("processsed URL: %s =====", r.URL.Path)
         oldMainMux.ServeHTTP(w, r)
