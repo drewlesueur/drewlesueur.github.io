@@ -42,6 +42,7 @@ func main() {
     port := flag.String("p", "8000", "port to listen on")
     indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
     location := flag.String("location", "", "path to directory to serve")
+    proxyPath := flag.String("proxypath", "", "the path for proxies, what to ignore")
 
     certFile := os.Getenv("CERTFILE")
     keyFile := os.Getenv("KEYFILE")
@@ -200,6 +201,28 @@ func main() {
     redirectMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         http.Redirect(w, r, "https://"+r.URL.Host, http.StatusFound)
     })
+    
+    // Allow it to be behind a proxy.
+    if proxyPath != nil && *proxyPath != "" {
+      oldMainMux := mainMux
+      mainMux = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        parts := strings.Split(r.URL.Path, ",")
+        for i, part := range parts {
+            part = strings.TrimPrefix(part, *proxyPath)  
+            parts[i] = part
+        }
+        r.URL.Path = strings.Join(parts, ",")
+        if r.URL.Path == "" {
+          r.URL.Path = "/"
+        }
+        if r.URL.Path[0:1] != "/" {
+          r.URL.Path = "/" + part
+        }
+        log.Printf("processsed URL: %s =====", r.URL.Path)
+        oldMainMux.ServeHTTP(w, r)
+      })
+    }
+    
     httpServer := http.Server{
         Addr:         ":" + *port,
         Handler:      redirectMux,

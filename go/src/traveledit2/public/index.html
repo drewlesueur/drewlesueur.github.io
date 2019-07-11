@@ -259,7 +259,6 @@ var directoryCWD = "." // todo: remove this
 var autoSave = true
 
 docTitleEl.value = location.pathname
-searchText.setAttribute("placeholder", location.pathname + " (search)")
 function importPaste() {
   copyBuffer = pasteEl.value.split("\n")
   selectMode = "line"
@@ -813,6 +812,7 @@ function runBashCommand(line) {
       maxLines: ${maxLines}
     `) 
     scrollToBottom()
+    pasteMode = "line"
     paste()
   }).catch(e => {
     alert("There was an error running the command: " + e)
@@ -1235,6 +1235,10 @@ function onStart(e) {
       }
       if (cursorColIndex == -4) {
         del()
+        return
+      }
+      if (cursorColIndex == -3) {
+        copy()
         return
       }
       if (cursorColIndex == -2) {
@@ -1682,6 +1686,8 @@ function setCurrentFile(file) {
   savedVersion = file.savedVersion
   savingVersion = file.savingVersion
   currentFile = file
+  
+  searchText.setAttribute("placeholder", currentFile.fullPath + " (search)")
   render()
   renderFileDropdown()
 }
@@ -1715,7 +1721,6 @@ file.directoryMode = directoryMode
 
 addFileToList(file)
 setCurrentFile(file)
-
 // Subsequent ones will get added after the fact.
 // Starting at index 1 for this reason.
 // NOTE: you could do this async serially.
