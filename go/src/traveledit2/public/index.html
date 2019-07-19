@@ -1660,7 +1660,7 @@ function makeFile(fullPath, contents) {
   }
 }
 function addFileToList(file) {
-  files.push(file)
+  files.unshift(file)
   renderFileDropdown()
 }
 
