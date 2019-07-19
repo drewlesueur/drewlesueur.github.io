@@ -58,6 +58,10 @@ input[type="text"] {
 #searchText {
   border: none;
 }
+#searchText::placeholder {
+  --color: red;
+  font-size: 10px;
+}
 </style>
 </head>
 <body>
@@ -65,9 +69,10 @@ input[type="text"] {
 <!-- status bar -->
 <div id=s style="font-size: 12px;
 position: absolute;
-top: 0px; right:0;
+top: 10px; right:0;
 z-index: 999;
 color: cyan;
+opacity: 0.5;
 "></div>
 
 <form onsubmit=findDownForm(event)>
@@ -900,6 +905,7 @@ function save() {
             savingVersion = -1
           }
           render()
+          renderFileDropdown()
       })
       .catch(e => alert(e))
       render()
@@ -908,6 +914,8 @@ function save() {
     if (autoSave) {
       setTimeout(save, saveEveryMS)
     }
+    
+    renderFileDropdown()
 }
 if (autoSave) {
   setTimeout(save, saveEveryMS)
@@ -1000,14 +1008,6 @@ function render() {
     } 
   }
 
-  t.fillStyle = "rgba(255, 0, 0, 0.5)"
-  t.fillRect(cursorX, cursorY, 6, fontHeight)
-  var yPos = (cursorLineIndex - offsetY) * fontHeight
-  var xPos = (cursorColIndex - offsetX) * fontWidth
-  t.fillStyle = "rgba(0, 128, 128, 0.5)"
-  t.fillRect(0, yPos, canvasWidth, fontHeight)
-  t.fillStyle = cursorType == "move" ? "cyan" : "yellow"
-  t.fillRect(xPos, yPos, 6, fontHeight)
 
   t.font = fontCSS
   t.textBaseline = "top"
@@ -1039,23 +1039,57 @@ function render() {
   endListenerCount: ${endListenerCount}
     </pre>
   `
+  
+  
+  // row highlight
+  t.fillStyle = "rgba(0, 128, 128, 0.5)"
+  t.fillRect(0, yPos, canvasWidth, fontHeight)
+  t.fillStyle = cursorType == "move" ? "cyan" : "yellow"
+  
+  
   for (var y=0; y < maxLines; y++) {
-    var lineNumber = (y+offsetY+1).toString().padStart(4, " ")
-    if (offsetX < -1) {
-      //t.fillStyle = "magenta"
-      t.fillStyle = "cyan"
-      for (var i=0; i<-offsetX-1; i++) {
-        var lineNumberIndex = offsetX + marginLeft + i
-        t.fillText(lineNumber.charAt(lineNumberIndex), i*fontWidth, y*fontHeight)
+    // show the end of the document
+    // if (y + offsetY >= lines.length) {
+    //   t.save()
+    //   t.fillStyle = "#222"
+    //   t.fillRect(0, y*fontHeight, canvasWidth, fontHeight)
+    //   t.restore()
+    // }
+    
+    // Line numbers
+    
+    if (y + offsetY < lines.length) {
+      var lineNumber = (y+offsetY+1).toString().padStart(4, " ")
+      if (offsetX < -1) {
+        // Line numbers
+        //t.fillStyle = "magenta"
+        t.fillStyle = "cyan"
+        for (var i=0; i<-offsetX-1; i++) {
+          var lineNumberIndex = offsetX + marginLeft + i
+          t.fillText(lineNumber.charAt(lineNumberIndex), i*fontWidth, y*fontHeight)
+        }
       }
     }
-
+    
+    // the actual text
     t.fillStyle = "white"
     for (var x=0; x < maxCols; x++) {  
       t.fillText( charAt(lines, y+offsetY, x+offsetX), x*fontWidth, y*fontHeight)
     }
   }
+  
+  // red ghost cursor
+  t.fillStyle = "rgba(255, 0, 0, 0.5)"
+  t.fillRect(cursorX, cursorY, 6, fontHeight)
+  
+  // cursor
+  t.fillStyle = "cyan"
+  var yPos = (cursorLineIndex - offsetY) * fontHeight
+  var xPos = (cursorColIndex - offsetX) * fontWidth
+  t.fillRect(xPos, yPos, 6, fontHeight)
   cursorLine = lines[cursorLineIndex] || ""
+  
+  
   if (!inEdit) {
     theText.value = cursorLine
     theTextBefore.value = lines[cursorLineIndex - 1] || ""
@@ -1584,6 +1618,10 @@ function toggleWord() {
 function selectFileRow(e) {
   var index = e.target.getAttribute("data-index")
   var file = files[index]
+  
+  // put it at the beginning.
+  files.splice(index, 1)
+  files.unshift(file)
   setCurrentFile(file)
 }
 function makeFile(fullPath, contents) {
@@ -1639,6 +1677,7 @@ function renderFileDropdown() {
      if (currentFile == file) {
        button.style.backgroundColor = "black"
      }
+     
      fileRow.appendChild(button)
    }
    
