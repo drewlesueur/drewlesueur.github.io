@@ -183,6 +183,7 @@ onblur=handleBlur()
 
 <textarea id=pasteEl 
 style="width:100%; height:100px;"
+onfocus="this.setSelectionRange(0, this.value.length)" 
 oninput=importPaste()
  placeholder="when you add text here it will be copied"
 ></textarea>
@@ -394,7 +395,7 @@ function repositionUndo() {
     offsetY = max(0, cursorLineIndex - 5)  
   }
   if (cursorColIndex < offsetX || cursorColIndex > offsetX+maxCols) {
-    offsetX = max(0, curorColIndex - 5)  
+    offsetX = max(0, cursorColIndex - 5)  
   }
   updateCursorXY()
   render()
