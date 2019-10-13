@@ -1,0 +1,359 @@
+<!doctype html>
+<title>Simulations</title>
+<table>
+<tr>
+<td>
+<canvas id=worldEl  width=1024 height=1024 style="width:512px; height:512px; border: 1px solid black;"></canvas>
+</td>
+<td valign=top>
+<div>Ticks: <span id=tickCountEl></span></div>
+<div>Population: <span id=populationCountEl></span></div>
+<div><button onclick="playPause()">stop</button></div>
+<canvas id=graphEl width=1024 height=1024 style="width:512px; height:512px; border: 1px solid black;" style="border: 1px solid navy"></canvas>
+</td>
+</tr>
+</table>
+
+<script>
+var startingPopulationCount = 200
+var dropFoodEvery = 250
+var dropFoodCount = 20
+
+var maxPopulation = 20000
+
+var populationCount = 0
+var maxX = 2048
+var maxY = maxX
+var moveIncrement = 3
+var shrinkFactor = 2
+
+var sizeW = 10
+var sizeH = sizeW
+
+var tickDuration = 1
+var renderEvery = 1
+
+var chunksX = 128
+//var chunksX = 64
+var chunksY = chunksX
+var chunkSizeX = maxX / chunksX
+var chunkSizeY = chunkSizeX
+var ageToReproduce = 250
+var tickCount = 0
+
+function r(n) {
+	return Math.floor(Math.random() * n)
+}
+
+
+var colors = [
+	"orange",
+	"blue",
+	"red",
+	"green",
+	"tan",
+	"black",
+]
+var orange = 0
+var blue = 1
+var red = 2
+var green = 3
+var tan = 4
+var black = 5
+
+var types = [orange, blue, red, green, tan, black]
+
+var bitOrange = 0b01
+var bitBlue = 0b10
+var bitRed = 0b100
+var bitGreen = 0b1000
+var bitTan = 0b10000
+var bitBlack = 0b100000
+
+var countsByColor = [0, 0, 0, 0, 0]
+
+function valuePlusOrMinus(starting, plusOrMinus)  {
+	return starting + r(plusOrMinus * 2) - plusOrMinus	
+}
+
+function defaultLife() {
+	return valuePlusOrMinus(1000, 200)	
+}
+
+
+var worldCtx = document.getElementById("worldEl").getContext("2d")
+var graphCtx = document.getElementById("graphEl").getContext("2d")
+
+var holes = []
+var feelglips = []
+for (var i=0; i < startingPopulationCount; i++) {
+	//add({x: r(maxX), y: r(maxY), w: sizeW, h: sizeH, type: types[r(3)], life: defaultLife(), age: 0})
+	add({x: r(maxX), y: r(maxY), w: sizeW, h: sizeH, type: types[r(1)], life: defaultLife(), age: 0, move: true})
+}
+
+worldEl.width = maxX
+worldEl.height = maxY
+worldEl.style.width = (maxX / shrinkFactor) + "px"
+worldEl.style.height = (maxY / shrinkFactor) + "px"
+// reset for testing
+//feelglips = [
+//	{x: 200, y: 200, w: 100, h: 100, type: happy},
+//	{x: 250, y: 250, w: 100, h: 100, type: mad},
+//]
+
+
+function drawBar(data) {
+	var width = graphEl.width
+	var height = graphEl.height
+
+	// clear
+	graphEl.width = width
+
+	var itemWidth = width / data.length
+
+	var maxValue = -Infinity
+	for (var i=0; i < data.length; i++) {
+		var v = data[i].value
+		if (v > maxValue) {
+			maxValue = v
+		}
+	}
+
+	for (var i=0; i < data.length; i++) {
+		var v = data[i]
+		var pixelHeight = (v.value / maxValue) * height
+		graphCtx.fillStyle = v.color
+		graphCtx.fillRect((i * itemWidth), height, itemWidth * 0.5, -pixelHeight)
+	}
+	
+}
+drawBar([
+	{value: 10, color: "red"},
+	{value: 100, color: "blue"},
+])
+
+
+var cachedLocations
+
+function add(f) {
+	index = holes.pop()	
+	if (index === undefined) {
+		if (feelglips.length < maxPopulation) {
+			feelglips.push(f)
+			populationCount += 1
+			countsByColor[f.type] += 1
+		}
+	} else {
+		feelglips[index] = f
+		populationCount += 1
+		countsByColor[f.type] += 1
+	}
+}
+
+function remove(i, f) {
+	feelglips[i] = null
+	holes.push(i)
+	populationCount -= 1
+	countsByColor[f.type] -= 1
+}
+
+function tick() {
+
+
+	tickCount += 1
+	if (tickCount % dropFoodEvery == 0) {
+		for (var i=0; i<dropFoodCount; i++) {
+			add({type: tan, x: r(maxX), w: 20, h:20, y: r(maxY), life: dropFoodCount * 100, age: 0})
+		}		
+	}
+
+	cachedLocations = {}
+
+	for (var i=0; i<feelglips.length; i++) {
+		var f = feelglips[i]
+		if (f == null) {
+			continue	
+		}
+		f.life -= 1
+		f.age += 1
+		if (f.life <= 0) {
+			remove(i, f)
+		}
+		if (!f.move) {
+			var movement = -1
+		} else {
+			var movement = r(4)
+		}
+		if (movement == 0) {
+			f.x -= moveIncrement
+		} else if (movement == 1) {
+			f.x += moveIncrement
+		} else if (movement == 2) {
+			f.y -= moveIncrement
+		} else if (movement == 3) {
+			f.y += moveIncrement
+		}
+
+		if (f.x < 0) {
+			f.x = 0		
+		} else if (f.x > maxX) {
+			f.x = maxY	
+		}
+
+		if (f.y < 0) {
+			f.y = 0		
+		} else if (f.y > maxY) {
+			f.y = maxY	
+		}
+		var chunkX = Math.floor(f.x / chunkSizeX)
+		var chunkY = Math.floor(f.y / chunkSizeY)
+		var key = chunkX + "_" + chunkY
+		f.index = i
+		if (cachedLocations[key]) {
+			cachedLocations[key].push(f)	
+		} else {
+			cachedLocations[key] = [f]
+		}
+	}
+
+	// move all at once, then check overlap
+	// TODO: you would need to actually check surrounding chunks
+	// This is not a perfect simulation because of that
+	
+	// Now let's to the touching check
+	var toRemove = []
+	var toAdd = []
+	for (key in cachedLocations) {
+		var fs = cachedLocations[key]	
+		if (!fs ||  fs.lenth == 0) {
+			continue	
+		}
+		for (var i=0; i < fs.length;i++) {
+			var a = fs[i]
+			if (a == null) {
+				continue	
+			}
+			if (i.age < ageToReproduce) {
+				continue	
+			}
+			for (var j=i+1; j<fs.length; j++) {
+				var b = fs[j]
+				if (b == null) {
+					continue	
+				}
+				if (b.age < ageToReproduce) {
+					continue	
+				}
+				if (
+						a.x < b.x + b.w &&
+						a.x + a.w > b.x &&
+						a.y < b.y + b.h &&
+						a.y + a.h > b.y
+				) {
+					// This is the part where we put the rules of what happens
+					// when they touch.
+					var combined = (1<<a.type) | (1<<b.type)
+					//a.type = test
+					//b.type = test
+					switch (combined) {
+					case bitOrange | bitTan:
+						for (var _i=0; _i<100; _i++) {
+							if (r(100) < 20) {
+								toAdd.push({x:a.x, y:a.y, w:sizeW, h: sizeH, type: green, age: 0, life: defaultLife(), move: true})
+							} else {
+								toAdd.push({x:a.x, y:a.y, w:sizeW, h: sizeH, type: orange, age: 0, life: defaultLife(), move: true})
+							}
+						}
+						if (a.type == tan) {
+							toRemove.push({i: a.index, f: a})
+							b.life += 250
+						} else if (b.type == tan) {
+							a.life += 250
+							toRemove.push({i: b.index, f: b})
+						}
+						break
+					case bitGreen | bitTan:
+						for (var _i=0; _i<100; _i++) {
+							if (r(100) < 20) {
+								toAdd.push({x:a.x, y:a.y, w:sizeW, h: sizeH, type: orange, age: 0, life: defaultLife(), move: true})
+							} else {
+								toAdd.push({x:a.x, y:a.y, w:sizeW, h: sizeH, type: green, age: 0, life: defaultLife(), move: true})
+							}
+						}
+						if (a.type == tan) {
+							toRemove.push({i: a.index, f: a})
+							b.life += 250
+						} else if (b.type == tan) {
+							a.life += 250
+							toRemove.push({i: b.index, f: b})
+						}
+						break
+					case bitGreen | bitOrange:
+						toRemove.push({i: a.index, f: a})
+						toRemove.push({i: b.index, f: b})
+					}
+					//a.type = "test"						
+					//b.type = "test"						
+				}
+			}	
+
+		}
+	}
+	for (var i=0; i<toRemove.length; i++) {
+		var r_ = toRemove[i]	
+		remove(r_.i, r_.f)
+	}
+	for (var i=0; i<toAdd.length; i++) {
+		add(toAdd[i])
+	}
+
+	//render()
+}
+requestAnimationFrame(renderRAF)
+
+var theInterval = setInterval(tick, tickDuration)
+var playPause = function() {
+	if (theInterval) {
+		clearInterval(theInterval)	
+		theInterval = 0
+		return
+	}
+
+	theInterval = setInterval(tick, tickDuration)
+}
+
+
+function render() {
+	if (tickCount % renderEvery != 0) {
+		return	
+	}
+
+	worldEl.width = worldEl.width // hack to clear
+	worldEl.width = worldEl.width // hack to clear
+	tickCountEl.innerText = tickCount
+	populationCountEl.innerText = populationCount
+	for (var i=0; i<feelglips.length;i++) {
+		var f = feelglips[i]
+		if (f == null) {
+			continue
+		}
+		worldCtx.fillStyle = colors[f.type]
+		worldCtx.fillRect(f.x, f.y, f.w, f.h)
+	}
+
+	var barData = []
+	for (i=0; i < countsByColor.length; i++) {
+		barData.push({value: countsByColor[i], color: colors[i]})
+	}
+	drawBar(barData)
+}
+
+
+function renderRAF() {
+	render()
+	requestAnimationFrame(renderRAF)
+}
+
+
+
+</script>
