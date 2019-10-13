@@ -1,0 +1,73 @@
+<!doctype html>
+<title>Simulations</title>
+<table>
+<tr>
+<td>
+<canvas id=worldEl  width=512 height=512 style="width:512px; height:512px; border: 1px solid black;"></canvas>
+</td>
+<td>
+<canvas id=graphEl width=512 height=512 style="width:512px; height:512px; border: 1px solid black;" style="border: 1px solid navy"></canvas>
+</td>
+</tr>
+</table>
+
+<script>
+var populationCount = 100
+var maxX = 512
+var maxY = 512
+var moveIncrement = 5
+var tickDuration = 100
+
+var worldCtx = document.getElementById("worldEl").getContext("2d")
+
+var feelglips = []
+for (var i=0; i < populationCount; i++) {
+	feelglips.push({x: r(512), y: r(512), w: 4, h: 4})
+}
+
+function tick() {
+	for (var i=0; i<feelglips.length; i++) {
+		var f = feelglips[i]
+		var movement = r(4)
+		if (movement == 0) {
+			f.x -= moveIncrement
+		} else if (movement == 1) {
+			f.x += moveIncrement
+		} else if (movement == 2) {
+			f.y -= moveIncrement
+		} else if (movement == 3) {
+			f.y += moveIncrement
+		}
+
+		if (f.x < 0) {
+			f.x = 0		
+		} else if (f.x > maxX) {
+			f.x = maxY	
+		}
+
+		if (f.y < 0) {
+			f.y = 0		
+		} else if (f.y > maxY) {
+			f.y = maxY	
+		}
+	}
+	
+	worldEl.width = worldEl.width // hack to clear
+	render()
+}
+
+setInterval(tick, tickDuration)
+
+function render() {
+	for (var i=0; i<feelglips.length;i++) {
+		var f = feelglips[i]
+		worldCtx.fillRect(f.x, f.y, f.w, f.h)
+	}
+}
+
+function r(n) {
+	return Math.floor(Math.random() * n)
+}
+
+
+</script>
