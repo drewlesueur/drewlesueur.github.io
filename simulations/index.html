@@ -6,44 +6,96 @@
 <canvas id=worldEl  width=1024 height=1024 style="width:512px; height:512px; border: 1px solid black;"></canvas>
 </td>
 <td>
+<div>Ticks: <span id=tickCountEl></span></div>
+<div>Population: <span id=populationCountEl></span></div>
 <canvas id=graphEl width=1024 height=1024 style="width:512px; height:512px; border: 1px solid black;" style="border: 1px solid navy"></canvas>
 </td>
 </tr>
 </table>
 
 <script>
-var populationCount = 100
+var populationCount = 500
 var maxX = 1024
 var maxY = 1024
 var moveIncrement = 3
-var tickDuration = 50
-var chunksX = 16
-var chunksY = 16
+var tickDuration = 10
+var chunksX = 128
+var chunksY = 128
 var chunkSizeX = maxX / chunksX
 var chunkSizeY = maxY / chunksY
+var allowMove = true
+var ageToReproduce = 500
+var tickCount = 0
+var maxPopulation = 20000
 
-var colors = {
-	"happy": "orange",
-	"sad": "blue",
-	"mad": "red",
-	"test": "black",
-}
-var feelings = ["happy", "sad", "mad"]
-var feelings = ["happy", "sad", "mad", "test"]
+var sizeW = 10
+var sizeH = 10
+
+var colors = [
+	"orange",
+	"blue",
+	"red",
+	"black",
+]
+var happy = 0
+var sad = 1
+var mad = 2
+var test = 3
+var bitSet = [0b01, 0b10, 0b100, 0b1000]
+
+var feelings = [happy, sad, mad, test]
 
 var worldCtx = document.getElementById("worldEl").getContext("2d")
 
 var feelglips = []
 for (var i=0; i < populationCount; i++) {
-	feelglips.push({x: r(maxX), y: r(maxY), w: 8, h: 8, feeling: feelings[r(3)]})
+	feelglips.push({x: r(maxX), y: r(maxY), w: sizeW, h: sizeH, feeling: feelings[r(3)], life: r(1000), age: 0})
 }
 
+
+// reset for testing
+//feelglips = [
+//	{x: 200, y: 200, w: 100, h: 100, feeling: happy},
+//	{x: 250, y: 250, w: 100, h: 100, feeling: mad},
+//]
+
 var cachedLocations
+
+var holes = []
+function add(f) {
+	index = holes.pop()	
+	if (index === undefined) {
+		if (feelglips.length < maxPopulation) {
+			feelglips.push(f)
+			populationCount += 1
+		}
+	} else {
+		feelglips[index] = f
+		populationCount += 1
+	}
+}
+
 function tick() {
+	tickCount += 1
 	cachedLocations = {}
+
 	for (var i=0; i<feelglips.length; i++) {
 		var f = feelglips[i]
-		var movement = r(4)
+		if (f == null) {
+			continue	
+		}
+		f.life -= 1
+		f.age += 1
+		if (f.life == 0) {
+			feelglips[i] = null
+			holes.push(i)
+			populationCount -= 1
+		}
+		if (!allowMove) {
+			var movement = -1
+		} else {
+			var movement = r(4)
+		}
 		if (movement == 0) {
 			f.x -= moveIncrement
 		} else if (movement == 1) {
@@ -87,20 +139,42 @@ function tick() {
 		}
 
 		for (var i=0; i < fs.length;i++) {
+			var a = fs[i]
+			if (i.age < ageToReproduce) {
+				continue	
+			}
 			for (var j=i+1; j<fs.length; j++) {
-				var a = fs[i]
 				var b = fs[j]
+				if (b.age < ageToReproduce) {
+					continue	
+				}
 				if (
-					(
-						(b.x >= a.x && b.x <= (a.x + a.w)) ||
-						((b.x + b.w) > a.x && (b.x + b.w) < (a.x + a.w))
-					) && (
-						(b.y >= a.y && b.y <= (a.y + a.h)) ||
-						((b.y + b.h) > a.y && (b.y + b.h) < (a.y + a.h))
-					)
+						a.x < b.x + b.w &&
+						a.x + a.w > b.x &&
+						a.y < b.y + b.h &&
+						a.y + a.h > b.y
 				) {
-					a.feeling = "test"						
-					b.feeling = "test"						
+					// This is the part where we put the rules of what happens
+					// when they touch.
+					var combined = bitSet[a.feeling] | bitSet[b.feeling]
+					//a.feeling = test
+					//b.feeling = test
+					switch (combined) {
+					case bitSet[happy] | bitSet[mad]:
+						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: sad, age: 0, life: r(1000)})
+						break
+					case bitSet[happy] | bitSet[sad]:
+						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: happy, age: 0, life: r(1000)})
+						break
+					case bitSet[sad]:
+						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: happy, age: 0, life: r(1000)})
+						break
+					case bitSet[mad]:
+						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: sad, age: 0, life: r(1000)})
+						break
+					}
+					//a.feeling = "test"						
+					//b.feeling = "test"						
 				}
 			}	
 		}
@@ -114,8 +188,13 @@ function tick() {
 setInterval(tick, tickDuration)
 
 function render() {
+	tickCountEl.innerText = tickCount
+	populationCountEl.innerText = populationCount
 	for (var i=0; i<feelglips.length;i++) {
 		var f = feelglips[i]
+		if (f == null) {
+			continue
+		}
 		worldCtx.fillStyle = colors[f.feeling]
 		worldCtx.fillRect(f.x, f.y, f.w, f.h)
 	}
