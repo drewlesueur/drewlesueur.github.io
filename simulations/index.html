@@ -18,13 +18,17 @@ var populationCount = 500
 var maxX = 1024
 var maxY = 1024
 var moveIncrement = 3
+
+
 var tickDuration = 10
+var renderEvery = 1
+
 var chunksX = 128
 var chunksY = 128
 var chunkSizeX = maxX / chunksX
 var chunkSizeY = maxY / chunksY
 var allowMove = true
-var ageToReproduce = 500
+var ageToReproduce = 200
 var tickCount = 0
 var maxPopulation = 20000
 
@@ -167,7 +171,8 @@ function tick() {
 						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: happy, age: 0, life: r(1000)})
 						break
 					case bitSet[sad]:
-						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: happy, age: 0, life: r(1000)})
+						//add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: happy, age: 0, life: r(1000)})
+						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: mad, age: 0, life: r(1000)})
 						break
 					case bitSet[mad]:
 						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: sad, age: 0, life: r(1000)})
@@ -181,13 +186,19 @@ function tick() {
 	}
 
 	
-	worldEl.width = worldEl.width // hack to clear
 	render()
 }
 
 setInterval(tick, tickDuration)
 
+
 function render() {
+	if (tickCount % renderEvery != 0) {
+		return	
+	}
+
+	worldEl.width = worldEl.width // hack to clear
+	worldEl.width = worldEl.width // hack to clear
 	tickCountEl.innerText = tickCount
 	populationCountEl.innerText = populationCount
 	for (var i=0; i<feelglips.length;i++) {
