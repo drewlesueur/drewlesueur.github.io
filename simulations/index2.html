@@ -19,7 +19,7 @@ var startingPopulationCount = 200
 var dropFoodEvery = 250
 //var dropFoodCount = 20
 //var dropFoodCount = 200
-var dropFoodCount = 500
+var dropFoodCount = 74
 
 function defaultLife() {
 	return valuePlusOrMinus(500, 200)	
@@ -161,7 +161,8 @@ function remove(i, f) {
 		debugger	
 	}
 	if (feelglips[i] == null) {
-		// TODO: this is a very large bug to figure out
+		// TODO: figure out this bug!
+		///debugger
 		return
 	}
 	feelglips[i] = null
@@ -235,6 +236,7 @@ function tick() {
 	// Now let's to the touching check
 	var toRemove = []
 	var toAdd = []
+	var toUpdate = []
 	for (key in cachedLocations) {
 		var fs = cachedLocations[key]	
 		if (!fs ||  fs.lenth <= 1) {
@@ -276,11 +278,18 @@ function tick() {
 						if (a.type == tan) {
 							a._gone = true
 							toRemove.push({i: a.index, f: a})
+							countsByColor[red]+=1
+							countsByColor[b.type]-=1
+							b.type = red
 							b.life += 250
+							b.w += 20
+							b.h += 20
 						} else if (b.type == tan) {
 							b._gone = true
 							toRemove.push({i: b.index, f: b})
 							a.life += 250
+							a.w += 1
+							a.h += 1
 						}
 						break
 					case bitGreen | bitTan:
@@ -305,6 +314,8 @@ function tick() {
 						if (a.age < ageToAttack || b.age < ageToAttack) {
 							break	
 						}
+						a._gone = true
+						b._gone = true
 						toRemove.push({i: a.index, f: a})
 						toRemove.push({i: b.index, f: b})
 						break
