@@ -15,8 +15,8 @@
 
 <script>
 var populationCount = 500
-var maxX = 1024
-var maxY = 1024
+var maxX = 2048
+var maxY = maxX
 var moveIncrement = 3
 
 
@@ -24,13 +24,13 @@ var tickDuration = 10
 var renderEvery = 1
 
 var chunksX = 128
-var chunksY = 128
+var chunksY = chunksX
 var chunkSizeX = maxX / chunksX
-var chunkSizeY = maxY / chunksY
+var chunkSizeY = chunkSizeX
 var allowMove = true
-var ageToReproduce = 200
+var ageToReproduce = 10
 var tickCount = 0
-var maxPopulation = 20000
+var maxPopulation = 2000
 
 var sizeW = 10
 var sizeH = 10
@@ -56,7 +56,10 @@ for (var i=0; i < populationCount; i++) {
 	feelglips.push({x: r(maxX), y: r(maxY), w: sizeW, h: sizeH, feeling: feelings[r(3)], life: r(1000), age: 0})
 }
 
-
+worldEl.width = maxX
+worldEl.height = maxY
+worldEl.style.width = (maxX / 2) + "px"
+worldEl.style.height = (maxY / 2) + "px"
 // reset for testing
 //feelglips = [
 //	{x: 200, y: 200, w: 100, h: 100, feeling: happy},
