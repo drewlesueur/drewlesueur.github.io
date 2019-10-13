@@ -31,6 +31,7 @@ var tickDuration = 1
 var renderEvery = 1
 
 var chunksX = 128
+//var chunksX = 64
 var chunksY = chunksX
 var chunkSizeX = maxX / chunksX
 var chunkSizeY = chunkSizeX
@@ -45,18 +46,18 @@ var colors = [
 	"green",
 	"black",
 ]
-var happy = 0
-var sad = 1
-var mad = 2
-var envy = 3
-var test = 4
-var feelings = [happy, sad, mad, envy, test]
+var orange = 0
+var blue = 1
+var red = 2
+var green = 3
+var black = 4
+var feelings = [orange, blue, red, green, black]
 
-var bitHappy = 0b01
-var bitSad = 0b10
-var bitMad = 0b100
-var bitEnvy = 0b1000
-var bitTest = 0b10000
+var bitOrange = 0b01
+var bitBlue = 0b10
+var bitRed = 0b100
+var bitGreen = 0b1000
+var bitBlack = 0b10000
 
 var countsByColor = [0, 0, 0, 0]
 
@@ -230,22 +231,22 @@ function tick() {
 					//a.feeling = test
 					//b.feeling = test
 					switch (combined) {
-					case bitHappy | bitMad:
-						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: sad, age: 0, life: defaultLife()})
+					case bitOrange | bitRed:
+						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: blue, age: 0, life: defaultLife()})
 						break
-					case bitHappy | bitSad:
-						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: happy, age: 0, life: defaultLife()})
+					case bitOrange | bitBlue:
+						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: orange, age: 0, life: defaultLife()})
 						break
-					case bitSad:
-						//add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: happy, age: 0, life: defaultLife()})
-						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: mad, age: 0, life: defaultLife()})
+					case bitBlue:
+						//add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: orange, age: 0, life: defaultLife()})
+						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: red, age: 0, life: defaultLife()})
 						break
-					case bitMad:
-						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: sad, age: 0, life: defaultLife()})
+					case bitRed:
+						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: blue, age: 0, life: defaultLife()})
 						break
-					case bitEnvy:
-						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: envy, age: 0, life: defaultLife()})
-						//add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: sad, age: 0, life: defaultLife()})
+					case bitGreen:
+						add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: green, age: 0, life: defaultLife()})
+						//add({x:a.x, y:a.y, w:sizeW, h: sizeH, feeling: green, age: 0, life: defaultLife()})
 						break
 					}
 					//a.feeling = "test"						
