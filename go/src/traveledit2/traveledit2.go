@@ -197,7 +197,10 @@ func main() {
         }
     })
 
-    mainMux := BasicAuth(gziphandler.GzipHandler(mux))
+    mainMux := gziphandler.GzipHandler(mux)
+    if os.Getenv("BASICUSER") != "" {
+        mainMux = BasicAuth(mainMux)
+    }
     redirectMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         http.Redirect(w, r, "https://"+r.URL.Host, http.StatusFound)
     })
