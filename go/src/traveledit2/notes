@@ -9,6 +9,12 @@ to appear but it shouldn't
 touching after selecting should copy
 or just selecting should copy
 
+tap to choose word needs work
+eliminate need to double tap
+seems buggy what char position 0
+
+------------
+
 when you are editing, any cursoor change in the canvas
 should affect the cursor change in the input element
 

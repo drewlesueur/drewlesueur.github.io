@@ -342,7 +342,7 @@ function closeFile() {
       break
     }  
   }
-  setCurrentFile(files[i-1] || files[i])
+  setCurrentFile(files[0])
   render()
   renderFileDropdown()
   renderURL()
@@ -1007,10 +1007,6 @@ var closingMap = {
   "`": "`",
   '"': '"',
 }
-var reverseClosingMap = {}
-for (var key in closingMap) {
-  reverseClosingMap[closingMap[key]] = key 
-}
 function saveLine() {
   var lastTyped = theText.value[theText.selectionStart - 1]
   cursorColIndex = theText.selectionStart
@@ -1093,7 +1089,9 @@ function render() {
   t.font = fontCSS
   t.textBaseline = "top"
   var r = selectedRegions[0]
-  s.innerHTML = version + "/" + savedVersion +
+  s.innerHTML = 
+    lastWord + " " +
+    version + "/" + savedVersion +
     "/" + savingVersion +
     " p:" + cursorX + "," + cursorY + 
     " c:" + cursorColIndex + "," + cursorLineIndex + 
@@ -1676,7 +1674,12 @@ function toggleWord() {
       replaceFindWord([""])
       break
     }
-    if (findWordCount == 1 && !findWordPrefix && copyBuffer.length) {
+    
+    if (findWordCount == 1 && !findWordPrefix && lastWord) {
+      replaceFindWord([lastWord])
+      break
+    }
+    if ((findWordCount == 1 || findWordCount == 2) && !findWordPrefix && copyBuffer.length) {
       replaceFindWord(copyBuffer)
       break
     }
@@ -1788,6 +1791,10 @@ function renderFileDropdown() {
 }
 
 function seeFiles() {
+    if (currentFile.fileMode == "fileList") {
+       closeFile()
+       return
+    }
     var contents = files.map(f => {
        //return f.fullPath
        var parts = f.fullPath.split("/")
