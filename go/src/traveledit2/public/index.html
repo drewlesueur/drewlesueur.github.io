@@ -172,6 +172,7 @@ onblur=handleBlur()
   <div class=square onclick=closeFile()>close</div>
 </div>
 <div class=toolbar>
+  <div class=square onclick=addCmdTab()>cmd</div>
   <div class=square onclick=undo()>undo</div>
   <div class=square onclick=redo()>redo</div>
   <div class=square onclick=duplicateFile()>dupl file</div>
@@ -182,7 +183,6 @@ onblur=handleBlur()
 <div class=toolbar>
   <div class=square onclick=reloadFile()>reload</div>
   <div class=square onclick=doEval()>eval</div>
-  <div class=square onclick=addCmdTab()>cmd</div>
   <div class=square onclick=clearLog()>clear log</div>
 </div>
 
@@ -282,7 +282,8 @@ var startListenerCount = 0
 var fileMode = "file"
 var bashCWD = "."
 var directoryCWD = "." // todo: remove this
-var autoSave = true
+var autoSave = false
+
 
 docTitleEl.value = location.pathname
 function importPaste() {
@@ -350,10 +351,18 @@ function closeFile() {
 }
 
 function addCmdTab() {
- var file = makeFile("/cmd", "")
+ var file = makeFile(proxyPath + "/cmd", "")
  file.fileMode = "bash"
- // It adopts the last bashCWD
- file.bashCWD = bashCWD
+ 
+ if (currentFile.fileMode == "bash") {
+     file.bashCWD = bashCWD
+ } else if (currentFile.fileMode == "file") {
+    var parts = trimPrefix(currentFile.fullPath, proxyPath).split("/")
+    parts = parts.slice(0, parts.length - 1)
+    file.bashCWD = rootLocation + parts.join("/")
+ } else if (currentFile.fileMode == "directory") {
+    file.bashCWD = rootLocation + trimPrefix(currentFile.fullPath, proxyPath)
+ }
  addFileToList(file, false)
  setCurrentFile(file)  
 }
@@ -854,11 +863,11 @@ function runBashCommand(line) {
     cursorLineIndex += 1
     cursorColIndex = 0
     scrollToBottom()
-    addFile(trimPrefix(bashCWD, rootLocation) + "/" + fileToLoad, true)
+    addFile(proxyPath + trimPrefix(bashCWD, rootLocation) + "/" + fileToLoad, true)
     return  
   }
   
-  fetch("/mybash?cwd="+encodeURIComponent(bashCWD)+"&cmd="+encodeURIComponent(line), {
+  fetch(proxyPath + "/mybash?cwd="+encodeURIComponent(bashCWD)+"&cmd="+encodeURIComponent(line), {
     cache: "no-cache"
   }).then(r => {
     return r.text()
@@ -1885,6 +1894,9 @@ var rootLocation = "" // will be set server side
 // ROOTLOCATION GOES HERE
 var bashCWD = rootLocation
 var paths = location.pathname.split(",")
+
+var proxyPath = "/"
+// PROXYPATH GOES HERE
 
 // The first one get's "hydrated" by the server
 // ay, joining just to split again. Clean up.

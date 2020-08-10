@@ -15,7 +15,8 @@ seems buggy what char position 0
 
 ability to make a new file or directory
 
-terminal
+real terminal emulator (use tmux?)
+in bash mode, allow for clicking on files to change directory there
 
 ------------
 

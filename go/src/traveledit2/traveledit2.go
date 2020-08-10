@@ -173,6 +173,13 @@ func main() {
 				htmlString = strings.Replace(htmlString, "// DIRECTORYMODE TRUE GOES HERE", "directoryMode = true", 1)
 			}
 			htmlString = strings.Replace(htmlString, "// ROOTLOCATION GOES HERE", "var rootLocation = \""+*location+"\"", 1)
+			if *proxyPath != "" {
+				replaceProxyPath := "var proxyPath = \"" + *proxyPath + "\""
+				htmlString = strings.Replace(htmlString, "// PROXYPATH GOES HERE", replaceProxyPath, 1)
+				log.Printf("replaceProxyPath: %s", replaceProxyPath)
+			}
+
+			// This content lines has to be the last one.
 			htmlString = strings.Replace(htmlString, "// LINES GO HERE", "var lines = "+contentLinesJSONString, 1)
 
 			// TODO: when bash mode is disabled, don't do this part.
