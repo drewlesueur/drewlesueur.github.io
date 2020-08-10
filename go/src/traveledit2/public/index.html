@@ -180,6 +180,7 @@ onblur=handleBlur()
   <div id=darkModeButton class=square onclick="toggleDarkMode()">light mode</div>
 </div>
 <div class=toolbar>
+  <div class=square onclick=reloadFile()>reload</div>
   <div class=square onclick=doEval()>eval</div>
   <div class=square onclick=addCmdTab()>cmd</div>
   <div class=square onclick=clearLog()>clear log</div>
@@ -356,7 +357,7 @@ function addCmdTab() {
  addFileToList(file, false)
  setCurrentFile(file)  
 }
-function addFile(fullPath, changeURL, closeCurrent) {
+function addFile(fullPath, changeURL, closeCurrentIfDir, closeCurrent) {
   if (fullPath.charAt(0) != "/") {
     fullPath = "/" + fullPath
   }
@@ -386,7 +387,7 @@ function addFile(fullPath, changeURL, closeCurrent) {
      } else {
         file.fileMode = "file"
      }
-     if (isDir && closeCurrent) {
+     if ((isDir && closeCurrentIfDir) || closeCurrent) {
          closeFile()
      }
      addFileToList(file)
@@ -1345,8 +1346,8 @@ function onStart(e) {
         } else {
             var newFullPath = prefix + "/" + addPath
         }
-        var closeCurrent = true
-        addFile(newFullPath, true, closeCurrent)
+        var closeCurrentIfDir = true
+        addFile(newFullPath, true, closeCurrentIfDir)
         return
       }
       
@@ -1857,6 +1858,10 @@ function duplicateFile() {
    // really should be used for directories
    addFileToList(currentFile)
    renderURL()
+}
+
+function reloadFile() {
+   addFile(currentFile.fullPath, true, true, true)
 }
 
 var maxUndos = 30
