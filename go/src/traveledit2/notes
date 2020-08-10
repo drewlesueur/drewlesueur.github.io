@@ -1,3 +1,9 @@
+swiping up after selecting sometimes causes keyboard
+to appear but it shouldn't
+
+touching after selecting should copy
+or just selecting should copy
+
 when you are editing, any cursoor change in the canvas
 should affect the cursor change in the input element
 

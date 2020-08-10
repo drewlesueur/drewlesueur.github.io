@@ -3,10 +3,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
 <meta charset='utf-8'>
 <style>
-* { margin: 0; padding: 0; 
-  background-color: black; color: white;
+* {
+  margin: 0; padding: 0; 
 }
-body { background-color: black; }
+.dark {
+  background-color: black;
+  color: white;
+}
+.light {
+  background-color: white;
+  color: black;
+}
 .text { border: none; color: cyan;
 }
 .toolbar {
@@ -64,29 +71,29 @@ input[type="text"] {
 }
 </style>
 </head>
-<body>
+<body class=dark>
 <div id=topPadding style="height: 0px;"></div>
 <!-- status bar -->
 <div id=s style="font-size: 12px;
 position: absolute;
 top: 10px; right:0;
 z-index: 999;
-color: cyan;
+color: magenta;
 opacity: 0.5;
 "></div>
 
 <form onsubmit=findDownForm(event)>
-  <input type=text id=searchText
+  <input class=dark type=text id=searchText
     style="font-size: 16px; width: 300px"
       onfocus="focusSearchText()"
       onblur="blurSearchText()"
   >
-  <input type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
+  <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
 
 <form onsubmit=newLine(event)>
 
-<input id=theTextBefore class=text type=text
+<input class=dark id=theTextBefore class=text type=text
 style="font: 8px Courier;
 width: 375px;
 /* display: none; see what it looks like without */
@@ -95,7 +102,7 @@ display: block;"
 onfocus=handleFocusBefore()
 onblur=handleBlur()
 >
-<input id=theText class=text type=text
+<input class=dark id=theText class=text type=text
 style="font: 16px Courier;
 width: 375px;
 --position:absolute; top: 100px;
@@ -106,7 +113,7 @@ onblur=handleBlur()
 oninput=saveLine()
 onkeydown=handleKeydown(event)
 >
-<input id=theTextAfter class=text type=text
+<input class=dark id=theTextAfter class=text type=text
 style="font: 8px Courier;
 width: 375px;
 /* display: none; see what it looks like without */
@@ -116,7 +123,7 @@ display: block;
 onfocus=handleFocusAfter()
 onblur=handleBlur()
 >
-<input type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
+<input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
 
 <table><tr><td>
@@ -158,7 +165,7 @@ onblur=handleBlur()
   <div class=square onclick=clearSearch()>clear search</div>
   <div class=square onclick=editSearch()>edit search</div>
   <div class=square onclick=saveButton()>save</div>
-  <div class=square  onclick=doEval()>eval</div>
+  <div class=square onclick=doEval()>eval</div>
   <div class=square onclick=addCmdTab()>cmd</div>
   <div class=square onclick=comment()>//</div>
   <div class=square onclick=unComment()>un //</div>
@@ -171,29 +178,33 @@ onblur=handleBlur()
 </div>
 
 <form onsubmit="addFile(this.fullPath.value, true); return false;">
-  <input type=text style="width: 275px;" name=fullPath></div>
-  <input type=submit value="Add Pane">
+  <input class=dark type=text style="width: 275px;" name=fullPath></div>
+  <input class=dark type=submit value="Add Pane">
 </form>
 <form method=GET action="" target=_blank>
-  <input type=text id=docTitleEl
+  <input class=dark type=text id=docTitleEl
     style="width: 275px;"
     oninput="this.form.action=this.value"></div>
-  <input type=submit value="Add Tab">
+  <input class=dark type=submit value="Add Tab">
 </form>
 
-<textarea id=pasteEl 
+<textarea class=dark id=pasteEl 
 style="width:100%; height:100px;"
 onfocus="this.setSelectionRange(0, this.value.length)" 
 oninput=importPaste()
  placeholder="when you add text here it will be copied"
 ></textarea>
 
-<textarea id=copyEl
+<textarea class=dark id=copyEl
 contenteditable
 onfocus="this.setSelectionRange(0, this.value.length)" 
 style="width:100%; height:100px;"
  placeholder="when you copy something, it will show up here"
 ></textarea>
+
+<div class=toolbar>
+  <div id=darkModeButton class=square onclick="toggleDarkMode()">light mode</div>
+</div>
 
 <div id=bottomPadding style="height: 0px;"></div>
 </div>
@@ -216,6 +227,7 @@ var fontScale = 1
 var fontHeight=36 * fontScale
 var fontWidth=18 * fontScale
 var fontCSS = (30 * fontScale) + "px 'Courier'"
+var fontColor = "white"
 var cursorX=0
 var cursorY=0
 var offsetX = 0
@@ -268,6 +280,37 @@ docTitleEl.value = location.pathname
 function importPaste() {
   copyBuffer = pasteEl.value.split("\n")
   selectMode = "line"
+}
+
+function toggleDarkMode() {
+  var isDark = document.body.classList.contains("dark")
+  var darkModeButton = document.getElementById("darkModeButton")
+  if (isDark) {
+    darkModeButton.innerText = "dark mode"
+    document.body.classList.remove("dark")
+    document.body.classList.add("light")
+    updateClassForSelector("input", "dark","light")
+    updateClassForSelector("textarea", "dark","light")
+    fontColor = "black"
+    render()
+    return
+  }
+  darkModeButton.innerText = "light mode"
+  document.body.classList.remove("light")
+  document.body.classList.add("dark")
+  updateClassForSelector("input", "light", "dark")
+  updateClassForSelector("textarea", "light", "dark")
+  fontColor = "white"
+  render()
+    
+}
+function updateClassForSelector(selector, remove, add) {
+  var inputs = document.querySelectorAll(selector)
+  for (var i=0; i<inputs.length; i++) {
+    var input = inputs[i]
+    input.classList.remove(remove)
+    input.classList.add(add)
+  }
 }
 
 function editSearch() {
@@ -1064,7 +1107,8 @@ function render() {
       if (offsetX < -1) {
         // Line numbers
         //t.fillStyle = "magenta"
-        t.fillStyle = "cyan"
+        //t.fillStyle = "cyan"
+        t.fillStyle = "brown"
         for (var i=0; i<-offsetX-1; i++) {
           var lineNumberIndex = offsetX + marginLeft + i
           t.fillText(lineNumber.charAt(lineNumberIndex), i*fontWidth, y*fontHeight)
@@ -1073,7 +1117,7 @@ function render() {
     }
     
     // the actual text
-    t.fillStyle = "white"
+    t.fillStyle = fontColor
     for (var x=0; x < maxCols; x++) {  
       t.fillText( charAt(lines, y+offsetY, x+offsetX), x*fontWidth, y*fontHeight)
     }
