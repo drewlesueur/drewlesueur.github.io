@@ -1356,7 +1356,12 @@ function onStart(e) {
           // TODO: make it so if they select a certain directory
           // portion that it will add that directory portion
           // as a new pane (aka file)
-          setCurrentFile(files[cursorLineIndex])
+          
+          // put it at the beginning.
+          var file = files[cursorLineIndex]
+          files.splice(cursorLineIndex, 1)
+          files.unshift(file)
+          setCurrentFile(file)
           return
       }
       
