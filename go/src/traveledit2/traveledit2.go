@@ -43,7 +43,12 @@ func main() {
     indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
     location := flag.String("location", "", "path to directory to serve")
     proxyPath := flag.String("proxypath", "", "the path for proxies, what to ignore")
-
+    allowedIPsStr := os.Getenv("ALLOWEDIPS")
+    allowedIPs := strings.Split(allowedIPsStr, ",")
+    allowedIPsMap := map[string]bool{}
+    for _, ip := range allowedIPs {
+       allowedIPsMap[ip] = true
+    }
     certFile := os.Getenv("CERTFILE")
     keyFile := os.Getenv("KEYFILE")
     flag.Parse()
@@ -200,6 +205,20 @@ func main() {
     mainMux := gziphandler.GzipHandler(mux)
     if os.Getenv("NOBASICAUTH") == "" {
         mainMux = BasicAuth(mainMux)
+    }
+    
+    if len(allowedIPsMap) > 0 {
+       oldMainMux := mainMux
+       mainMux = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+           ipParts := strings.Split(r.RemoteAddr, ":")
+           if len(ipParts) == 0 {
+             return
+           }
+           if _, ok := allowedIPsMap[ipParts[0]]; !ok {
+              return
+           }
+           oldMainMux.ServeHTTP(w, r)
+       })
     }
     redirectMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         http.Redirect(w, r, "https://"+r.URL.Host, http.StatusFound)
