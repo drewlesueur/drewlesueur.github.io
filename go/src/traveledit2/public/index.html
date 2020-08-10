@@ -103,7 +103,7 @@ onfocus=handleFocusBefore()
 onblur=handleBlur()
 >
 <input class=dark id=theText class=text type=text
-style="font: 16px Courier;
+style="font: 12px Courier;
 width: 375px;
 --position:absolute; top: 100px;
 display: block;
@@ -261,6 +261,8 @@ var cursorType = "move"
 // * move
 // * select
 
+// if last keyDown is a backspace
+var wasDelete = false
 var selectTimeout
 var selectTimeoutMillis = 750
 var selectedRegions = []
@@ -789,11 +791,13 @@ function getIndent(line) {
 function insertLine(closeCurly) {
   var theLine = lines[cursorLineIndex]
   var theIndent = getIndent(theLine)
-  if (closeCurly && theLine.endsWith("{") && cursorColIndex == theLine.length) {
-    lines.splice(cursorLineIndex + 1, 0, theIndent + "}")
-    theIndent += "  "
-  }
+  var prevChar = theLine[cursorColIndex - 1]
+  var nextChar = theLine[cursorColIndex]
   lines.splice(cursorLineIndex + 1, 0, theIndent + theLine.substr(theText.selectionStart))
+  if (closeCurly && (prevChar in closingMap) && (nextChar == closingMap[prevChar])) {
+    theIndent += "   "
+    lines.splice(cursorLineIndex + 1, 0, theIndent)
+  }
   lines[cursorLineIndex] = theLine.substr(0, theText.selectionStart)
   cursorLineIndex += 1
   cursorColIndex = theIndent.length
@@ -965,6 +969,7 @@ if (autoSave) {
   setTimeout(save, saveEveryMS)
 }
 function handleKeydown(e) {
+  wasDelete = e.keyCode == 8
   // 8 means backspace
   if (e.keyCode == 8 && theText.selectionStart == 0 && cursorLineIndex != 0) {
     e.preventDefault()
@@ -983,9 +988,31 @@ function handleKeydown(e) {
   return true
 }
 
+var closingMap = {
+  "[": "]",
+  "(": ")",
+  "{": "}",
+  "<": ">",
+  "'": "'",
+  "`": "`",
+  '"': '"',
+}
+var reverseClosingMap = {}
+for (var key in closingMap) {
+  reverseClosingMap[closingMap[key]] = key 
+}
 function saveLine() {
-  // TODO: consider auto-closing parens.
+  var lastTyped = theText.value[theText.selectionStart - 1]
   cursorColIndex = theText.selectionStart
+  // Note: handle newline portion too.
+  if (!wasDelete && lastTyped in closingMap) {
+    theText.value = 
+      theText.value.slice(0, theText.selectionStart) +
+      closingMap[lastTyped] +
+      theText.value.slice(theText.selectionStart)
+      theText.setSelectionRange(cursorColIndex, cursorColIndex)
+  }
+    
   lines[cursorLineIndex] = theText.value
   cursorX = (cursorColIndex - offsetX) * fontWidth
   cursorY = (cursorLineIndex - offsetY) * fontHeight
@@ -993,7 +1020,7 @@ function saveLine() {
   docChanged()
 
   // you need to tell the render to not update the text area
-  // weird bigs will happen without this
+  // weird bugs will happen without this
   inEdit = true
   render()
   inEdit = false
