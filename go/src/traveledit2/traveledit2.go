@@ -47,7 +47,9 @@ func main() {
 	allowedIPs := strings.Split(allowedIPsStr, ",")
 	allowedIPsMap := map[string]bool{}
 	for _, ip := range allowedIPs {
-		allowedIPsMap[ip] = true
+		if ip != "" {
+			allowedIPsMap[ip] = true
+		}
 	}
 	certFile := os.Getenv("CERTFILE")
 	keyFile := os.Getenv("KEYFILE")
@@ -211,11 +213,17 @@ func main() {
 		oldMainMux := mainMux
 		mainMux = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ipParts := strings.Split(r.RemoteAddr, ":")
-			if len(ipParts) == 0 {
-				return
-			}
-			if _, ok := allowedIPsMap[ipParts[0]]; !ok {
-				return
+			for i := 0; i < 1; i++ {
+				if len(allowedIPsMap) == 0 {
+					break
+				}
+				if len(ipParts) == 0 {
+					return
+				}
+				if _, ok := allowedIPsMap[ipParts[0]]; !ok {
+					log.Printf("unalowed ip: %s", ipParts[0])
+					return
+				}
 			}
 			oldMainMux.ServeHTTP(w, r)
 		})
