@@ -1365,12 +1365,27 @@ function onStart(e) {
           // portion that it will add that directory portion
           // as a new pane (aka file)
           
-          // put it at the beginning.
-          var file = files[cursorLineIndex]
-          files.splice(cursorLineIndex, 1)
-          files.unshift(file)
-          setCurrentFile(file)
-          return
+          var line = lines[cursorLineIndex]
+          // since these lines are > delimited
+          // we can figure out what section was tapped
+          var reversePathIndex = 0
+          for (var lineI = 0; lineI < cursorColIndex; lineI++) {
+             var ch = line[lineI]
+             if (ch == "<") {
+                 reversePathIndex += 1  
+             }
+          }
+          if (reversePathIndex == 0) {
+              // put it at the beginning.
+              var file = files[cursorLineIndex]
+              files.splice(cursorLineIndex, 1)
+              files.unshift(file)
+              setCurrentFile(file)
+              return
+          }
+          var parts = files[cursorLineIndex].fullPath.split("/")
+          parts = parts.slice(0, parts.length - reversePathIndex)
+          addFile(parts.join("/"), true, false, false)
       }
       
       if (cursorColIndex == -5) {
