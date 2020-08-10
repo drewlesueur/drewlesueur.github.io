@@ -60,6 +60,7 @@
 input[type="text"] {
   font-size: 16px;
   --border: 1px solid cyan;
+  border: none;
 }
 
 #searchText {
@@ -84,7 +85,7 @@ opacity: 0.5;
 
 <form onsubmit=findDownForm(event)>
   <input class=dark type=text id=searchText
-    style="font-size: 16px; width: 300px"
+    style="display: none; font-size: 12px; width: 300px"
       onfocus="focusSearchText()"
       onblur="blurSearchText()"
   >
@@ -103,7 +104,7 @@ onfocus=handleFocusBefore()
 onblur=handleBlur()
 >
 <input class=dark id=theText class=text type=text
-style="font: 12px Courier;
+style="font: 12px Courier; color: brown;
 width: 375px;
 --position:absolute; top: 100px;
 display: block;
@@ -135,8 +136,8 @@ onblur=handleBlur()
   <canvas id=c width=600 height=1560
   style="width: 200px; height:520px;
   -->
-  <canvas id=c width=1125 height=1290
-  style="width: 375px; height:430px;
+  <canvas id=c width=1125 height=1560
+  style="width: 375px; height:520px;
   border: 0px solid lime;;
   "
   ontouchstart=onStart(event)
@@ -160,21 +161,24 @@ onblur=handleBlur()
 </td></tr></table> 
 
 
+<div class=toolbar id=fileRow onclick=selectFileRow(event)>
+</div>
 <div class=toolbar>
   <div class=square onclick=findDown()>find down</div>
   <div class=square onclick=clearSearch()>clear search</div>
   <div class=square onclick=editSearch()>edit search</div>
   <div class=square onclick=saveButton()>save</div>
-  <div class=square onclick=doEval()>eval</div>
-  <div class=square onclick=addCmdTab()>cmd</div>
   <div class=square onclick=comment()>//</div>
   <div class=square onclick=unComment()>un //</div>
-  <div class=square onclick=clearLog()>clear log</div>
-  <div class=square onclick=undo()>undo</div>
-  <div class=square onclick=redo()>redo</div>
   <div class=square onclick=closeFile()>close</div>
 </div>
-<div class=toolbar id=fileRow onclick=selectFileRow(event)>
+<div class=toolbar>
+  <div class=square onclick=undo()>undo</div>
+  <div class=square onclick=redo()>redo</div>
+  <div class=square onclick=doEval()>eval</div>
+  <div class=square onclick=addCmdTab()>cmd</div>
+  <div class=square onclick=clearLog()>clear log</div>
+  <div id=darkModeButton class=square onclick="toggleDarkMode()">light mode</div>
 </div>
 
 <form onsubmit="addFile(this.fullPath.value, true); return false;">
@@ -202,9 +206,6 @@ style="width:100%; height:100px;"
  placeholder="when you copy something, it will show up here"
 ></textarea>
 
-<div class=toolbar>
-  <div id=darkModeButton class=square onclick="toggleDarkMode()">light mode</div>
-</div>
 
 <div id=bottomPadding style="height: 0px;"></div>
 </div>
@@ -240,6 +241,9 @@ canvasWidth=1125
 //var canvasWidth=600
 // I turned off "Predictive" to get more vertical space
 var canvasHeightKeyboard=1040
+var canvasHeightKeyboard=1060
+
+
 var canvasHeightFull=c.height
 //var canvasHeightFull=1000
 var maxLines = 0
@@ -316,19 +320,17 @@ function updateClassForSelector(selector, remove, add) {
 }
 
 function editSearch() {
+  searchText.style.display = "block"
   searchText.focus()
 }
 function focusSearchText() {
-  searchText.style.position = "absolute"
-  searchText.style.top = "0px"
-  searchText.style.left = "0px"
   window.scrollTo(0, 0)
   searchText.setSelectionRange(0, searchText.value.length)
+  theText.style.display = "none"
 }
 function blurSearchText() {
-  searchText.style.position = ""
-  searchText.style.top = ""
-  searchText.style.left = ""
+  theText.style.display = "block"
+  searchText.style.display = "none"
 }
 
 function closeFile() {
@@ -1365,7 +1367,7 @@ function onStart(e) {
       
       if (document.activeElement != theText) {
         log("calling focus")
-        offsetY = bind(cursorLineIndex - 5, 0, cursorLineIndex)
+        //offsetY = bind(cursorLineIndex - 5, 0, cursorLineIndex)
         updateCursorXY()
         //topPadding.style.height=0
         theText.focus()
