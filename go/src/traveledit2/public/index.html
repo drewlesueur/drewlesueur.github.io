@@ -168,17 +168,20 @@ onblur=handleBlur()
   <div class=square onclick=clearSearch()>clear search</div>
   <div class=square onclick=editSearch()>edit search</div>
   <div class=square onclick=saveButton()>save</div>
-  <div class=square onclick=comment()>//</div>
-  <div class=square onclick=unComment()>un //</div>
+  <div class=square onclick=seeFiles()>files</div>
   <div class=square onclick=closeFile()>close</div>
 </div>
 <div class=toolbar>
   <div class=square onclick=undo()>undo</div>
   <div class=square onclick=redo()>redo</div>
+  <div class=square onclick=comment()>//</div>
+  <div class=square onclick=unComment()>un //</div>
+  <div id=darkModeButton class=square onclick="toggleDarkMode()">light mode</div>
+</div>
+<div class=toolbar>
   <div class=square onclick=doEval()>eval</div>
   <div class=square onclick=addCmdTab()>cmd</div>
   <div class=square onclick=clearLog()>clear log</div>
-  <div id=darkModeButton class=square onclick="toggleDarkMode()">light mode</div>
 </div>
 
 <form onsubmit="addFile(this.fullPath.value, true); return false;">
@@ -274,10 +277,7 @@ var selectedRegions = []
 var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
-// can't be bashMode and directoryMode at the same time
-// so consider combining these variables
-var bashMode = false
-var directoryMode = false
+var fileMode = "file"
 var bashCWD = "."
 var directoryCWD = "." // todo: remove this
 var autoSave = true
@@ -349,7 +349,7 @@ function closeFile() {
 
 function addCmdTab() {
  var file = makeFile("/cmd", "")
- file.bashMode = true
+ file.fileMode = "bash"
  // It adopts the last bashCWD
  file.bashCWD = bashCWD
  addFileToList(file, false)
@@ -378,7 +378,9 @@ function addFile(fullPath, changeURL) {
   }).then(b => {
      var file = makeFile(fullPath, b)
      if (isDir) {
-       file.directoryMode = true
+       file.fileMode = "directory"
+     } else {
+        file.fileMode = "file"
      }
      addFileToList(file)
      setCurrentFile(file)
@@ -390,7 +392,7 @@ function addFile(fullPath, changeURL) {
 
 function renderURL() {
  // For now we don't get files with bash mode.
- var filtered = files.filter(f => !f.bashMode)
+ var filtered = files.filter(f => f.fileMode != "bash")
  var theNewPath = "/" + filtered.map(f => f.fullPath.slice(1)).join(",")
  history.replaceState({}, "", theNewPath) 
 }
@@ -811,7 +813,7 @@ function insertLine(closeCurly) {
 function newLine(e) {
   var theLine = lines[cursorLineIndex]
   e.preventDefault()
-  if (bashMode) {
+  if (fileMode == "bash") {
     runBashCommand(theLine)
     return false 
   }
@@ -936,8 +938,7 @@ function save() {
     // simulate a goto
     // breaks will make sure the 'cleanup' step gets called
     for (var s=0; s<1; s++) {
-      if (bashMode) break 
-      if (directoryMode) break 
+      if (fileMode != "file") break
       if (savedVersion == version) {
         break
       }
@@ -1323,7 +1324,7 @@ function onStart(e) {
     // text elements when not responding to user action
     // maybe there are workarounds.
     if (!moved && cursorType == "move") {
-      if (directoryMode) {
+      if (fileMode == "directory") {
         var prefix = currentFile.fullPath
         // To prevent leading double slash
         if (prefix == "/") {
@@ -1332,6 +1333,14 @@ function onStart(e) {
         var newFullPath = prefix + "/" + lines[cursorLineIndex]
         addFile(newFullPath, true)
         return
+      }
+      
+      if (fileMode == "fileList") {
+          // TODO: make it so if they select a certain directory
+          // portion that it will add that directory portion
+          // as a new pane (aka file)
+          setCurrentFile(files[cursorLineIndex])
+          return
       }
       
       if (cursorColIndex == -5) {
@@ -1724,8 +1733,7 @@ function makeFile(fullPath, contents) {
     cursorColIndex: 0,
     offsetY: 0,
     offsetX: 0,
-    bashMode: false,
-    directoryMode: false,
+    fileMode: "file",
     bashCWD: bashCWD,
     directoryCWD: directoryCWD,
     version: 0,
@@ -1757,6 +1765,19 @@ function renderFileDropdown() {
    
 }
 
+function seeFiles() {
+    var contents = files.map(f => {
+       //return f.fullPath
+       var parts = f.fullPath.split("/")
+       var reversed = parts.reverse().join(" < ")
+       // we reverse to see more unique stuff first
+       return reversed
+    }).join("\n")
+    var f = makeFile("__", contents)
+    f.fileMode = "fileList"
+    setCurrentFile(f)  
+}
+
 function setCurrentFile(file) {
   // Note: it might be nice to have a single global
   // "currentFile" variable, instead of a handful of globals
@@ -1773,8 +1794,7 @@ function setCurrentFile(file) {
     currentFile.cursorColIndex = cursorColIndex
     currentFile.offsetY = offsetY
     currentFile.offsetX = offsetX
-    currentFile.bashMode = bashMode
-    currentFile.directoryMode = directoryMode
+    currentFile.fileMode = fileMode
     currentFile.bashCWD = bashCWD
     currentFile.directoryCWD = directoryCWD
     currentFile.version = version
@@ -1791,8 +1811,7 @@ function setCurrentFile(file) {
   cursorColIndex = file.cursorColIndex
   offsetY = file.offsetY
   offsetX = file.offsetX
-  bashMode = file.bashMode
-  directoryMode = file.directoryMode
+  fileMode = file.fileMode
   bashCWD = file.bashCWD
   directoryCWD = file.directoryCWD
   version = file.version
@@ -1830,7 +1849,7 @@ var paths = location.pathname.split(",")
 // The first one get's "hydrated" by the server
 // ay, joining just to split again. Clean up.
 var file = makeFile(paths[0], lines.join("\n"))
-file.directoryMode = directoryMode
+file.fileMode = fileMode
 
 addFileToList(file)
 setCurrentFile(file)
