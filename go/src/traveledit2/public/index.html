@@ -1187,16 +1187,18 @@ function render() {
     " c:" + cursorColIndex + "," + cursorLineIndex + 
     " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
     " " + selectMode
-    
-  if (savingVersion != -1) {
-    saveButton.style.backgroundColor = "gray" 
-    saveButton.innerText = "saving"
-  } else if (version == savedVersion) {
-    saveButton.style.backgroundColor = "" 
-    saveButton.innerText = "saved"
-  } else {
-    saveButton.style.backgroundColor = "red" 
-    saveButton.innerText = "save"
+  
+  if (fileMode == "file")   {
+    if (savingVersion != -1) {
+      saveButton.style.backgroundColor = "gray" 
+      saveButton.innerText = "saving"
+    } else if (version == savedVersion) {
+      saveButton.style.backgroundColor = "" 
+      saveButton.innerText = "saved"
+    } else {
+      saveButton.style.backgroundColor = "red" 
+      saveButton.innerText = "save"
+    }
   }
   findWordEl.innerHTML = `
     <pre>
@@ -1238,9 +1240,15 @@ function render() {
     
     // highlight search
     var theLine = lines[y + offsetY]
+    var highlightStartSearch = 0
     if (theLine) {
-      var pos = theLine.indexOf(searchText.value)
-      if (pos != -1) {
+      // max 20 highlights per line
+      for (var _i=0; _i<20; _i++) {
+        var pos = theLine.indexOf(searchText.value, highlightStartSearch)
+        if (pos == -1) {
+          break
+        }
+        highlightStartSearch = pos + searchText.value.length
         t.save()
         // lime
         if (isDark) {
