@@ -257,9 +257,9 @@ var marginLeft = 5
 canvasWidth=1125
 //var canvasWidth=600
 // I turned off "Predictive" to get more vertical space
-var canvasHeightKeyboard=1040
-var canvasHeightKeyboard=1060
 
+// TODO: make these configurable in UI
+var canvasHeightKeyboard=950
 
 var canvasHeightFull=c.height
 //var canvasHeightFull=1000
@@ -369,20 +369,22 @@ function closeFile() {
 }
 
 function addCmdTab() {
- var file = makeFile(proxyPath + "/cmd", "")
- file.fileMode = "bash"
- 
- if (currentFile.fileMode == "bash") {
+   var file = makeFile(proxyPath + "/cmd", "")
+   file.fileMode = "bash"
+   
+   if (currentFile.fileMode == "bash") {
      file.bashCWD = bashCWD
- } else if (currentFile.fileMode == "file") {
-    var parts = trimPrefix(currentFile.fullPath, proxyPath).split("/")
-    parts = parts.slice(0, parts.length - 1)
-    file.bashCWD = rootLocation + parts.join("/")
- } else if (currentFile.fileMode == "directory") {
-    file.bashCWD = rootLocation + trimPrefix(currentFile.fullPath, proxyPath)
- }
- addFileToList(file, false)
- setCurrentFile(file)  
+   } else if (currentFile.fileMode == "file") {
+     var parts = trimPrefix(currentFile.fullPath, proxyPath).split("/")
+     parts = parts.slice(0, parts.length - 1)
+     file.bashCWD = rootLocation + parts.join("/")
+   } else if (currentFile.fileMode == "directory") {
+     file.bashCWD = rootLocation + trimPrefix(currentFile.fullPath, proxyPath)
+   }
+   addFileToList(file, false)
+   setCurrentFile(file)
+   runBashCommand("")
+   theText.focus()  
 }
 function addFile(fullPath, changeURL, closeCurrentIfDir, closeCurrent) {
   if (fullPath.charAt(0) != "/") {
@@ -552,24 +554,36 @@ function findDown() {
       if (i == cursorLineIndex) {
          pos += cursorColIndex
       }
-      // this is so if the keyboard is up during search
-      // There is probably a more elegant way to handle this
-      var maxLinesSearch = maxLines/2
-      if (i < offsetY || i > offsetY+maxLinesSearch) {
-        offsetY = i
-      }
       cursorLineIndex = i
       cursorColIndex = pos + searchText.value.length
-      if (cursorColIndex < offsetX || cursorColIndex > offsetX+maxCols) {
-        offsetX = max(0, cursorColIndex - Math.floor(maxCols/2))
-      }
       updateCursorXY()
+      ensureCursorInScreen()
       render()
       return
     }
   }
   render()
   // alert("not found")
+}
+
+function ensureCursorInScreen() {
+    var changed = false
+    if (cursorLineIndex < offsetY) {
+       alert("less")
+       offsetY = cursorLineIndex
+       changed = true   
+    } else if (cursorLineIndex >= offsetY+maxLines) {
+       offsetY = cursorLineIndex-maxLines +1
+       changed = true   
+    }
+    
+    if (cursorColIndex < offsetX) {
+      offsetX = cursorColIndex
+    } else if (cursorColIndex > offsetX+maxCols) {
+      offsetX = cursorColIndex - Math.floor(maxCols/2)
+    }
+    updateCursorXY()
+    render()
 }
 // Note this won't work for certain chars
 function reverse(str) {
@@ -591,19 +605,11 @@ function findUp() {
       if (i == cursorLineIndex) {
          pos += (lines[i].length - cursorColIndex)
       }
-      // this is so if the keyboard is up during search
-      // There is probably a more elegant way to handle this
-      var maxLinesSearch = maxLines/2
-      if (i < offsetY || i > offsetY+maxLinesSearch) {
-        offsetY = i
-      }
       cursorLineIndex = i
       log("the pos is " + pos)
       cursorColIndex = lines[i].length - (pos + searchText.value.length)
-      if (cursorColIndex < offsetX || cursorColIndex > offsetX+maxCols) {
-        offsetX = max(0, cursorColIndex - Math.floor(maxCols/2))
-      }
       updateCursorXY()
+      ensureCursorInScreen()
       render()
       return
     }
@@ -912,12 +918,12 @@ function newLine(e) {
   theText.setSelectionRange(cursorColIndex, cursorColIndex)
   return false
 }
-function scrollToBottom() {
-  if (cursorLineIndex > offsetY + maxLines) {
-    offsetY = cursorLineIndex - maxLines + 1  
-    render()
-  }
-}
+// function scrollToBottom() {
+//   if (cursorLineIndex > offsetY + maxLines) {
+//     offsetY = cursorLineIndex - maxLines + 1  
+//     render()
+//   }
+// }
 function runBashCommand(line) {
   if (line == "clear") {
     lines = []
@@ -935,7 +941,7 @@ function runBashCommand(line) {
     paste()
     cursorLineIndex += 1
     cursorColIndex = 0
-    scrollToBottom()
+    ensureCursorInScreen()
     addFile(proxyPath + trimPrefix(bashCWD, rootLocation) + "/" + fileToLoad, true)
     return  
   }
@@ -953,12 +959,17 @@ function runBashCommand(line) {
     // Last item is a newline
     // Second to last item is cwd
     bashCWD = copyBuffer[copyBuffer.length - 2]
+    // let's restyle the pwd after we grab it
+    copyBuffer[copyBuffer.length - 2] = bashCWD
+      .split("/")
+      .reverse()
+      .join(" < ")
     log(`
       cli: ${cursorLineIndex}
       oY: ${offsetY}
       maxLines: ${maxLines}
     `) 
-    scrollToBottom()
+    ensureCursorInScreen()
     pasteMode = "line"
     paste()
   }).catch(e => {
@@ -1002,9 +1013,7 @@ function handleFocusBefore() {
 
 function handleFocusIn() {
   setCanvasHeight(canvasHeightKeyboard)
-  if (cursorLineIndex < offsetY || cursorLineIndex > (offsetY + maxLines)) {
-    offsetY = cursorLineIndex - maxLines
-  }
+  ensureCursorInScreen()
   render()
   theText.setSelectionRange(cursorColIndex, cursorColIndex)
 }
@@ -1282,6 +1291,9 @@ function render() {
       }
     }
     
+    // was here color git diff
+    //if 
+    
     // the actual text
     t.fillStyle = fontColor
     for (var x=0; x < maxCols; x++) {  
@@ -1543,11 +1555,9 @@ function onStart(e) {
       
       if (document.activeElement != theText) {
         log("calling focus")
-        //offsetY = bind(cursorLineIndex - 5, 0, cursorLineIndex)
-        updateCursorXY()
-        //topPadding.style.height=0
+        // the handleFocusIn function will do some
+        // processing
         theText.focus()
-        theText.setSelectionRange(cursorColIndex, cursorColIndex)
       }  
     }
     if (moved) {
