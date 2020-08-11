@@ -567,14 +567,10 @@ function findDown() {
 }
 
 function ensureCursorInScreen() {
-    var changed = false
     if (cursorLineIndex < offsetY) {
-       alert("less")
        offsetY = cursorLineIndex
-       changed = true   
     } else if (cursorLineIndex >= offsetY+maxLines) {
        offsetY = cursorLineIndex-maxLines +1
-       changed = true   
     }
     
     if (cursorColIndex < offsetX) {
@@ -1248,7 +1244,7 @@ function render() {
     // }
     
     // highlight search
-    var theLine = lines[y + offsetY]
+    var theLine = lines[y + offsetY] || ""
     var highlightStartSearch = 0
     if (theLine) {
       // max 20 highlights per line
@@ -1291,14 +1287,23 @@ function render() {
       }
     }
     
-    // was here color git diff
-    //if 
-    
     // the actual text
-    t.fillStyle = fontColor
+    t.save()
+    if (fileMode == "bash" ) {
+        if (theLine.startsWith("+")) {
+           t.fillStyle = "lime"
+        } else if (theLine.startsWith("-")){
+           t.fillStyle = "red"
+        } else {
+            t.fillStyle = fontColor
+        }
+    } else {
+        t.fillStyle = fontColor
+    }
     for (var x=0; x < maxCols; x++) {  
       t.fillText( charAt(lines, y+offsetY, x+offsetX), x*fontWidth, y*fontHeight)
     }
+    t.restore()
   }
   
   // red ghost cursor
@@ -1554,7 +1559,11 @@ function onStart(e) {
       }
       
       if (document.activeElement != theText) {
-        log("calling focus")
+        if (cursorLineIndex >= lines.length) {
+            cursorLineIndex = lines.length - 1
+            updateCursorXY()
+            render()
+        }
         // the handleFocusIn function will do some
         // processing
         theText.focus()
