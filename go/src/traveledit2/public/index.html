@@ -164,9 +164,11 @@ onblur=handleBlur()
 <div class=toolbar id=fileRow onclick=selectFileRow(event)>
 </div>
 <div class=toolbar>
-  <div class=square onclick=findDown()>find down</div>
-  <div class=square onclick=clearSearch()>clear search</div>
-  <div class=square onclick=editSearch()>edit search</div>
+  <div id=findDownButton class=square onclick=findDown()>find down</div>
+  <div id=findUpButton class=square onclick=findUp()>find up</div>
+  <div id=clearSearchButton class=square onclick=clearSearch()>edit search</div>
+  <!-- <div class=square onclick=editSearch()>edit search</div>
+  -->
   <div class=square onclick=saveButton()>save</div>
   <div class=square onclick=seeFiles()>files</div>
   <div class=square onclick=closeFile()>close</div>
@@ -229,7 +231,7 @@ var savedVersion = 0
 var savingVersion = -1
 var saveEveryMS = 3000
 var lastWord = ""
-var fontScale = 1
+var fontScale = 1.2
 var fontHeight=36 * fontScale
 var fontWidth=18 * fontScale
 var fontCSS = (30 * fontScale) + "px 'Courier'"
@@ -521,6 +523,7 @@ function findDownForm(e) {
 function findDown() {
   if (searchText.value == "") {
     searchText.value = getWordAtCursor().word
+    clearSearchButton.innerText = "clear search"
   }
   log("searching for: " + searchText.value)
   for (var i=cursorLineIndex; i<lines.length; i++) {
@@ -530,6 +533,9 @@ function findDown() {
     }
     var pos = lineToSearch.indexOf(searchText.value)
     if (pos != -1) {
+      if (i == cursorLineIndex) {
+         pos += cursorColIndex
+      }
       // this is so if the keyboard is up during search
       // There is probably a more elegant way to handle this
       var maxLinesSearch = maxLines/2
@@ -548,8 +554,52 @@ function findDown() {
   }
   // alert("not found")
 }
+// Note this won't work for certain chars
+function reverse(str) {
+   return str.split("").reverse().join("")
+}
+function findUp() {
+  if (searchText.value == "") {
+    searchText.value = getWordAtCursor().word
+    clearSearchButton.innerText = "clear search"
+  }
+  log("searching for: " + searchText.value)
+  for (var i=cursorLineIndex; i>0; i--) {
+    var lineToSearch = lines[i]
+    if (i == cursorLineIndex) {
+      lineToSearch = lineToSearch.substr(0, cursorColIndex)
+    }
+    var pos = reverse(lineToSearch).indexOf(reverse(searchText.value))
+    if (pos != -1) {
+      if (i == cursorLineIndex) {
+         pos += (lines[i].length - cursorColIndex)
+      }
+      // this is so if the keyboard is up during search
+      // There is probably a more elegant way to handle this
+      var maxLinesSearch = maxLines/2
+      if (i < offsetY || i > offsetY+maxLinesSearch) {
+        offsetY = i
+      }
+      cursorLineIndex = i
+      if (pos < offsetX || pos > offsetX+maxCols) {
+        offsetX = max(0, pos - Math.floor(maxCols/2))
+      }
+      log("the pos is " + pos)
+      cursorColIndex = lines[i].length - (pos + searchText.value.length)
+      updateCursorXY()
+      render()
+      return
+    }
+  }
+  // alert("not found")
+}
 function clearSearch() {
+  if (searchText.value == "") {
+     editSearch()
+     return
+  }
   searchText.value = ""
+  clearSearchButton.innerText = "edit search"
 }
 
 function jsFunc() {
@@ -1386,6 +1436,7 @@ function onStart(e) {
           var parts = files[cursorLineIndex].fullPath.split("/")
           parts = parts.slice(0, parts.length - reversePathIndex)
           addFile(parts.join("/"), true, false, false)
+          return
       }
       
       if (cursorColIndex == -5) {

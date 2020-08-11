@@ -18,6 +18,7 @@ ability to make a new file or directory
 real terminal emulator (use tmux?)
 in bash mode, allow for clicking on files to change directory there
 
+collapsing/expanding indention
 ------------
 
 when you are editing, any cursoor change in the canvas
