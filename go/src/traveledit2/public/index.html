@@ -1948,6 +1948,7 @@ function setCurrentFile(file) {
   savingVersion = file.savingVersion
   currentFile = file
   
+  updateCursorXY()
   searchText.setAttribute("placeholder", currentFile.fullPath + " (search)")
   render()
   renderFileDropdown()
