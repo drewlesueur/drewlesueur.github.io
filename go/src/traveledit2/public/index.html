@@ -76,6 +76,7 @@ input[type="text"] {
 <div id=topPadding style="height: 0px;"></div>
 <!-- status bar -->
 <div id=s style="font-size: 12px;
+display: none;
 position: absolute;
 top: 10px; right:0;
 z-index: 999;
@@ -88,6 +89,7 @@ opacity: 0.5;
     style="display: none; font-size: 12px; width: 300px"
       onfocus="focusSearchText()"
       onblur="blurSearchText()"
+      oninput="inputSearchText()"
   >
   <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
@@ -169,7 +171,7 @@ onblur=handleBlur()
   <div id=clearSearchButton class=square onclick=clearSearch()>edit search</div>
   <!-- <div class=square onclick=editSearch()>edit search</div>
   -->
-  <div class=square onclick=saveButton()>save</div>
+  <div id=saveButton class=square onclick=saveWrapper()>save</div>
   <div class=square onclick=seeFiles()>files</div>
   <div class=square onclick=closeFile()>close</div>
 </div>
@@ -337,7 +339,13 @@ function blurSearchText() {
   theText.style.display = "block"
   searchText.style.display = "none"
 }
-
+function inputSearchText() {
+    if (searchText.value == "") {
+        clearSearchButton.innerText = "edit search"
+    } else {
+        clearSearchButton.innerText = "clear search"
+    }
+}
 function closeFile() {
   for (var i=0; i<files.length; i++) {
     var file = files[i]
@@ -803,7 +811,9 @@ function del() {
         selectedRegions = []
         docChanged()
         render()
-        theText.setSelectionRange(r.startX, r.startX)
+        if (document.activeElement == theText) {
+            theText.setSelectionRange(r.startX, r.startX)
+        }
         return
       }
     }
@@ -825,7 +835,9 @@ function del() {
     selectedRegions = []
     docChanged()
     render()
-    theText.setSelectionRange(r.startX, r.startX)
+    if (document.activeElement == theText) {
+        theText.setSelectionRange(r.startX, r.startX)
+    }
     return
   }
   selectMode = "line" 
@@ -996,7 +1008,7 @@ function handleBlur() {
 }
 
 // pressing the save button disables autosave
-function saveButton() {
+function saveWrapper() {
   autoSave = false
   save()
 }
@@ -1149,6 +1161,8 @@ function render() {
   t.font = fontCSS
   t.textBaseline = "top"
   var r = selectedRegions[0]
+  // TODO: this element is hitten
+  // consider removing it.
   s.innerHTML = 
     lastWord + " " +
     version + "/" + savedVersion +
@@ -1157,6 +1171,17 @@ function render() {
     " c:" + cursorColIndex + "," + cursorLineIndex + 
     " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
     " " + selectMode
+    
+  if (savingVersion != -1) {
+    saveButton.style.backgroundColor = "gray" 
+    saveButton.innerText = "saving"
+  } else if (version == savedVersion) {
+    saveButton.style.backgroundColor = "" 
+    saveButton.innerText = "saved"
+  } else {
+    saveButton.style.backgroundColor = "red" 
+    saveButton.innerText = "save"
+  }
   findWordEl.innerHTML = `
     <pre>
   wordAtCursor: ${JSON.stringify(getWordAtCursor().word)}
@@ -1882,7 +1907,6 @@ function seeFiles() {
     f.fileMode = "fileList"
     setCurrentFile(f)  
 }
-
 function setCurrentFile(file) {
   // Note: it might be nice to have a single global
   // "currentFile" variable, instead of a handful of globals
