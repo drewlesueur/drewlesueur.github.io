@@ -355,14 +355,20 @@ function inputSearchText() {
     render()
 }
 function closeFile() {
-  for (var i=0; i<files.length; i++) {
-    var file = files[i]
-    if (file == currentFile) {
-      files.splice(i, 1)
-      break
-    }  
+  if (fileMode == "fileList") {
+    files.splice(cursorLineIndex, 1)
+    seeFiles()
+    seeFiles()
+  } else {
+    for (var i=0; i<files.length; i++) {
+      var file = files[i]
+      if (file == currentFile) {
+        files.splice(i, 1)
+        break
+      }  
+    }
+    setCurrentFile(files[0])
   }
-  setCurrentFile(files[0])
   render()
   renderFileDropdown()
   renderURL()
@@ -1291,7 +1297,7 @@ function render() {
     t.save()
     if (fileMode == "bash" ) {
         if (theLine.startsWith("+")) {
-           t.fillStyle = "lime"
+           t.fillStyle = isDark ? "lime" : "green"
         } else if (theLine.startsWith("-")){
            t.fillStyle = "red"
         } else {
@@ -1958,7 +1964,7 @@ function renderFileDropdown() {
 
 function seeFiles() {
     if (currentFile.fileMode == "fileList") {
-       closeFile()
+       setCurrentFile(files[0])
        return
     }
     var contents = files.map(f => {
@@ -1970,6 +1976,7 @@ function seeFiles() {
     }).join("\n")
     var f = makeFile("__", contents)
     f.fileMode = "fileList"
+    f.cursorLineIndex = 1
     setCurrentFile(f)  
 }
 function setCurrentFile(file) {
