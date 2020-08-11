@@ -170,7 +170,7 @@ func main() {
 			contentLinesJSONString := string(contentLinesJSON)
 
 			if isDir {
-				htmlString = strings.Replace(htmlString, "// DIRECTORYMODE TRUE GOES HERE", "directoryMode = true", 1)
+				htmlString = strings.Replace(htmlString, "// FILEMODE DIRECTORY GOES HERE", "fileMode = \"directory\"", 1)
 			}
 			htmlString = strings.Replace(htmlString, "// ROOTLOCATION GOES HERE", "var rootLocation = \""+*location+"\"", 1)
 			if *proxyPath != "" {

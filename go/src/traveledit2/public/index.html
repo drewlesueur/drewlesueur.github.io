@@ -137,10 +137,16 @@ onblur=handleBlur()
   the with attribute, and same for height.
   <canvas id=c width=600 height=1560
   style="width: 200px; height:520px;
-  -->
   <canvas id=c width=1125 height=1560
   style="width: 375px; height:520px;
   border: 0px solid lime;;
+  "
+  ontouchstart=onStart(event)
+  ></canvas>
+  -->
+  <canvas id=c width=1125 height=1380
+  style="width: 375px; height:460px;
+  border: 0px solid lime;
   "
   ontouchstart=onStart(event)
   ></canvas>
@@ -233,11 +239,13 @@ var savedVersion = 0
 var savingVersion = -1
 var saveEveryMS = 3000
 var lastWord = ""
-var fontScale = 1.2
+// var fontScale = 1.2
+var fontScale = 1
 var fontHeight=36 * fontScale
 var fontWidth=18 * fontScale
 var fontCSS = (30 * fontScale) + "px 'Courier'"
 var fontColor = "white"
+var isDark = true
 var cursorX=0
 var cursorY=0
 var offsetX = 0
@@ -296,9 +304,8 @@ function importPaste() {
 }
 
 function toggleDarkMode() {
-  var isDark = document.body.classList.contains("dark")
-  var darkModeButton = document.getElementById("darkModeButton")
-  if (isDark) {
+  isDark = !isDark
+  if (!isDark) {
     darkModeButton.innerText = "dark mode"
     document.body.classList.remove("dark")
     document.body.classList.add("light")
@@ -345,6 +352,7 @@ function inputSearchText() {
     } else {
         clearSearchButton.innerText = "clear search"
     }
+    render()
 }
 function closeFile() {
   for (var i=0; i<files.length; i++) {
@@ -402,7 +410,7 @@ function addFile(fullPath, changeURL, closeCurrentIfDir, closeCurrent) {
      }
      var file = makeFile(fullPath, b)
      if (isDir) {
-       file.fileMode = "directory"
+        file.fileMode = "directory"
      } else {
         file.fileMode = "file"
      }
@@ -551,15 +559,16 @@ function findDown() {
         offsetY = i
       }
       cursorLineIndex = i
-      if (pos < offsetX || pos > offsetX+maxCols) {
-        offsetX = max(0, pos - Math.floor(maxCols/2))
-      }
       cursorColIndex = pos + searchText.value.length
+      if (cursorColIndex < offsetX || cursorColIndex > offsetX+maxCols) {
+        offsetX = max(0, cursorColIndex - Math.floor(maxCols/2))
+      }
       updateCursorXY()
       render()
       return
     }
   }
+  render()
   // alert("not found")
 }
 // Note this won't work for certain chars
@@ -589,17 +598,18 @@ function findUp() {
         offsetY = i
       }
       cursorLineIndex = i
-      if (pos < offsetX || pos > offsetX+maxCols) {
-        offsetX = max(0, pos - Math.floor(maxCols/2))
-      }
       log("the pos is " + pos)
       cursorColIndex = lines[i].length - (pos + searchText.value.length)
+      if (cursorColIndex < offsetX || cursorColIndex > offsetX+maxCols) {
+        offsetX = max(0, cursorColIndex - Math.floor(maxCols/2))
+      }
       updateCursorXY()
       render()
       return
     }
   }
   // alert("not found")
+  render()
 }
 function clearSearch() {
   if (searchText.value == "") {
@@ -608,6 +618,7 @@ function clearSearch() {
   }
   searchText.value = ""
   clearSearchButton.innerText = "edit search"
+  render()
 }
 
 function jsFunc() {
@@ -1156,7 +1167,12 @@ function render() {
       }
     } 
   }
-
+  
+  // draw line where your cursor is for help with finding
+  t.save()
+  t.fillStyle = "rgba(0, 255, 255, 0.25)"
+  t.fillRect(0, (cursorLineIndex - offsetY) * fontHeight, c.width, fontHeight)
+  t.restore()
 
   t.font = fontCSS
   t.textBaseline = "top"
@@ -1219,6 +1235,28 @@ function render() {
     //   t.fillRect(0, y*fontHeight, canvasWidth, fontHeight)
     //   t.restore()
     // }
+    
+    // highlight search
+    var theLine = lines[y + offsetY]
+    if (theLine) {
+      var pos = theLine.indexOf(searchText.value)
+      if (pos != -1) {
+        t.save()
+        // lime
+        if (isDark) {
+          t.fillStyle = "blue"
+        } else {
+          t.fillStyle = "yellow"
+        }
+        t.fillRect(
+          (pos - offsetX) * fontWidth,
+          y * fontHeight,
+          searchText.value.length * fontWidth,
+          fontHeight
+        )
+        t.restore()
+      }
+    }
     
     // Line numbers
     
@@ -1908,6 +1946,9 @@ function seeFiles() {
     setCurrentFile(f)  
 }
 function setCurrentFile(file) {
+  if (!file) {
+     return
+  }
   // Note: it might be nice to have a single global
   // "currentFile" variable, instead of a handful of globals
   // that have to be saved/restored
@@ -1979,7 +2020,7 @@ var lines = []
 // LINES GO HERE
 
 // DIRECTORYCWD GOES HERE
-// DIRECTORYMODE TRUE GOES HERE
+// FILEMODE DIRECTORY GOES HERE
 
 var rootLocation = "" // will be set server side
 // ROOTLOCATION GOES HERE
