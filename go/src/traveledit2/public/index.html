@@ -220,9 +220,14 @@ onfocus="this.setSelectionRange(0, this.value.length)"
 style="width:100%; height:100px;"
  placeholder="when you copy something, it will show up here"
 ></textarea>
-
-
-<div id=bottomPadding style="height: 0px;"></div>
+<div>
+    <input
+      id=fontScaleInput
+      oninput="updateFontScale()"
+      style="font-size: 16px;"
+    > font scale
+</div>
+<div id=bottomPadding style="height: 100px;"></div>
 </div>
 
 </div>
@@ -241,6 +246,7 @@ var saveEveryMS = 3000
 var lastWord = ""
 // var fontScale = 1.2
 var fontScale = 1
+// some duplication here with fontScale, see updateFontScale
 var fontHeight=36 * fontScale
 var fontWidth=18 * fontScale
 var fontCSS = (30 * fontScale) + "px 'Courier'"
@@ -264,9 +270,10 @@ var canvasHeightKeyboard=950
 var canvasHeightFull=c.height
 //var canvasHeightFull=1000
 var maxLines = 0
-var maxCols = Math.floor(canvasWidth / fontWidth)
+var maxCols = 0
 var canvasHeight = 0
 setCanvasHeight(canvasHeightFull)
+setCanvasWidth(canvasWidth)
 var pointWidth=325
 var pointHeight=500
 var touchScale=2 // was 3 for a while
@@ -296,7 +303,15 @@ var bashCWD = "."
 var directoryCWD = "." // todo: remove this
 var autoSave = false
 
-
+function updateFontScale() {
+    fontScale = fontScaleInput.value - 0
+    fontHeight=36 * fontScale
+    fontWidth=18 * fontScale
+    fontCSS = (30 * fontScale) + "px 'Courier'"
+    setCanvasHeight(canvasHeightFull)
+    setCanvasWidth(canvasWidth)
+    render()
+}
 docTitleEl.value = location.pathname
 function importPaste() {
   copyBuffer = pasteEl.value.split("\n")
@@ -374,22 +389,24 @@ function closeFile() {
   renderURL()
 }
 
+var bashHelpers = [
+   // some common commands to use quickly
+   // TODO: make these common commands configurable
+   "gofmt -s -w .",
+   "git status",   
+   "git diff",   
+   "git add -u .",
+   "git diff --cached",   
+   "git log -10",
+   "git commit -m ''",   
+   "git push origin HEAD",   
+   "git branch",
+   "golangci-lint run --print-issued-lines=false",
+   "",  
+   "",  
+ ]
 function addCmdTab() {
-   var file = makeFile(proxyPath + "/cmd", [
-       // some common commands to use quickly
-       // TODO: make these common commands configurable
-       "gofmt -s -w .",
-       "git status",   
-       "git diff",   
-       "git add -u .",
-       "git diff --cached",   
-       "git log -10",
-       "git commit -m ''",   
-       "git push origin HEAD",   
-       "git branch",
-       "",  
-       "",  
-   ].join("\n"))
+   var file = makeFile(proxyPath + "/cmd", bashHelpers.join("\n"))
    file.fileMode = "bash"
    
    if (currentFile.fileMode == "bash") {
@@ -549,6 +566,25 @@ function getWordAt(line, x) {
       break
     }
   }
+  if (endIndex == lines.length - 1) endIndex = lines.length
+  //if (startIndex < endIndex) {
+    return {start: startIndex, end: endIndex, word: line.substring(startIndex, endIndex)}
+  //}
+  return {start: -1, end: -1, word: ""}
+}
+function getWordBeforeCursor() {
+  return getWordBefore(lines[cursorLineIndex], cursorColIndex)  
+}
+function getWordBefore(line, x) {
+  if (!line) return {start: -1, end: -1, word: ""}
+  for (var startIndex=x-1; startIndex>=0; startIndex--) {
+    if (!isWordy(line.charCodeAt(startIndex))) {
+       startIndex += 1
+       break
+    }
+  }
+  if (startIndex < 0) startIndex = 0
+  var endIndex = x
   if (endIndex == lines.length - 1) endIndex = lines.length
   //if (startIndex < endIndex) {
     return {start: startIndex, end: endIndex, word: line.substring(startIndex, endIndex)}
@@ -759,7 +795,7 @@ function copy() {
     copyBuffer = [lines[cursorLineIndex]]
   }
   
-  // TODO: figure out why it's not fully copying
+  // TODO: figure out why it's not fully copying at os level
   copyEl.value = copyBuffer.join("\n") 
   // copyEl.setSelectionRange(0, copyEl.value.length)
   // var range = document.createRange()
@@ -773,8 +809,11 @@ function copy() {
 
 function setCanvasHeight(h) {
   canvasHeight = h
-  //maxLines = Math.ceil(canvasHeight / fontHeight)
   maxLines = Math.floor(canvasHeight / fontHeight)
+}
+function setCanvasWidth(w) {
+  canvasWidth = w
+  maxCols = Math.floor(canvasWidth / fontWidth)
 }
 
 function paste() {
@@ -938,12 +977,6 @@ function newLine(e) {
   theText.setSelectionRange(cursorColIndex, cursorColIndex)
   return false
 }
-// function scrollToBottom() {
-//   if (cursorLineIndex > offsetY + maxLines) {
-//     offsetY = cursorLineIndex - maxLines + 1  
-//     render()
-//   }
-// }
 function runBashCommand(line) {
   if (line == "clear") {
     lines = []
@@ -963,6 +996,16 @@ function runBashCommand(line) {
     cursorColIndex = 0
     ensureCursorInScreen()
     addFile(proxyPath + trimPrefix(bashCWD, rootLocation) + "/" + fileToLoad, true)
+    return  
+  }
+  
+  if (line == "p") {
+    copyBuffer = bashHelpers
+    paste()
+    cursorLineIndex = lines.length - 1
+    cursorColIndex = 0
+    updateCursorXY()
+    ensureCursorInScreen()
     return  
   }
   
@@ -988,8 +1031,8 @@ function runBashCommand(line) {
       cli: ${cursorLineIndex}
       oY: ${offsetY}
       maxLines: ${maxLines}
-    `) 
-    pasteMode = "line"
+    `)
+    cursorLineIndex = lines.length - 1 
     paste()
     cursorLineIndex = lines.length - 1
     updateCursorXY()
@@ -1366,7 +1409,7 @@ function ensureSign(sign, v) {
   return v
 }
 
-// todo: use min, max in some places where you ised bind
+// todo: use min, max in some places where you used bind
 function min(a, b) {
   return a < b ? a : b
 }
@@ -1601,6 +1644,8 @@ function onStart(e) {
      
     cursorType = "move"
     if (!selectedRegion.stopped) {// this only matters if it is selected I think
+      // TODO: what is this feature?
+      // for selecting a word?
       var w = getWordAtCursor()
       if (w.word != "") {
         selectedRegion.startY = cursorLineIndex
@@ -1836,7 +1881,8 @@ function initiateFindWord() {
   if (cursorLineIndex >= lines.length) {
     return
   }
-  var w = getWordAtCursor()
+  //var w = getWordAtCursor()
+  var w = getWordBeforeCursor()
   findWordY = cursorLineIndex
   findWordX = cursorColIndex
   findWordEndY = cursorLineIndex
