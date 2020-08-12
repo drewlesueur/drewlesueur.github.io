@@ -904,6 +904,7 @@ function insertLine(closeCurly) {
   cursorLineIndex += 1
   cursorColIndex = theIndent.length
   updateCursorXY()
+  ensureCursorInScreen()
   docChanged()
   
   render()
@@ -971,9 +972,11 @@ function runBashCommand(line) {
       oY: ${offsetY}
       maxLines: ${maxLines}
     `) 
-    ensureCursorInScreen()
     pasteMode = "line"
     paste()
+    cursorLineIndex = lines.length - 1
+    updateCursorXY()
+    ensureCursorInScreen()
   }).catch(e => {
     alert("There was an error running the command: " + e)
   })
@@ -1112,7 +1115,6 @@ function saveLine() {
       theText.value.slice(theText.selectionStart)
       theText.setSelectionRange(cursorColIndex, cursorColIndex)
   }
-    
   lines[cursorLineIndex] = theText.value
   cursorX = (cursorColIndex - offsetX) * fontWidth
   cursorY = (cursorLineIndex - offsetY) * fontHeight
@@ -1122,6 +1124,7 @@ function saveLine() {
   // you need to tell the render to not update the text area
   // weird bugs will happen without this
   inEdit = true
+  ensureCursorInScreen()
   render()
   inEdit = false
 }
