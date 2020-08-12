@@ -375,7 +375,21 @@ function closeFile() {
 }
 
 function addCmdTab() {
-   var file = makeFile(proxyPath + "/cmd", "")
+   var file = makeFile(proxyPath + "/cmd", [
+       // some common commands to use quickly
+       // TODO: make these common commands configurable
+       "gofmt -s -w .",
+       "git status",   
+       "git diff",   
+       "git add -u .",
+       "git diff --cached",   
+       "git log -10",
+       "git commit -m ''",   
+       "git push origin HEAD",   
+       "git branch",
+       "",  
+       "",  
+   ].join("\n"))
    file.fileMode = "bash"
    
    if (currentFile.fileMode == "bash") {
@@ -389,6 +403,9 @@ function addCmdTab() {
    }
    addFileToList(file, false)
    setCurrentFile(file)
+   
+   cursorLineIndex = lines.length - 1
+   updateCursorXY()
    runBashCommand("")
    theText.focus()  
 }
