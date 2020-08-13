@@ -239,9 +239,6 @@ window.onerror = function(message, url, lineNumber, columnNumber, error) {
 </script>
 <script>
 var t = c.getContext("2d")
-var version = 0
-var savedVersion = 0
-var savingVersion = -1
 var saveEveryMS = 3000
 var lastWord = ""
 var fontScale = 1.2
@@ -295,8 +292,6 @@ var selectedRegions = []
 var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
-var fx.fileMode = "file"
-var fx.bashCWD = "."
 var autoSave = false
 
 function updateFontScale() {
@@ -496,7 +491,7 @@ function log(v) {
 }
 
 function docChanged() {
-   version += 1
+   fx.version += 1
    var maybeLastWord = getWordAtCursor().word
    if (maybeLastWord != "") {
      lastWord = maybeLastWord
@@ -1113,10 +1108,10 @@ function save() {
     // breaks will make sure the 'cleanup' step gets called
     for (var s=0; s<1; s++) {
       if (fx.fileMode != "file") break
-      if (savedVersion == version) {
+      if (fx.savedVersion == fx.version) {
         break
       }
-      savingVersion = version
+      fx.savingVersion = fx.version
       fetch(currentFile.fullPath, {
         method: "POST",
         cache: "no-cache",
@@ -1126,8 +1121,8 @@ function save() {
       .then(r => r.json())
       .then(v => {
           if (v.saved) {
-            savedVersion = savingVersion
-            savingVersion = -1
+            fx.savedVersion = fx.savingVersion
+            fx.savingVersion = -1
           }
           render()
           renderFileDropdown()
@@ -1265,18 +1260,18 @@ function render() {
   // consider removing it.
   s.innerHTML = 
     lastWord + " " +
-    version + "/" + savedVersion +
-    "/" + savingVersion +
+    fx.version + "/" + fx.savedVersion +
+    "/" + fx.savingVersion +
     " p:" + cursorX + "," + cursorY + 
     " c:" + fx.cursorColIndex + "," + fx.cursorLineIndex + 
     " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
     " " + selectMode
   
   if (fx.fileMode == "file")   {
-    if (savingVersion != -1) {
+    if (fx.savingVersion != -1) {
       saveButton.style.backgroundColor = "gray" 
       saveButton.innerText = "saving"
-    } else if (version == savedVersion) {
+    } else if (fx.version == fx.savedVersion) {
       saveButton.style.backgroundColor = "" 
       saveButton.innerText = "saved"
     } else {
@@ -2046,7 +2041,7 @@ function makeFile(fullPath, contents) {
     offsetX: 0,
     fileMode: "file",
     bashCWD: fx.bashCWD,
-    version: 0,
+    fx.version: 0,
     savedVersion: 0,
     savingVersion: -1,
   }
