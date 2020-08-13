@@ -255,8 +255,6 @@ var fontColor = "white"
 var isDark = true
 var cursorX=0
 var cursorY=0
-var offsetX = 0
-var offsetY = 0
 // 4 chars for line number and 1 for space
 var marginLeft = 5
 // Note that the width and height need to match
@@ -278,8 +276,6 @@ setCanvasWidth(canvasWidth)
 var pointWidth=325
 var pointHeight=500
 var touchScale=2 // was 3 for a while
-var cursorLineIndex = 0
-var cursorColIndex = 0
 
 var inEdit = false
 var copyBuffer = []
@@ -374,7 +370,7 @@ function inputSearchText() {
 }
 function closeFile() {
   if (fileMode == "fileList") {
-    files.splice(cursorLineIndex, 1)
+    files.splice(fx.cursorLineIndex, 1)
     seeFiles()
     seeFiles()
   } else {
@@ -428,7 +424,7 @@ function addCmdTab() {
    addFileToList(file, false)
    setCurrentFile(file)
    
-   cursorLineIndex = fx.lines.length - 1
+   fx.cursorLineIndex = fx.lines.length - 1
    updateCursorXY()
    runBashCommand("")
    theText.focus()  
@@ -512,8 +508,8 @@ function docChanged() {
   }
   fx.undoIndex += 1
   fx.undoStack.push(fx.lines.join("\n"))
-  fx.undoYStack.push(cursorLineIndex)
-  fx.undoXStack.push(cursorColIndex)
+  fx.undoYStack.push(fx.cursorLineIndex)
+  fx.undoXStack.push(fx.cursorColIndex)
   if (fx.undoStack.length > maxUndos) {
     fx.undoStack.shift()
     fx.undoYStack.shift()
@@ -522,14 +518,14 @@ function docChanged() {
   }
 }
 function repositionUndo() {
-  fx.lines = fx.fx.undoStack[fx.undoIndex].split("\n")
-  cursorColIndex = fx.undoXStack[fx.undoIndex]
-  cursorLineIndex = fx.undoYStack[fx.undoIndex]
-  if (cursorLineIndex < offsetY || cursorLineIndex > offsetY+maxLines) {
-    offsetY = max(0, cursorLineIndex - 5)  
+  fx.lines = fx.undoStack[fx.undoIndex].split("\n")
+  fx.cursorColIndex = fx.undoXStack[fx.undoIndex]
+  fx.cursorLineIndex = fx.undoYStack[fx.undoIndex]
+  if (fx.cursorLineIndex < offsetY || fx.cursorLineIndex > offsetY+maxLines) {
+    offsetY = max(0, fx.cursorLineIndex - 5)  
   }
-  if (cursorColIndex < offsetX || cursorColIndex > offsetX+maxCols) {
-    offsetX = max(0, cursorColIndex - 5)  
+  if (fx.cursorColIndex < fx.offsetX || fx.cursorColIndex > fx.offsetX+maxCols) {
+    fx.offsetX = max(0, fx.cursorColIndex - 5)  
   }
   updateCursorXY()
   render()
@@ -558,7 +554,7 @@ function isWordy(a) {
   ) 
 }
 function getWordAtCursor() {
-  return getWordAt(fx.lines[cursorLineIndex], cursorColIndex)  
+  return getWordAt(fx.lines[fx.cursorLineIndex], fx.cursorColIndex)  
 }
 function getWordAt(line, x) {
   if (!line) return {start: -1, end: -1, word: ""}
@@ -581,7 +577,7 @@ function getWordAt(line, x) {
   return {start: -1, end: -1, word: ""}
 }
 function getWordBeforeCursor() {
-  return getWordBefore(fx.lines[cursorLineIndex], cursorColIndex)  
+  return getWordBefore(fx.lines[fx.cursorLineIndex], fx.cursorColIndex)  
 }
 function getWordBefore(line, x) {
   if (!line) return {start: -1, end: -1, word: ""}
@@ -611,18 +607,18 @@ function findDown() {
     clearSearchButton.innerText = "clear search"
   }
   log("searching for: " + searchText.value)
-  for (var i=cursorLineIndex; i<fx.lines.length; i++) {
+  for (var i=fx.cursorLineIndex; i<fx.lines.length; i++) {
     var lineToSearch = fx.lines[i]
-    if (i == cursorLineIndex) {
-      lineToSearch = lineToSearch.substr(cursorColIndex)
+    if (i == fx.cursorLineIndex) {
+      lineToSearch = lineToSearch.substr(fx.cursorColIndex)
     }
     var pos = lineToSearch.indexOf(searchText.value)
     if (pos != -1) {
-      if (i == cursorLineIndex) {
-         pos += cursorColIndex
+      if (i == fx.cursorLineIndex) {
+         pos += fx.cursorColIndex
       }
-      cursorLineIndex = i
-      cursorColIndex = pos + searchText.value.length
+      fx.cursorLineIndex = i
+      fx.cursorColIndex = pos + searchText.value.length
       updateCursorXY()
       ensureCursorInScreen()
       render()
@@ -634,22 +630,22 @@ function findDown() {
 }
 
 function ensureCursorInScreen() {
-    if (cursorLineIndex < offsetY) {
-       offsetY = cursorLineIndex
-    } else if (cursorLineIndex >= offsetY+maxLines) {
-       offsetY = cursorLineIndex-maxLines +1
+    if (fx.cursorLineIndex < offsetY) {
+       offsetY = fx.cursorLineIndex
+    } else if (fx.cursorLineIndex >= offsetY+maxLines) {
+       offsetY = fx.cursorLineIndex-maxLines +1
     }
     
     // TODO: there is something more elegant
     // that you can do here
-    if (cursorColIndex < offsetX) {
-      //offsetX = cursorColIndex
-      offsetX = cursorColIndex - Math.floor(maxCols/2)
-    } else if (cursorColIndex > offsetX+maxCols) {
-      offsetX = cursorColIndex - Math.floor(maxCols/2)
+    if (fx.cursorColIndex < fx.offsetX) {
+      //fx.offsetX = fx.cursorColIndex
+      fx.offsetX = fx.cursorColIndex - Math.floor(maxCols/2)
+    } else if (fx.cursorColIndex > fx.offsetX+maxCols) {
+      fx.offsetX = fx.cursorColIndex - Math.floor(maxCols/2)
     }
-    if (offsetX < -5) {
-       offsetX = -5
+    if (fx.offsetX < -5) {
+       fx.offsetX = -5
     }
     updateCursorXY()
     render()
@@ -664,19 +660,19 @@ function findUp() {
     clearSearchButton.innerText = "clear search"
   }
   log("searching for: " + searchText.value)
-  for (var i=cursorLineIndex; i>0; i--) {
+  for (var i=fx.cursorLineIndex; i>0; i--) {
     var lineToSearch = fx.lines[i]
-    if (i == cursorLineIndex) {
-      lineToSearch = lineToSearch.substr(0, cursorColIndex)
+    if (i == fx.cursorLineIndex) {
+      lineToSearch = lineToSearch.substr(0, fx.cursorColIndex)
     }
     var pos = reverse(lineToSearch).indexOf(reverse(searchText.value))
     if (pos != -1) {
-      if (i == cursorLineIndex) {
-         pos += (fx.lines[i].length - cursorColIndex)
+      if (i == fx.cursorLineIndex) {
+         pos += (fx.lines[i].length - fx.cursorColIndex)
       }
-      cursorLineIndex = i
+      fx.cursorLineIndex = i
       log("the pos is " + pos)
-      cursorColIndex = fx.lines[i].length - (pos + searchText.value.length)
+      fx.cursorColIndex = fx.lines[i].length - (pos + searchText.value.length)
       updateCursorXY()
       ensureCursorInScreen()
       render()
@@ -703,8 +699,8 @@ function jsFunc() {
 }
 
 function updateCursorXY() {
-  cursorX = (cursorColIndex - offsetX) * fontWidth
-  cursorY = (cursorLineIndex - offsetY) * fontHeight
+  cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
+  cursorY = (fx.cursorLineIndex - offsetY) * fontHeight
 }
 
 function dup() {
@@ -743,7 +739,7 @@ function addPrefix(prefix) {
      fx.lines[y] = fx.lines[y].slice(0, firstNonSpace) + prefix + fx.lines[y].slice(firstNonSpace)
    }
  } else {
-   fx.lines[cursorLineIndex] = fx.lines[cursorLineIndex].slice(0, firstNonSpace) + prefix + fx.lines[cursorLineIndex].slice(firstNonSpace)
+   fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex].slice(0, firstNonSpace) + prefix + fx.lines[fx.cursorLineIndex].slice(firstNonSpace)
  }
  docChanged()
  render()
@@ -756,8 +752,8 @@ function stripPrefixes(prefixes) {
      fx.lines[y] = stripPrefixesInner(fx.lines[y], prefixes)
    }
  } else {
-   var line = fx.lines[cursorLineIndex]
-   fx.lines[cursorLineIndex] = stripPrefixesInner(line, prefixes)
+   var line = fx.lines[fx.cursorLineIndex]
+   fx.lines[fx.cursorLineIndex] = stripPrefixesInner(line, prefixes)
  }
  docChanged()
  render()
@@ -791,7 +787,7 @@ function copy() {
     if (selectedRegions.length>0) {
       var r = selectedRegions[0]
       if (r.startY == r.stopY) {
-        copyBuffer = [fx.lines[cursorLineIndex].slice(r.startX, r.stopX)]  
+        copyBuffer = [fx.lines[fx.cursorLineIndex].slice(r.startX, r.stopX)]  
         selectedRegions = []
         render()
         break
@@ -806,7 +802,7 @@ function copy() {
       break
     }
     selectMode = "line" 
-    copyBuffer = [fx.lines[cursorLineIndex]]
+    copyBuffer = [fx.lines[fx.cursorLineIndex]]
   }
   
   // TODO: figure out why it's not fully copying at os level
@@ -832,18 +828,18 @@ function setCanvasWidth(w) {
 
 function paste() {
   if (selectMode == "line") {
-    fx.lines.splice(cursorLineIndex + 1, 0, ...copyBuffer)
+    fx.lines.splice(fx.cursorLineIndex + 1, 0, ...copyBuffer)
   } else if (selectMode == "char") {
     if (copyBuffer.length == 1) {
-      fx.lines[cursorLineIndex] = fx.lines[cursorLineIndex].slice(0, cursorColIndex) +
+      fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex].slice(0, fx.cursorColIndex) +
         copyBuffer[0] +
-        fx.lines[cursorLineIndex].slice(cursorColIndex)
+        fx.lines[fx.cursorLineIndex].slice(fx.cursorColIndex)
     } else {
-      var line = fx.lines[cursorLineIndex]
-      fx.lines[cursorLineIndex] = line.slice(0, cursorColIndex) +
+      var line = fx.lines[fx.cursorLineIndex]
+      fx.lines[fx.cursorLineIndex] = line.slice(0, fx.cursorColIndex) +
         copyBuffer[0]
-      copyBuffer[copyBuffer.length-1] += line.slice(cursorColIndex)
-      fx.lines.splice(cursorLineIndex+1, 0, ...copyBuffer.slice(1))
+      copyBuffer[copyBuffer.length-1] += line.slice(fx.cursorColIndex)
+      fx.lines.splice(fx.cursorLineIndex+1, 0, ...copyBuffer.slice(1))
     }
   }
   docChanged()
@@ -863,16 +859,16 @@ function pasteLastWord() {
 }
 
 function addSpace() {
-  var line = fx.lines[cursorLineIndex]
-  fx.lines[cursorLineIndex] = line.slice(0, cursorLineIndex) + 
-    " " + line.slice(cursorLineIndex)
+  var line = fx.lines[fx.cursorLineIndex]
+  fx.lines[fx.cursorLineIndex] = line.slice(0, fx.cursorLineIndex) + 
+    " " + line.slice(fx.cursorLineIndex)
   render()
   docChanged()
 }
 function deleteCharacter() {
-  var line = fx.lines[cursorLineIndex]
-  fx.lines[cursorLineIndex] = line.slice(0, cursorLineIndex) + 
-    line.slice(cursorLineIndex + 1)
+  var line = fx.lines[fx.cursorLineIndex]
+  fx.lines[fx.cursorLineIndex] = line.slice(0, fx.cursorLineIndex) + 
+    line.slice(fx.cursorLineIndex + 1)
   docChanged()
   render()
 }
@@ -894,8 +890,8 @@ function del() {
         fx.lines[r.startY] = fx.lines[r.startY].substr(0, r.startX) +
         fx.lines[r.startY].substr(r.stopX)
         selectedRegions = []
-        cursorLineIndex = r.startY
-        cursorColIndex = r.startX
+        fx.cursorLineIndex = r.startY
+        fx.cursorColIndex = r.startX
         updateCursorXY()
         selectedRegions = []
         docChanged()
@@ -918,8 +914,8 @@ function del() {
     if (fx.lines[r.startY] == "") {
       fx.lines.splice(r.startY, 1)
     }
-    cursorLineIndex = r.startY
-    cursorColIndex = r.startX
+    fx.cursorLineIndex = r.startY
+    fx.cursorColIndex = r.startX
     updateCursorXY()
     selectedRegions = []
     docChanged()
@@ -930,8 +926,8 @@ function del() {
     return
   }
   selectMode = "line" 
-  copyBuffer = [fx.lines[cursorLineIndex]]
-  fx.lines.splice(cursorLineIndex, 1)
+  copyBuffer = [fx.lines[fx.cursorLineIndex]]
+  fx.lines.splice(fx.cursorLineIndex, 1)
   docChanged()
   render()
 }
@@ -940,9 +936,9 @@ function deleteWord(e) {
   if (w.word == "") {
     return
   }
-  var line = fx.lines[cursorLineIndex]
-  fx.lines[cursorLineIndex] = line.slice(0, w.start) + line.slice(w.end)
-  cursorColIndex = w.start
+  var line = fx.lines[fx.cursorLineIndex]
+  fx.lines[fx.cursorLineIndex] = line.slice(0, w.start) + line.slice(w.end)
+  fx.cursorColIndex = w.start
   updateCursorXY()
   docChanged()
   docChanged()
@@ -961,18 +957,18 @@ function getIndent(line) {
   return theIndent  
 }
 function insertLine(closeCurly) {
-  var theLine = fx.lines[cursorLineIndex]
+  var theLine = fx.lines[fx.cursorLineIndex]
   var theIndent = getIndent(theLine)
-  var prevChar = theLine[cursorColIndex - 1]
-  var nextChar = theLine[cursorColIndex]
-  fx.lines.splice(cursorLineIndex + 1, 0, theIndent + theLine.substr(theText.selectionStart))
+  var prevChar = theLine[fx.cursorColIndex - 1]
+  var nextChar = theLine[fx.cursorColIndex]
+  fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent + theLine.substr(theText.selectionStart))
   if (closeCurly && (prevChar in closingMap) && (nextChar == closingMap[prevChar])) {
     theIndent += "   "
-    fx.lines.splice(cursorLineIndex + 1, 0, theIndent)
+    fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent)
   }
-  fx.lines[cursorLineIndex] = theLine.substr(0, theText.selectionStart)
-  cursorLineIndex += 1
-  cursorColIndex = theIndent.length
+  fx.lines[fx.cursorLineIndex] = theLine.substr(0, theText.selectionStart)
+  fx.cursorLineIndex += 1
+  fx.cursorColIndex = theIndent.length
   updateCursorXY()
   ensureCursorInScreen()
   docChanged()
@@ -980,7 +976,7 @@ function insertLine(closeCurly) {
   render()
 }
 function newLine(e) {
-  var theLine = fx.lines[cursorLineIndex]
+  var theLine = fx.lines[fx.cursorLineIndex]
   e.preventDefault()
   if (fileMode == "bash") {
     runBashCommand(theLine)
@@ -988,14 +984,14 @@ function newLine(e) {
   }
   insertLine(true)
   theText.focus()
-  theText.setSelectionRange(cursorColIndex, cursorColIndex)
+  theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
   return false
 }
 function runBashCommand(line) {
   if (line == "clear") {
     fx.lines = []
-    cursorLineIndex = 0
-    cursorColIndex = 0
+    fx.cursorLineIndex = 0
+    fx.cursorColIndex = 0
     updateCursorXY()
     offsetY = 0
     render()
@@ -1006,8 +1002,8 @@ function runBashCommand(line) {
     var fileToLoad = line.split(" ")[1]
     copyBuffer = [""]
     paste()
-    cursorLineIndex += 1
-    cursorColIndex = 0
+    fx.cursorLineIndex += 1
+    fx.cursorColIndex = 0
     ensureCursorInScreen()
     addFile(proxyPath + trimPrefix(bashCWD, rootLocation) + "/" + fileToLoad, true)
     return  
@@ -1016,8 +1012,8 @@ function runBashCommand(line) {
   if (line == "p") {
     copyBuffer = bashHelpers
     paste()
-    cursorLineIndex = fx.lines.length - 1
-    cursorColIndex = 0
+    fx.cursorLineIndex = fx.lines.length - 1
+    fx.cursorColIndex = 0
     updateCursorXY()
     ensureCursorInScreen()
     return  
@@ -1030,8 +1026,8 @@ function runBashCommand(line) {
   }).then(r => {
     copyBuffer = r.split("\n")
     copyBuffer.unshift("") // leading newline
-    cursorLineIndex += copyBuffer.length
-    cursorColIndex = 0
+    fx.cursorLineIndex += copyBuffer.length
+    fx.cursorColIndex = 0
     updateCursorXY()
     // Last item is a newline
     // Second to last item is cwd
@@ -1042,13 +1038,13 @@ function runBashCommand(line) {
       .reverse()
       .join(" < ")
     log(`
-      cli: ${cursorLineIndex}
+      cli: ${fx.cursorLineIndex}
       oY: ${offsetY}
       maxLines: ${maxLines}
     `)
-    cursorLineIndex = fx.lines.length - 1 
+    fx.cursorLineIndex = fx.lines.length - 1 
     paste()
-    cursorLineIndex = fx.lines.length - 1
+    fx.cursorLineIndex = fx.lines.length - 1
     updateCursorXY()
     ensureCursorInScreen()
   }).catch(e => {
@@ -1065,36 +1061,36 @@ function trimPrefix(str, prefix) {
 }
 
 function handleFocusAfter() {
-  if (cursorLineIndex == fx.lines.Length - 1) return
-  cursorLineIndex += 1
+  if (fx.cursorLineIndex == fx.lines.Length - 1) return
+  fx.cursorLineIndex += 1
   setCanvasHeight(canvasHeightKeyboard)
-  if (cursorLineIndex < offsetY || cursorLineIndex > (offsetY + maxLines)) {
-    offsetY = cursorLineIndex - maxLines
+  if (fx.cursorLineIndex < offsetY || fx.cursorLineIndex > (offsetY + maxLines)) {
+    offsetY = fx.cursorLineIndex - maxLines
   }
   updateCursorXY()
   render()
   theText.focus()
-  theText.setSelectionRange(cursorColIndex, cursorColIndex)
+  theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
 }
 
 function handleFocusBefore() {
-  if (cursorLineIndex == 0) return
-  cursorLineIndex -= 1
+  if (fx.cursorLineIndex == 0) return
+  fx.cursorLineIndex -= 1
   setCanvasHeight(canvasHeightKeyboard)
-  if (cursorLineIndex < offsetY || cursorLineIndex > (offsetY + maxLines)) {
+  if (fx.cursorLineIndex < offsetY || fx.cursorLineIndex > (offsetY + maxLines)) {
     offsetY = 0
   }
   updateCursorXY()
   render()
   theText.focus()
-  theText.setSelectionRange(cursorColIndex, cursorColIndex)
+  theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
 }
 
 function handleFocusIn() {
   setCanvasHeight(canvasHeightKeyboard)
   ensureCursorInScreen()
   render()
-  theText.setSelectionRange(cursorColIndex, cursorColIndex)
+  theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
 }
 
 function handleBlur() {
@@ -1152,15 +1148,15 @@ if (autoSave) {
 function handleKeydown(e) {
   wasDelete = e.keyCode == 8
   // 8 means backspace
-  if (e.keyCode == 8 && theText.selectionStart == 0 && cursorLineIndex != 0) {
+  if (e.keyCode == 8 && theText.selectionStart == 0 && fx.cursorLineIndex != 0) {
     e.preventDefault()
-    var theLine = fx.lines[cursorLineIndex]
+    var theLine = fx.lines[fx.cursorLineIndex]
 
-    fx.lines.splice(cursorLineIndex, 1)
-    cursorLineIndex -= 1
-    var prevLine = fx.lines[cursorLineIndex]
-    fx.lines[cursorLineIndex] = fx.lines[cursorLineIndex] + theLine
-    cursorColIndex = prevLine.length
+    fx.lines.splice(fx.cursorLineIndex, 1)
+    fx.cursorLineIndex -= 1
+    var prevLine = fx.lines[fx.cursorLineIndex]
+    fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex] + theLine
+    fx.cursorColIndex = prevLine.length
     updateCursorXY()
     docChanged()
     render()
@@ -1180,18 +1176,18 @@ var closingMap = {
 }
 function saveLine() {
   var lastTyped = theText.value[theText.selectionStart - 1]
-  cursorColIndex = theText.selectionStart
+  fx.cursorColIndex = theText.selectionStart
   // Note: handle newline portion too.
   if (!wasDelete && lastTyped in closingMap) {
     theText.value = 
       theText.value.slice(0, theText.selectionStart) +
       closingMap[lastTyped] +
       theText.value.slice(theText.selectionStart)
-      theText.setSelectionRange(cursorColIndex, cursorColIndex)
+      theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
   }
-  fx.lines[cursorLineIndex] = theText.value
-  cursorX = (cursorColIndex - offsetX) * fontWidth
-  cursorY = (cursorLineIndex - offsetY) * fontHeight
+  fx.lines[fx.cursorLineIndex] = theText.value
+  cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
+  cursorY = (fx.cursorLineIndex - offsetY) * fontHeight
   initiateFindWord()
   docChanged()
 
@@ -1207,7 +1203,7 @@ function bind(v, min, max) {
   if (v > max) v = max
   return v
 }
-function charAt(fx.lines, y, x) {
+function charAt(lines, y, x) {
   var line = fx.lines[y]
   if (!line) return ""
   var theChar = line[x]
@@ -1245,13 +1241,13 @@ function render() {
     for (var y=r.startY-offsetY; y<=r.stopY-offsetY; y++) {
       var line = fx.lines[y + offsetY] || ""
       if (r.startY == r.stopY) {
-        t.fillRect((r.startX-offsetX)*fontWidth, y*fontHeight, (r.stopX-r.startX)*fontWidth, fontHeight)  
+        t.fillRect((r.startX-fx.offsetX)*fontWidth, y*fontHeight, (r.stopX-r.startX)*fontWidth, fontHeight)  
       } else if (y==r.startY-offsetY) {
-        t.fillRect((r.startX-offsetX)*fontWidth, y*fontHeight, (line.length-r.startX)*fontWidth, fontHeight)  
+        t.fillRect((r.startX-fx.offsetX)*fontWidth, y*fontHeight, (line.length-r.startX)*fontWidth, fontHeight)  
       } else if (y==r.stopY-offsetY) {
-        t.fillRect((0-offsetX)*fontWidth, y*fontHeight, r.stopX*fontWidth, fontHeight)  
+        t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight, r.stopX*fontWidth, fontHeight)  
       } else {
-        t.fillRect((0-offsetX)*fontWidth  , y*fontHeight, line.length*fontWidth, fontHeight) 
+        t.fillRect((0-fx.offsetX)*fontWidth  , y*fontHeight, line.length*fontWidth, fontHeight) 
       }
     } 
   }
@@ -1259,7 +1255,7 @@ function render() {
   // draw line where your cursor is for help with finding
   t.save()
   t.fillStyle = "rgba(0, 255, 255, 0.25)"
-  t.fillRect(0, (cursorLineIndex - offsetY) * fontHeight, c.width, fontHeight)
+  t.fillRect(0, (fx.cursorLineIndex - offsetY) * fontHeight, c.width, fontHeight)
   t.restore()
 
   t.font = fontCSS
@@ -1272,7 +1268,7 @@ function render() {
     version + "/" + savedVersion +
     "/" + savingVersion +
     " p:" + cursorX + "," + cursorY + 
-    " c:" + cursorColIndex + "," + cursorLineIndex + 
+    " c:" + fx.cursorColIndex + "," + fx.cursorLineIndex + 
     " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
     " " + selectMode
   
@@ -1345,7 +1341,7 @@ function render() {
           t.fillStyle = "yellow"
         }
         t.fillRect(
-          (pos - offsetX) * fontWidth,
+          (pos - fx.offsetX) * fontWidth,
           y * fontHeight,
           searchText.value.length * fontWidth,
           fontHeight
@@ -1358,13 +1354,13 @@ function render() {
     
     if (y + offsetY < fx.lines.length) {
       var lineNumber = (y+offsetY+1).toString().padStart(4, " ")
-      if (offsetX < -1) {
+      if (fx.offsetX < -1) {
         // Line numbers
         //t.fillStyle = "magenta"
         //t.fillStyle = "cyan"
         t.fillStyle = "brown"
-        for (var i=0; i<-offsetX-1; i++) {
-          var lineNumberIndex = offsetX + marginLeft + i
+        for (var i=0; i<-fx.offsetX-1; i++) {
+          var lineNumberIndex = fx.offsetX + marginLeft + i
           t.fillText(lineNumber.charAt(lineNumberIndex), i*fontWidth, y*fontHeight)
         }
       }
@@ -1384,7 +1380,7 @@ function render() {
         t.fillStyle = fontColor
     }
     for (var x=0; x < maxCols; x++) {  
-      t.fillText( charAt(fx.lines, y+offsetY, x+offsetX), x*fontWidth, y*fontHeight)
+      t.fillText( charAt(fx.lines, y+offsetY, x+fx.offsetX), x*fontWidth, y*fontHeight)
     }
     t.restore()
   }
@@ -1395,16 +1391,16 @@ function render() {
   
   // cursor
   t.fillStyle = "cyan"
-  var yPos = (cursorLineIndex - offsetY) * fontHeight
-  var xPos = (cursorColIndex - offsetX) * fontWidth
+  var yPos = (fx.cursorLineIndex - offsetY) * fontHeight
+  var xPos = (fx.cursorColIndex - fx.offsetX) * fontWidth
   t.fillRect(xPos, yPos, 6, fontHeight)
-  cursorLine = fx.lines[cursorLineIndex] || ""
+  cursorLine = fx.lines[fx.cursorLineIndex] || ""
   
   
   if (!inEdit) {
     theText.value = cursorLine
-    theTextBefore.value = fx.lines[cursorLineIndex - 1] || ""
-    theTextAfter.value = fx.lines[cursorLineIndex + 1] || ""
+    theTextBefore.value = fx.lines[fx.cursorLineIndex - 1] || ""
+    theTextAfter.value = fx.lines[fx.cursorLineIndex + 1] || ""
   }
 
   // set the selection range back to what it was
@@ -1448,18 +1444,18 @@ function onStart(e) {
       log("select called and there are " + e.touches.length + " touches")
       selectedRegions = []
       cursorType = "select"
-      var line = fx.lines[cursorLineIndex] || ""
-      selectedRegion.startX = bind(cursorColIndex, 0, line.length)
-      selectedRegion.startY = bind(cursorLineIndex, 0, fx.lines.length-1)
+      var line = fx.lines[fx.cursorLineIndex] || ""
+      selectedRegion.startX = bind(fx.cursorColIndex, 0, line.length)
+      selectedRegion.startY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
       // Note how the stopY is inclusive
       // But the stopX is exclusive.
       // for some reason seemed natural to do it like that
-      selectedRegion.stopX = bind(cursorColIndex, 0, line.length)
-      selectedRegion.stopY = bind(cursorLineIndex, 0, fx.lines.length - 1)
-      if (cursorColIndex < 0) {
+      selectedRegion.stopX = bind(fx.cursorColIndex, 0, line.length)
+      selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length - 1)
+      if (fx.cursorColIndex < 0) {
         selectedRegion.stopped = true
         selectMode = "line"
-        selectedRegion.stopX = (fx.lines[cursorLineIndex]  || "").length
+        selectedRegion.stopX = (fx.lines[fx.cursorLineIndex]  || "").length
       } else {
         selectMode = "char"
       }
@@ -1516,31 +1512,31 @@ function onStart(e) {
     if (cursorX > maxWidth) {
       var extendX = cursorX - maxWidth
       cursorX = maxWidth
-      // if (!changedY) offsetX += Math.round(extendX/fontWidth)
-      if (!changedY) offsetX += Math.ceil(extendX/fontWidth)
+      // if (!changedY) fx.offsetX += Math.round(extendX/fontWidth)
+      if (!changedY) fx.offsetX += Math.ceil(extendX/fontWidth)
     } else if (cursorX < 0) {
       var extendX = cursorX
       cursorX = 0
-      // if (!changedY) offsetX += Math.round(extendX/fontWidth)
-      if (!changedY) offsetX += Math.floor(extendX/fontWidth)
-      if (offsetX < -marginLeft) offsetX = -marginLeft
+      // if (!changedY) fx.offsetX += Math.round(extendX/fontWidth)
+      if (!changedY) fx.offsetX += Math.floor(extendX/fontWidth)
+      if (fx.offsetX < -marginLeft) fx.offsetX = -marginLeft
     }
-    cursorLineIndex = Math.round(cursorY/fontHeight) + offsetY
-    cursorColIndex = Math.round(cursorX/fontWidth) + offsetX
+    fx.cursorLineIndex = Math.round(cursorY/fontHeight) + offsetY
+    fx.cursorColIndex = Math.round(cursorX/fontWidth) + fx.offsetX
     firstMove = false
     if (cursorType == "select") {
-      var line = fx.lines[cursorLineIndex] || ""
-      selectedRegion.stopX = bind(cursorColIndex, 0, line.length)
-      selectedRegion.stopY = bind(cursorLineIndex, 0, fx.lines.length-1)
+      var line = fx.lines[fx.cursorLineIndex] || ""
+      selectedRegion.stopX = bind(fx.cursorColIndex, 0, line.length)
+      selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
       selectedRegion.stopped = true
-      if (cursorColIndex < 0) {
-        selectedRegion.stopX = (fx.lines[cursorLineIndex] || "").length
+      if (fx.cursorColIndex < 0) {
+        selectedRegion.stopX = (fx.lines[fx.cursorLineIndex] || "").length
       }
 
     }
     render()
     if (document.activeElement==theText) {
-      theText.setSelectionRange(cursorColIndex, cursorColIndex)
+      theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
     }
     return false
   }
@@ -1566,7 +1562,7 @@ function onStart(e) {
         if (prefix == "/") {
           prefix = ""
         }
-        var addPath = fx.lines[cursorLineIndex]
+        var addPath = fx.lines[fx.cursorLineIndex]
         if (addPath == "..") {
             var parts = prefix.split("/")
             if (parts.length > 0) {
@@ -1586,11 +1582,11 @@ function onStart(e) {
           // portion that it will add that directory portion
           // as a new pane (aka file)
           
-          var line = fx.lines[cursorLineIndex]
+          var line = fx.lines[fx.cursorLineIndex]
           // since these fx.lines are > delimited
           // we can figure out what section was tapped
           var reversePathIndex = 0
-          for (var lineI = 0; lineI < cursorColIndex; lineI++) {
+          for (var lineI = 0; lineI < fx.cursorColIndex; lineI++) {
              var ch = line[lineI]
              if (ch == "<") {
                  reversePathIndex += 1  
@@ -1598,39 +1594,39 @@ function onStart(e) {
           }
           if (reversePathIndex == 0) {
               // put it at the beginning.
-              var file = files[cursorLineIndex]
-              files.splice(cursorLineIndex, 1)
+              var file = files[fx.cursorLineIndex]
+              files.splice(fx.cursorLineIndex, 1)
               files.unshift(file)
               setCurrentFile(file)
               return
           }
-          var parts = files[cursorLineIndex].fullPath.split("/")
+          var parts = files[fx.cursorLineIndex].fullPath.split("/")
           parts = parts.slice(0, parts.length - reversePathIndex)
           addFile(parts.join("/"), true, false, false)
           return
       }
       
-      if (cursorColIndex == -5) {
+      if (fx.cursorColIndex == -5) {
         // since we are in the margin, let's force it
         // to paste line-style.
         selectMode = "line"
         paste()
         return
       }
-      if (cursorColIndex == -4) {
+      if (fx.cursorColIndex == -4) {
         del()
         return
       }
-      if (cursorColIndex == -3) {
+      if (fx.cursorColIndex == -3) {
         copy()
         return
       }
-      if (cursorColIndex == -2) {
+      if (fx.cursorColIndex == -2) {
         copy()
         paste()
         return
       }
-      if (cursorColIndex == -1) {
+      if (fx.cursorColIndex == -1) {
         insertLine()
         return
       }
@@ -1642,8 +1638,8 @@ function onStart(e) {
       }
       
       if (document.activeElement != theText) {
-        if (cursorLineIndex >= fx.lines.length) {
-            cursorLineIndex = fx.lines.length - 1
+        if (fx.cursorLineIndex >= fx.lines.length) {
+            fx.cursorLineIndex = fx.lines.length - 1
             updateCursorXY()
             render()
         }
@@ -1662,9 +1658,9 @@ function onStart(e) {
       // for selecting a word?
       var w = getWordAtCursor()
       if (w.word != "") {
-        selectedRegion.startY = cursorLineIndex
+        selectedRegion.startY = fx.cursorLineIndex
         selectedRegion.startX = w.start
-        selectedRegion.stopY = cursorLineIndex
+        selectedRegion.stopY = fx.cursorLineIndex
         selectedRegion.stopX = w.end
       } else {
         selectedRegions = []
@@ -1725,12 +1721,12 @@ function onStart(e) {
   // scroll right and left and move cursor right and left
   if (startTouchX > ((canvasWidth/3) - 40)) {
      if (document.activeElement == theText) {
-         cursorColIndex += 1
-         theText.setSelectionRange(cursorColIndex, cursorColIndex)
+         fx.cursorColIndex += 1
+         theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
          initiateFindWord()
      } else {
-         offsetX += Math.floor(maxCols/2)
-         cursorColIndex += Math.floor(maxCols/2)
+         fx.offsetX += Math.floor(maxCols/2)
+         fx.cursorColIndex += Math.floor(maxCols/2)
      }
      updateCursorXY()
      render()
@@ -1738,18 +1734,18 @@ function onStart(e) {
   }
   if (startTouchX < 40) {
      if (document.activeElement == theText) {
-         cursorColIndex -= 1    
-         theText.setSelectionRange(cursorColIndex, cursorColIndex)
+         fx.cursorColIndex -= 1    
+         theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
          initiateFindWord()
      } else {
-         offsetX -= Math.floor(maxCols/2)
-         if (offsetX < -5){
-            offsetX = -5
+         fx.offsetX -= Math.floor(maxCols/2)
+         if (fx.offsetX < -5){
+            fx.offsetX = -5
          }
-         cursorColIndex -= Math.floor(maxCols/2)
+         fx.cursorColIndex -= Math.floor(maxCols/2)
      }
-     if (cursorColIndex < -5){
-        cursorColIndex = -5
+     if (fx.cursorColIndex < -5){
+        fx.cursorColIndex = -5
      }
      updateCursorXY()
      render()
@@ -1915,8 +1911,8 @@ function replaceFindWord(r) {
     fx.lines.splice(findWordY+1, 0, ...r.slice(1))
   }
   
-  cursorLineIndex = findWordEndY
-  cursorColIndex = findWordEndX
+  fx.cursorLineIndex = findWordEndY
+  fx.cursorColIndex = findWordEndX
   updateCursorXY()
   docChanged()
   render()
@@ -1927,27 +1923,27 @@ function initiateFindWord() {
   // also see toggleWord
   log("initiate find word")
   resetFindWord()
-  if (cursorLineIndex >= fx.lines.length) {
+  if (fx.cursorLineIndex >= fx.lines.length) {
     return
   }
   var w = getWordAtCursor()
   // TODO: getWordBeforeCursor works for autocompleting in thr middle
   // but it doesn't replace the word on iter 0. 
   //var w = getWordBeforeCursor()
-  findWordY = cursorLineIndex
-  findWordX = cursorColIndex
-  findWordEndY = cursorLineIndex
-  findWordEndX = cursorColIndex
-  findWordUpY = cursorLineIndex
-  findWordUpX = fx.lines[cursorLineIndex].length
-  findWordDownY = cursorLineIndex + 1
+  findWordY = fx.cursorLineIndex
+  findWordX = fx.cursorColIndex
+  findWordEndY = fx.cursorLineIndex
+  findWordEndX = fx.cursorColIndex
+  findWordUpY = fx.cursorLineIndex
+  findWordUpX = fx.lines[fx.cursorLineIndex].length
+  findWordDownY = fx.cursorLineIndex + 1
   findWordDownX = 0
   findWordSpecialLine = fx.lines[findWordY]
   // TODO: some of the logic for
   // toggleWord can be be improved/consolidated
   // by looking at findUp
   if (w.word != "") {
-    if (w.end == cursorColIndex) {
+    if (w.end == fx.cursorColIndex) {
       findWordPrefix = w.word 
     } else {
       findWordX = w.start
@@ -2093,7 +2089,7 @@ function seeFiles() {
     }).join("\n")
     var f = makeFile("__", contents)
     f.fileMode = "fileList"
-    f.cursorLineIndex = 1
+    f.fx.cursorLineIndex = 1
     setCurrentFile(f)  
 }
 function setCurrentFile(file) {
