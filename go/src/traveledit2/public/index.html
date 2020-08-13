@@ -295,8 +295,8 @@ var selectedRegions = []
 var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
-var fileMode = "file"
-var bashCWD = "."
+var fx.fileMode = "file"
+var fx.bashCWD = "."
 var autoSave = false
 
 function updateFontScale() {
@@ -369,7 +369,7 @@ function inputSearchText() {
     render()
 }
 function closeFile() {
-  if (fileMode == "fileList") {
+  if (fx.fileMode == "fileList") {
     files.splice(fx.cursorLineIndex, 1)
     seeFiles()
     seeFiles()
@@ -413,7 +413,7 @@ function addCmdTab() {
    file.fileMode = "bash"
    
    if (currentFile.fileMode == "bash") {
-     file.bashCWD = bashCWD
+     file.bashCWD = fx.bashCWD
    } else if (currentFile.fileMode == "file") {
      var parts = trimPrefix(currentFile.fullPath, proxyPath).split("/")
      parts = parts.slice(0, parts.length - 1)
@@ -521,8 +521,8 @@ function repositionUndo() {
   fx.lines = fx.undoStack[fx.undoIndex].split("\n")
   fx.cursorColIndex = fx.undoXStack[fx.undoIndex]
   fx.cursorLineIndex = fx.undoYStack[fx.undoIndex]
-  if (fx.cursorLineIndex < offsetY || fx.cursorLineIndex > offsetY+maxLines) {
-    offsetY = max(0, fx.cursorLineIndex - 5)  
+  if (fx.cursorLineIndex < fx.offsetY || fx.cursorLineIndex > fx.offsetY+maxLines) {
+    fx.offsetY = max(0, fx.cursorLineIndex - 5)  
   }
   if (fx.cursorColIndex < fx.offsetX || fx.cursorColIndex > fx.offsetX+maxCols) {
     fx.offsetX = max(0, fx.cursorColIndex - 5)  
@@ -630,10 +630,10 @@ function findDown() {
 }
 
 function ensureCursorInScreen() {
-    if (fx.cursorLineIndex < offsetY) {
-       offsetY = fx.cursorLineIndex
-    } else if (fx.cursorLineIndex >= offsetY+maxLines) {
-       offsetY = fx.cursorLineIndex-maxLines +1
+    if (fx.cursorLineIndex < fx.offsetY) {
+       fx.offsetY = fx.cursorLineIndex
+    } else if (fx.cursorLineIndex >= fx.offsetY+maxLines) {
+       fx.offsetY = fx.cursorLineIndex-maxLines +1
     }
     
     // TODO: there is something more elegant
@@ -700,7 +700,7 @@ function jsFunc() {
 
 function updateCursorXY() {
   cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
-  cursorY = (fx.cursorLineIndex - offsetY) * fontHeight
+  cursorY = (fx.cursorLineIndex - fx.offsetY) * fontHeight
 }
 
 function dup() {
@@ -978,7 +978,7 @@ function insertLine(closeCurly) {
 function newLine(e) {
   var theLine = fx.lines[fx.cursorLineIndex]
   e.preventDefault()
-  if (fileMode == "bash") {
+  if (fx.fileMode == "bash") {
     runBashCommand(theLine)
     return false 
   }
@@ -993,7 +993,7 @@ function runBashCommand(line) {
     fx.cursorLineIndex = 0
     fx.cursorColIndex = 0
     updateCursorXY()
-    offsetY = 0
+    fx.offsetY = 0
     render()
     return
   }
@@ -1005,7 +1005,7 @@ function runBashCommand(line) {
     fx.cursorLineIndex += 1
     fx.cursorColIndex = 0
     ensureCursorInScreen()
-    addFile(proxyPath + trimPrefix(bashCWD, rootLocation) + "/" + fileToLoad, true)
+    addFile(proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad, true)
     return  
   }
   
@@ -1019,7 +1019,7 @@ function runBashCommand(line) {
     return  
   }
   
-  fetch(proxyPath + "/mybash?cwd="+encodeURIComponent(bashCWD)+"&cmd="+encodeURIComponent(line), {
+  fetch(proxyPath + "/mybash?cwd="+encodeURIComponent(fx.bashCWD)+"&cmd="+encodeURIComponent(line), {
     cache: "no-cache"
   }).then(r => {
     return r.text()
@@ -1031,15 +1031,15 @@ function runBashCommand(line) {
     updateCursorXY()
     // Last item is a newline
     // Second to last item is cwd
-    bashCWD = copyBuffer[copyBuffer.length - 2]
+    fx.bashCWD = copyBuffer[copyBuffer.length - 2]
     // let's restyle the pwd after we grab it
-    copyBuffer[copyBuffer.length - 2] = bashCWD
+    copyBuffer[copyBuffer.length - 2] = fx.bashCWD
       .split("/")
       .reverse()
       .join(" < ")
     log(`
       cli: ${fx.cursorLineIndex}
-      oY: ${offsetY}
+      oY: ${fx.offsetY}
       maxLines: ${maxLines}
     `)
     fx.cursorLineIndex = fx.lines.length - 1 
@@ -1064,8 +1064,8 @@ function handleFocusAfter() {
   if (fx.cursorLineIndex == fx.lines.Length - 1) return
   fx.cursorLineIndex += 1
   setCanvasHeight(canvasHeightKeyboard)
-  if (fx.cursorLineIndex < offsetY || fx.cursorLineIndex > (offsetY + maxLines)) {
-    offsetY = fx.cursorLineIndex - maxLines
+  if (fx.cursorLineIndex < fx.offsetY || fx.cursorLineIndex > (fx.offsetY + maxLines)) {
+    fx.offsetY = fx.cursorLineIndex - maxLines
   }
   updateCursorXY()
   render()
@@ -1077,8 +1077,8 @@ function handleFocusBefore() {
   if (fx.cursorLineIndex == 0) return
   fx.cursorLineIndex -= 1
   setCanvasHeight(canvasHeightKeyboard)
-  if (fx.cursorLineIndex < offsetY || fx.cursorLineIndex > (offsetY + maxLines)) {
-    offsetY = 0
+  if (fx.cursorLineIndex < fx.offsetY || fx.cursorLineIndex > (fx.offsetY + maxLines)) {
+    fx.offsetY = 0
   }
   updateCursorXY()
   render()
@@ -1112,7 +1112,7 @@ function save() {
     // simulate a goto
     // breaks will make sure the 'cleanup' step gets called
     for (var s=0; s<1; s++) {
-      if (fileMode != "file") break
+      if (fx.fileMode != "file") break
       if (savedVersion == version) {
         break
       }
@@ -1187,7 +1187,7 @@ function saveLine() {
   }
   fx.lines[fx.cursorLineIndex] = theText.value
   cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
-  cursorY = (fx.cursorLineIndex - offsetY) * fontHeight
+  cursorY = (fx.cursorLineIndex - fx.offsetY) * fontHeight
   initiateFindWord()
   docChanged()
 
@@ -1238,13 +1238,13 @@ function render() {
     // todo: draw the cursors after the selected regions
     var r = selectedRegions[i]
     t.fillStyle = "magenta"
-    for (var y=r.startY-offsetY; y<=r.stopY-offsetY; y++) {
-      var line = fx.lines[y + offsetY] || ""
+    for (var y=r.startY-fx.offsetY; y<=r.stopY-fx.offsetY; y++) {
+      var line = fx.lines[y + fx.offsetY] || ""
       if (r.startY == r.stopY) {
         t.fillRect((r.startX-fx.offsetX)*fontWidth, y*fontHeight, (r.stopX-r.startX)*fontWidth, fontHeight)  
-      } else if (y==r.startY-offsetY) {
+      } else if (y==r.startY-fx.offsetY) {
         t.fillRect((r.startX-fx.offsetX)*fontWidth, y*fontHeight, (line.length-r.startX)*fontWidth, fontHeight)  
-      } else if (y==r.stopY-offsetY) {
+      } else if (y==r.stopY-fx.offsetY) {
         t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight, r.stopX*fontWidth, fontHeight)  
       } else {
         t.fillRect((0-fx.offsetX)*fontWidth  , y*fontHeight, line.length*fontWidth, fontHeight) 
@@ -1255,7 +1255,7 @@ function render() {
   // draw line where your cursor is for help with finding
   t.save()
   t.fillStyle = "rgba(0, 255, 255, 0.25)"
-  t.fillRect(0, (fx.cursorLineIndex - offsetY) * fontHeight, c.width, fontHeight)
+  t.fillRect(0, (fx.cursorLineIndex - fx.offsetY) * fontHeight, c.width, fontHeight)
   t.restore()
 
   t.font = fontCSS
@@ -1272,7 +1272,7 @@ function render() {
     " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
     " " + selectMode
   
-  if (fileMode == "file")   {
+  if (fx.fileMode == "file")   {
     if (savingVersion != -1) {
       saveButton.style.backgroundColor = "gray" 
       saveButton.innerText = "saving"
@@ -1315,7 +1315,7 @@ function render() {
   
   for (var y=0; y < maxLines; y++) {
     // show the end of the document
-    // if (y + offsetY >= fx.lines.length) {
+    // if (y + fx.offsetY >= fx.lines.length) {
     //   t.save()
     //   t.fillStyle = "#222"
     //   t.fillRect(0, y*fontHeight, canvasWidth, fontHeight)
@@ -1323,7 +1323,7 @@ function render() {
     // }
     
     // highlight search
-    var theLine = fx.lines[y + offsetY] || ""
+    var theLine = fx.lines[y + fx.offsetY] || ""
     var highlightStartSearch = 0
     if (theLine) {
       // max 20 highlights per line
@@ -1352,8 +1352,8 @@ function render() {
     
     // Line numbers
     
-    if (y + offsetY < fx.lines.length) {
-      var lineNumber = (y+offsetY+1).toString().padStart(4, " ")
+    if (y + fx.offsetY < fx.lines.length) {
+      var lineNumber = (y+fx.offsetY+1).toString().padStart(4, " ")
       if (fx.offsetX < -1) {
         // Line numbers
         //t.fillStyle = "magenta"
@@ -1368,7 +1368,7 @@ function render() {
     
     // the actual text
     t.save()
-    if (fileMode == "bash" ) {
+    if (fx.fileMode == "bash" ) {
         if (theLine.startsWith("+")) {
            t.fillStyle = isDark ? "lime" : "green"
         } else if (theLine.startsWith("-")){
@@ -1380,7 +1380,7 @@ function render() {
         t.fillStyle = fontColor
     }
     for (var x=0; x < maxCols; x++) {  
-      t.fillText( charAt(fx.lines, y+offsetY, x+fx.offsetX), x*fontWidth, y*fontHeight)
+      t.fillText( charAt(fx.lines, y+fx.offsetY, x+fx.offsetX), x*fontWidth, y*fontHeight)
     }
     t.restore()
   }
@@ -1391,7 +1391,7 @@ function render() {
   
   // cursor
   t.fillStyle = "cyan"
-  var yPos = (fx.cursorLineIndex - offsetY) * fontHeight
+  var yPos = (fx.cursorLineIndex - fx.offsetY) * fontHeight
   var xPos = (fx.cursorColIndex - fx.offsetX) * fontWidth
   t.fillRect(xPos, yPos, 6, fontHeight)
   cursorLine = fx.lines[fx.cursorLineIndex] || ""
@@ -1496,15 +1496,15 @@ function onStart(e) {
     if (cursorY > maxHeight) {
       var extendY = cursorY - maxHeight
       cursorY = maxHeight
-      offsetY += Math.ceil(extendY/fontHeight)
-      if (offsetY > fx.lines.length - 10) offsetY = fx.lines.length - 10
+      fx.offsetY += Math.ceil(extendY/fontHeight)
+      if (fx.offsetY > fx.lines.length - 10) fx.offsetY = fx.lines.length - 10
       changedY = true
     } else if (cursorY < 0) {
       var extendY = cursorY
       cursorY = 0
-      offsetY += Math.floor(extendY/fontHeight)
+      fx.offsetY += Math.floor(extendY/fontHeight)
       changedY = true
-      if (offsetY < 0) offsetY = 0
+      if (fx.offsetY < 0) fx.offsetY = 0
     }
     
     var maxWidth = (maxCols -1) * fontWidth
@@ -1521,7 +1521,7 @@ function onStart(e) {
       if (!changedY) fx.offsetX += Math.floor(extendX/fontWidth)
       if (fx.offsetX < -marginLeft) fx.offsetX = -marginLeft
     }
-    fx.cursorLineIndex = Math.round(cursorY/fontHeight) + offsetY
+    fx.cursorLineIndex = Math.round(cursorY/fontHeight) + fx.offsetY
     fx.cursorColIndex = Math.round(cursorX/fontWidth) + fx.offsetX
     firstMove = false
     if (cursorType == "select") {
@@ -1556,7 +1556,7 @@ function onStart(e) {
     // text elements when not responding to user action
     // maybe there are workarounds.
     if (!moved && cursorType == "move") {
-      if (fileMode == "directory") {
+      if (fx.fileMode == "directory") {
         var prefix = currentFile.fullPath
         // To prevent leading double slash
         if (prefix == "/") {
@@ -1577,7 +1577,7 @@ function onStart(e) {
         return
       }
       
-      if (fileMode == "fileList") {
+      if (fx.fileMode == "fileList") {
           // TODO: make it so if they select a certain directory
           // portion that it will add that directory portion
           // as a new pane (aka file)
@@ -2045,7 +2045,7 @@ function makeFile(fullPath, contents) {
     offsetY: 0,
     offsetX: 0,
     fileMode: "file",
-    bashCWD: bashCWD,
+    bashCWD: fx.bashCWD,
     version: 0,
     savedVersion: 0,
     savingVersion: -1,
@@ -2177,7 +2177,6 @@ var lines = []
 
 var rootLocation = "" // will be set server side
 // ROOTLOCATION GOES HERE
-var bashCWD = rootLocation
 var paths = location.pathname.split(",")
 
 var proxyPath = "/"
@@ -2187,6 +2186,7 @@ var proxyPath = "/"
 // ay, joining just to split again. Clean up.
 var initialFile = makeFile(paths[0], lines.join("\n"))
 initialFile.fileMode = fileMode
+initialFile.bashCWD = rootLocation
 
 addFileToList(initialFile)
 setCurrentFile(initialFile)
