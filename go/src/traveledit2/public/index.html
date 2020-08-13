@@ -2040,8 +2040,8 @@ function makeFile(fullPath, contents) {
     offsetY: 0,
     offsetX: 0,
     fileMode: "file",
-    bashCWD: fx.bashCWD,
-    fx.version: 0,
+    bashCWD: (fx ? fx.bashCWD : "."),
+    version: 0,
     savedVersion: 0,
     savingVersion: -1,
   }
@@ -2084,7 +2084,7 @@ function seeFiles() {
     }).join("\n")
     var f = makeFile("__", contents)
     f.fileMode = "fileList"
-    f.fx.cursorLineIndex = 1
+    f.cursorLineIndex = 1
     setCurrentFile(f)  
 }
 function setCurrentFile(file) {
@@ -2161,6 +2161,7 @@ function reloadFile() {
 var maxUndos = 30
 
 var currentFile
+var fx
 
 var files = []
 
@@ -2168,6 +2169,7 @@ var lines = []
 // the actual lines will be put here by the server
 // LINES GO HERE
 
+var fileMode = "file"
 // FILEMODE DIRECTORY GOES HERE
 
 var rootLocation = "" // will be set server side
