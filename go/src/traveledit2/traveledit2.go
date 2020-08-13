@@ -39,7 +39,7 @@ func BasicAuth(handler http.Handler) http.HandlerFunc {
 }
 
 func main() {
-	port := flag.String("p", "8000", "port to listen on")
+	serverAddress := flag.String("addr", "localhost:8000", "serverAddress to listen on")
 	indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
 	location := flag.String("location", "", "path to directory to serve")
 	proxyPath := flag.String("proxypath", "", "the path for proxies, what to ignore")
@@ -261,13 +261,13 @@ func main() {
 	}
 
 	httpServer := http.Server{
-		Addr:         ":" + *port,
+		Addr:         *serverAddress,
 		Handler:      redirectMux,
 		ReadTimeout:  20 * time.Second,
 		WriteTimeout: 20 * time.Second,
 	}
 	httpsServer := &http.Server{
-		Addr:         ":" + *port,
+		Addr:         *serverAddress,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		Handler:      mainMux,

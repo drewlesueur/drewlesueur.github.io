@@ -1,3 +1,13 @@
+full word search option
+
+search should be a new pane and it remembers
+
+if you have 2 files make sure they have 
+the same buffer
+
+remember order when refreshing?
+option to not rearrange files?
+
 make a find in files feature!!!
 it should open a new pane with all the files
 that you can scroll through and open
@@ -19,8 +29,27 @@ real terminal emulator (use tmux?)
 in bash mode, allow for clicking on files to change directory there
 
 collapsing/expanding indention
-------------
 
+inconsistencies: 
+Sometimes we set selectMode to "line"
+before pasting. Sometimes we don't.
+
+updateCursorXY()
+ensureCursorInScreen()
+are somewhat overlapping.
+
+More ideas:
+tap on right side to jump right a but
+in edit mode tap on right side to move cursor
+if you have text selected you can type "(" to surround
+with parens etc.
+
+two finger tap eithout move to select
+word, then parens, quote, etc etc
+
+ability to script and copy-paste
+autocomplete should only look to the left of cursor
+------------
 when you are editing, any cursoor change in the canvas
 should affect the cursor change in the input element
 

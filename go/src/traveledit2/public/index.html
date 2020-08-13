@@ -244,8 +244,9 @@ var savedVersion = 0
 var savingVersion = -1
 var saveEveryMS = 3000
 var lastWord = ""
-// var fontScale = 1.2
-var fontScale = 1
+var fontScale = 1.2
+fontScaleInput.value = fontScale
+//var fontScale = 1
 // some duplication here with fontScale, see updateFontScale
 var fontHeight=36 * fontScale
 var fontWidth=18 * fontScale
@@ -300,11 +301,13 @@ var endListenerCount = 0
 var startListenerCount = 0
 var fileMode = "file"
 var bashCWD = "."
-var directoryCWD = "." // todo: remove this
 var autoSave = false
 
 function updateFontScale() {
     fontScale = fontScaleInput.value - 0
+    if (!fontScale) {
+       fontScale = 1
+    }
     fontHeight=36 * fontScale
     fontWidth=18 * fontScale
     fontCSS = (30 * fontScale) + "px 'Courier'"
@@ -402,6 +405,10 @@ var bashHelpers = [
    "git push origin HEAD",   
    "git branch",
    "golangci-lint run --print-issued-lines=false",
+   "grep -Ri '' --include=*.pm",
+   "grep -Ri '' --include=*.go",
+   "grep -Ri '' --include=*.php",
+   "find . -name '**'",
    "",  
    "",  
  ]
@@ -421,7 +428,7 @@ function addCmdTab() {
    addFileToList(file, false)
    setCurrentFile(file)
    
-   cursorLineIndex = lines.length - 1
+   cursorLineIndex = fx.lines.length - 1
    updateCursorXY()
    runBashCommand("")
    theText.focus()  
@@ -480,6 +487,7 @@ function doEval() {
   alert(resp)
 }
 function log(v) {
+  return // for now
   var d = document.createElement("pre")
   d.style.display = "block"
   d.style.border = "1px solid blue"
@@ -497,26 +505,26 @@ function docChanged() {
    if (maybeLastWord != "") {
      lastWord = maybeLastWord
    }
-  if (undoIndex != undoStack.length - 1) {
-      undoStack.splice(undoIndex + 1, undoStack.length - undoStack +1)
-      undoYStack.splice(undoIndex + 1, undoYStack.length - undoYStack +1)
-      undoXStack.splice(undoIndex + 1, undoXStack.length - undoXStack +1)
+  if (fx.undoIndex != fx.undoStack.length - 1) {
+      fx.undoStack.splice(fx.undoIndex + 1, fx.undoStack.length - fx.undoStack +1)
+      fx.undoYStack.splice(fx.undoIndex + 1, fx.undoYStack.length - fx.undoYStack +1)
+      fx.undoXStack.splice(fx.undoIndex + 1, fx.undoXStack.length - fx.undoXStack +1)
   }
-  undoIndex += 1
-  undoStack.push(lines.join("\n"))
-  undoYStack.push(cursorLineIndex)
-  undoXStack.push(cursorColIndex)
-  if (undoStack.length > maxUndos) {
-    undoStack.shift()
-    undoYStack.shift()
-    undoXStack.shift()
-    undoIndex -= 1
+  fx.undoIndex += 1
+  fx.undoStack.push(fx.lines.join("\n"))
+  fx.undoYStack.push(cursorLineIndex)
+  fx.undoXStack.push(cursorColIndex)
+  if (fx.undoStack.length > maxUndos) {
+    fx.undoStack.shift()
+    fx.undoYStack.shift()
+    fx.undoXStack.shift()
+    fx.undoIndex -= 1
   }
 }
 function repositionUndo() {
-  lines = undoStack[undoIndex].split("\n")
-  cursorColIndex = undoXStack[undoIndex]
-  cursorLineIndex = undoYStack[undoIndex]
+  fx.lines = fx.fx.undoStack[fx.undoIndex].split("\n")
+  cursorColIndex = fx.undoXStack[fx.undoIndex]
+  cursorLineIndex = fx.undoYStack[fx.undoIndex]
   if (cursorLineIndex < offsetY || cursorLineIndex > offsetY+maxLines) {
     offsetY = max(0, cursorLineIndex - 5)  
   }
@@ -528,12 +536,12 @@ function repositionUndo() {
 }
 
 function undo() {
-  undoIndex = bind(undoIndex-1, 0, undoIndex)
+  fx.undoIndex = bind(fx.undoIndex-1, 0, fx.undoIndex)
   repositionUndo()
 }
 
 function redo() {
-  undoIndex = bind(undoIndex+1, undoIndex, undoStack.length-1)
+  fx.undoIndex = bind(fx.undoIndex+1, fx.undoIndex, fx.undoStack.length-1)
   repositionUndo()
 }
 function clearLog() {
@@ -550,7 +558,7 @@ function isWordy(a) {
   ) 
 }
 function getWordAtCursor() {
-  return getWordAt(lines[cursorLineIndex], cursorColIndex)  
+  return getWordAt(fx.lines[cursorLineIndex], cursorColIndex)  
 }
 function getWordAt(line, x) {
   if (!line) return {start: -1, end: -1, word: ""}
@@ -566,14 +574,14 @@ function getWordAt(line, x) {
       break
     }
   }
-  if (endIndex == lines.length - 1) endIndex = lines.length
+  if (endIndex == fx.lines.length - 1) endIndex = fx.lines.length
   //if (startIndex < endIndex) {
     return {start: startIndex, end: endIndex, word: line.substring(startIndex, endIndex)}
   //}
   return {start: -1, end: -1, word: ""}
 }
 function getWordBeforeCursor() {
-  return getWordBefore(lines[cursorLineIndex], cursorColIndex)  
+  return getWordBefore(fx.lines[cursorLineIndex], cursorColIndex)  
 }
 function getWordBefore(line, x) {
   if (!line) return {start: -1, end: -1, word: ""}
@@ -585,7 +593,7 @@ function getWordBefore(line, x) {
   }
   if (startIndex < 0) startIndex = 0
   var endIndex = x
-  if (endIndex == lines.length - 1) endIndex = lines.length
+  if (endIndex == fx.lines.length - 1) endIndex = fx.lines.length
   //if (startIndex < endIndex) {
     return {start: startIndex, end: endIndex, word: line.substring(startIndex, endIndex)}
   //}
@@ -603,8 +611,8 @@ function findDown() {
     clearSearchButton.innerText = "clear search"
   }
   log("searching for: " + searchText.value)
-  for (var i=cursorLineIndex; i<lines.length; i++) {
-    var lineToSearch = lines[i]
+  for (var i=cursorLineIndex; i<fx.lines.length; i++) {
+    var lineToSearch = fx.lines[i]
     if (i == cursorLineIndex) {
       lineToSearch = lineToSearch.substr(cursorColIndex)
     }
@@ -632,10 +640,16 @@ function ensureCursorInScreen() {
        offsetY = cursorLineIndex-maxLines +1
     }
     
+    // TODO: there is something more elegant
+    // that you can do here
     if (cursorColIndex < offsetX) {
-      offsetX = cursorColIndex
+      //offsetX = cursorColIndex
+      offsetX = cursorColIndex - Math.floor(maxCols/2)
     } else if (cursorColIndex > offsetX+maxCols) {
       offsetX = cursorColIndex - Math.floor(maxCols/2)
+    }
+    if (offsetX < -5) {
+       offsetX = -5
     }
     updateCursorXY()
     render()
@@ -651,18 +665,18 @@ function findUp() {
   }
   log("searching for: " + searchText.value)
   for (var i=cursorLineIndex; i>0; i--) {
-    var lineToSearch = lines[i]
+    var lineToSearch = fx.lines[i]
     if (i == cursorLineIndex) {
       lineToSearch = lineToSearch.substr(0, cursorColIndex)
     }
     var pos = reverse(lineToSearch).indexOf(reverse(searchText.value))
     if (pos != -1) {
       if (i == cursorLineIndex) {
-         pos += (lines[i].length - cursorColIndex)
+         pos += (fx.lines[i].length - cursorColIndex)
       }
       cursorLineIndex = i
       log("the pos is " + pos)
-      cursorColIndex = lines[i].length - (pos + searchText.value.length)
+      cursorColIndex = fx.lines[i].length - (pos + searchText.value.length)
       updateCursorXY()
       ensureCursorInScreen()
       render()
@@ -716,7 +730,7 @@ function addPrefix(prefix) {
  if (selectedRegions.length > 0) {
    var r = selectedRegions[0]
    var firstIndent = ""
-   var line = lines[r.startY]
+   var line = fx.lines[r.startY]
    var firstNonSpace = 0
    for (var i=0; i<line.length; i++) {
      var chr = line.charAt(i)
@@ -726,10 +740,10 @@ function addPrefix(prefix) {
      }
    }
    for (var y=r.startY; y<=r.stopY; y++) {
-     lines[y] = lines[y].slice(0, firstNonSpace) + prefix + lines[y].slice(firstNonSpace)
+     fx.lines[y] = fx.lines[y].slice(0, firstNonSpace) + prefix + fx.lines[y].slice(firstNonSpace)
    }
  } else {
-   lines[cursorLineIndex] = lines[cursorLineIndex].slice(0, firstNonSpace) + prefix + lines[cursorLineIndex].slice(firstNonSpace)
+   fx.lines[cursorLineIndex] = fx.lines[cursorLineIndex].slice(0, firstNonSpace) + prefix + fx.lines[cursorLineIndex].slice(firstNonSpace)
  }
  docChanged()
  render()
@@ -739,11 +753,11 @@ function stripPrefixes(prefixes) {
  if (selectedRegions.length > 0) {
    var r = selectedRegions[0]
    for (var y=r.startY; y<=r.stopY; y++) {
-     lines[y] = stripPrefixesInner(lines[y], prefixes)
+     fx.lines[y] = stripPrefixesInner(fx.lines[y], prefixes)
    }
  } else {
-   var line = lines[cursorLineIndex]
-   lines[cursorLineIndex] = stripPrefixesInner(line, prefixes)
+   var line = fx.lines[cursorLineIndex]
+   fx.lines[cursorLineIndex] = stripPrefixesInner(line, prefixes)
  }
  docChanged()
  render()
@@ -777,22 +791,22 @@ function copy() {
     if (selectedRegions.length>0) {
       var r = selectedRegions[0]
       if (r.startY == r.stopY) {
-        copyBuffer = [lines[cursorLineIndex].slice(r.startX, r.stopX)]  
+        copyBuffer = [fx.lines[cursorLineIndex].slice(r.startX, r.stopX)]  
         selectedRegions = []
         render()
         break
       }
       copyBuffer = [
-        lines[r.startY].slice(r.startX),
-        ...lines.slice(r.startY + 1, r.stopY),
-        lines[r.stopY].slice(0, r.stopX)
+        fx.lines[r.startY].slice(r.startX),
+        ...fx.lines.slice(r.startY + 1, r.stopY),
+        fx.lines[r.stopY].slice(0, r.stopX)
       ]
       selectedRegions = []
       render()
       break
     }
     selectMode = "line" 
-    copyBuffer = [lines[cursorLineIndex]]
+    copyBuffer = [fx.lines[cursorLineIndex]]
   }
   
   // TODO: figure out why it's not fully copying at os level
@@ -818,18 +832,18 @@ function setCanvasWidth(w) {
 
 function paste() {
   if (selectMode == "line") {
-    lines.splice(cursorLineIndex + 1, 0, ...copyBuffer)
+    fx.lines.splice(cursorLineIndex + 1, 0, ...copyBuffer)
   } else if (selectMode == "char") {
     if (copyBuffer.length == 1) {
-      lines[cursorLineIndex] = lines[cursorLineIndex].slice(0, cursorColIndex) +
+      fx.lines[cursorLineIndex] = fx.lines[cursorLineIndex].slice(0, cursorColIndex) +
         copyBuffer[0] +
-        lines[cursorLineIndex].slice(cursorColIndex)
+        fx.lines[cursorLineIndex].slice(cursorColIndex)
     } else {
-      var line = lines[cursorLineIndex]
-      lines[cursorLineIndex] = line.slice(0, cursorColIndex) +
+      var line = fx.lines[cursorLineIndex]
+      fx.lines[cursorLineIndex] = line.slice(0, cursorColIndex) +
         copyBuffer[0]
       copyBuffer[copyBuffer.length-1] += line.slice(cursorColIndex)
-      lines.splice(cursorLineIndex+1, 0, ...copyBuffer.slice(1))
+      fx.lines.splice(cursorLineIndex+1, 0, ...copyBuffer.slice(1))
     }
   }
   docChanged()
@@ -849,15 +863,15 @@ function pasteLastWord() {
 }
 
 function addSpace() {
-  var line = lines[cursorLineIndex]
-  lines[cursorLineIndex] = line.slice(0, cursorLineIndex) + 
+  var line = fx.lines[cursorLineIndex]
+  fx.lines[cursorLineIndex] = line.slice(0, cursorLineIndex) + 
     " " + line.slice(cursorLineIndex)
   render()
   docChanged()
 }
 function deleteCharacter() {
-  var line = lines[cursorLineIndex]
-  lines[cursorLineIndex] = line.slice(0, cursorLineIndex) + 
+  var line = fx.lines[cursorLineIndex]
+  fx.lines[cursorLineIndex] = line.slice(0, cursorLineIndex) + 
     line.slice(cursorLineIndex + 1)
   docChanged()
   render()
@@ -867,18 +881,18 @@ function del() {
   if (selectedRegions.length>0) {
     var r = selectedRegions[0]
     if (r.startY == r.stopY) {
-      if (r.startX == 0 && r.stopX == lines[r.startY].length) {
+      if (r.startX == 0 && r.stopX == fx.lines[r.startY].length) {
         selectMode = "line" 
-        copyBuffer = [lines[r.startY]]
-        lines.splice(r.startY, 1)
+        copyBuffer = [fx.lines[r.startY]]
+        fx.lines.splice(r.startY, 1)
         selectedRegions = []
         docChanged()
         render()
         return
       } else {
-        copyBuffer = [lines[r.startY].slice(r.startX, r.stopX)]  
-        lines[r.startY] = lines[r.startY].substr(0, r.startX) +
-        lines[r.startY].substr(r.stopX)
+        copyBuffer = [fx.lines[r.startY].slice(r.startX, r.stopX)]  
+        fx.lines[r.startY] = fx.lines[r.startY].substr(0, r.startX) +
+        fx.lines[r.startY].substr(r.stopX)
         selectedRegions = []
         cursorLineIndex = r.startY
         cursorColIndex = r.startX
@@ -893,16 +907,16 @@ function del() {
       }
     }
     copyBuffer = [
-      lines[r.startY].slice(r.startX),
-      ...lines.slice(r.startY + 1, r.stopY),
-      lines[r.stopY].slice(0, r.stopX)
+      fx.lines[r.startY].slice(r.startX),
+      ...fx.lines.slice(r.startY + 1, r.stopY),
+      fx.lines[r.stopY].slice(0, r.stopX)
     ]
 
-    lines[r.startY] = lines[r.startY].slice(0, r.startX) + 
-      lines[r.stopY].slice(r.stopX)
-    lines.splice(r.startY + 1, r.stopY-r.startY)
-    if (lines[r.startY] == "") {
-      lines.splice(r.startY, 1)
+    fx.lines[r.startY] = fx.lines[r.startY].slice(0, r.startX) + 
+      fx.lines[r.stopY].slice(r.stopX)
+    fx.lines.splice(r.startY + 1, r.stopY-r.startY)
+    if (fx.lines[r.startY] == "") {
+      fx.lines.splice(r.startY, 1)
     }
     cursorLineIndex = r.startY
     cursorColIndex = r.startX
@@ -916,8 +930,8 @@ function del() {
     return
   }
   selectMode = "line" 
-  copyBuffer = [lines[cursorLineIndex]]
-  lines.splice(cursorLineIndex, 1)
+  copyBuffer = [fx.lines[cursorLineIndex]]
+  fx.lines.splice(cursorLineIndex, 1)
   docChanged()
   render()
 }
@@ -926,8 +940,8 @@ function deleteWord(e) {
   if (w.word == "") {
     return
   }
-  var line = lines[cursorLineIndex]
-  lines[cursorLineIndex] = line.slice(0, w.start) + line.slice(w.end)
+  var line = fx.lines[cursorLineIndex]
+  fx.lines[cursorLineIndex] = line.slice(0, w.start) + line.slice(w.end)
   cursorColIndex = w.start
   updateCursorXY()
   docChanged()
@@ -947,16 +961,16 @@ function getIndent(line) {
   return theIndent  
 }
 function insertLine(closeCurly) {
-  var theLine = lines[cursorLineIndex]
+  var theLine = fx.lines[cursorLineIndex]
   var theIndent = getIndent(theLine)
   var prevChar = theLine[cursorColIndex - 1]
   var nextChar = theLine[cursorColIndex]
-  lines.splice(cursorLineIndex + 1, 0, theIndent + theLine.substr(theText.selectionStart))
+  fx.lines.splice(cursorLineIndex + 1, 0, theIndent + theLine.substr(theText.selectionStart))
   if (closeCurly && (prevChar in closingMap) && (nextChar == closingMap[prevChar])) {
     theIndent += "   "
-    lines.splice(cursorLineIndex + 1, 0, theIndent)
+    fx.lines.splice(cursorLineIndex + 1, 0, theIndent)
   }
-  lines[cursorLineIndex] = theLine.substr(0, theText.selectionStart)
+  fx.lines[cursorLineIndex] = theLine.substr(0, theText.selectionStart)
   cursorLineIndex += 1
   cursorColIndex = theIndent.length
   updateCursorXY()
@@ -966,7 +980,7 @@ function insertLine(closeCurly) {
   render()
 }
 function newLine(e) {
-  var theLine = lines[cursorLineIndex]
+  var theLine = fx.lines[cursorLineIndex]
   e.preventDefault()
   if (fileMode == "bash") {
     runBashCommand(theLine)
@@ -979,7 +993,7 @@ function newLine(e) {
 }
 function runBashCommand(line) {
   if (line == "clear") {
-    lines = []
+    fx.lines = []
     cursorLineIndex = 0
     cursorColIndex = 0
     updateCursorXY()
@@ -1002,7 +1016,7 @@ function runBashCommand(line) {
   if (line == "p") {
     copyBuffer = bashHelpers
     paste()
-    cursorLineIndex = lines.length - 1
+    cursorLineIndex = fx.lines.length - 1
     cursorColIndex = 0
     updateCursorXY()
     ensureCursorInScreen()
@@ -1032,9 +1046,9 @@ function runBashCommand(line) {
       oY: ${offsetY}
       maxLines: ${maxLines}
     `)
-    cursorLineIndex = lines.length - 1 
+    cursorLineIndex = fx.lines.length - 1 
     paste()
-    cursorLineIndex = lines.length - 1
+    cursorLineIndex = fx.lines.length - 1
     updateCursorXY()
     ensureCursorInScreen()
   }).catch(e => {
@@ -1051,7 +1065,7 @@ function trimPrefix(str, prefix) {
 }
 
 function handleFocusAfter() {
-  if (cursorLineIndex == lines.Length - 1) return
+  if (cursorLineIndex == fx.lines.Length - 1) return
   cursorLineIndex += 1
   setCanvasHeight(canvasHeightKeyboard)
   if (cursorLineIndex < offsetY || cursorLineIndex > (offsetY + maxLines)) {
@@ -1111,7 +1125,7 @@ function save() {
         method: "POST",
         cache: "no-cache",
         headers: { "Content-Type": "application/x-www-form-urlencoded"},
-        body: "content=" + encodeURIComponent(lines.join("\n"))
+        body: "content=" + encodeURIComponent(fx.lines.join("\n"))
       })
       .then(r => r.json())
       .then(v => {
@@ -1140,12 +1154,12 @@ function handleKeydown(e) {
   // 8 means backspace
   if (e.keyCode == 8 && theText.selectionStart == 0 && cursorLineIndex != 0) {
     e.preventDefault()
-    var theLine = lines[cursorLineIndex]
+    var theLine = fx.lines[cursorLineIndex]
 
-    lines.splice(cursorLineIndex, 1)
+    fx.lines.splice(cursorLineIndex, 1)
     cursorLineIndex -= 1
-    var prevLine = lines[cursorLineIndex]
-    lines[cursorLineIndex] = lines[cursorLineIndex] + theLine
+    var prevLine = fx.lines[cursorLineIndex]
+    fx.lines[cursorLineIndex] = fx.lines[cursorLineIndex] + theLine
     cursorColIndex = prevLine.length
     updateCursorXY()
     docChanged()
@@ -1175,7 +1189,7 @@ function saveLine() {
       theText.value.slice(theText.selectionStart)
       theText.setSelectionRange(cursorColIndex, cursorColIndex)
   }
-  lines[cursorLineIndex] = theText.value
+  fx.lines[cursorLineIndex] = theText.value
   cursorX = (cursorColIndex - offsetX) * fontWidth
   cursorY = (cursorLineIndex - offsetY) * fontHeight
   initiateFindWord()
@@ -1193,8 +1207,8 @@ function bind(v, min, max) {
   if (v > max) v = max
   return v
 }
-function charAt(lines, y, x) {
-  var line = lines[y]
+function charAt(fx.lines, y, x) {
+  var line = fx.lines[y]
   if (!line) return ""
   var theChar = line[x]
   if (!theChar) return ""
@@ -1229,7 +1243,7 @@ function render() {
     var r = selectedRegions[i]
     t.fillStyle = "magenta"
     for (var y=r.startY-offsetY; y<=r.stopY-offsetY; y++) {
-      var line = lines[y + offsetY] || ""
+      var line = fx.lines[y + offsetY] || ""
       if (r.startY == r.stopY) {
         t.fillRect((r.startX-offsetX)*fontWidth, y*fontHeight, (r.stopX-r.startX)*fontWidth, fontHeight)  
       } else if (y==r.startY-offsetY) {
@@ -1305,7 +1319,7 @@ function render() {
   
   for (var y=0; y < maxLines; y++) {
     // show the end of the document
-    // if (y + offsetY >= lines.length) {
+    // if (y + offsetY >= fx.lines.length) {
     //   t.save()
     //   t.fillStyle = "#222"
     //   t.fillRect(0, y*fontHeight, canvasWidth, fontHeight)
@@ -1313,7 +1327,7 @@ function render() {
     // }
     
     // highlight search
-    var theLine = lines[y + offsetY] || ""
+    var theLine = fx.lines[y + offsetY] || ""
     var highlightStartSearch = 0
     if (theLine) {
       // max 20 highlights per line
@@ -1342,7 +1356,7 @@ function render() {
     
     // Line numbers
     
-    if (y + offsetY < lines.length) {
+    if (y + offsetY < fx.lines.length) {
       var lineNumber = (y+offsetY+1).toString().padStart(4, " ")
       if (offsetX < -1) {
         // Line numbers
@@ -1370,7 +1384,7 @@ function render() {
         t.fillStyle = fontColor
     }
     for (var x=0; x < maxCols; x++) {  
-      t.fillText( charAt(lines, y+offsetY, x+offsetX), x*fontWidth, y*fontHeight)
+      t.fillText( charAt(fx.lines, y+offsetY, x+offsetX), x*fontWidth, y*fontHeight)
     }
     t.restore()
   }
@@ -1384,13 +1398,13 @@ function render() {
   var yPos = (cursorLineIndex - offsetY) * fontHeight
   var xPos = (cursorColIndex - offsetX) * fontWidth
   t.fillRect(xPos, yPos, 6, fontHeight)
-  cursorLine = lines[cursorLineIndex] || ""
+  cursorLine = fx.lines[cursorLineIndex] || ""
   
   
   if (!inEdit) {
     theText.value = cursorLine
-    theTextBefore.value = lines[cursorLineIndex - 1] || ""
-    theTextAfter.value = lines[cursorLineIndex + 1] || ""
+    theTextBefore.value = fx.lines[cursorLineIndex - 1] || ""
+    theTextAfter.value = fx.lines[cursorLineIndex + 1] || ""
   }
 
   // set the selection range back to what it was
@@ -1400,7 +1414,7 @@ function render() {
   if (document.activeElement == theText) {
       theText.setSelectionRange(selStart, selEnd)
   }
- // alert(charAt(lines, 0, 0))
+ // alert(charAt(fx.lines, 0, 0))
 }
 
 function ensureSign(sign, v) {
@@ -1434,18 +1448,18 @@ function onStart(e) {
       log("select called and there are " + e.touches.length + " touches")
       selectedRegions = []
       cursorType = "select"
-      var line = lines[cursorLineIndex] || ""
+      var line = fx.lines[cursorLineIndex] || ""
       selectedRegion.startX = bind(cursorColIndex, 0, line.length)
-      selectedRegion.startY = bind(cursorLineIndex, 0, lines.length-1)
+      selectedRegion.startY = bind(cursorLineIndex, 0, fx.lines.length-1)
       // Note how the stopY is inclusive
       // But the stopX is exclusive.
       // for some reason seemed natural to do it like that
       selectedRegion.stopX = bind(cursorColIndex, 0, line.length)
-      selectedRegion.stopY = bind(cursorLineIndex, 0, lines.length - 1)
+      selectedRegion.stopY = bind(cursorLineIndex, 0, fx.lines.length - 1)
       if (cursorColIndex < 0) {
         selectedRegion.stopped = true
         selectMode = "line"
-        selectedRegion.stopX = (lines[cursorLineIndex]  || "").length
+        selectedRegion.stopX = (fx.lines[cursorLineIndex]  || "").length
       } else {
         selectMode = "char"
       }
@@ -1487,7 +1501,7 @@ function onStart(e) {
       var extendY = cursorY - maxHeight
       cursorY = maxHeight
       offsetY += Math.ceil(extendY/fontHeight)
-      if (offsetY > lines.length - 10) offsetY = lines.length - 10
+      if (offsetY > fx.lines.length - 10) offsetY = fx.lines.length - 10
       changedY = true
     } else if (cursorY < 0) {
       var extendY = cursorY
@@ -1515,12 +1529,12 @@ function onStart(e) {
     cursorColIndex = Math.round(cursorX/fontWidth) + offsetX
     firstMove = false
     if (cursorType == "select") {
-      var line = lines[cursorLineIndex] || ""
+      var line = fx.lines[cursorLineIndex] || ""
       selectedRegion.stopX = bind(cursorColIndex, 0, line.length)
-      selectedRegion.stopY = bind(cursorLineIndex, 0, lines.length-1)
+      selectedRegion.stopY = bind(cursorLineIndex, 0, fx.lines.length-1)
       selectedRegion.stopped = true
       if (cursorColIndex < 0) {
-        selectedRegion.stopX = (lines[cursorLineIndex] || "").length
+        selectedRegion.stopX = (fx.lines[cursorLineIndex] || "").length
       }
 
     }
@@ -1552,7 +1566,7 @@ function onStart(e) {
         if (prefix == "/") {
           prefix = ""
         }
-        var addPath = lines[cursorLineIndex]
+        var addPath = fx.lines[cursorLineIndex]
         if (addPath == "..") {
             var parts = prefix.split("/")
             if (parts.length > 0) {
@@ -1572,8 +1586,8 @@ function onStart(e) {
           // portion that it will add that directory portion
           // as a new pane (aka file)
           
-          var line = lines[cursorLineIndex]
-          // since these lines are > delimited
+          var line = fx.lines[cursorLineIndex]
+          // since these fx.lines are > delimited
           // we can figure out what section was tapped
           var reversePathIndex = 0
           for (var lineI = 0; lineI < cursorColIndex; lineI++) {
@@ -1628,8 +1642,8 @@ function onStart(e) {
       }
       
       if (document.activeElement != theText) {
-        if (cursorLineIndex >= lines.length) {
-            cursorLineIndex = lines.length - 1
+        if (cursorLineIndex >= fx.lines.length) {
+            cursorLineIndex = fx.lines.length - 1
             updateCursorXY()
             render()
         }
@@ -1708,6 +1722,40 @@ function onStart(e) {
   var movedWithBuffer = false
   var selectedRegion = {}
   
+  // scroll right and left and move cursor right and left
+  if (startTouchX > ((canvasWidth/3) - 40)) {
+     if (document.activeElement == theText) {
+         cursorColIndex += 1
+         theText.setSelectionRange(cursorColIndex, cursorColIndex)
+         initiateFindWord()
+     } else {
+         offsetX += Math.floor(maxCols/2)
+         cursorColIndex += Math.floor(maxCols/2)
+     }
+     updateCursorXY()
+     render()
+     return
+  }
+  if (startTouchX < 40) {
+     if (document.activeElement == theText) {
+         cursorColIndex -= 1    
+         theText.setSelectionRange(cursorColIndex, cursorColIndex)
+         initiateFindWord()
+     } else {
+         offsetX -= Math.floor(maxCols/2)
+         if (offsetX < -5){
+            offsetX = -5
+         }
+         cursorColIndex -= Math.floor(maxCols/2)
+     }
+     if (cursorColIndex < -5){
+        cursorColIndex = -5
+     }
+     updateCursorXY()
+     render()
+     return
+  }
+  
 
   if (selectedRegions.length) {
     // idea: if 2 touches while selected
@@ -1774,7 +1822,7 @@ function findWordUp() {
     return w
   }
   for (findWordUpY=findWordUpY; findWordUpY>=0; findWordUpY--) {
-    var line = lines[findWordUpY]
+    var line = fx.lines[findWordUpY]
     // so word being changed doesn't affect cursor
     if (findWordY == findWordUpY) {
       line = findWordSpecialLine
@@ -1806,8 +1854,8 @@ function findWordDown() {
   if (findWordDownDone) {
     return w
   }
-  for (findWordDownY; findWordDownY<lines.length; findWordDownY++) {
-    var line = lines[findWordDownY]
+  for (findWordDownY; findWordDownY<fx.lines.length; findWordDownY++) {
+    var line = fx.lines[findWordDownY]
     for (findWordDownX; findWordDownX < line.length; findWordDownX++) {
       //log("down iteration: " + findWordDownY + "/" + findWordDownX)
       w = getWordAt(line, findWordDownX)
@@ -1839,12 +1887,12 @@ function replaceFindWord(r) {
   // First delete what was already there
   // Copied from the del() function
   if (findWordY == findWordEndY) {
-    lines[findWordY] = lines[findWordY].substr(0, findWordX) +
-      lines[findWordY].substr(findWordEndX)
+    fx.lines[findWordY] = fx.lines[findWordY].substr(0, findWordX) +
+      fx.lines[findWordY].substr(findWordEndX)
   } else {
-    lines[findWordY] = lines[findWordY].slice(0, findWordX) + 
-      lines[findWordEndY].slice(findWordEndX)
-    lines.splice(findWordY + 1, findWordEndY-findWordY)
+    fx.lines[findWordY] = fx.lines[findWordY].slice(0, findWordX) + 
+      fx.lines[findWordEndY].slice(findWordEndX)
+    fx.lines.splice(findWordY + 1, findWordEndY-findWordY)
   }
   
   findWordEndY = findWordY + r.length - 1
@@ -1856,15 +1904,15 @@ function replaceFindWord(r) {
   
   // Now we look at pasting
   if (r.length == 1) {
-    lines[findWordY] = lines[findWordY].slice(0, findWordX) +
+    fx.lines[findWordY] = fx.lines[findWordY].slice(0, findWordX) +
       r[0] +
-      lines[findWordY].slice(findWordX)
+      fx.lines[findWordY].slice(findWordX)
   } else {
-    var line = lines[findWordY]
-    lines[findWordY] = line.slice(0, findWordX) +
+    var line = fx.lines[findWordY]
+    fx.lines[findWordY] = line.slice(0, findWordX) +
       r[0]
     r[r.length-1] += line.slice(findWordX)
-    lines.splice(findWordY+1, 0, ...r.slice(1))
+    fx.lines.splice(findWordY+1, 0, ...r.slice(1))
   }
   
   cursorLineIndex = findWordEndY
@@ -1876,23 +1924,28 @@ function replaceFindWord(r) {
 }
 
 function initiateFindWord() {
+  // also see toggleWord
   log("initiate find word")
   resetFindWord()
-  if (cursorLineIndex >= lines.length) {
+  if (cursorLineIndex >= fx.lines.length) {
     return
   }
-  //var w = getWordAtCursor()
-  var w = getWordBeforeCursor()
+  var w = getWordAtCursor()
+  // TODO: getWordBeforeCursor works for autocompleting in thr middle
+  // but it doesn't replace the word on iter 0. 
+  //var w = getWordBeforeCursor()
   findWordY = cursorLineIndex
   findWordX = cursorColIndex
   findWordEndY = cursorLineIndex
   findWordEndX = cursorColIndex
   findWordUpY = cursorLineIndex
-  findWordUpX = lines[cursorLineIndex].length
+  findWordUpX = fx.lines[cursorLineIndex].length
   findWordDownY = cursorLineIndex + 1
   findWordDownX = 0
-  findWordSpecialLine = lines[findWordY]
-  
+  findWordSpecialLine = fx.lines[findWordY]
+  // TODO: some of the logic for
+  // toggleWord can be be improved/consolidated
+  // by looking at findUp
   if (w.word != "") {
     if (w.end == cursorColIndex) {
       findWordPrefix = w.word 
@@ -1905,7 +1958,6 @@ function initiateFindWord() {
 }
 
 function toggleWord() {
- 
   // for loop to simulate goto
   for (var s=0; s<1; s++) {
     if (findWordCount == 0 && !findWordPrefix) {
@@ -1998,7 +2050,6 @@ function makeFile(fullPath, contents) {
     offsetX: 0,
     fileMode: "file",
     bashCWD: bashCWD,
-    directoryCWD: directoryCWD,
     version: 0,
     savedVersion: 0,
     savingVersion: -1,
@@ -2049,6 +2100,19 @@ function setCurrentFile(file) {
   if (!file) {
      return
   }
+  
+  currentFile = file
+  // treat fx as alias for currentFile, for easier typing
+  fx = file
+  
+  updateCursorXY()
+  searchText.setAttribute("placeholder", currentFile.fullPath + " (search)")
+  render()
+  renderFileDropdown()
+  
+  return
+  
+  // TODO: remove after this
   // Note: it might be nice to have a single global
   // "currentFile" variable, instead of a handful of globals
   // that have to be saved/restored
@@ -2066,7 +2130,6 @@ function setCurrentFile(file) {
     currentFile.offsetX = offsetX
     currentFile.fileMode = fileMode
     currentFile.bashCWD = bashCWD
-    currentFile.directoryCWD = directoryCWD
     currentFile.version = version
     currentFile.savedVersion = savedVersion
     currentFile.savingVersion = savingVersion
@@ -2083,7 +2146,6 @@ function setCurrentFile(file) {
   offsetX = file.offsetX
   fileMode = file.fileMode
   bashCWD = file.bashCWD
-  directoryCWD = file.directoryCWD
   version = file.version
   savedVersion = file.savedVersion
   savingVersion = file.savingVersion
@@ -2108,10 +2170,6 @@ function reloadFile() {
 var maxUndos = 30
 
 var currentFile
-var undoStack
-var undoXStack
-var undoYStack
-var undoIndex
 
 var files = []
 
@@ -2119,7 +2177,6 @@ var lines = []
 // the actual lines will be put here by the server
 // LINES GO HERE
 
-// DIRECTORYCWD GOES HERE
 // FILEMODE DIRECTORY GOES HERE
 
 var rootLocation = "" // will be set server side
@@ -2132,11 +2189,11 @@ var proxyPath = "/"
 
 // The first one get's "hydrated" by the server
 // ay, joining just to split again. Clean up.
-var file = makeFile(paths[0], lines.join("\n"))
-file.fileMode = fileMode
+var initialFile = makeFile(paths[0], lines.join("\n"))
+initialFile.fileMode = fileMode
 
-addFileToList(file)
-setCurrentFile(file)
+addFileToList(initialFile)
+setCurrentFile(initialFile)
 // Subsequent ones will get added after the fact.
 // Starting at index 1 for this reason.
 // NOTE: you could do this async serially.
