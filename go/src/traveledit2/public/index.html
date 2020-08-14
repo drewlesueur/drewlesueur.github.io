@@ -1114,14 +1114,7 @@ function expandTabIndex(theLine, start) {
           break
        }
        expandedLineLength += tabPos - (lastTabPos + 1)
-       if (expandedLineLength > start) {
-           break
-       } 
        var numberOfSpaces = tabStop - (expandedLineLength % tabStop)
-       if ((expandedLineLength + numberOfSpaces) > start) {
-           netSpacesAdded += (start - expandedLineLength)
-           break
-       } 
        expandedLineLength += numberOfSpaces
        
        netSpacesAdded += numberOfSpaces - 1 // subtract 1 because of the actual tab
