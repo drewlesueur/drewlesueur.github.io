@@ -1,3 +1,18 @@
+make find down and find up general action buttons
+  that change based on context.
+  like when you are in ja console mode (not exist yet)
+  the action button will execute th code?
+  or maybe add a new contextual action button?
+  maybe the save button actually 
+  in bash, the action should be to go to
+  the file it finds on the line you are on
+  
+
+autocomplete lines too?!
+more efficient and less bugy undo
+https://stackoverflow.com/questions/54369513/how-to-count-the-correct-length-of-a-string-with-emojis-in-javascript
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/codePointAt
+
 when there is an error with bash, you loose the directory? and it bugs out
 full word search option
 

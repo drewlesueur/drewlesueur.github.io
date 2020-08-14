@@ -662,7 +662,7 @@ function findUp() {
     searchText.value = getWordAtCursor().word
     clearSearchButton.innerText = "clear search"
   }
-  for (var i=fx.cursorLineIndex; i>0; i--) {
+  for (var i=fx.cursorLineIndex; i>=0; i--) {
     var lineToSearch = fx.lines[i]
     if (i == fx.cursorLineIndex) {
       lineToSearch = lineToSearch.substr(0, u(fx.cursorColIndex))
@@ -1018,17 +1018,17 @@ function runBashCommand(line) {
   }).then(r => {
     copyBuffer = r.split("\n")
     copyBuffer.unshift("") // leading newline
-    fx.cursorLineIndex += copyBuffer.length
-    fx.cursorColIndex = 0
-    updateCursorXY()
-    // Last item is a newline
-    // Second to last item is cwd
+    // second to last item is cwd
     fx.bashCWD = copyBuffer[copyBuffer.length - 2]
     // let's restyle the pwd after we grab it
     copyBuffer[copyBuffer.length - 2] = fx.bashCWD
       .split("/")
       .reverse()
       .join(" < ")
+    copyBuffer.push(line) // add the line so it's easy to run again.
+    copyBuffer.push("")
+    fx.cursorColIndex = 0
+    fx.cursorLineIndex += copyBuffer.length
     fx.cursorLineIndex = fx.lines.length - 1 
     paste()
     fx.cursorLineIndex = fx.lines.length - 1
