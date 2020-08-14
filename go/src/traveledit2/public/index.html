@@ -250,6 +250,7 @@ var fontHeight=36 * fontScale
 var fontWidth=18 * fontScale
 var fontCSS = (30 * fontScale) + "px 'Courier'"
 var fontColor = "white"
+var lightFontColor = "rgba(255, 255, 255, 0.25)"
 var isDark = true
 var cursorX=0
 var cursorY=0
@@ -322,6 +323,7 @@ function toggleDarkMode() {
     updateClassForSelector("input", "dark","light")
     updateClassForSelector("textarea", "dark","light")
     fontColor = "black"
+    lightFontColor = "rgba(0, 0, 0, 0.25)"
     render()
     return
   }
@@ -331,6 +333,7 @@ function toggleDarkMode() {
   updateClassForSelector("input", "light", "dark")
   updateClassForSelector("textarea", "light", "dark")
   fontColor = "white"
+  lightFontColor = "rgba(255, 255, 255, 0.25)"
   render()
     
 }
@@ -1304,11 +1307,11 @@ function render() {
       if (r.startY == r.stopY) {
         t.fillRect((r.startX-fx.offsetX)*fontWidth, y*fontHeight, (r.stopX-r.startX)*fontWidth, fontHeight)  
       } else if (y==r.startY-fx.offsetY) {
-        t.fillRect((r.startX-fx.offsetX)*fontWidth, y*fontHeight, (line.length-r.startX)*fontWidth, fontHeight)  
+        t.fillRect((r.startX-fx.offsetX)*fontWidth, y*fontHeight, (expandTabIndex(line, line.length)-r.startX)*fontWidth, fontHeight)  
       } else if (y==r.stopY-fx.offsetY) {
         t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight, r.stopX*fontWidth, fontHeight)  
       } else {
-        t.fillRect((0-fx.offsetX)*fontWidth  , y*fontHeight, line.length*fontWidth, fontHeight) 
+        t.fillRect((0-fx.offsetX)*fontWidth  , y*fontHeight, expandTabIndex(line, line.length)*fontWidth, fontHeight) 
       }
     } 
   }
@@ -1455,12 +1458,20 @@ function render() {
        expandedLine += theLine.substring(afterLastTabPos, tabPos)
        // now add the correct number of spaces, taking into account the tabStop
        var numberOfSpaces = tabStop - (expandedLine.length % tabStop)
-       expandedLine += " ".repeat(numberOfSpaces)
+       expandedLine += "\t".repeat(numberOfSpaces)
        afterLastTabPos = tabPos + 1
     }
     for (var x=0; x < maxCols; x++) {
       //t.fillText( theCharAt(fx.lines, y+fx.offsetY, x+fx.offsetX), x*fontWidth, y*fontHeight)
-      t.fillText(expandedLine[x+fx.offsetX] || "", x*fontWidth, y*fontHeight)
+      var chr = expandedLine[x+fx.offsetX] || ""
+      if (chr == "\t") {
+          t.save()
+          t.fillStyle = lightFontColor
+          t.fillText("•", x*fontWidth, y*fontHeight)
+          t.restore()
+      } else {
+          t.fillText(chr, x*fontWidth, y*fontHeight)
+      }
     }
     t.restore()
   }
@@ -1610,7 +1621,8 @@ function onStart(e) {
       selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
       selectedRegion.stopped = true
       if (fx.cursorColIndex < 0) {
-        selectedRegion.stopX = (fx.lines[fx.cursorLineIndex] || "").length
+        var _line = fx.lines[fx.cursorLineIndex] || ""
+        selectedRegion.stopX = expandTabIndex(_line, _line.length)
       }
 
     }
@@ -1992,7 +2004,7 @@ function replaceFindWord(r) {
   }
   
   fx.cursorLineIndex = findWordEndY
-  fx.cursorColIndex = findWordEndX
+  fx.cursorColIndex = expandTabIndex(fx.lines[fx.cursorLineIndex], findWordEndX)
   updateCursorXY()
   docChanged()
   render()
