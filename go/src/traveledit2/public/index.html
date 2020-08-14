@@ -191,6 +191,7 @@ onblur=handleBlur()
   <div id=darkModeButton class=square onclick="toggleDarkMode()">light mode</div>
 </div>
 <div class=toolbar>
+  <div class=square onclick=debugView()>debug view</div>
   <div class=square onclick=reloadFile()>reload</div>
   <div class=square onclick=doEval()>eval</div>
   <div class=square onclick=clearLog()>clear log</div>
@@ -400,6 +401,12 @@ var bashHelpers = [
    "grep -Ri '' --include=*.go",
    "grep -Ri '' --include=*.php",
    "find . -name '**'",
+   "go test ./...",
+   // a way to do `git add -p` non-interactively
+   "git --no-pager diff > gitdiff",
+   "open gitdiff",
+   "git apply --cached gitdiff",
+   "clear",
    "",  
    "",  
  ]
@@ -478,7 +485,6 @@ function doEval() {
   alert(resp)
 }
 function log(v) {
-  return // for now
   var d = document.createElement("pre")
   d.style.display = "block"
   d.style.border = "1px solid blue"
@@ -601,7 +607,6 @@ function findDown() {
     searchText.value = getWordAtCursor().word
     clearSearchButton.innerText = "clear search"
   }
-  log("searching for: " + searchText.value)
   for (var i=fx.cursorLineIndex; i<fx.lines.length; i++) {
     var lineToSearch = fx.lines[i]
     if (i == fx.cursorLineIndex) {
@@ -654,7 +659,6 @@ function findUp() {
     searchText.value = getWordAtCursor().word
     clearSearchButton.innerText = "clear search"
   }
-  log("searching for: " + searchText.value)
   for (var i=fx.cursorLineIndex; i>0; i--) {
     var lineToSearch = fx.lines[i]
     if (i == fx.cursorLineIndex) {
@@ -666,7 +670,6 @@ function findUp() {
          pos += (fx.lines[i].length - fx.cursorColIndex)
       }
       fx.cursorLineIndex = i
-      log("the pos is " + pos)
       fx.cursorColIndex = fx.lines[i].length - (pos + searchText.value.length)
       updateCursorXY()
       ensureCursorInScreen()
@@ -892,7 +895,8 @@ function del() {
         docChanged()
         render()
         if (document.activeElement == theText) {
-            theText.setSelectionRange(r.startX, r.startX)
+            //theText.setSelectionRange(r.startX, r.startX)
+            setSelectionRangeForText(r.stsrtX, r.startX)
         }
         return
       }
@@ -916,7 +920,8 @@ function del() {
     docChanged()
     render()
     if (document.activeElement == theText) {
-        theText.setSelectionRange(r.startX, r.startX)
+        //theText.setSelectionRange(r.startX, r.startX)
+        setSelectionRangeForText(r.stsrtX, r.startX)
     }
     return
   }
@@ -979,7 +984,8 @@ function newLine(e) {
   }
   insertLine(true)
   theText.focus()
-  theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+  //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+  setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
   return false
 }
 function runBashCommand(line) {
@@ -1032,11 +1038,6 @@ function runBashCommand(line) {
       .split("/")
       .reverse()
       .join(" < ")
-    log(`
-      cli: ${fx.cursorLineIndex}
-      oY: ${fx.offsetY}
-      maxLines: ${maxLines}
-    `)
     fx.cursorLineIndex = fx.lines.length - 1 
     paste()
     fx.cursorLineIndex = fx.lines.length - 1
@@ -1055,6 +1056,79 @@ function trimPrefix(str, prefix) {
   return str
 }
 
+// was here
+function setSelectionRangeForText(start, end) {
+    var adjustedStart = unExpandTabIndex(start)
+    var adjustedEnd
+    if (start == end) {
+       adjustedEnd = adjustedStart
+    } else {
+       adjustedEnd = unExpandTabIndex(end)
+    }
+    log({start, end, adjustedStart, adjustedEnd})
+    var e = new Error()
+    log(e.stack)
+    theText.setSelectionRange(adjustedStart, adjustedEnd)
+}
+
+function unExpandTabIndex(start) {
+    var theLine = fx.lines[fx.cursorLineIndex+fx.offsetY]   
+    if (theLine == "") theLine = ""
+    var expandedLineLength = 0
+    var tabStop = 4
+    var lastTabPos = -1
+    var netSpacesAdded = 0
+    while (true) {
+       tabPos = theLine.indexOf("\t", lastTabPos + 1)
+       if (tabPos == -1) {
+          expandedLineLength += theLine.length - (lastTabPos + 1) 
+          break
+       }
+       expandedLineLength += tabPos - (lastTabPos + 1)
+       if (expandedLineLength > start) {
+           break
+       } 
+       var numberOfSpaces = tabStop - (expandedLineLength % tabStop)
+       if ((expandedLineLength + numberOfSpaces) > start) {
+           netSpacesAdded += (start - expandedLineLength)
+           break
+       } 
+       expandedLineLength += numberOfSpaces
+       
+       netSpacesAdded += numberOfSpaces - 1 // subtract 1 because of the actual tab
+       lastTabPos = tabPos
+    }
+    return start - netSpacesAdded
+}
+var u = unExpandTabIndex
+function expandTabIndex(theLine, start) {
+    theLine = theLine.substring(0, start)
+    var expandedLineLength = 0
+    var tabStop = 4
+    var lastTabPos = -1
+    var netSpacesAdded = 0
+    while (true) {
+       tabPos = theLine.indexOf("\t", lastTabPos + 1)
+       if (tabPos == -1) {
+          expandedLineLength += theLine.length - (lastTabPos + 1) 
+          break
+       }
+       expandedLineLength += tabPos - (lastTabPos + 1)
+       if (expandedLineLength > start) {
+           break
+       } 
+       var numberOfSpaces = tabStop - (expandedLineLength % tabStop)
+       if ((expandedLineLength + numberOfSpaces) > start) {
+           netSpacesAdded += (start - expandedLineLength)
+           break
+       } 
+       expandedLineLength += numberOfSpaces
+       
+       netSpacesAdded += numberOfSpaces - 1 // subtract 1 because of the actual tab
+       lastTabPos = tabPos
+    }
+    return start + netSpacesAdded
+}
 function handleFocusAfter() {
   if (fx.cursorLineIndex == fx.lines.Length - 1) return
   fx.cursorLineIndex += 1
@@ -1065,7 +1139,8 @@ function handleFocusAfter() {
   updateCursorXY()
   render()
   theText.focus()
-  theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+  //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+  setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
 }
 
 function handleFocusBefore() {
@@ -1078,14 +1153,16 @@ function handleFocusBefore() {
   updateCursorXY()
   render()
   theText.focus()
-  theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+  //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+  setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
 }
 
 function handleFocusIn() {
   setCanvasHeight(canvasHeightKeyboard)
   ensureCursorInScreen()
   render()
-  theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+  //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+  setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
 }
 
 function handleBlur() {
@@ -1155,7 +1232,8 @@ function handleKeydown(e) {
     updateCursorXY()
     docChanged()
     render()
-    theText.setSelectionRange(prevLine.length, prevLine.length)
+    //theText.setSelectionRange(prevLine.length, prevLine.length)
+    setSelectionRangeForText(prevLine.length, prevLine.length)
   }
   return true
 }
@@ -1171,14 +1249,16 @@ var closingMap = {
 }
 function saveLine() {
   var lastTyped = theText.value[theText.selectionStart - 1]
-  fx.cursorColIndex = theText.selectionStart
+  // fx.cursorColIndex = theText.selectionStart
+  fx.cursorColIndex = expandTabIndex(theText.value, theText.selectionStart)
   // Note: handle newline portion too.
   if (!wasDelete && lastTyped in closingMap) {
     theText.value = 
       theText.value.slice(0, theText.selectionStart) +
       closingMap[lastTyped] +
       theText.value.slice(theText.selectionStart)
-      theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+      //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+      setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
   }
   fx.lines[fx.cursorLineIndex] = theText.value
   cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
@@ -1198,9 +1278,10 @@ function bind(v, min, max) {
   if (v > max) v = max
   return v
 }
-function charAt(lines, y, x) {
+function theCharAt(lines, y, x) {
   var line = fx.lines[y]
   if (!line) return ""
+  
   var theChar = line[x]
   if (!theChar) return ""
   return theChar
@@ -1363,7 +1444,7 @@ function render() {
     
     // the actual text
     t.save()
-    if (fx.fileMode == "bash" ) {
+    if (fx.fileMode == "bash" || fx.fileMode == "file") {
         if (theLine.startsWith("+")) {
            t.fillStyle = isDark ? "lime" : "green"
         } else if (theLine.startsWith("-")){
@@ -1374,8 +1455,28 @@ function render() {
     } else {
         t.fillStyle = fontColor
     }
-    for (var x=0; x < maxCols; x++) {  
-      t.fillText( charAt(fx.lines, y+fx.offsetY, x+fx.offsetX), x*fontWidth, y*fontHeight)
+    
+    
+    theLine = theLine || ""
+    var expandedLine = ""
+    var tabStop = 4
+    var afterLastTabPos = 0
+    while (true) {
+       tabPos = theLine.indexOf("\t", afterLastTabPos)
+       if (tabPos == -1) {
+          expandedLine += theLine.substr(afterLastTabPos, theLine.length)
+          break
+       }
+       expandedLine += theLine.substring(afterLastTabPos, tabPos)
+       // now add the correct number of spaces, taking into account the tabStop
+       var numberOfSpaces = tabStop - (expandedLine.length % tabStop)
+       expandedLine += " ".repeat(numberOfSpaces)
+       afterLastTabPos = tabPos + 1
+    }
+    for (var x=0; x < maxCols; x++) {
+      // was here
+      //t.fillText( theCharAt(fx.lines, y+fx.offsetY, x+fx.offsetX), x*fontWidth, y*fontHeight)
+      t.fillText(expandedLine[x+fx.offsetX] || "", x*fontWidth, y*fontHeight)
     }
     t.restore()
   }
@@ -1403,9 +1504,10 @@ function render() {
   // after the call to render.
   // TODO: have a state variable for what it should be.
   if (document.activeElement == theText) {
+      // this one we don't want to call setSelectionRangeForText
+      // because the arguments are not from cursorColIndex
       theText.setSelectionRange(selStart, selEnd)
   }
- // alert(charAt(fx.lines, 0, 0))
 }
 
 function ensureSign(sign, v) {
@@ -1424,7 +1526,6 @@ function max(a, b) {
 }
 
 function onStart(e) {
-  log("start touch called and there are " + e.touches.length + " touches")
   e.preventDefault()
   // this handles all the touch interactions
   // first define the closuure functions
@@ -1436,7 +1537,6 @@ function onStart(e) {
       if (cursorType == "select") {
         return
       }
-      log("select called and there are " + e.touches.length + " touches")
       selectedRegions = []
       cursorType = "select"
       var line = fx.lines[fx.cursorLineIndex] || ""
@@ -1531,7 +1631,8 @@ function onStart(e) {
     }
     render()
     if (document.activeElement==theText) {
-      theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+      //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+      setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
     }
     return false
   }
@@ -1544,7 +1645,6 @@ function onStart(e) {
     moveListenerCount = max(moveListenerCount-1, 0)
     document.body.removeEventListener("touchend", onEnd)
     endListenerCount = max(endListenerCount-1, 0)
-    log("end called and there are " + e.touches.length + " touches")
     
     // it's not straightforward to do a setTimeout
     // here because iOS Safari doesn't like to focus
@@ -1717,7 +1817,8 @@ function onStart(e) {
   if (startTouchX > ((canvasWidth/3) - 40)) {
      if (document.activeElement == theText) {
          fx.cursorColIndex += 1
-         theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+         //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+         setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
          initiateFindWord()
      } else {
          fx.offsetX += Math.floor(maxCols/2)
@@ -1730,7 +1831,8 @@ function onStart(e) {
   if (startTouchX < 40) {
      if (document.activeElement == theText) {
          fx.cursorColIndex -= 1    
-         theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+         //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+         setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
          initiateFindWord()
      } else {
          fx.offsetX -= Math.floor(maxCols/2)
@@ -1822,7 +1924,6 @@ function findWordUp() {
       findWordUpX = line.length
     }
     for (findWordUpX; findWordUpX>=0; findWordUpX--) {
-      // log("up iteration: " + findWordUpY + "/" + findWordUpX)
       w = getWordAt(line, findWordUpX)
       if (w.word != "") {
         findWordUpX = w.start - 1
@@ -1848,7 +1949,6 @@ function findWordDown() {
   for (findWordDownY; findWordDownY<fx.lines.length; findWordDownY++) {
     var line = fx.lines[findWordDownY]
     for (findWordDownX; findWordDownX < line.length; findWordDownX++) {
-      //log("down iteration: " + findWordDownY + "/" + findWordDownX)
       w = getWordAt(line, findWordDownX)
       if (w.word != "") {
         findWordDownX = w.end + 1
@@ -1911,12 +2011,12 @@ function replaceFindWord(r) {
   updateCursorXY()
   docChanged()
   render()
-  theText.setSelectionRange(findWordEndX, findWordEndX)
+  //theText.setSelectionRange(findWordEndX, findWordEndX)
+  setSelectionRangeForText(findWordEndX, findWordEndX)
 }
 
 function initiateFindWord() {
   // also see toggleWord
-  log("initiate find word")
   resetFindWord()
   if (fx.cursorLineIndex >= fx.lines.length) {
     return
@@ -1945,7 +2045,6 @@ function initiateFindWord() {
       findWordEndX = w.end
     }
   }
-  log("starting findword: " + JSON.stringify(w))
 }
 
 function toggleWord() {
@@ -2025,7 +2124,7 @@ function makeFile(fullPath, contents) {
   for (var i=0; i<theLines.length; i++) {
     var line = theLines[i]
     // replace leading tabs with 4 times that many spaces
-    theLines[i] = line.replace(/^\t*/, (x)=> "    ".repeat(x.length))
+    // theLines[i] = line.replace(/^\t*/, (x)=> "    ".repeat(x.length))
   }
   return {
     // fullPath should have the leading slash
@@ -2156,6 +2255,22 @@ function duplicateFile() {
 
 function reloadFile() {
    addFile(currentFile.fullPath, true, true, true)
+}
+
+var inDebugView = false
+function debugView() {
+  inDebugView = !inDebugView
+  if (inDebugView) {
+    c.style.width = ((canvasWidth/3) * .7) + "px"   
+    c.style.height = ((canvasHeight/3) * .7) + "px"   
+    render()
+    return
+  }
+  
+    c.style.width = ((canvasWidth/3) * 1) + "px"   
+    c.style.height = ((canvasHeight/3) * 1) + "px"   
+    render()
+  
 }
 
 var maxUndos = 30
