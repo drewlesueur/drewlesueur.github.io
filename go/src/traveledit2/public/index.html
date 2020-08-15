@@ -231,7 +231,8 @@ style="width:100%; height:100px;"
 <div id=bottomPadding style="height: 100px;"></div>
 </div>
 
-</div>
+
+</div> <-- end wrapper -->
 <script>
 // it's important that this go in it's own script tag
 window.onerror = function(message, url, lineNumber, columnNumber, error) {
@@ -249,6 +250,14 @@ fontScaleInput.value = fontScale
 var fontHeight=36 * fontScale
 var fontWidth=18 * fontScale
 var fontCSS = (30 * fontScale) + "px 'Courier'"
+// var fontCSS = (30 * fontScale) + "px 'Menlo'"// yes
+// var fontCSS = (30 * fontScale) + "px 'Monaco'"// no
+// var fontCSS = (30 * fontScale) + "px 'PT Mono'" //no
+// var fontCSS = (30 * fontScale) + "px 'Andale Mono'" //no
+// var fontCSS = (30 * fontScale) + "px 'Osaka-Mono'" //no
+// var fontCSS = (30 * fontScale) + "px 'Courier New'" //yes
+
+
 var fontColor = "white"
 var lightFontColor = "rgba(255, 255, 255, 0.25)"
 var isDark = true
@@ -432,7 +441,7 @@ function addCmdTab() {
    fx.cursorLineIndex = fx.lines.length - 1
    updateCursorXY()
    runBashCommand("")
-   theText.focus()  
+   //theText.focus()  
 }
 function addFile(fullPath, changeURL, closeCurrentIfDir, closeCurrent) {
   if (fullPath.charAt(0) != "/") {
@@ -1164,6 +1173,10 @@ function handleBlur() {
 
 // pressing the save button disables autosave
 function saveWrapper() {
+  if (fx.fileMode == "bash") {
+     runBashCommand(fx.lines[fx.cursorLineIndex] || "")
+     return
+  }
   autoSave = false
   save()
 }
@@ -1347,6 +1360,8 @@ function render() {
       saveButton.style.backgroundColor = "red" 
       saveButton.innerText = "save"
     }
+  } else if (fx.fileMode == "bash") {
+      saveButton.innerText = "run"
   }
   findWordEl.innerHTML = `
     <pre>
