@@ -95,41 +95,41 @@ opacity: 0.5;
 </form>
 
 <form onsubmit=newLine(event)>
-
-<input class=dark id=theTextBefore class=text type=text
-style="font: 8px Courier;
-width: 375px;
-/* display: none; see what it looks like without */
-height:1px; overflow: hidden;
-display: block;"
-onfocus=handleFocusBefore()
-onblur=handleBlur()
->
-<input class=dark id=theText class=text type=text
-style="font: 12px Courier; color: brown;
-width: 375px;
---position:absolute; top: 100px;
-display: block;
-"
-onfocus=handleFocusIn()
-onblur=handleBlur()
-oninput=saveLine()
-onkeydown=handleKeydown(event)
->
-<input class=dark id=theTextAfter class=text type=text
-style="font: 8px Courier;
-width: 375px;
-/* display: none; see what it looks like without */
-height:1px; overflow: hidden;
-display: block;
-"
-onfocus=handleFocusAfter()
-onblur=handleBlur()
->
-<input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
+    <input class=dark id=theTextBefore class=text type=text
+    style="font: 8px Courier;
+    width: 375px;
+    /* display: none; see what it looks like without */
+    height:1px; overflow: hidden;
+    display: block;"
+    onfocus=handleFocusBefore()
+    onblur=handleBlur()
+    >
+    <input class=dark id=theText class=text type=text
+    style="font: 14px Courier; color: brown;
+    width: 375px;
+    --position:absolute; top: 100px;
+    display: block;
+    "
+    onfocus=handleFocusIn()
+    onblur=handleBlur()
+    oninput=saveLine()
+    onkeydown=handleKeydown(event)
+    >
+    <input class=dark id=theTextAfter class=text type=text
+    style="font: 8px Courier;
+    width: 375px;
+    /* display: none; see what it looks like without */
+    height:1px; overflow: hidden;
+    display: block;
+    "
+    onfocus=handleFocusAfter()
+    onblur=handleBlur()
+    >
+    <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
 
-<table><tr><td>
+
+<table style="position:relative;"><tr><td>
   <!-- 
   as of now the canvas doesn't get resized
   so it has to be at least as big as the biggest canvasHeight x canvasWith size.
@@ -144,12 +144,50 @@ onblur=handleBlur()
   ontouchstart=onStart(event)
   ></canvas>
   -->
-  <canvas id=c width=1125 height=1380
-  style="width: 375px; height:460px;
+  <canvas id=c width=1125 height=1500
+  style="width: 375px; height:500px;
   border: 0px solid lime;
   "
   ontouchstart=onStart(event)
   ></canvas>
+  <div ontouchstart="controlCenterEl.style.display = 'none'"
+    id=controlCenterEl style="
+     position: absolute;
+     top: 0;
+     left: 0;
+     width: 100%;
+     height: 600px;
+     display: none;
+     --background-color: teal;
+  ">
+      <div style="position:absolute; bottom: 0; background-color: black;">
+          <div class=toolbar>
+            <div class=square ontouchstart=debugView()>debug view</div>
+            <div class=square ontouchstart=reloadFile()>reload</div>
+            <div class=square ontouchstart=doEval()>eval</div>
+            <div class=square ontouchstart=clearLog()>clear log</div>
+          </div>
+          <div class=toolbar>
+            <div class=square ontouchstart=addCmdTab()>cmd</div>
+            <div class=square ontouchstart=undo()>undo</div>
+            <div class=square ontouchstart=redo()>redo</div>
+            <div class=square ontouchstart=duplicateFile()>dupl file</div>
+            <div class=square ontouchstart=comment()>//</div>
+            <div class=square ontouchstart=unComment()>un //</div>
+            <div id=darkModeButton class=square ontouchstart="toggleDarkMode()">light mode</div>
+          </div>
+          <div class=toolbar>
+            <div id=findDownButton class=square ontouchstart=findDown()>find down</div>
+            <div id=findUpButton class=square ontouchstart=findUp()>find up</div>
+            <div id=clearSearchButton class=square ontouchstart=clearSearch()>edit search</div>
+            <!-- <div class=square ontouchstart=editSearch()>edit search</div>
+            -->
+            <div id=saveButton class=square ontouchstart=saveWrapper()>save</div>
+            <div class=square ontouchstart=seeFiles()>files</div>
+            <div class=square ontouchstart=closeFile()>close</div>
+          </div>
+      </div>
+  </div> <!-- end controlCenterEl -->
 </td><td valign=top>
   <div id=findWordEl style="height: 200px; width:175;
   overflow:scroll;
@@ -171,32 +209,7 @@ onblur=handleBlur()
 
 <div class=toolbar id=fileRow onclick=selectFileRow(event)>
 </div>
-<div class=toolbar>
-  <div id=findDownButton class=square onclick=findDown()>find down</div>
-  <div id=findUpButton class=square onclick=findUp()>find up</div>
-  <div id=clearSearchButton class=square onclick=clearSearch()>edit search</div>
-  <!-- <div class=square onclick=editSearch()>edit search</div>
-  -->
-  <div id=saveButton class=square onclick=saveWrapper()>save</div>
-  <div class=square onclick=seeFiles()>files</div>
-  <div class=square onclick=closeFile()>close</div>
-</div>
-<div class=toolbar>
-  <div class=square onclick=addCmdTab()>cmd</div>
-  <div class=square onclick=undo()>undo</div>
-  <div class=square onclick=redo()>redo</div>
-  <div class=square onclick=duplicateFile()>dupl file</div>
-  <div class=square onclick=comment()>//</div>
-  <div class=square onclick=unComment()>un //</div>
-  <div id=darkModeButton class=square onclick="toggleDarkMode()">light mode</div>
-</div>
-<div class=toolbar>
-  <div class=square onclick=debugView()>debug view</div>
-  <div class=square onclick=reloadFile()>reload</div>
-  <div class=square onclick=doEval()>eval</div>
-  <div class=square onclick=clearLog()>clear log</div>
-</div>
-
+<!-- toolbars were here -->
 <form onsubmit="addFile(this.fullPath.value, true); return false;">
   <input class=dark type=text style="width: 275px;" name=fullPath></div>
   <input class=dark type=submit value="Add Pane">
@@ -231,7 +244,8 @@ style="width:100%; height:100px;"
 <div id=bottomPadding style="height: 100px;"></div>
 </div>
 
-</div>
+
+</div> <-- end wrapper -->
 <script>
 // it's important that this go in it's own script tag
 window.onerror = function(message, url, lineNumber, columnNumber, error) {
@@ -249,6 +263,14 @@ fontScaleInput.value = fontScale
 var fontHeight=36 * fontScale
 var fontWidth=18 * fontScale
 var fontCSS = (30 * fontScale) + "px 'Courier'"
+// var fontCSS = (30 * fontScale) + "px 'Menlo'"// yes
+// var fontCSS = (30 * fontScale) + "px 'Monaco'"// no
+// var fontCSS = (30 * fontScale) + "px 'PT Mono'" //no
+// var fontCSS = (30 * fontScale) + "px 'Andale Mono'" //no
+// var fontCSS = (30 * fontScale) + "px 'Osaka-Mono'" //no
+// var fontCSS = (30 * fontScale) + "px 'Courier New'" //yes
+
+
 var fontColor = "white"
 var lightFontColor = "rgba(255, 255, 255, 0.25)"
 var isDark = true
@@ -432,7 +454,7 @@ function addCmdTab() {
    fx.cursorLineIndex = fx.lines.length - 1
    updateCursorXY()
    runBashCommand("")
-   theText.focus()  
+   //theText.focus()  
 }
 function addFile(fullPath, changeURL, closeCurrentIfDir, closeCurrent) {
   if (fullPath.charAt(0) != "/") {
@@ -823,10 +845,12 @@ function copy() {
 function setCanvasHeight(h) {
   canvasHeight = h
   maxLines = Math.floor(canvasHeight / fontHeight)
+  controlCenterEl.style.height = (canvasHeight/3)+"px"
 }
 function setCanvasWidth(w) {
   canvasWidth = w
   maxCols = Math.floor(canvasWidth / fontWidth)
+  controlCenterEl.style.width = (canvasWidth/3)+"px"
 }
 
 function paste() {
@@ -1164,6 +1188,10 @@ function handleBlur() {
 
 // pressing the save button disables autosave
 function saveWrapper() {
+  if (fx.fileMode == "bash") {
+     runBashCommand(fx.lines[fx.cursorLineIndex] || "")
+     return
+  }
   autoSave = false
   save()
 }
@@ -1347,6 +1375,8 @@ function render() {
       saveButton.style.backgroundColor = "red" 
       saveButton.innerText = "save"
     }
+  } else if (fx.fileMode == "bash") {
+      saveButton.innerText = "run"
   }
   findWordEl.innerHTML = `
     <pre>
@@ -1521,6 +1551,7 @@ function max(a, b) {
 }
 
 function onStart(e) {
+  log("start")
   e.preventDefault()
   // this handles all the touch interactions
   // first define the closuure functions
@@ -1809,9 +1840,14 @@ function onStart(e) {
   var moved = false
   var movedWithBuffer = false
   var selectedRegion = {}
-  
+  log("made it__")
   // scroll right and left and move cursor right and left
   if (startTouchX > ((canvasWidth/3) - 40)) {
+     if (startTouchY > ((canvasHeight/3) - 80)) {
+         // tap in bottom right of canvas
+         controlCenterEl.style.display = "block"
+         return 
+     }
      if (document.activeElement == theText) {
          fx.cursorColIndex += 1
          //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
@@ -1826,6 +1862,11 @@ function onStart(e) {
      return
   }
   if (startTouchX < 40) {
+     if (startTouchY > ((canvasHeight/3) - 80)) {
+         // tap in bottom left of canvas
+         controlCenterEl.style.display = "block"
+         return 
+     }
      if (document.activeElement == theText) {
          fx.cursorColIndex -= 1    
          //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
