@@ -169,6 +169,8 @@ onblur=handleBlur()
 </td></tr></table> 
 
 
+<div class=toolbar id=searchRow onclick=selectSearchRow(event)>
+</div>
 <div class=toolbar id=fileRow onclick=selectFileRow(event)>
 </div>
 <div class=toolbar>
@@ -195,6 +197,7 @@ onblur=handleBlur()
   <div class=square onclick=reloadFile()>reload</div>
   <div class=square onclick=doEval()>eval</div>
   <div class=square onclick=clearLog()>clear log</div>
+  <div class=square onclick=runScript()>run script</div>
 </div>
 
 <form onsubmit="addFile(this.fullPath.value, true); return false;">
@@ -299,12 +302,36 @@ var wasDelete = false
 var selectTimeout
 var selectTimeoutMillis = 750
 var selectedRegions = []
+var searchTerms = []
 
 var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
 var autoSave = false
+var lastPageYOffset = 0
+var originalCanvasHeightFull = canvasHeightFull
+var scrollTimeout
+window.onscroll = function () {
+  // disable feature
+  return
+  clearTimeout(scrollTimeout)
+  scrollTimeout = setTimeout(doScroll, 100)
+}
 
+function doScroll() {
+   //log([window.pageYOffset])
+   canvasHeightFull = originalCanvasHeightFull - (window.pageYOffset*3) 
+   c.height = canvasHeightFull
+   setCanvasHeight(canvasHeightFull)
+   c.style.height = (canvasHeightFull/3)+"px"
+   topPadding.style.height = window.pageYOffset + "px"
+   
+   if (document.activeElement.getAttribute("type") != "text") {
+     lastPageYOffset = window.pageYOffset
+   } 
+   
+   render()
+}
 function updateFontScale() {
     fontScale = fontScaleInput.value - 0
     if (!fontScale) {
@@ -405,7 +432,7 @@ var bashHelpers = [
    "git add -u .",
    "git diff --cached",   
    "git log -10",
-   "git commit -m ''",   
+   "git commit -m '' --author='Drew LeSueur <drewalex@gmail.com>'",   
    "git push origin HEAD",   
    "git branch",
    "golangci-lint run --print-issued-lines=false",
@@ -634,6 +661,7 @@ function findDown() {
       updateCursorXY()
       ensureCursorInScreen()
       render()
+      initiateFindWord() // for autocomplete, for if editing?
       return
     }
   }
@@ -688,6 +716,7 @@ function findUp() {
       updateCursorXY()
       ensureCursorInScreen()
       render()
+      initiateFindWord() // for autocomplete, for if editing?
       return
     }
   }
@@ -826,6 +855,15 @@ function copy() {
   // sel.removeAllRanges()
   // sel.addRange(range)
   // document.execCommand("copy")
+}
+
+function runScript() {
+  var oldCopyBuffer = copyBuffer
+  copy()
+  var code = copyBuffer.join("\n")   
+  copyBuffer = oldCopyBuffer
+  var f = new Function(code)
+  f()
 }
 
 
@@ -1127,12 +1165,14 @@ function expandTabIndex(theLine, start) {
     return adjustedStart
 }
 function handleFocusAfter() {
-  if (fx.cursorLineIndex == fx.lines.Length - 1) return
-  fx.cursorLineIndex += 1
-  setCanvasHeight(canvasHeightKeyboard)
-  if (fx.cursorLineIndex < fx.offsetY || fx.cursorLineIndex > (fx.offsetY + maxLines)) {
-    fx.offsetY = fx.cursorLineIndex - maxLines
+  if (searchText.value) {
+     findDown()
+  } else {
+    if (fx.cursorLineIndex == fx.lines.Length - 1) return
+    fx.cursorLineIndex += 1
   }
+  setCanvasHeight(canvasHeightKeyboard)
+  ensureCursorInScreen()
   updateCursorXY()
   render()
   theText.focus()
@@ -1141,12 +1181,15 @@ function handleFocusAfter() {
 }
 
 function handleFocusBefore() {
-  if (fx.cursorLineIndex == 0) return
-  fx.cursorLineIndex -= 1
-  setCanvasHeight(canvasHeightKeyboard)
-  if (fx.cursorLineIndex < fx.offsetY || fx.cursorLineIndex > (fx.offsetY + maxLines)) {
-    fx.offsetY = 0
+  // if you have something to search, make it search.
+  if (searchText.value) {
+     findUp()
+  } else {
+    if (fx.cursorLineIndex == 0) return
+    fx.cursorLineIndex -= 1
   }
+  setCanvasHeight(canvasHeightKeyboard)
+  ensureCursorInScreen()
   updateCursorXY()
   render()
   theText.focus()
@@ -1169,6 +1212,8 @@ function handleBlur() {
   setCanvasHeight(canvasHeightFull)
   resetFindWord()
   render()
+  window.scrollTo(0, lastPageYOffset)
+  
 }
 
 // pressing the save button disables autosave
@@ -1250,16 +1295,35 @@ var closingMap = {
 }
 function saveLine() {
   var lastTyped = theText.value[theText.selectionStart - 1]
+  var secondLastTyped = theText.value[theText.selectionStart - 2] || ""
+  var nextChar = theText.value[theText.selectionStart] || ""
   // fx.cursorColIndex = theText.selectionStart
   fx.cursorColIndex = expandTabIndex(theText.value, theText.selectionStart)
   // Note: handle newline portion too.
-  if (!wasDelete && lastTyped in closingMap) {
-    theText.value = 
-      theText.value.slice(0, theText.selectionStart) +
-      closingMap[lastTyped] +
-      theText.value.slice(theText.selectionStart)
-      //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-      setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+  
+  // doing for to be able to break
+  for (var s=0; s<1; s++) {
+      if (
+        !wasDelete && 
+        lastTyped in closingMap
+      ) {
+        // first some common checks
+        if (lastTyped == "'" && secondLastTyped != " " && secondLastTyped != "" && secondLastTyped != ",") {
+          break  
+        }
+        if (lastTyped == "<" && theText.value.substring(0, theText.selectionStart - 1).trim() != "") {
+          break  
+        }
+        if ("({[".indexOf(lastTyped) != -1 && nextChar != "" && nextChar != " ") {
+          break  
+        }
+        theText.value = 
+          theText.value.slice(0, theText.selectionStart) +
+          closingMap[lastTyped] +
+          theText.value.slice(theText.selectionStart)
+          //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+          setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+      }
   }
   fx.lines[fx.cursorLineIndex] = theText.value
   cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
@@ -1833,8 +1897,16 @@ function onStart(e) {
          setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
          initiateFindWord()
      } else {
-         fx.offsetX += Math.floor(maxCols/2)
-         fx.cursorColIndex += Math.floor(maxCols/2)
+         var origOffsetX = fx.offsetX
+         // scroll by tabstop?
+         if (fx.offsetX < 0) {
+             fx.offsetX = 0
+         }  else {
+             var tabStop = 4
+             fx.offsetX = Math.ceil((fx.offsetX + 1) / tabStop) * tabStop
+         }
+         //fx.offsetX += Math.floor(maxCols/2)
+         fx.cursorColIndex += fx.offsetX - origOffsetX
      }
      updateCursorXY()
      render()
@@ -1847,11 +1919,15 @@ function onStart(e) {
          setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
          initiateFindWord()
      } else {
-         fx.offsetX -= Math.floor(maxCols/2)
-         if (fx.offsetX < -5){
+         var origOffsetX = fx.offsetX
+         //fx.offsetX -= Math.floor(maxCols/2)
+         if (fx.offsetX <= 0){
             fx.offsetX = -5
+         }  else {
+             var tabStop = 4
+             fx.offsetX = Math.floor((fx.offsetX-1) / tabStop) * tabStop
          }
-         fx.cursorColIndex -= Math.floor(maxCols/2)
+         fx.cursorColIndex += fx.offsetX - origOffsetX
      }
      if (fx.cursorColIndex < -5){
         fx.cursorColIndex = -5
@@ -2115,6 +2191,14 @@ function toggleWord() {
 }
 
 
+function selectSearchRow(e) {
+  var index = e.target.getAttribute("data-index")
+  searchText.value = searchTerms[index]
+  
+  // put it at the beginning.
+  searchTerms.splice(index, 1)
+  searchTerms.unshift(searchText.value)
+}
 function selectFileRow(e) {
   var index = e.target.getAttribute("data-index")
   var file = files[index]
@@ -2162,10 +2246,43 @@ function addFileToList(file) {
   renderFileDropdown()
 }
 
+function renderSearchTerms() {
+   // TODO: come back to this.
+   searchRow.innerHTML = ""
+   for (var searchI=0; fileI<files.length; fileI++) {
+     var file = files[fileI]
+     // Todo, what causes this bug
+     if (!file) {
+        var err = new Error()
+        log("null file error")
+        log(err.stack)
+        log({fileI, files})
+     }
+     var button = document.createElement("div")
+     button.className = "longButton"
+     button.setAttribute("data-index", fileI)
+     var parts = file.fullPath.split("/")
+     var theName = parts[parts.length - 1]
+     button.innerText = theName.substr(0, 15)
+     if (currentFile == file) {
+       button.style.backgroundColor = "black"
+     }
+     
+     fileRow.appendChild(button)
+   }
+   
+}
 function renderFileDropdown() {
    fileRow.innerHTML = ""
    for (var fileI=0; fileI<files.length; fileI++) {
      var file = files[fileI]
+     // Todo, what causes this bug
+     if (!file) {
+        var err = new Error()
+        log("null file error")
+        log(err.stack)
+        log({fileI, files})
+     }
      var button = document.createElement("div")
      button.className = "longButton"
      button.setAttribute("data-index", fileI)

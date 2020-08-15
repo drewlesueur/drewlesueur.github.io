@@ -1,3 +1,62 @@
+redo the while toggle word/inline paste thing.
+* Single tap in edit mode rules
+  * when in edit mode,
+    if your last action was typing
+    repeated tapping will:
+    * autocomplete the word before
+      the cursor, even if there are letters after.
+      Autocomplete pool is selected of bouncing up and down
+      looking for a matching word,
+      once it finishes finding all words in a file,
+      it will move on to the next file, then the next.
+  * whenever you type it still remember your last typed word
+  * when in edit mode,
+    if your last action was moving
+    tapping will:
+    * 1 delete the word at the cursor
+      even if it's touching the end or beginning
+    * 2 paste the last typed word
+    * 3 inline-paste the copy buffer
+* extra selecting rules (these aren't all, just new)
+    * remove current festure where
+      * A touch down, B touch down,
+        B touch up, A touch up selects a word
+    * Add feature where
+      * A touch down,
+        B touch down,
+        selects the word at the cursor
+      * then (while A still down)
+        B touch up
+        B touch down
+        selects the nearest range it can find
+          * quote (keeping in-mind escapes etc)
+            because it's common for quotes to be single line
+            I am going to not search for multi-line quotes
+            multi line quotes are trickier because
+            the quote char doesn't have a start and end
+           * ()<>{}[]. (skipping ones in quotes?)
+           * for each iteration, first select inside the symbols,
+             then outside, then move to the next outer one
+    * Add feature where
+      If you have text selected and you type "("
+      it will surround with psrens.
+      If it is already surrounded with parens in the selection,
+      un surround it.
+      if you want to double surroun with parens, just
+      don't include the parens in the selection
+      
+After you past, keep it selected so you can indent!
+always think of what's slow      
+             
+         
+(test (thing here) this (thing out))        
+pase over? long tap after selection
+long tap in nav mode will insert a new line then
+go into edit mode?
+will paste over?
+
+
+
 make find down and find up general action buttons
   that change based on context.
   like when you are in ja console mode (not exist yet)
