@@ -147,14 +147,12 @@ onblur=handleBlur()
   
   <canvas id=c width=1125 height=1320
   style="width: 375px; height:440px;
-  border: 1px solid lime;
   "
   ontouchstart=onStart(event)
   ></canvas>
   -->
   <canvas id=c width=1125 height=1350
   style="width: 375px; height:450px;
-  border: 1px solid lime;
   display: block;
   "
   ontouchstart=onStart(event)
@@ -529,6 +527,7 @@ function renderURL() {
  // For now we don't get files with bash mode.
  var filtered = files.filter(f => f.fileMode != "bash")
  var theNewPath = "/" + filtered.map(f => f.fullPath.slice(1)).join(",")
+ theNewPath += "?searchTerms=" + encodeURIComponent(JSON.stringify(searchTerms))
  history.replaceState({}, "", theNewPath) 
 }
 
@@ -667,6 +666,8 @@ function addSearchTerm() {
   // then add it to the beginning
   searchTerms.unshift(searchText.value)
   renderSearchTerms()
+  // because search terms are in url
+  renderURL()
 }
 function findDown() {
   if (searchText.value == "") {
@@ -2426,7 +2427,17 @@ for (var i=1; i<paths.length; i++) {
   addFile(paths[i], false)
 }
 
+var ust = new URLSearchParams(window.location.search)
+if (ust.has("searchTerms")) {
+   try {
+     searchTerms = JSON.parse(ust.get("searchTerms"))  
+   } catch (e) {
+      
+   }
+}
 renderSearchTerms()
+
+
 // make sure when selecting in the margin
 // that the selectMode is   line!
 // add a threshold for move, like 5px or something.
