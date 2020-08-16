@@ -270,7 +270,7 @@ var fontCSS = (30 * fontScale) + "px 'Courier'"
 
 
 var fontColor = "white"
-var lightFontColor = "rgba(255, 255, 255, 0.25)"
+var lightFontColor = "rgba(255, 255, 255, 0.5)"
 var isDark = true
 var cursorX=0
 var cursorY=0
@@ -366,7 +366,7 @@ function toggleDarkMode() {
         updateClassForSelector("input", "dark","light")
         updateClassForSelector("textarea", "dark","light")
         fontColor = "black"
-        lightFontColor = "rgba(0, 0, 0, 0.25)"
+        lightFontColor = "rgba(0, 0, 0, 0.5)"
         render()
         return
     }
@@ -376,7 +376,7 @@ function toggleDarkMode() {
     updateClassForSelector("input", "light", "dark")
     updateClassForSelector("textarea", "light", "dark")
     fontColor = "white"
-    lightFontColor = "rgba(255, 255, 255, 0.25)"
+    lightFontColor = "rgba(255, 255, 255, 0.5)"
     render()
 
 }
@@ -575,9 +575,6 @@ if (fx.undoStack.length > maxUndos) {
 }
 }
 function repositionUndo() {
-    // disabling feature for now
-    render()
-    return
     fx.lines = fx.undoStack[fx.undoIndex].split("\n")
     fx.cursorColIndex = fx.undoXStack[fx.undoIndex]
     fx.cursorLineIndex = fx.undoYStack[fx.undoIndex]
@@ -787,10 +784,10 @@ function dup() {
 }
 
 function indent() {
-    addPrefix("  ")
+    addPrefix("    ")
 }
 function dedent() {
-    stripPrefixes(["\t", "  "])
+    stripPrefixes(["\t", "    "])
 }
 
 function comment() {
@@ -1054,7 +1051,7 @@ function insertLine(closeCurly) {
     }
     fx.lines[fx.cursorLineIndex] = theLine.substr(0, theText.selectionStart)
     fx.cursorLineIndex += 1
-    fx.cursorColIndex = theIndent.length
+    fx.cursorColIndex = expandTabIndex(fx.lines[fx.cursorLineIndex], theIndent.length)
     updateCursorXY()
     ensureCursorInScreen()
     docChanged()
@@ -1454,10 +1451,13 @@ function render() {
     }
 
     // draw line where your cursor is for help with finding
-    t.save()
-    t.fillStyle = "rgba(0, 255, 255, 0.25)"
-    t.fillRect(0, (fx.cursorLineIndex - fx.offsetY) * fontHeight, c.width, fontHeight)
-    t.restore()
+    var highlightLine = true
+    if (highlightLine) {
+        t.save()
+        t.fillStyle = "rgba(0, 255, 255, 0.15)"
+        t.fillRect(0, (fx.cursorLineIndex - fx.offsetY) * fontHeight, c.width, fontHeight)
+        t.restore()
+    }
 
     t.font = fontCSS
     t.textBaseline = "top"
@@ -1510,10 +1510,10 @@ function render() {
     `
 
 
-    // row highlight
-    t.fillStyle = "rgba(0, 128, 128, 0.5)"
-    t.fillRect(0, yPos, canvasWidth, fontHeight)
-    t.fillStyle = cursorType == "move" ? "cyan" : "yellow"
+    // row highlight, what is this? remove it
+    // t.fillStyle = "rgba(0, 128, 128, 0.5)"
+    // t.fillRect(0, yPos, canvasWidth, fontHeight)
+    // t.fillStyle = cursorType == "move" ? "cyan" : "yellow"
 
 
     for (var y=0; y < maxLines; y++) {
@@ -1576,8 +1576,16 @@ function render() {
                 t.fillStyle = isDark ? "lime" : "green"
             } else if (theLine.startsWith("-")){
                 t.fillStyle = "red"
+            } else if (theLine.trim().startsWith("//")) {
+                // comments are gray
+                t.fillStyle = lightFontColor 
             } else {
-                t.fillStyle = fontColor
+                var spaceCount = getSpaceCount(theLine)
+                if (spaceCount < fx.offsetX && (y + fx.offsetY) != fx.cursorLineIndex) {
+                    t.fillStyle = lightFontColor
+                } else {
+                    t.fillStyle = fontColor
+                }
             }
         } else {
             t.fillStyle = fontColor
@@ -1865,8 +1873,8 @@ function onStart(e) {
             }
 
             if (document.activeElement == theText) {
-                //toggleWord()
-                acWordToggle()
+                toggleWord()
+                //acWordToggle()
             } else {
                 initiateFindWord()
             }
