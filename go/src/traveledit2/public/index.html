@@ -87,7 +87,7 @@ opacity: 0.5;
 
 <form onsubmit=findDownForm(event)>
   <input class=dark type=text id=searchText
-    style="display: none; font-size: 12px; width: 300px"
+      style="display: none; font-size: 12px; width: 300px"
       onfocus="focusSearchText()"
       onblur="blurSearchText()"
       oninput="inputSearchText()"
@@ -575,6 +575,9 @@ function docChanged() {
   }
 }
 function repositionUndo() {
+  // disabling feature for now
+  render()
+  return
   fx.lines = fx.undoStack[fx.undoIndex].split("\n")
   fx.cursorColIndex = fx.undoXStack[fx.undoIndex]
   fx.cursorLineIndex = fx.undoYStack[fx.undoIndex]
@@ -925,7 +928,7 @@ function paste(unselect) {
         }] 
     } 
   } else if (selectMode == "char") {
-    if (copyBuffer.length == 1) {
+      if (copyBuffer.length == 1) {
       fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex].slice(0, u(fx.cursorColIndex)) +
         copyBuffer[0] +
         fx.lines[fx.cursorLineIndex].slice(u(fx.cursorColIndex))
@@ -1379,6 +1382,7 @@ function saveLine() {
           theText.value.slice(theText.selectionStart)
           //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
           setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+        // closing line for formatter
       }
   }
   fx.lines[fx.cursorLineIndex] = theText.value
@@ -2102,7 +2106,8 @@ or less indented
 */
 function doFormat() {
     fx.lines = simpleFormat(fx.lines)
-    docChanged()   
+    docChanged()
+    render()   
 }
 function simpleFormat(lines) {
     var newLines = []
@@ -2110,11 +2115,18 @@ function simpleFormat(lines) {
     var currentIndent = 0
     for (var i=0; i<lines.length; i++) {
         var line = lines[i]
+        if (line.trim() == "") {
+           newLines.push("")
+           continue
+        }
         var spaceCount = getSpaceCount(line)
         if (spaceCount > lastSpaceCount) {
            currentIndent += 1
         } else if (spaceCount < lastSpaceCount) {
            currentIndent -= 1
+        }
+        if (currentIndent < 0) {
+            currentIndent = 0
         }
         newLines.push(
             " ".repeat(4 * currentIndent) +
@@ -2134,7 +2146,9 @@ function getSpaceCount(line) {
            spaceCount += 1 
        } else if (chr == "\t") {
            spaceCount += 4
-       }  
+       } else {
+          break
+       } 
    }
    return spaceCount
 }
@@ -2248,6 +2262,7 @@ function replaceFindWord(r) {
   if (findWordY == findWordEndY) {
     fx.lines[findWordY] = fx.lines[findWordY].substr(0, findWordX) +
       fx.lines[findWordY].substr(findWordEndX)
+    // closing for formatter
   } else {
     fx.lines[findWordY] = fx.lines[findWordY].slice(0, findWordX) + 
       fx.lines[findWordEndY].slice(findWordEndX)
@@ -2266,6 +2281,7 @@ function replaceFindWord(r) {
     fx.lines[findWordY] = fx.lines[findWordY].slice(0, findWordX) +
       r[0] +
       fx.lines[findWordY].slice(findWordX)
+    // closing for formatter
   } else {
     var line = fx.lines[findWordY]
     fx.lines[findWordY] = line.slice(0, findWordX) +
@@ -2536,9 +2552,9 @@ function debugView() {
     return
   }
   
-    c.style.width = ((canvasWidth/3) * 1) + "px"   
-    c.style.height = ((canvasHeight/3) * 1) + "px"   
-    render()
+  c.style.width = ((canvasWidth/3) * 1) + "px"   
+  c.style.height = ((canvasHeight/3) * 1) + "px"   
+  render()
   
 }
 
