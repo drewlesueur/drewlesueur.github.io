@@ -475,7 +475,7 @@ function addCmdTab() {
    runBashCommand("")
    //theText.focus()  
 }
-function addFile(fullPath, changeURL, closeCurrentIfDir, closeCurrent) {
+function addFile(fullPath, changeURL, closeCurrentIfDir, closeCurrent, reload) {
   if (fullPath.charAt(0) != "/") {
     fullPath = "/" + fullPath
   }
@@ -485,13 +485,16 @@ function addFile(fullPath, changeURL, closeCurrentIfDir, closeCurrent) {
   if (fullPath == "") {
     return
   }
-  // If the file is already in the list of open files.
-  // then let it have a reference to the existing lines, like vim does.
-  for (var i=0; i<files.length; i++) {
-     if (files[i].fullPath == fullPath && files[i].fileMode == "file") {
-        duplicateFile(files[i])
-        return
-     }
+  
+  if (!reload) {
+      // If the file is already in the list of open files.
+      // then let it have a reference to the existing lines, like vim does.
+      for (var i=0; i<files.length; i++) {
+         if (files[i].fullPath == fullPath && files[i].fileMode == "file") {
+            duplicateFile(files[i])
+            return
+         }
+      }
   }
   var isDir = false
   fetch((fullPath) + "?raw=1", {
@@ -2386,13 +2389,14 @@ function duplicateFile(f) {
    // copy everything but reference lines
    fc.lines = f.lines
    addFileToList(fc)
+   setCurrentFile(fc)
    renderURL()
    // TODO: eventually, update cursor position
    // when text to one file is added.
 }
 
 function reloadFile() {
-   addFile(currentFile.fullPath, true, true, true)
+   addFile(currentFile.fullPath, true, true, true, true)
 }
 
 var inDebugView = false
