@@ -4,72 +4,72 @@
 <meta charset='utf-8'>
 <style>
 * {
-  margin: 0; padding: 0; 
+    margin: 0; padding: 0;
 }
 .dark {
-  background-color: black;
-  color: white;
+    background-color: black;
+    color: white;
 }
 .light {
-  background-color: white;
-  color: black;
+    background-color: white;
+    color: black;
 }
 .text { border: none; color: cyan;
 }
 .toolbar {
-  display: flex;
-  flex-flow: row nowrap;
-  --flex-flow: row wrap;
-  width: 375px;
-  overflow: scroll;
-  -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-flow: row nowrap;
+    --flex-flow: row wrap;
+    width: 375px;
+    overflow: scroll;
+    -webkit-overflow-scrolling: touch;
 }
 .toolbar .square {
-  --font-family: 'Courier';
-  background-color: #077;
-  border: 0px solid cyan;
-  color: white;
-  padding: 0px;
-  width: 40px;
-  height: 36px;
-  --height: 20px;
-  margin: 1px;
-  flex: 1 0 auto;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+    --font-family: 'Courier';
+    background-color: #077;
+    border: 0px solid cyan;
+    color: white;
+    padding: 0px;
+    width: 40px;
+    height: 36px;
+    --height: 20px;
+    margin: 1px;
+    flex: 1 0 auto;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 .toolbar .longButton {
-  --font-family: 'Courier';
-  background-color: #077;
-  border: 0px solid cyan;
-  color: white;
-  padding: 0px;
-  width: 80px;
-  height: 20px;
-  margin: 1px;
-  flex: 1 0 auto;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+    --font-family: 'Courier';
+    background-color: #077;
+    border: 0px solid cyan;
+    color: white;
+    padding: 0px;
+    width: 80px;
+    height: 20px;
+    margin: 1px;
+    flex: 1 0 auto;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 
 input[type="text"] {
-  font-size: 16px;
-  --border: 1px solid cyan;
-  border: none;
+    font-size: 16px;
+    --border: 1px solid cyan;
+    border: none;
 }
 
 #searchText {
-  border: none;
+    border: none;
 }
 #searchText::placeholder {
-  --color: red;
-  font-size: 10px;
+    --color: red;
+    font-size: 10px;
 }
 </style>
 </head>
@@ -86,13 +86,13 @@ opacity: 0.5;
 "></div>
 
 <form onsubmit=findDownForm(event)>
-  <input class=dark type=text id=searchText
-      style="display: none; font-size: 12px; width: 300px"
-      onfocus="focusSearchText()"
-      onblur="blurSearchText()"
-      oninput="inputSearchText()"
-  >
-  <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
+    <input class=dark type=text id=searchText
+        style="display: none; font-size: 12px; width: 300px"
+        onfocus="focusSearchText()"
+        onblur="blurSearchText()"
+        oninput="inputSearchText()"
+    >
+    <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
 
 <form onsubmit=newLine(event)>
@@ -131,48 +131,48 @@ onblur=handleBlur()
 </form>
 
 <table cellspacing=0 cellpadding=0><tr><td>
-  <!-- 
-  as of now the canvas doesn't get resized
-  so it has to be at least as big as the biggest canvasHeight x canvasWith size.
-  Also note that the css width needs to be 1/3 of
-  the with attribute, and same for height.
-  <canvas id=c width=600 height=1560
-  style="width: 200px; height:520px;
-  <canvas id=c width=1125 height=1560
-  style="width: 375px; height:520px;
-  border: 0px solid lime;;
-  "
-  ontouchstart=onStart(event)
-  ></canvas>
-  
-  <canvas id=c width=1125 height=1320
-  style="width: 375px; height:440px;
-  "
-  ontouchstart=onStart(event)
-  ></canvas>
-  -->
-  <canvas id=c width=1125 height=1350
-  style="width: 375px; height:450px;
-  display: block;
-  "
-  ontouchstart=onStart(event)
-  ></canvas>
+    <!--
+    as of now the canvas doesn't get resized
+    so it has to be at least as big as the biggest canvasHeight x canvasWith size.
+    Also note that the css width needs to be 1/3 of
+    the with attribute, and same for height.
+    <canvas id=c width=600 height=1560
+    style="width: 200px; height:520px;
+    <canvas id=c width=1125 height=1560
+    style="width: 375px; height:520px;
+    border: 0px solid lime;;
+    "
+    ontouchstart=onStart(event)
+    ></canvas>
+
+    <canvas id=c width=1125 height=1320
+    style="width: 375px; height:440px;
+    "
+    ontouchstart=onStart(event)
+    ></canvas>
+    -->
+    <canvas id=c width=1125 height=1350
+    style="width: 375px; height:450px;
+    display: block;
+    "
+    ontouchstart=onStart(event)
+    ></canvas>
 </td><td valign=top>
-  <div id=findWordEl style="height: 200px; width:175;
-  overflow:scroll;
-  -webkit-overflow-scrolling: touch;
-  font-size:10px;"
-  ></div>
+    <div id=findWordEl style="height: 200px; width:175;
+    overflow:scroll;
+    -webkit-overflow-scrolling: touch;
+    font-size:10px;"
+    ></div>
 <!--</td><td valign=top>
-  <iframe src="http://duckduckgo.com"
-    style="width: 375px; height: 520px;"
-  ></iframe>-->
+    <iframe src="http://duckduckgo.com"
+        style="width: 375px; height: 520px;"
+    ></iframe>-->
 </td><td valign=top>
-  <div id=logEl style="height: 200px; width:240px;
-  overflow:scroll;
-  -webkit-overflow-scrolling: touch;
-  font-size:10px;"
-  ></div>
+    <div id=logEl style="height: 200px; width:240px;
+    overflow:scroll;
+    -webkit-overflow-scrolling: touch;
+    font-size:10px;"
+    ></div>
 </td></tr></table>
 
 <div class=toolbar id=searchRow onclick=selectSearchRow(event)>
@@ -181,62 +181,62 @@ onblur=handleBlur()
 </div>
 
 <div class=toolbar>
-  <div id=findDownButton class=square onclick=findDown()>find down</div>
-  <div id=findUpButton class=square onclick=findUp()>find up</div>
-  <div id=clearSearchButton class=square onclick=clearSearch()>clear search</div>
-  <!--<div class=square onclick=editSearch()>edit search</div>
-  -->
-  <div id=saveButton class=square onclick=saveWrapper()>save</div>
-  <div class=square onclick=seeFiles()>files</div>
-  <div class=square onclick=closeFile()>close</div>
+    <div id=findDownButton class=square onclick=findDown()>find down</div>
+    <div id=findUpButton class=square onclick=findUp()>find up</div>
+    <div id=clearSearchButton class=square onclick=clearSearch()>clear search</div>
+    <!--<div class=square onclick=editSearch()>edit search</div>
+    -->
+    <div id=saveButton class=square onclick=saveWrapper()>save</div>
+    <div class=square onclick=seeFiles()>files</div>
+    <div class=square onclick=closeFile()>close</div>
 </div>
 <div class=toolbar>
-  <div class=square onclick=addCmdTab()>cmd</div>
-  <div class=square onclick=undo()>undo</div>
-  <div class=square onclick=redo()>redo</div>
-  <div class=square onclick=duplicateFile(fx)>dupl file</div>
-  <div class=square onclick=comment()>//</div>
-  <div class=square onclick=unComment()>un //</div>
-  <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
+    <div class=square onclick=addCmdTab()>cmd</div>
+    <div class=square onclick=undo()>undo</div>
+    <div class=square onclick=redo()>redo</div>
+    <div class=square onclick=duplicateFile(fx)>dupl file</div>
+    <div class=square onclick=comment()>//</div>
+    <div class=square onclick=unComment()>un //</div>
+    <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
 </div>
 <div class=toolbar>
-  <div class=square onclick=debugView()>debug view</div>
-  <div class=square onclick=reloadFile()>reload</div>
-  <div class=square onclick=doEval()>eval</div>
-  <div class=square onclick=clearLog()>clear log</div>
-  <div class=square onclick=runScript()>run script</div>
-  <div class=square onclick=doFormat()>format</div>
+    <div class=square onclick=debugView()>debug view</div>
+    <div class=square onclick=reloadFile()>reload</div>
+    <div class=square onclick=doEval()>eval</div>
+    <div class=square onclick=clearLog()>clear log</div>
+    <div class=square onclick=runScript()>run script</div>
+    <div class=square onclick=doFormat()>format</div>
 </div>
 
 <form onsubmit="addFile(this.fullPath.value, true); return false;">
-  <input class=dark type=text style="width: 275px;" name=fullPath></div>
-  <input class=dark type=submit value="Add Pane">
+    <input class=dark type=text style="width: 275px;" name=fullPath></div>
+    <input class=dark type=submit value="Add Pane">
 </form>
 <form method=GET action="" target=_blank>
-  <input class=dark type=text id=docTitleEl
-    style="width: 275px;"
-    oninput="this.form.action=this.value"></div>
-  <input class=dark type=submit value="Add Tab">
+    <input class=dark type=text id=docTitleEl
+        style="width: 275px;"
+        oninput="this.form.action=this.value"></div>
+    <input class=dark type=submit value="Add Tab">
 </form>
 
-<textarea class=dark id=pasteEl 
+<textarea class=dark id=pasteEl
 style="width:100%; height:100px;"
-onfocus="this.setSelectionRange(0, this.value.length)" 
+onfocus="this.setSelectionRange(0, this.value.length)"
 oninput=importPaste()
- placeholder="when you add text here it will be copied"
+    placeholder="when you add text here it will be copied"
 ></textarea>
 
 <textarea class=dark id=copyEl
 contenteditable
-onfocus="this.setSelectionRange(0, this.value.length)" 
+onfocus="this.setSelectionRange(0, this.value.length)"
 style="width:100%; height:100px;"
- placeholder="when you copy something, it will show up here"
+    placeholder="when you copy something, it will show up here"
 ></textarea>
 <div>
     <input
-      id=fontScaleInput
-      oninput="updateFontScale()"
-      style="font-size: 16px;"
+        id=fontScaleInput
+        oninput="updateFontScale()"
+        style="font-size: 16px;"
     > font scale
 </div>
 <div id=bottomPadding style="height: 100px;"></div>
@@ -300,9 +300,9 @@ var lastAction = "move" // move or type
 var inEdit = false
 var copyBuffer = []
 var selectMode = "line"
-var selectAction 
+var selectAction
 var cursorType = "move"
-// cursorType can be 
+// cursorType can be
 // * move
 // * select
 
@@ -320,29 +320,29 @@ var lastPageYOffset = 0
 var originalCanvasHeightFull = canvasHeightFull
 var scrollTimeout
 window.onscroll = function () {
-  // disable feature
-  return
-  clearTimeout(scrollTimeout)
-  scrollTimeout = setTimeout(doScroll, 100)
+    // disable feature
+    return
+    clearTimeout(scrollTimeout)
+    scrollTimeout = setTimeout(doScroll, 100)
 }
 
 function doScroll() {
-   canvasHeightFull = originalCanvasHeightFull - (window.pageYOffset*3) 
-   c.height = canvasHeightFull
-   setCanvasHeight(canvasHeightFull)
-   c.style.height = (canvasHeightFull/3)+"px"
-   topPadding.style.height = window.pageYOffset + "px"
-   
-   if (document.activeElement.getAttribute("type") != "text") {
-     lastPageYOffset = window.pageYOffset
-   } 
-   
-   render()
+    canvasHeightFull = originalCanvasHeightFull - (window.pageYOffset*3)
+    c.height = canvasHeightFull
+    setCanvasHeight(canvasHeightFull)
+    c.style.height = (canvasHeightFull/3)+"px"
+    topPadding.style.height = window.pageYOffset + "px"
+
+    if (document.activeElement.getAttribute("type") != "text") {
+        lastPageYOffset = window.pageYOffset
+    }
+
+    render()
 }
 function updateFontScale() {
     fontScale = fontScaleInput.value - 0
     if (!fontScale) {
-       fontScale = 1
+        fontScale = 1
     }
     fontHeight=36 * fontScale
     fontWidth=18 * fontScale
@@ -353,54 +353,54 @@ function updateFontScale() {
 }
 docTitleEl.value = location.pathname
 function importPaste() {
-  copyBuffer = pasteEl.value.split("\n")
-  selectMode = "line"
+    copyBuffer = pasteEl.value.split("\n")
+    selectMode = "line"
 }
 
 function toggleDarkMode() {
-  isDark = !isDark
-  if (!isDark) {
-    darkModeButton.innerText = "dark"
-    document.body.classList.remove("dark")
-    document.body.classList.add("light")
-    updateClassForSelector("input", "dark","light")
-    updateClassForSelector("textarea", "dark","light")
-    fontColor = "black"
-    lightFontColor = "rgba(0, 0, 0, 0.25)"
+    isDark = !isDark
+    if (!isDark) {
+        darkModeButton.innerText = "dark"
+        document.body.classList.remove("dark")
+        document.body.classList.add("light")
+        updateClassForSelector("input", "dark","light")
+        updateClassForSelector("textarea", "dark","light")
+        fontColor = "black"
+        lightFontColor = "rgba(0, 0, 0, 0.25)"
+        render()
+        return
+    }
+    darkModeButton.innerText = "light"
+    document.body.classList.remove("light")
+    document.body.classList.add("dark")
+    updateClassForSelector("input", "light", "dark")
+    updateClassForSelector("textarea", "light", "dark")
+    fontColor = "white"
+    lightFontColor = "rgba(255, 255, 255, 0.25)"
     render()
-    return
-  }
-  darkModeButton.innerText = "light"
-  document.body.classList.remove("light")
-  document.body.classList.add("dark")
-  updateClassForSelector("input", "light", "dark")
-  updateClassForSelector("textarea", "light", "dark")
-  fontColor = "white"
-  lightFontColor = "rgba(255, 255, 255, 0.25)"
-  render()
-    
+
 }
 function updateClassForSelector(selector, remove, add) {
-  var inputs = document.querySelectorAll(selector)
-  for (var i=0; i<inputs.length; i++) {
-    var input = inputs[i]
-    input.classList.remove(remove)
-    input.classList.add(add)
-  }
+    var inputs = document.querySelectorAll(selector)
+    for (var i=0; i<inputs.length; i++) {
+        var input = inputs[i]
+        input.classList.remove(remove)
+        input.classList.add(add)
+    }
 }
 
 function editSearch() {
-  searchText.style.display = "block"
-  searchText.focus()
+    searchText.style.display = "block"
+    searchText.focus()
 }
 function focusSearchText() {
-  window.scrollTo(0, 0)
-  searchText.setSelectionRange(0, searchText.value.length)
-  theText.style.display = "none"
+    window.scrollTo(0, 0)
+    searchText.setSelectionRange(0, searchText.value.length)
+    theText.style.display = "none"
 }
 function blurSearchText() {
-  theText.style.display = "block"
-  searchText.style.display = "none"
+    theText.style.display = "block"
+    searchText.style.display = "none"
 }
 function inputSearchText() {
     if (searchText.value == "") {
@@ -411,569 +411,594 @@ function inputSearchText() {
     render()
 }
 function closeFile() {
-  if (fx.fileMode == "fileList") {
-    files.splice(fx.cursorLineIndex, 1)
-    seeFiles()
-    seeFiles()
-  } else {
-    for (var i=0; i<files.length; i++) {
-      var file = files[i]
-      if (file == currentFile) {
-        files.splice(i, 1)
-        break
-      }  
+    if (fx.fileMode == "fileList") {
+        files.splice(fx.cursorLineIndex, 1)
+        seeFiles()
+        seeFiles()
+    } else {
+        for (var i=0; i<files.length; i++) {
+            var file = files[i]
+            if (file == currentFile) {
+                files.splice(i, 1)
+                break
+            }
+        }
+        setCurrentFile(files[0])
     }
-    setCurrentFile(files[0])
-  }
-  render()
-  renderFileDropdown()
-  renderURL()
+    render()
+    renderFileDropdown()
+    renderURL()
 }
 
 var bashHelpers = [
-   // some common commands to use quickly
-   // TODO: make these common commands configurable
-   "gofmt -s -w .",
-   "git status",   
-   "git diff",   
-   "git add -u .",
-   "git diff --cached",   
-   "git log -10",
-   "git commit -m '' --author='Drew LeSueur <drewalex@gmail.com>'",   
-   "git push origin HEAD",   
-   "git branch",
-   "golangci-lint run --print-issued-lines=false",
-   "grep -Ri '' --include=*.pm",
-   "grep -Ri '' --include=*.go",
-   "grep -Ri '' --include=*.php",
-   "find . -name '**'",
-   "go test ./...",
-   // a way to do `git add -p` non-interactively
-   "git --no-pager diff > gitdiff",
-   "open gitdiff",
-   "git apply --cached gitdiff",
-   "clear",
-   "",  
-   "",  
- ]
+    // some common commands to use quickly
+    // TODO: make these common commands configurable
+    "gofmt -s -w .",
+    "git status",
+    "git diff",
+    "git add -u .",
+    "git diff --cached",
+    "git log -10",
+    "git commit -m '' --author='Drew LeSueur <drewalex@gmail.com>'",
+    "git push origin HEAD",
+    "git branch",
+    "golangci-lint run --print-issued-lines=false",
+    "grep -Ri '' --include=*.pm",
+    "grep -Ri '' --include=*.go",
+    "grep -Ri '' --include=*.php",
+    "find . -name '**'",
+    "go test ./...",
+    // a way to do `git add -p` non-interactively
+    "git --no-pager diff > gitdiff",
+    "open gitdiff",
+    "git apply --cached gitdiff",
+    "clear",
+    "",
+    "",
+]
 function addCmdTab() {
-   var file = makeFile(proxyPath + "/cmd", bashHelpers.join("\n"))
-   file.fileMode = "bash"
-   
-   if (currentFile.fileMode == "bash") {
-     file.bashCWD = fx.bashCWD
-   } else if (currentFile.fileMode == "file") {
-     var parts = trimPrefix(currentFile.fullPath, proxyPath).split("/")
-     parts = parts.slice(0, parts.length - 1)
-     file.bashCWD = rootLocation + parts.join("/")
-   } else if (currentFile.fileMode == "directory") {
-     file.bashCWD = rootLocation + trimPrefix(currentFile.fullPath, proxyPath)
-   }
-   addFileToList(file, false)
-   setCurrentFile(file)
-   
-   fx.cursorLineIndex = fx.lines.length - 1
-   updateCursorXY()
-   runBashCommand("")
-   //theText.focus()  
+    var file = makeFile(proxyPath + "/cmd", bashHelpers.join("\n"))
+    file.fileMode = "bash"
+
+    if (currentFile.fileMode == "bash") {
+        file.bashCWD = fx.bashCWD
+    } else if (currentFile.fileMode == "file") {
+        var parts = trimPrefix(currentFile.fullPath, proxyPath).split("/")
+        parts = parts.slice(0, parts.length - 1)
+        file.bashCWD = rootLocation + parts.join("/")
+    } else if (currentFile.fileMode == "directory") {
+        file.bashCWD = rootLocation + trimPrefix(currentFile.fullPath, proxyPath)
+    }
+    addFileToList(file, false)
+    setCurrentFile(file)
+
+    fx.cursorLineIndex = fx.lines.length - 1
+    updateCursorXY()
+    runBashCommand("")
+    //theText.focus()
 }
 function addFile(fullPath, changeURL, closeCurrentIfDir, closeCurrent, reload) {
-  if (fullPath.charAt(0) != "/") {
-    fullPath = "/" + fullPath
-  }
-  if (!fullPath) {
-    fullPath = prompt("full path", location.pathname)
-  }
-  if (fullPath == "") {
-    return
-  }
-  
-  if (!reload) {
-      // If the file is already in the list of open files.
-      // then let it have a reference to the existing lines, like vim does.
-      for (var i=0; i<files.length; i++) {
-         if (files[i].fullPath == fullPath && files[i].fileMode == "file") {
-            duplicateFile(files[i])
-            return
-         }
-      }
-  }
-  var isDir = false
-  fetch((fullPath) + "?raw=1", {
-    cache: "no-cache"
-  }).then(r => {
-    if (r.headers.get("X-Is-Dir") == "1") {
-      isDir = true
+    if (fullPath.charAt(0) != "/") {
+        fullPath = "/" + fullPath
     }
-    return r.text()
-  }).then(b => {
-     if (isDir) {
-        b = "..\n" + b
-     }
-     var file = makeFile(fullPath, b)
-     if (isDir) {
-        file.fileMode = "directory"
-     } else {
-        file.fileMode = "file"
-     }
-     if ((isDir && closeCurrentIfDir) || closeCurrent) {
-         closeFile()
-     }
-     addFileToList(file)
-     setCurrentFile(file)
-     if (changeURL) {
-       renderURL()
-     }  
-  }).catch(e => alert("Error loading file " + e))
+    if (!fullPath) {
+        fullPath = prompt("full path", location.pathname)
+    }
+    if (fullPath == "") {
+        return
+    }
+
+    if (!reload) {
+        // If the file is already in the list of open files.
+        // then let it have a reference to the existing lines, like vim does.
+        for (var i=0; i<files.length; i++) {
+            if (files[i].fullPath == fullPath && files[i].fileMode == "file") {
+                duplicateFile(files[i])
+                return
+            }
+        }
+    }
+    var isDir = false
+    fetch((fullPath) + "?raw=1", {
+        cache: "no-cache"
+    }).then(r => {
+        if (r.headers.get("X-Is-Dir") == "1") {
+            isDir = true
+        }
+        return r.text()
+    }).then(b => {
+        if (isDir) {
+            b = "..\n" + b
+        }
+        var file = makeFile(fullPath, b)
+        if (isDir) {
+            file.fileMode = "directory"
+        } else {
+            file.fileMode = "file"
+        }
+        if ((isDir && closeCurrentIfDir) || closeCurrent) {
+            closeFile()
+        }
+        addFileToList(file)
+        setCurrentFile(file)
+        if (changeURL) {
+            renderURL()
+        }
+    }).catch(e => alert("Error loading file " + e))
 }
 
 function renderURL() {
- // For now we don't get files with bash mode.
- var filtered = files.filter(f => f.fileMode != "bash")
- var theNewPath = "/" + filtered.map(f => f.fullPath.slice(1)).join(",")
- theNewPath += "?searchTerms=" + encodeURIComponent(JSON.stringify(searchTerms))
- history.replaceState({}, "", theNewPath) 
+    // For now we don't get files with bash mode.
+    var filtered = files.filter(f => f.fileMode != "bash")
+    var theNewPath = "/" + filtered.map(f => f.fullPath.slice(1)).join(",")
+    theNewPath += "?searchTerms=" + encodeURIComponent(JSON.stringify(searchTerms))
+    history.replaceState({}, "", theNewPath)
 }
 
 function doEval() {
-  var code = prompt("code")
-  var resp =  eval(code)
-  alert(resp)
+    var code = prompt("code")
+    var resp =  eval(code)
+    alert(resp)
 }
 function log(v) {
-  var d = document.createElement("pre")
-  d.style.display = "block"
-  d.style.border = "1px solid blue"
-  if (typeof v == "object") {
-    d.innerText = JSON.stringify(v, "", "    ")
-  } else {
-    d.innerText = v
-  }
-  logEl.appendChild(d)
+    var d = document.createElement("pre")
+    d.style.display = "block"
+    d.style.border = "1px solid blue"
+    if (typeof v == "object") {
+        d.innerText = JSON.stringify(v, "", "    ")
+    } else {
+        d.innerText = v
+    }
+    logEl.appendChild(d)
 }
 
 function docChanged() {
-   fx.version += 1
-   var maybeLastWord = getWordAtCursor().word
-   if (maybeLastWord != "") {
-     lastWord = maybeLastWord
-   }
-  if (fx.undoIndex != fx.undoStack.length - 1) {
-      fx.undoStack.splice(fx.undoIndex + 1, fx.undoStack.length - fx.undoStack +1)
-      fx.undoYStack.splice(fx.undoIndex + 1, fx.undoYStack.length - fx.undoYStack +1)
-      fx.undoXStack.splice(fx.undoIndex + 1, fx.undoXStack.length - fx.undoXStack +1)
-  }
-  fx.undoIndex += 1
-  fx.undoStack.push(fx.lines.join("\n"))
-  fx.undoYStack.push(fx.cursorLineIndex)
-  fx.undoXStack.push(fx.cursorColIndex)
-  if (fx.undoStack.length > maxUndos) {
+    fx.version += 1
+    var maybeLastWord = getWordAtCursor().word
+    if (maybeLastWord != "") {
+        lastWord = maybeLastWord
+    }
+if (fx.undoIndex != fx.undoStack.length - 1) {
+    fx.undoStack.splice(fx.undoIndex + 1, fx.undoStack.length - fx.undoStack +1)
+    fx.undoYStack.splice(fx.undoIndex + 1, fx.undoYStack.length - fx.undoYStack +1)
+    fx.undoXStack.splice(fx.undoIndex + 1, fx.undoXStack.length - fx.undoXStack +1)
+}
+fx.undoIndex += 1
+fx.undoStack.push(fx.lines.join("\n"))
+fx.undoYStack.push(fx.cursorLineIndex)
+fx.undoXStack.push(fx.cursorColIndex)
+if (fx.undoStack.length > maxUndos) {
     fx.undoStack.shift()
     fx.undoYStack.shift()
     fx.undoXStack.shift()
     fx.undoIndex -= 1
-  }
+}
 }
 function repositionUndo() {
-  // disabling feature for now
-  render()
-  return
-  fx.lines = fx.undoStack[fx.undoIndex].split("\n")
-  fx.cursorColIndex = fx.undoXStack[fx.undoIndex]
-  fx.cursorLineIndex = fx.undoYStack[fx.undoIndex]
-  if (fx.cursorLineIndex < fx.offsetY || fx.cursorLineIndex > fx.offsetY+maxLines) {
-    fx.offsetY = max(0, fx.cursorLineIndex - 5)  
-  }
-  if (fx.cursorColIndex < fx.offsetX || fx.cursorColIndex > fx.offsetX+maxCols) {
-    fx.offsetX = max(0, fx.cursorColIndex - 5)  
-  }
-  updateCursorXY()
-  render()
+    // disabling feature for now
+    render()
+    return
+    fx.lines = fx.undoStack[fx.undoIndex].split("\n")
+    fx.cursorColIndex = fx.undoXStack[fx.undoIndex]
+    fx.cursorLineIndex = fx.undoYStack[fx.undoIndex]
+    if (fx.cursorLineIndex < fx.offsetY || fx.cursorLineIndex > fx.offsetY+maxLines) {
+        fx.offsetY = max(0, fx.cursorLineIndex - 5)
+    }
+    if (fx.cursorColIndex < fx.offsetX || fx.cursorColIndex > fx.offsetX+maxCols) {
+        fx.offsetX = max(0, fx.cursorColIndex - 5)
+    }
+    updateCursorXY()
+    render()
 }
 
 function undo() {
-  fx.undoIndex = bind(fx.undoIndex-1, 0, fx.undoIndex)
-  repositionUndo()
+    fx.undoIndex = bind(fx.undoIndex-1, 0, fx.undoIndex)
+    repositionUndo()
 }
 
 function redo() {
-  fx.undoIndex = bind(fx.undoIndex+1, fx.undoIndex, fx.undoStack.length-1)
-  repositionUndo()
+    fx.undoIndex = bind(fx.undoIndex+1, fx.undoIndex, fx.undoStack.length-1)
+    repositionUndo()
 }
 function clearLog() {
-  logEl.innerHTML = ""
-  render()
+    logEl.innerHTML = ""
+    render()
 }
 // check for A-Za-z0-9_
 function isWordy(a) {
-  return (
-     (a >= 65 && a <= 90) ||  // A-Z
-     (a >= 97 && a <= 122) || // a-z
-     (a >= 48 && a <= 57) ||  // 0-9
-     (a == 95)                // _
-  ) 
+    return (
+        (a >= 65 && a <= 90) ||  // A-Z
+        (a >= 97 && a <= 122) || // a-z
+        (a >= 48 && a <= 57) ||  // 0-9
+        (a == 95)                // _
+    )
 }
 function getWordAtCursor() {
-  return getWordAt(fx.lines[fx.cursorLineIndex], u(fx.cursorColIndex))  
+    return getWordAt(fx.lines[fx.cursorLineIndex], u(fx.cursorColIndex))
 }
 function getWordAt(line, x) {
-  if (!line) return {start: x, end: x, word: ""}
-  for (var startIndex=x-1; startIndex>=0; startIndex--) {
-    if (!isWordy(line.charCodeAt(startIndex))) {
-       startIndex += 1
-       break
+    if (!line) return {start: x, end: x, word: ""}
+    for (var startIndex=x-1; startIndex>=0; startIndex--) {
+        if (!isWordy(line.charCodeAt(startIndex))) {
+            startIndex += 1
+            break
+        }
     }
-  }
-  if (startIndex < 0) startIndex = 0
-  for (var endIndex=x; endIndex < line.length; endIndex++) {
-    if (!isWordy(line.charCodeAt(endIndex))) {
-      break
+    if (startIndex < 0) startIndex = 0
+    for (var endIndex=x; endIndex < line.length; endIndex++) {
+        if (!isWordy(line.charCodeAt(endIndex))) {
+            break
+        }
     }
-  }
-  if (endIndex == fx.lines.length - 1) endIndex = fx.lines.length
-  //if (startIndex < endIndex) {
-    return {start: startIndex, end: endIndex, word: line.substring(startIndex, endIndex)}
-  //}
-  return {start: x, end: x, word: ""}
+    if (endIndex == fx.lines.length - 1) endIndex = fx.lines.length
+    //if (startIndex < endIndex) {
+        return {start: startIndex, end: endIndex, word: line.substring(startIndex, endIndex)}
+    //}
+    return {start: x, end: x, word: ""}
 }
 function getWordBeforeCursor() {
-  return getWordBefore(fx.lines[fx.cursorLineIndex], u(fx.cursorColIndex)) 
+    return getWordBefore(fx.lines[fx.cursorLineIndex], u(fx.cursorColIndex))
 }
 function getWordBefore(line, x) {
-  if (!line) return {start: x, end: x, word: ""}
-  for (var startIndex=x-1; startIndex>=0; startIndex--) {
-    if (!isWordy(line.charCodeAt(startIndex))) {
-       startIndex += 1
-       break
+    if (!line) return {start: x, end: x, word: ""}
+    for (var startIndex=x-1; startIndex>=0; startIndex--) {
+        if (!isWordy(line.charCodeAt(startIndex))) {
+            startIndex += 1
+            break
+        }
     }
-  }
-  if (startIndex < 0) startIndex = 0
-  var endIndex = x
-  if (endIndex == fx.lines.length - 1) endIndex = fx.lines.length
-  //if (startIndex < endIndex) {
-    return {start: startIndex, end: endIndex, word: line.substring(startIndex, endIndex)}
-  //}
-  return {start: x, end: x, word: ""}
+    if (startIndex < 0) startIndex = 0
+    var endIndex = x
+    if (endIndex == fx.lines.length - 1) endIndex = fx.lines.length
+    //if (startIndex < endIndex) {
+        return {start: startIndex, end: endIndex, word: line.substring(startIndex, endIndex)}
+    //}
+    return {start: x, end: x, word: ""}
 }
 function findDownForm(e) {
-   // TODO: why doesnt preventDefault autocomplete sometimes?
-   e.preventDefault()
-   findDown()
-   return false 
+    // TODO: why doesnt preventDefault autocomplete sometimes?
+    e.preventDefault()
+    findDown()
+    return false
 }
 function addSearchTerm() {
-  if (searchText.value == "") {
-     return
-  }
-  var pos = searchTerms.indexOf(searchText.value)
-  if (pos != -1) {
-      // remove it
-      searchTerms.splice(pos, 1)
-  }
-  // then add it to the beginning
-  searchTerms.unshift(searchText.value)
-  renderSearchTerms()
-  // because search terms are in url
-  renderURL()
+    if (searchText.value == "") {
+        return
+    }
+    var pos = searchTerms.indexOf(searchText.value)
+    if (pos != -1) {
+        // remove it
+        searchTerms.splice(pos, 1)
+    }
+    // then add it to the beginning
+    searchTerms.unshift(searchText.value)
+    renderSearchTerms()
+    // because search terms are in url
+    renderURL()
 }
 function findDown() {
-  if (searchText.value == "") {
-    searchText.value = getWordAtCursor().word
-    clearSearchButton.innerText = "clear search"
-  }
-  addSearchTerm()
-  for (var i=fx.cursorLineIndex; i<fx.lines.length; i++) {
-    var lineToSearch = fx.lines[i]
-    if (i == fx.cursorLineIndex) {
-      lineToSearch = lineToSearch.substr(u(fx.cursorColIndex))
+    if (searchText.value == "") {
+        searchText.value = getWordAtCursor().word
+        clearSearchButton.innerText = "clear search"
     }
-    var pos = lineToSearch.indexOf(searchText.value)
-    if (pos != -1) {
-      if (i == fx.cursorLineIndex) {
-         pos += u(fx.cursorColIndex)
-      }
-      fx.cursorLineIndex = i
-      fx.cursorColIndex = expandTabIndex(lineToSearch, pos + searchText.value.length)
-      updateCursorXY()
-      ensureCursorInScreen()
-      render()
-      initiateFindWord() // for autocomplete, for if editing?
-      return true
+    addSearchTerm()
+    for (var i=fx.cursorLineIndex; i<fx.lines.length; i++) {
+        var lineToSearch = fx.lines[i]
+        if (i == fx.cursorLineIndex) {
+            lineToSearch = lineToSearch.substr(u(fx.cursorColIndex))
+        }
+        var pos = lineToSearch.indexOf(searchText.value)
+        if (pos != -1) {
+            if (i == fx.cursorLineIndex) {
+                pos += u(fx.cursorColIndex)
+            }
+            fx.cursorLineIndex = i
+            fx.cursorColIndex = expandTabIndex(lineToSearch, pos + searchText.value.length)
+            updateCursorXY()
+            ensureCursorInScreen()
+            render()
+            initiateFindWord() // for autocomplete, for if editing?
+            return true
+        }
     }
-  }
-  render()
-  return false
+    render()
+    return false
 }
 
 function ensureCursorInScreen() {
     if (fx.cursorLineIndex < fx.offsetY) {
-       fx.offsetY = fx.cursorLineIndex
+        fx.offsetY = fx.cursorLineIndex
     } else if (fx.cursorLineIndex >= fx.offsetY+maxLines) {
-       fx.offsetY = fx.cursorLineIndex-maxLines +1
+        fx.offsetY = fx.cursorLineIndex-maxLines +1
     }
-    
+
     // TODO: there is something more elegant
     // that you can do here
     if (fx.cursorColIndex < fx.offsetX) {
-      //fx.offsetX = fx.cursorColIndex
-      fx.offsetX = fx.cursorColIndex - Math.floor(maxCols/2)
+        //fx.offsetX = fx.cursorColIndex
+        fx.offsetX = fx.cursorColIndex - Math.floor(maxCols/2)
     } else if (fx.cursorColIndex > fx.offsetX+maxCols) {
-      fx.offsetX = fx.cursorColIndex - Math.floor(maxCols/2)
+        fx.offsetX = fx.cursorColIndex - Math.floor(maxCols/2)
     }
     if (fx.offsetX < -5) {
-       fx.offsetX = -5
+        fx.offsetX = -5
     }
     updateCursorXY()
     render()
 }
 // Note this won't work for certain chars
 function reverse(str) {
-   return str.split("").reverse().join("")
+    return str.split("").reverse().join("")
 }
 function findUp() {
-  if (searchText.value == "") {
-    searchText.value = getWordAtCursor().word
-    clearSearchButton.innerText = "clear search"
-  }
-  addSearchTerm()
-  for (var i=fx.cursorLineIndex; i>=0; i--) {
-    var lineToSearch = fx.lines[i]
-    if (i == fx.cursorLineIndex) {
-      lineToSearch = lineToSearch.substr(0, u(fx.cursorColIndex))
+    if (searchText.value == "") {
+        searchText.value = getWordAtCursor().word
+        clearSearchButton.innerText = "clear search"
     }
-    var pos = reverse(lineToSearch).indexOf(reverse(searchText.value))
-    if (pos != -1) {
-      if (i == fx.cursorLineIndex) {
-         pos += (fx.lines[i].length - u(fx.cursorColIndex))
-      }
-      fx.cursorLineIndex = i
-      var colIndex = fx.lines[i].length - (pos + searchText.value.length)
-      fx.cursorColIndex = expandTabIndex(fx.lines[i], colIndex)
-      updateCursorXY()
-      ensureCursorInScreen()
-      render()
-      initiateFindWord() // for autocomplete, for if editing?
-      return true
+    addSearchTerm()
+    for (var i=fx.cursorLineIndex; i>=0; i--) {
+        var lineToSearch = fx.lines[i]
+        if (i == fx.cursorLineIndex) {
+            lineToSearch = lineToSearch.substr(0, u(fx.cursorColIndex))
+        }
+        var pos = reverse(lineToSearch).indexOf(reverse(searchText.value))
+        if (pos != -1) {
+            if (i == fx.cursorLineIndex) {
+                pos += (fx.lines[i].length - u(fx.cursorColIndex))
+            }
+            fx.cursorLineIndex = i
+            var colIndex = fx.lines[i].length - (pos + searchText.value.length)
+            fx.cursorColIndex = expandTabIndex(fx.lines[i], colIndex)
+            updateCursorXY()
+            ensureCursorInScreen()
+            render()
+            initiateFindWord() // for autocomplete, for if editing?
+            return true
+        }
     }
-  }
-  render()
-  return false
+    render()
+    return false
 }
 function clearSearch() {
-  if (searchText.value == "") {
-     editSearch()
-     return
-  }
-  searchText.value = ""
-  clearSearchButton.innerText = "edit search"
-  render()
-  renderSearchTerms()
+    if (searchText.value == "") {
+        editSearch()
+        return
+    }
+    searchText.value = ""
+    clearSearchButton.innerText = "edit search"
+    render()
+    renderSearchTerms()
 }
 
 function jsFunc() {
-  selectMode
-  docChanged()
-  render()
+    selectMode
+    docChanged()
+    render()
 }
 
 function updateCursorXY() {
-  cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
-  cursorY = (fx.cursorLineIndex - fx.offsetY) * fontHeight
+    cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
+    cursorY = (fx.cursorLineIndex - fx.offsetY) * fontHeight
 }
 
 function dup() {
-  copy()
-  paste() 
+    copy()
+    paste()
 }
 
 function indent() {
-  addPrefix("  ")
+    addPrefix("  ")
 }
 function dedent() {
-  stripPrefixes(["\t", "  "])
+    stripPrefixes(["\t", "  "])
 }
 
 function comment() {
-  addPrefix("// ")
+    addPrefix("// ")
 }
 function unComment() {
-  stripPrefixes(["// ", "//"])
+    stripPrefixes(["// ", "//"])
 }
 
 function addPrefix(prefix) {
- if (selectedRegions.length > 0) {
-   var r = selectedRegions[0]
-   var firstIndent = ""
-   var line = fx.lines[r.startY]
-   var firstNonSpace = 0
-   for (var i=0; i<line.length; i++) {
-     var chr = line.charAt(i)
-     if (chr != " " && chr != "\t") {
-       firstNonSpace = i
-       break
-     }
-   }
-   for (var y=r.startY; y<=r.stopY; y++) {
-     fx.lines[y] = fx.lines[y].slice(0, firstNonSpace) + prefix + fx.lines[y].slice(firstNonSpace)
-   }
- } else {
-   fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex].slice(0, firstNonSpace) + prefix + fx.lines[fx.cursorLineIndex].slice(firstNonSpace)
- }
- docChanged()
- render()
+    if (selectedRegions.length > 0) {
+        var r = selectedRegions[0]
+        var firstIndent = ""
+        var line = fx.lines[r.startY]
+        var firstNonSpace = 0
+        for (var i=0; i<line.length; i++) {
+            var chr = line.charAt(i)
+            if (chr != " " && chr != "\t") {
+                firstNonSpace = i
+                break
+            }
+        }
+        for (var y=r.startY; y<=r.stopY; y++) {
+            fx.lines[y] = fx.lines[y].slice(0, firstNonSpace) + prefix + fx.lines[y].slice(firstNonSpace)
+        }
+    } else {
+        fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex].slice(0, firstNonSpace) + prefix + fx.lines[fx.cursorLineIndex].slice(firstNonSpace)
+    }
+    docChanged()
+    render()
 }
 
 function stripPrefixes(prefixes) {
- if (selectedRegions.length > 0) {
-   var r = selectedRegions[0]
-   for (var y=r.startY; y<=r.stopY; y++) {
-     fx.lines[y] = stripPrefixesInner(fx.lines[y], prefixes)
-   }
- } else {
-   var line = fx.lines[fx.cursorLineIndex]
-   fx.lines[fx.cursorLineIndex] = stripPrefixesInner(line, prefixes)
- }
- docChanged()
- render()
+    if (selectedRegions.length > 0) {
+        var r = selectedRegions[0]
+        for (var y=r.startY; y<=r.stopY; y++) {
+            fx.lines[y] = stripPrefixesInner(fx.lines[y], prefixes)
+        }
+    } else {
+        var line = fx.lines[fx.cursorLineIndex]
+        fx.lines[fx.cursorLineIndex] = stripPrefixesInner(line, prefixes)
+    }
+    docChanged()
+    render()
 }
 
 function isWhiteSpace(str) {
-  for (var i=0; i<str.length; i++) {
-    var chr = str.charAt(i)
-    if (chr != " " && chr != "\t") {
-      return false
+    for (var i=0; i<str.length; i++) {
+        var chr = str.charAt(i)
+        if (chr != " " && chr != "\t") {
+            return false
+        }
     }
-  }
-  return true
+    return true
 }
 function stripPrefixesInner(line, prefixes) {
-  for (var i=0; i<prefixes.length; i++) {
-    var prefix = prefixes[i]
-    var prefixPos = line.indexOf(prefix)
-    if (prefixPos != -1) {
-      if (isWhiteSpace(line.slice(0, prefixPos))) {
-        line = line.slice(0, prefixPos) + line.slice(prefixPos + prefix.length)
-      }
+    for (var i=0; i<prefixes.length; i++) {
+        var prefix = prefixes[i]
+        var prefixPos = line.indexOf(prefix)
+        if (prefixPos != -1) {
+            if (isWhiteSpace(line.slice(0, prefixPos))) {
+                line = line.slice(0, prefixPos) + line.slice(prefixPos + prefix.length)
+            }
+        }
     }
-  }
-  return line 
+    return line
 }
 
 function copy() {
-  // wrapping in for loop to simulate goto
-  for (var s=0; s<1; s++) {
-    if (selectedRegions.length>0) {
-      var r = selectedRegions[0]
-      if (r.startY == r.stopY) {
-        copyBuffer = [fx.lines[fx.cursorLineIndex].slice(u(r.startX), u(r.stopX))]  
-        selectedRegions = []
-        render()
-        break
-      }
-      copyBuffer = [
-        unExpandSlice(fx.lines[r.startY], r.startX),
-        ...fx.lines.slice(r.startY + 1, r.stopY),
-        unExpandSlice(fx.lines[r.stopY], 0, r.stopX)
-      ]
-      selectedRegions = []
-      render()
-      break
+    // wrapping in for loop to simulate goto
+    for (var s=0; s<1; s++) {
+        if (selectedRegions.length>0) {
+            var r = selectedRegions[0]
+            if (r.startY == r.stopY) {
+                copyBuffer = [fx.lines[fx.cursorLineIndex].slice(u(r.startX), u(r.stopX))]
+                selectedRegions = []
+                render()
+                break
+            }
+            copyBuffer = [
+                unExpandSlice(fx.lines[r.startY], r.startX),
+                ...fx.lines.slice(r.startY + 1, r.stopY),
+                unExpandSlice(fx.lines[r.stopY], 0, r.stopX)
+            ]
+            selectedRegions = []
+            render()
+            break
+        }
+        selectMode = "line"
+        copyBuffer = [fx.lines[fx.cursorLineIndex]]
     }
-    selectMode = "line" 
-    copyBuffer = [fx.lines[fx.cursorLineIndex]]
-  }
-  
-  // TODO: figure out why it's not fully copying at os level
-  copyEl.value = copyBuffer.join("\n") 
-  // copyEl.setSelectionRange(0, copyEl.value.length)
-  // var range = document.createRange()
-  // range.selectNodeContents(copyEl)
-  // var sel = window.getSelection()
-  // sel.removeAllRanges()
-  // sel.addRange(range)
-  // document.execCommand("copy")
+
+    // TODO: figure out why it's not fully copying at os level
+    copyEl.value = copyBuffer.join("\n")
+    // copyEl.setSelectionRange(0, copyEl.value.length)
+    // var range = document.createRange()
+    // range.selectNodeContents(copyEl)
+    // var sel = window.getSelection()
+    // sel.removeAllRanges()
+    // sel.addRange(range)
+    // document.execCommand("copy")
 }
 
 function runScript() {
-  var oldCopyBuffer = copyBuffer
-  copy()
-  var code = copyBuffer.join("\n")   
-  copyBuffer = oldCopyBuffer
-  var f = new Function(code)
-  f()
+    var oldCopyBuffer = copyBuffer
+    copy()
+    var code = copyBuffer.join("\n")
+    copyBuffer = oldCopyBuffer
+    var f = new Function(code)
+    f()
 }
 
 
 function setCanvasHeight(h) {
-  canvasHeight = h
-  maxLines = Math.floor(canvasHeight / fontHeight)
+    canvasHeight = h
+    maxLines = Math.floor(canvasHeight / fontHeight)
 }
 function setCanvasWidth(w) {
-  canvasWidth = w
-  maxCols = Math.floor(canvasWidth / fontWidth)
+    canvasWidth = w
+    maxCols = Math.floor(canvasWidth / fontWidth)
 }
 
 function paste(unselect) {
-  if (selectMode == "line") {
-    fx.lines.splice(fx.cursorLineIndex + 1, 0, ...copyBuffer)
-    var stopY = fx.cursorLineIndex + copyBuffer.length
-    var lastLine = fx.lines[stopY] 
-    if (!unselect) {
-        selectedRegions = [{
-           startY: fx.cursorLineIndex + 1,
-           // remember stopY is inclusive, stopX no
-           stopY: stopY,
-           startX: 0,
-           stopX: expandTabIndex(lastLine, lastLine.length),
-        }] 
-    } 
-  } else if (selectMode == "char") {
-      if (copyBuffer.length == 1) {
-      fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex].slice(0, u(fx.cursorColIndex)) +
-        copyBuffer[0] +
-        fx.lines[fx.cursorLineIndex].slice(u(fx.cursorColIndex))
-    } else {
-      var line = fx.lines[fx.cursorLineIndex]
-      fx.lines[fx.cursorLineIndex] = line.slice(0, u(fx.cursorColIndex)) +
-        copyBuffer[0]
-      copyBuffer[copyBuffer.length-1] += line.slice(u(fx.cursorColIndex))
-      fx.lines.splice(fx.cursorLineIndex+1, 0, ...copyBuffer.slice(1))
+    if (selectMode == "line") {
+        fx.lines.splice(fx.cursorLineIndex + 1, 0, ...copyBuffer)
+        var stopY = fx.cursorLineIndex + copyBuffer.length
+        var lastLine = fx.lines[stopY]
+        if (!unselect) {
+            selectedRegions = [{
+                startY: fx.cursorLineIndex + 1,
+                // remember stopY is inclusive, stopX no
+                stopY: stopY,
+                startX: 0,
+                stopX: expandTabIndex(lastLine, lastLine.length),
+            }]
+        }
+    } else if (selectMode == "char") {
+        if (copyBuffer.length == 1) {
+        fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex].slice(0, u(fx.cursorColIndex)) +
+            copyBuffer[0] +
+            fx.lines[fx.cursorLineIndex].slice(u(fx.cursorColIndex))
+        } else {
+            var line = fx.lines[fx.cursorLineIndex]
+            fx.lines[fx.cursorLineIndex] = line.slice(0, u(fx.cursorColIndex)) +
+                copyBuffer[0]
+            copyBuffer[copyBuffer.length-1] += line.slice(u(fx.cursorColIndex))
+            fx.lines.splice(fx.cursorLineIndex+1, 0, ...copyBuffer.slice(1))
+        }
     }
-  }
-  docChanged()
-  render()
+    docChanged()
+    render()
 }
 
 // TODO: make lastWord an array.
 function pasteLastWord() {
-  var oldCopyBuffer = copyBuffer
-  var oldSelectMode = selectMode
-  copyBuffer = [lastWord]
-  selectMode = "char"
-  deleteWord()
-  paste()
-  copyBuffer = oldCopyBuffer
-  selectMode = oldSelectMode
+    var oldCopyBuffer = copyBuffer
+    var oldSelectMode = selectMode
+    copyBuffer = [lastWord]
+    selectMode = "char"
+    deleteWord()
+    paste()
+    copyBuffer = oldCopyBuffer
+    selectMode = oldSelectMode
 }
 
 
 function del() {
-  if (selectedRegions.length>0) {
-    var r = selectedRegions[0]
-    if (r.startY == r.stopY) {
-      if (r.startX == 0 && unExpandTabIndex(fx.lines[r.startY], r.stopX) == fx.lines[r.startY].length) {
-        selectMode = "line" 
-        copyBuffer = [fx.lines[r.startY]]
-        fx.lines.splice(r.startY, 1)
-        selectedRegions = []
-        docChanged()
-        render()
-        return
-      } else {
-        copyBuffer = [unExpandSlice(fx.lines[r.startY], r.startX, r.stopX)] 
-        fx.lines[r.startY] = unExpandSlice(fx.lines[r.startY], 0, r.startX) +
-            unExpandSlice(fx.lines[r.startY], r.stopX)
-        selectedRegions = []
+    if (selectedRegions.length>0) {
+        var r = selectedRegions[0]
+        if (r.startY == r.stopY) {
+            if (r.startX == 0 && unExpandTabIndex(fx.lines[r.startY], r.stopX) == fx.lines[r.startY].length) {
+                selectMode = "line"
+                copyBuffer = [fx.lines[r.startY]]
+                fx.lines.splice(r.startY, 1)
+                selectedRegions = []
+                docChanged()
+                render()
+                return
+            } else {
+                copyBuffer = [unExpandSlice(fx.lines[r.startY], r.startX, r.stopX)]
+                fx.lines[r.startY] = unExpandSlice(fx.lines[r.startY], 0, r.startX) +
+                    unExpandSlice(fx.lines[r.startY], r.stopX)
+                selectedRegions = []
+                fx.cursorLineIndex = r.startY
+                fx.cursorColIndex = r.startX
+                updateCursorXY()
+                selectedRegions = []
+                docChanged()
+                render()
+                if (document.activeElement == theText) {
+                    //theText.setSelectionRange(r.startX, r.startX)
+                    setSelectionRangeForText(r.stsrtX, r.startX)
+                }
+                return
+            }
+        }
+        copyBuffer = [
+            unExpandSlice(fx.lines[r.startY], r.startX),
+            ...fx.lines.slice(r.startY + 1, r.stopY),
+            unExpandSlice(lines[r.stopY], 0, r.stopX)
+        ]
+
+        fx.lines[r.startY] = unExpandSlice(fx.lines[r.startY], 0,  r.startX) +
+            unExpandSlice(fx.lines[r.stopY], r.stopX)
+        fx.lines.splice(r.startY + 1, r.stopY-r.startY)
+        if (fx.lines[r.startY] == "") {
+            fx.lines.splice(r.startY, 1)
+        }
         fx.cursorLineIndex = r.startY
         fx.cursorColIndex = r.startX
         updateCursorXY()
@@ -982,164 +1007,139 @@ function del() {
         render()
         if (document.activeElement == theText) {
             //theText.setSelectionRange(r.startX, r.startX)
-            setSelectionRangeForText(r.stsrtX, r.startX)
+            setSelectionRangeForText(r.startX, r.startX)
         }
         return
-      }
     }
-    copyBuffer = [
-      unExpandSlice(fx.lines[r.startY], r.startX),
-      ...fx.lines.slice(r.startY + 1, r.stopY),
-      unExpandSlice(lines[r.stopY], 0, r.stopX)
-    ]
-
-    fx.lines[r.startY] = unExpandSlice(fx.lines[r.startY], 0,  r.startX) +
-        unExpandSlice(fx.lines[r.stopY], r.stopX)
-    fx.lines.splice(r.startY + 1, r.stopY-r.startY)
-    if (fx.lines[r.startY] == "") {
-      fx.lines.splice(r.startY, 1)
-    }
-    fx.cursorLineIndex = r.startY
-    fx.cursorColIndex = r.startX
-    updateCursorXY()
-    selectedRegions = []
+    selectMode = "line"
+    copyBuffer = [fx.lines[fx.cursorLineIndex]]
+    fx.lines.splice(fx.cursorLineIndex, 1)
     docChanged()
     render()
-    if (document.activeElement == theText) {
-        //theText.setSelectionRange(r.startX, r.startX)
-        setSelectionRangeForText(r.startX, r.startX)
-    }
-    return
-  }
-  selectMode = "line" 
-  copyBuffer = [fx.lines[fx.cursorLineIndex]]
-  fx.lines.splice(fx.cursorLineIndex, 1)
-  docChanged()
-  render()
 }
 function deleteWord(e) {
-  var w = getWordAtCursor()
-  if (w.word == "") {
-    return
-  }
-  var line = fx.lines[fx.cursorLineIndex]
-  fx.lines[fx.cursorLineIndex] = line.slice(0, w.start) + line.slice(w.end)
-  fx.cursorColIndex = w.start
-  updateCursorXY()
-  docChanged()
-  docChanged()
-  render()
+    var w = getWordAtCursor()
+    if (w.word == "") {
+        return
+    }
+    var line = fx.lines[fx.cursorLineIndex]
+    fx.lines[fx.cursorLineIndex] = line.slice(0, w.start) + line.slice(w.end)
+    fx.cursorColIndex = w.start
+    updateCursorXY()
+    docChanged()
+    docChanged()
+    render()
 }
 function getIndent(line) {
-   var theIndent = ""
-   for (var i=0; i<line.length; i++) {
-     var theChar = line.charAt(i)
-     if (theChar == " " || theChar == "\t") {
-       theIndent += theChar
-     } else {
-      return theIndent
+    var theIndent = ""
+    for (var i=0; i<line.length; i++) {
+        var theChar = line.charAt(i)
+        if (theChar == " " || theChar == "\t") {
+            theIndent += theChar
+        } else {
+            return theIndent
+        }
     }
-  }
-  return theIndent  
+    return theIndent
 }
 function insertLine(closeCurly) {
-  var theLine = fx.lines[fx.cursorLineIndex]
-  var theIndent = getIndent(theLine)
-  var prevChar = theLine[u(fx.cursorColIndex - 1)]
-  var nextChar = theLine[u(fx.cursorColIndex)]
-  fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent + theLine.substr(theText.selectionStart))
-  if (closeCurly && (prevChar in closingMap) && (nextChar == closingMap[prevChar])) {
-    theIndent += "   "
-    fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent)
-  }
-  fx.lines[fx.cursorLineIndex] = theLine.substr(0, theText.selectionStart)
-  fx.cursorLineIndex += 1
-  fx.cursorColIndex = theIndent.length
-  updateCursorXY()
-  ensureCursorInScreen()
-  docChanged()
-  
-  render()
+    var theLine = fx.lines[fx.cursorLineIndex]
+    var theIndent = getIndent(theLine)
+    var prevChar = theLine[u(fx.cursorColIndex - 1)]
+    var nextChar = theLine[u(fx.cursorColIndex)]
+    fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent + theLine.substr(theText.selectionStart))
+    if (closeCurly && (prevChar in closingMap) && (nextChar == closingMap[prevChar])) {
+        theIndent += "   "
+        fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent)
+    }
+    fx.lines[fx.cursorLineIndex] = theLine.substr(0, theText.selectionStart)
+    fx.cursorLineIndex += 1
+    fx.cursorColIndex = theIndent.length
+    updateCursorXY()
+    ensureCursorInScreen()
+    docChanged()
+
+    render()
 }
 function newLine(e) {
-  var theLine = fx.lines[fx.cursorLineIndex]
-  e.preventDefault()
-  if (fx.fileMode == "bash") {
-    runBashCommand(theLine)
-    return false 
-  }
-  insertLine(true)
-  theText.focus()
-  //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-  setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-  return false
+    var theLine = fx.lines[fx.cursorLineIndex]
+    e.preventDefault()
+    if (fx.fileMode == "bash") {
+        runBashCommand(theLine)
+        return false
+    }
+    insertLine(true)
+    theText.focus()
+    //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+    setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+    return false
 }
 function runBashCommand(line) {
-  if (line == "clear") {
-    fx.lines = []
-    fx.cursorLineIndex = 0
-    fx.cursorColIndex = 0
-    updateCursorXY()
-    fx.offsetY = 0
-    render()
-    return
-  }
-  
-  if (line.startsWith("open ")) {
-    var fileToLoad = line.split(" ")[1]
-    copyBuffer = [""]
-    paste(true)
-    fx.cursorLineIndex += 1
-    fx.cursorColIndex = 0
-    ensureCursorInScreen()
-    addFile(proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad, true)
-    return  
-  }
-  
-  if (line == "p") {
-    copyBuffer = bashHelpers
-    paste(true)
-    fx.cursorLineIndex = fx.lines.length - 1
-    fx.cursorColIndex = 0
-    updateCursorXY()
-    ensureCursorInScreen()
-    return  
-  }
-  
-  fetch(proxyPath + "/mybash?cwd="+encodeURIComponent(fx.bashCWD)+"&cmd="+encodeURIComponent(line), {
-    cache: "no-cache"
-  }).then(r => {
-    return r.text()
-  }).then(r => {
-    copyBuffer = r.split("\n")
-    copyBuffer.unshift("") // leading newline
-    // second to last item is cwd
-    fx.bashCWD = copyBuffer[copyBuffer.length - 2]
-    // let's restyle the pwd after we grab it
-    copyBuffer[copyBuffer.length - 2] = fx.bashCWD
-      .split("/")
-      .reverse()
-      .join(" < ")
-    copyBuffer.push(line) // add the line so it's easy to run again.
-    copyBuffer.push("")
-    fx.cursorColIndex = 0
-    fx.cursorLineIndex += copyBuffer.length
-    fx.cursorLineIndex = fx.lines.length - 1 
-    paste(true)
-    fx.cursorLineIndex = fx.lines.length - 1
-    updateCursorXY()
-    ensureCursorInScreen()
-  }).catch(e => {
-    alert("There was an error running the command: " + e)
-  })
-  
+    if (line == "clear") {
+        fx.lines = []
+        fx.cursorLineIndex = 0
+        fx.cursorColIndex = 0
+        updateCursorXY()
+        fx.offsetY = 0
+        render()
+        return
+    }
+
+    if (line.startsWith("open ")) {
+        var fileToLoad = line.split(" ")[1]
+        copyBuffer = [""]
+        paste(true)
+        fx.cursorLineIndex += 1
+        fx.cursorColIndex = 0
+        ensureCursorInScreen()
+        addFile(proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad, true)
+        return
+    }
+
+    if (line == "p") {
+        copyBuffer = bashHelpers
+        paste(true)
+        fx.cursorLineIndex = fx.lines.length - 1
+        fx.cursorColIndex = 0
+        updateCursorXY()
+        ensureCursorInScreen()
+        return
+    }
+
+    fetch(proxyPath + "/mybash?cwd="+encodeURIComponent(fx.bashCWD)+"&cmd="+encodeURIComponent(line), {
+        cache: "no-cache"
+    }).then(r => {
+        return r.text()
+    }).then(r => {
+        copyBuffer = r.split("\n")
+        copyBuffer.unshift("") // leading newline
+        // second to last item is cwd
+        fx.bashCWD = copyBuffer[copyBuffer.length - 2]
+        // let's restyle the pwd after we grab it
+        copyBuffer[copyBuffer.length - 2] = fx.bashCWD
+            .split("/")
+            .reverse()
+            .join(" < ")
+        copyBuffer.push(line) // add the line so it's easy to run again.
+        copyBuffer.push("")
+        fx.cursorColIndex = 0
+        fx.cursorLineIndex += copyBuffer.length
+        fx.cursorLineIndex = fx.lines.length - 1
+        paste(true)
+        fx.cursorLineIndex = fx.lines.length - 1
+        updateCursorXY()
+        ensureCursorInScreen()
+    }).catch(e => {
+        alert("There was an error running the command: " + e)
+    })
+
 }
 
 function trimPrefix(str, prefix) {
-  if (str.startsWith(prefix)) {
-    return str.slice(prefix.length)
-  }
-  return str
+    if (str.startsWith(prefix)) {
+        return str.slice(prefix.length)
+    }
+    return str
 }
 
 // was here
@@ -1147,9 +1147,9 @@ function setSelectionRangeForText(start, end) {
     var adjustedStart = u(start)
     var adjustedEnd
     if (start == end) {
-       adjustedEnd = adjustedStart
+        adjustedEnd = adjustedStart
     } else {
-       adjustedEnd = u(end)
+        adjustedEnd = u(end)
     }
     theText.setSelectionRange(adjustedStart, adjustedEnd)
 }
@@ -1169,24 +1169,24 @@ function unExpandTabIndex(theLine, start) {
     var lastTabPos = -1
     var netSpacesAdded = 0
     while (true) {
-       tabPos = theLine.indexOf("\t", lastTabPos + 1)
-       if (tabPos == -1) {
-          expandedLineLength += theLine.length - (lastTabPos + 1) 
-          break
-       }
-       expandedLineLength += tabPos - (lastTabPos + 1)
-       if (expandedLineLength > start) {
-           break
-       } 
-       var numberOfSpaces = tabStop - (expandedLineLength % tabStop)
-       if ((expandedLineLength + numberOfSpaces) > start) {
-           netSpacesAdded += (start - expandedLineLength)
-           break
-       } 
-       expandedLineLength += numberOfSpaces
-       
-       netSpacesAdded += numberOfSpaces - 1 // subtract 1 because of the actual tab
-       lastTabPos = tabPos
+        tabPos = theLine.indexOf("\t", lastTabPos + 1)
+        if (tabPos == -1) {
+            expandedLineLength += theLine.length - (lastTabPos + 1)
+            break
+        }
+        expandedLineLength += tabPos - (lastTabPos + 1)
+        if (expandedLineLength > start) {
+            break
+        }
+        var numberOfSpaces = tabStop - (expandedLineLength % tabStop)
+        if ((expandedLineLength + numberOfSpaces) > start) {
+            netSpacesAdded += (start - expandedLineLength)
+            break
+        }
+        expandedLineLength += numberOfSpaces
+
+        netSpacesAdded += numberOfSpaces - 1 // subtract 1 because of the actual tab
+        lastTabPos = tabPos
     }
     return start - netSpacesAdded
 }
@@ -1202,17 +1202,17 @@ function expandTabIndex(theLine, start) {
     var lastTabPos = -1
     var netSpacesAdded = 0
     while (true) {
-       tabPos = theLine.indexOf("\t", lastTabPos + 1)
-       if (tabPos == -1) {
-          expandedLineLength += theLine.length - (lastTabPos + 1) 
-          break
-       }
-       expandedLineLength += tabPos - (lastTabPos + 1)
-       var numberOfSpaces = tabStop - (expandedLineLength % tabStop)
-       expandedLineLength += numberOfSpaces
-       
-       netSpacesAdded += numberOfSpaces - 1 // subtract 1 because of the actual tab
-       lastTabPos = tabPos
+        tabPos = theLine.indexOf("\t", lastTabPos + 1)
+        if (tabPos == -1) {
+            expandedLineLength += theLine.length - (lastTabPos + 1)
+            break
+        }
+        expandedLineLength += tabPos - (lastTabPos + 1)
+        var numberOfSpaces = tabStop - (expandedLineLength % tabStop)
+        expandedLineLength += numberOfSpaces
+
+        netSpacesAdded += numberOfSpaces - 1 // subtract 1 because of the actual tab
+        lastTabPos = tabPos
     }
     var adjustedStart = start + netSpacesAdded
     // log({start, adjustedStart, theLine})
@@ -1221,882 +1221,882 @@ function expandTabIndex(theLine, start) {
     return adjustedStart
 }
 function handleFocusAfter() {
-  if (searchText.value) {
-     findDown()
-  } else {
-    if (fx.cursorLineIndex == fx.lines.Length - 1) return
-    fx.cursorLineIndex += 1
-  }
-  setCanvasHeight(canvasHeightKeyboard)
-  ensureCursorInScreen()
-  updateCursorXY()
-  render()
-  theText.focus()
-  //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-  setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+    if (searchText.value) {
+        findDown()
+    } else {
+        if (fx.cursorLineIndex == fx.lines.Length - 1) return
+        fx.cursorLineIndex += 1
+    }
+    setCanvasHeight(canvasHeightKeyboard)
+    ensureCursorInScreen()
+    updateCursorXY()
+    render()
+    theText.focus()
+    //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+    setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
 }
 
 function handleFocusBefore() {
-  // if you have something to search, make it search.
-  if (searchText.value) {
-     findUp()
-  } else {
-    if (fx.cursorLineIndex == 0) return
-    fx.cursorLineIndex -= 1
-  }
-  setCanvasHeight(canvasHeightKeyboard)
-  ensureCursorInScreen()
-  updateCursorXY()
-  render()
-  theText.focus()
-  //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-  setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+    // if you have something to search, make it search.
+    if (searchText.value) {
+        findUp()
+    } else {
+        if (fx.cursorLineIndex == 0) return
+        fx.cursorLineIndex -= 1
+    }
+    setCanvasHeight(canvasHeightKeyboard)
+    ensureCursorInScreen()
+    updateCursorXY()
+    render()
+    theText.focus()
+    //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+    setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
 }
 
 function handleFocusIn() {
-  setCanvasHeight(canvasHeightKeyboard)
-  ensureCursorInScreen()
-  render()
-  //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-  setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+    setCanvasHeight(canvasHeightKeyboard)
+    ensureCursorInScreen()
+    render()
+    //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+    setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
 }
 
 function handleBlur() {
-  //topPadding.style.height = "100px"
-  //window.scrollTo(0, 0)
-  //setTimeout(() => {window.scrollTo(0,100)}, 100) 
-  setCanvasHeight(canvasHeightFull)
-  resetFindWord()
-  render()
-  window.scrollTo(0, lastPageYOffset)
-  
+    //topPadding.style.height = "100px"
+    //window.scrollTo(0, 0)
+    //setTimeout(() => {window.scrollTo(0,100)}, 100)
+    setCanvasHeight(canvasHeightFull)
+    resetFindWord()
+    render()
+    window.scrollTo(0, lastPageYOffset)
+
 }
 
 // pressing the save button disables autosave
 function saveWrapper() {
-  if (fx.fileMode == "bash") {
-     runBashCommand(fx.lines[fx.cursorLineIndex] || "")
-     return
-  }
-  autoSave = false
-  save()
+    if (fx.fileMode == "bash") {
+        runBashCommand(fx.lines[fx.cursorLineIndex] || "")
+        return
+    }
+    autoSave = false
+    save()
 }
 function save() {
     // using a single for loop to
     // simulate a goto
     // breaks will make sure the 'cleanup' step gets called
     for (var s=0; s<1; s++) {
-      if (fx.fileMode != "file") break
-      if (fx.savedVersion == fx.version) {
-        break
-      }
-      fx.savingVersion = fx.version
-      fetch(currentFile.fullPath, {
-        method: "POST",
-        cache: "no-cache",
-        headers: { "Content-Type": "application/x-www-form-urlencoded"},
-        body: "content=" + encodeURIComponent(fx.lines.join("\n"))
-      })
-      .then(r => r.json())
-      .then(v => {
-          if (v.saved) {
-            fx.savedVersion = fx.savingVersion
-            fx.savingVersion = -1
-          }
-          render()
-          renderFileDropdown()
-      })
-      .catch(e => alert(e))
-      render()
+        if (fx.fileMode != "file") break
+        if (fx.savedVersion == fx.version) {
+            break
+        }
+        fx.savingVersion = fx.version
+        fetch(currentFile.fullPath, {
+            method: "POST",
+            cache: "no-cache",
+            headers: { "Content-Type": "application/x-www-form-urlencoded"},
+            body: "content=" + encodeURIComponent(fx.lines.join("\n"))
+        })
+        .then(r => r.json())
+        .then(v => {
+            if (v.saved) {
+                fx.savedVersion = fx.savingVersion
+                fx.savingVersion = -1
+            }
+            render()
+            renderFileDropdown()
+        })
+        .catch(e => alert(e))
+        render()
     }
-    
+
     if (autoSave) {
-      setTimeout(save, saveEveryMS)
+        setTimeout(save, saveEveryMS)
     }
-    
+
     renderFileDropdown()
 }
 if (autoSave) {
-  setTimeout(save, saveEveryMS)
+    setTimeout(save, saveEveryMS)
 }
 function handleKeydown(e) {
-  wasDelete = e.keyCode == 8
-  // 8 means backspace
-  if (e.keyCode == 8 && theText.selectionStart == 0 && fx.cursorLineIndex != 0) {
-    e.preventDefault()
-    var theLine = fx.lines[fx.cursorLineIndex]
+    wasDelete = e.keyCode == 8
+    // 8 means backspace
+    if (e.keyCode == 8 && theText.selectionStart == 0 && fx.cursorLineIndex != 0) {
+        e.preventDefault()
+        var theLine = fx.lines[fx.cursorLineIndex]
 
-    fx.lines.splice(fx.cursorLineIndex, 1)
-    fx.cursorLineIndex -= 1
-    var prevLine = fx.lines[fx.cursorLineIndex]
-    fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex] + theLine
-    fx.cursorColIndex = prevLine.length
-    updateCursorXY()
-    docChanged()
-    render()
-    //theText.setSelectionRange(prevLine.length, prevLine.length)
-    setSelectionRangeForText(prevLine.length, prevLine.length)
-  }
-  return true
+        fx.lines.splice(fx.cursorLineIndex, 1)
+        fx.cursorLineIndex -= 1
+        var prevLine = fx.lines[fx.cursorLineIndex]
+        fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex] + theLine
+        fx.cursorColIndex = prevLine.length
+        updateCursorXY()
+        docChanged()
+        render()
+        //theText.setSelectionRange(prevLine.length, prevLine.length)
+        setSelectionRangeForText(prevLine.length, prevLine.length)
+    }
+    return true
 }
 
 var closingMap = {
-  "[": "]",
-  "(": ")",
-  "{": "}",
-  "<": ">",
-  "'": "'",
-  "`": "`",
-  '"': '"',
+    "[": "]",
+    "(": ")",
+    "{": "}",
+    "<": ">",
+    "'": "'",
+    "`": "`",
+    '"': '"',
 }
 function saveLine() {
-  var lastAction = "type"
-  var lastTyped = theText.value[theText.selectionStart - 1]
-  var secondLastTyped = theText.value[theText.selectionStart - 2] || ""
-  var nextChar = theText.value[theText.selectionStart] || ""
-  // fx.cursorColIndex = theText.selectionStart
-  fx.cursorColIndex = expandTabIndex(theText.value, theText.selectionStart)
-  // Note: handle newline portion too.
-  
-  // doing for to be able to break
-  for (var s=0; s<1; s++) {
-      if (
-        !wasDelete && 
-        lastTyped in closingMap
-      ) {
-        // first some common checks
-        if (lastTyped == "'" && secondLastTyped != " " && secondLastTyped != "" && secondLastTyped != ",") {
-          break  
-        }
-        if (lastTyped == "<" && theText.value.substring(0, theText.selectionStart - 1).trim() != "") {
-          break  
-        }
-        var mainClosers = "({["
-        var mainClosersEnd = ")}]"
-        if (mainClosers.indexOf(lastTyped) != -1 && nextChar != "" && nextChar != " " && mainClosersEnd.indexOf(nextChar) == -1) {
-          break  
-        }
-        theText.value = 
-          theText.value.slice(0, theText.selectionStart) +
-          closingMap[lastTyped] +
-          theText.value.slice(theText.selectionStart)
-          //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-          setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-        // closing line for formatter
-      }
-  }
-  fx.lines[fx.cursorLineIndex] = theText.value
-  cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
-  cursorY = (fx.cursorLineIndex - fx.offsetY) * fontHeight
-  initiateFindWord()
-  docChanged()
+    var lastAction = "type"
+    var lastTyped = theText.value[theText.selectionStart - 1]
+    var secondLastTyped = theText.value[theText.selectionStart - 2] || ""
+    var nextChar = theText.value[theText.selectionStart] || ""
+    // fx.cursorColIndex = theText.selectionStart
+    fx.cursorColIndex = expandTabIndex(theText.value, theText.selectionStart)
+    // Note: handle newline portion too.
 
-  // you need to tell the render to not update the text area
-  // weird bugs will happen without this
-  inEdit = true
-  ensureCursorInScreen()
-  render()
-  inEdit = false
+    // doing for to be able to break
+    for (var s=0; s<1; s++) {
+        if (
+            !wasDelete &&
+            lastTyped in closingMap
+        ) {
+            // first some common checks
+            if (lastTyped == "'" && secondLastTyped != " " && secondLastTyped != "" && secondLastTyped != ",") {
+                break
+            }
+            if (lastTyped == "<" && theText.value.substring(0, theText.selectionStart - 1).trim() != "") {
+                break
+            }
+            var mainClosers = "({["
+            var mainClosersEnd = ")}]"
+            if (mainClosers.indexOf(lastTyped) != -1 && nextChar != "" && nextChar != " " && mainClosersEnd.indexOf(nextChar) == -1) {
+                break
+            }
+            theText.value =
+                theText.value.slice(0, theText.selectionStart) +
+                closingMap[lastTyped] +
+                theText.value.slice(theText.selectionStart)
+                //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+                setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+            // closing line for formatter
+        }
+    }
+    fx.lines[fx.cursorLineIndex] = theText.value
+    cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
+    cursorY = (fx.cursorLineIndex - fx.offsetY) * fontHeight
+    initiateFindWord()
+    docChanged()
+
+    // you need to tell the render to not update the text area
+    // weird bugs will happen without this
+    inEdit = true
+    ensureCursorInScreen()
+    render()
+    inEdit = false
 }
 function bind(v, min, max) {
-  if (v < min) v = min
-  if (v > max) v = max
-  return v
+    if (v < min) v = min
+    if (v > max) v = max
+    return v
 }
 function theCharAt(lines, y, x) {
-  var line = fx.lines[y]
-  if (!line) return ""
-  
-  var theChar = line[x]
-  if (!theChar) return ""
-  return theChar
+    var line = fx.lines[y]
+    if (!line) return ""
+
+    var theChar = line[x]
+    if (!theChar) return ""
+    return theChar
 }
 
 var waitingRender = false
 var lastRender = 0
 var maxFrameRate = 16
 function render() {
-  var timeSinceRender = Date.now() - lastRender
-  if (timeSinceRender < maxFrameRate) {
-    if (!waitingRender) {
-      waitingRender = true
-      setTimeout(function () {
-        waitingRender = false
-        render() 
-      }, maxFrameRate - timeSinceRender) 
+    var timeSinceRender = Date.now() - lastRender
+    if (timeSinceRender < maxFrameRate) {
+        if (!waitingRender) {
+            waitingRender = true
+            setTimeout(function () {
+                waitingRender = false
+                render()
+            }, maxFrameRate - timeSinceRender)
+        }
+        return
     }
-    return    
-  }
-  
-  lastRender = Date.now()
-  var selStart = theText.selectionStart
-  var selEnd = theText.selectionEnd
-  c.width = c.width // one way to clear
 
-  // the selected areas
-  for (var i=0; i<selectedRegions.length;i++) {
-    // todo: normalize region start and stop
-    // todo: draw the cursors after the selected regions
-    var r = selectedRegions[i]
-    t.fillStyle = "magenta"
-    for (var y=r.startY-fx.offsetY; y<=r.stopY-fx.offsetY; y++) {
-      var line = fx.lines[y + fx.offsetY] || ""
-      if (r.startY == r.stopY) {
-        t.fillRect((r.startX-fx.offsetX)*fontWidth, y*fontHeight, (r.stopX-r.startX)*fontWidth, fontHeight)  
-      } else if (y==r.startY-fx.offsetY) {
-        t.fillRect((r.startX-fx.offsetX)*fontWidth, y*fontHeight, (expandTabIndex(line, line.length)-r.startX)*fontWidth, fontHeight)  
-      } else if (y==r.stopY-fx.offsetY) {
-        t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight, r.stopX*fontWidth, fontHeight)  
-      } else {
-        t.fillRect((0-fx.offsetX)*fontWidth  , y*fontHeight, expandTabIndex(line, line.length)*fontWidth, fontHeight) 
-      }
-    } 
-  }
-  
-  // draw line where your cursor is for help with finding
-  t.save()
-  t.fillStyle = "rgba(0, 255, 255, 0.25)"
-  t.fillRect(0, (fx.cursorLineIndex - fx.offsetY) * fontHeight, c.width, fontHeight)
-  t.restore()
+    lastRender = Date.now()
+    var selStart = theText.selectionStart
+    var selEnd = theText.selectionEnd
+    c.width = c.width // one way to clear
 
-  t.font = fontCSS
-  t.textBaseline = "top"
-  var r = selectedRegions[0]
-  // TODO: this element is hitten
-  // consider removing it.
-  s.innerHTML = 
-    lastWord + " " +
-    fx.version + "/" + fx.savedVersion +
-    "/" + fx.savingVersion +
-    " p:" + cursorX + "," + cursorY + 
-    " c:" + fx.cursorColIndex + "," + fx.cursorLineIndex + 
-    " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
-    " " + selectMode
-  
-  if (fx.fileMode == "file")   {
-    if (fx.savingVersion != -1) {
-      saveButton.style.backgroundColor = "gray" 
-      saveButton.innerText = "saving"
-    } else if (fx.version == fx.savedVersion) {
-      saveButton.style.backgroundColor = "" 
-      saveButton.innerText = "saved"
-    } else {
-      saveButton.style.backgroundColor = "red" 
-      saveButton.innerText = "save"
-    }
-  } else if (fx.fileMode == "bash") {
-      saveButton.innerText = "run"
-  }
-  findWordEl.innerHTML = `
-    <pre>
-  wordAtCursor: ${JSON.stringify(getWordAtCursor().word)}
-  findWordCount: ${findWordCount}
-  findWordUpY: ${findWordUpY}
-  findWordUpX: ${findWordUpX}
-  findWordDownY: ${findWordDownY}
-  findWordDownX: ${findWordDownX}
-  findWordY: ${findWordY}
-  findWordX: ${findWordX}
-  findWordEndY: ${findWordEndY}
-  findWordEndX: ${findWordEndX}
-  findWordPrefix: ${findWordPrefix}
-  findWordUpDone: ${findWordUpDone}
-  findWordDownDone: ${findWordDownDone}
-  findWordFoundWord: ${JSON.stringify(findWordFoundWord)}
-  
-  moveListenerCount: ${moveListenerCount}
-  endListenerCount: ${endListenerCount}
-    </pre>
-  `
-  
-  
-  // row highlight
-  t.fillStyle = "rgba(0, 128, 128, 0.5)"
-  t.fillRect(0, yPos, canvasWidth, fontHeight)
-  t.fillStyle = cursorType == "move" ? "cyan" : "yellow"
-  
-  
-  for (var y=0; y < maxLines; y++) {
-    // show the end of the document
-    // if (y + fx.offsetY >= fx.lines.length) {
-    //   t.save()
-    //   t.fillStyle = "#222"
-    //   t.fillRect(0, y*fontHeight, canvasWidth, fontHeight)
-    //   t.restore()
-    // }
-    
-    // highlight search
-    var theLine = fx.lines[y + fx.offsetY] || ""
-    var highlightStartSearch = 0
-    if (theLine) {
-      // max 20 highlights per line
-      for (var _i=0; _i<20; _i++) {
-        var pos = theLine.indexOf(searchText.value, highlightStartSearch)
-        if (pos == -1) {
-          break
+    // the selected areas
+    for (var i=0; i<selectedRegions.length;i++) {
+        // todo: normalize region start and stop
+        // todo: draw the cursors after the selected regions
+        var r = selectedRegions[i]
+        t.fillStyle = "magenta"
+        for (var y=r.startY-fx.offsetY; y<=r.stopY-fx.offsetY; y++) {
+            var line = fx.lines[y + fx.offsetY] || ""
+            if (r.startY == r.stopY) {
+                t.fillRect((r.startX-fx.offsetX)*fontWidth, y*fontHeight, (r.stopX-r.startX)*fontWidth, fontHeight)
+            } else if (y==r.startY-fx.offsetY) {
+                t.fillRect((r.startX-fx.offsetX)*fontWidth, y*fontHeight, (expandTabIndex(line, line.length)-r.startX)*fontWidth, fontHeight)
+            } else if (y==r.stopY-fx.offsetY) {
+                t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight, r.stopX*fontWidth, fontHeight)
+            } else {
+                t.fillRect((0-fx.offsetX)*fontWidth  , y*fontHeight, expandTabIndex(line, line.length)*fontWidth, fontHeight)
+            }
         }
-        highlightStartSearch = pos + searchText.value.length
-        t.save()
-        // lime
-        if (isDark) {
-          t.fillStyle = "blue"
-        } else {
-          t.fillStyle = "yellow"
-        }
-        t.fillRect(
-          (expandTabIndex(theLine, pos) - fx.offsetX) * fontWidth,
-          y * fontHeight,
-          searchText.value.length * fontWidth,
-          fontHeight
-        )
-        t.restore()
-      }
     }
-    
-    // Line numbers
-    
-    if (y + fx.offsetY < fx.lines.length) {
-      var lineNumber = (y+fx.offsetY+1).toString().padStart(4, " ")
-      if (fx.offsetX < -1) {
-        // Line numbers
-        //t.fillStyle = "magenta"
-        //t.fillStyle = "cyan"
-        t.fillStyle = "brown"
-        for (var i=0; i<-fx.offsetX-1; i++) {
-          var lineNumberIndex = fx.offsetX + marginLeft + i
-          t.fillText(lineNumber.charAt(lineNumberIndex), i*fontWidth, y*fontHeight)
-        }
-      }
-    }
-    
-    // the actual text
+
+    // draw line where your cursor is for help with finding
     t.save()
-    if (fx.fileMode == "bash" || fx.fileMode == "file") {
-        if (theLine.startsWith("+")) {
-           t.fillStyle = isDark ? "lime" : "green"
-        } else if (theLine.startsWith("-")){
-           t.fillStyle = "red"
+    t.fillStyle = "rgba(0, 255, 255, 0.25)"
+    t.fillRect(0, (fx.cursorLineIndex - fx.offsetY) * fontHeight, c.width, fontHeight)
+    t.restore()
+
+    t.font = fontCSS
+    t.textBaseline = "top"
+    var r = selectedRegions[0]
+    // TODO: this element is hitten
+    // consider removing it.
+    s.innerHTML =
+        lastWord + " " +
+        fx.version + "/" + fx.savedVersion +
+        "/" + fx.savingVersion +
+        " p:" + cursorX + "," + cursorY +
+        " c:" + fx.cursorColIndex + "," + fx.cursorLineIndex +
+        " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
+        " " + selectMode
+
+    if (fx.fileMode == "file")   {
+        if (fx.savingVersion != -1) {
+            saveButton.style.backgroundColor = "gray"
+            saveButton.innerText = "saving"
+        } else if (fx.version == fx.savedVersion) {
+            saveButton.style.backgroundColor = ""
+            saveButton.innerText = "saved"
+        } else {
+            saveButton.style.backgroundColor = "red"
+            saveButton.innerText = "save"
+        }
+    } else if (fx.fileMode == "bash") {
+        saveButton.innerText = "run"
+    }
+    findWordEl.innerHTML = `
+        <pre>
+    wordAtCursor: ${JSON.stringify(getWordAtCursor().word)}
+    findWordCount: ${findWordCount}
+    findWordUpY: ${findWordUpY}
+    findWordUpX: ${findWordUpX}
+    findWordDownY: ${findWordDownY}
+    findWordDownX: ${findWordDownX}
+    findWordY: ${findWordY}
+    findWordX: ${findWordX}
+    findWordEndY: ${findWordEndY}
+    findWordEndX: ${findWordEndX}
+    findWordPrefix: ${findWordPrefix}
+    findWordUpDone: ${findWordUpDone}
+    findWordDownDone: ${findWordDownDone}
+    findWordFoundWord: ${JSON.stringify(findWordFoundWord)}
+
+    moveListenerCount: ${moveListenerCount}
+    endListenerCount: ${endListenerCount}
+        </pre>
+    `
+
+
+    // row highlight
+    t.fillStyle = "rgba(0, 128, 128, 0.5)"
+    t.fillRect(0, yPos, canvasWidth, fontHeight)
+    t.fillStyle = cursorType == "move" ? "cyan" : "yellow"
+
+
+    for (var y=0; y < maxLines; y++) {
+        // show the end of the document
+        // if (y + fx.offsetY >= fx.lines.length) {
+        //   t.save()
+        //   t.fillStyle = "#222"
+        //   t.fillRect(0, y*fontHeight, canvasWidth, fontHeight)
+        //   t.restore()
+        // }
+
+        // highlight search
+        var theLine = fx.lines[y + fx.offsetY] || ""
+        var highlightStartSearch = 0
+        if (theLine) {
+            // max 20 highlights per line
+            for (var _i=0; _i<20; _i++) {
+                var pos = theLine.indexOf(searchText.value, highlightStartSearch)
+                if (pos == -1) {
+                    break
+                }
+                highlightStartSearch = pos + searchText.value.length
+                t.save()
+                // lime
+                if (isDark) {
+                    t.fillStyle = "blue"
+                } else {
+                    t.fillStyle = "yellow"
+                }
+                t.fillRect(
+                    (expandTabIndex(theLine, pos) - fx.offsetX) * fontWidth,
+                    y * fontHeight,
+                    searchText.value.length * fontWidth,
+                    fontHeight
+                )
+                t.restore()
+            }
+        }
+
+        // Line numbers
+
+        if (y + fx.offsetY < fx.lines.length) {
+            var lineNumber = (y+fx.offsetY+1).toString().padStart(4, " ")
+            if (fx.offsetX < -1) {
+                // Line numbers
+                //t.fillStyle = "magenta"
+                //t.fillStyle = "cyan"
+                t.fillStyle = "brown"
+                for (var i=0; i<-fx.offsetX-1; i++) {
+                    var lineNumberIndex = fx.offsetX + marginLeft + i
+                    t.fillText(lineNumber.charAt(lineNumberIndex), i*fontWidth, y*fontHeight)
+                }
+            }
+        }
+
+        // the actual text
+        t.save()
+        if (fx.fileMode == "bash" || fx.fileMode == "file") {
+            if (theLine.startsWith("+")) {
+                t.fillStyle = isDark ? "lime" : "green"
+            } else if (theLine.startsWith("-")){
+                t.fillStyle = "red"
+            } else {
+                t.fillStyle = fontColor
+            }
         } else {
             t.fillStyle = fontColor
         }
-    } else {
-        t.fillStyle = fontColor
-    }
-    
-    
-    theLine = theLine || ""
-    var expandedLine = ""
-    var tabStop = 4
-    var afterLastTabPos = 0
-    while (true) {
-       tabPos = theLine.indexOf("\t", afterLastTabPos)
-       if (tabPos == -1) {
-          expandedLine += theLine.substr(afterLastTabPos, theLine.length)
-          break
-       }
-       expandedLine += theLine.substring(afterLastTabPos, tabPos)
-       // now add the correct number of spaces, taking into account the tabStop
-       var numberOfSpaces = tabStop - (expandedLine.length % tabStop)
-       expandedLine += "\t".repeat(numberOfSpaces)
-       afterLastTabPos = tabPos + 1
-    }
-    for (var x=0; x < maxCols; x++) {
-      //t.fillText( theCharAt(fx.lines, y+fx.offsetY, x+fx.offsetX), x*fontWidth, y*fontHeight)
-      var chr = expandedLine[x+fx.offsetX] || ""
-      if (chr == "\t") {
-          t.save()
-          t.fillStyle = lightFontColor
-          t.fillText("•", x*fontWidth, y*fontHeight)
-          t.restore()
-      } else {
-          t.fillText(chr, x*fontWidth, y*fontHeight)
-      }
-    }
-    t.restore()
-  }
-  
-  // red ghost cursor
-  t.fillStyle = "rgba(255, 0, 0, 0.5)"
-  t.fillRect(cursorX, cursorY, 6, fontHeight)
-  
-  // cursor
-  t.fillStyle = "cyan"
-  var yPos = (fx.cursorLineIndex - fx.offsetY) * fontHeight
-  var xPos = (fx.cursorColIndex - fx.offsetX) * fontWidth
-  t.fillRect(xPos, yPos, 6, fontHeight)
-  cursorLine = fx.lines[fx.cursorLineIndex] || ""
-  
-  
-  if (!inEdit) {
-    theText.value = cursorLine
-    theTextBefore.value = fx.lines[fx.cursorLineIndex - 1] || ""
-    theTextAfter.value = fx.lines[fx.cursorLineIndex + 1] || ""
-  }
 
-  // set the selection range back to what it was
-  // if it needs to be changed, some functions will change it
-  // after the call to render.
-  // TODO: have a state variable for what it should be.
-  if (document.activeElement == theText) {
-      // this one we don't want to call setSelectionRangeForText
-      // because the arguments are not from cursorColIndex
-      theText.setSelectionRange(selStart, selEnd)
-  }
+
+        theLine = theLine || ""
+        var expandedLine = ""
+        var tabStop = 4
+        var afterLastTabPos = 0
+        while (true) {
+            tabPos = theLine.indexOf("\t", afterLastTabPos)
+            if (tabPos == -1) {
+                expandedLine += theLine.substr(afterLastTabPos, theLine.length)
+                break
+            }
+            expandedLine += theLine.substring(afterLastTabPos, tabPos)
+            // now add the correct number of spaces, taking into account the tabStop
+            var numberOfSpaces = tabStop - (expandedLine.length % tabStop)
+            expandedLine += "\t".repeat(numberOfSpaces)
+            afterLastTabPos = tabPos + 1
+        }
+        for (var x=0; x < maxCols; x++) {
+            //t.fillText( theCharAt(fx.lines, y+fx.offsetY, x+fx.offsetX), x*fontWidth, y*fontHeight)
+            var chr = expandedLine[x+fx.offsetX] || ""
+            if (chr == "\t") {
+                t.save()
+                t.fillStyle = lightFontColor
+                t.fillText("•", x*fontWidth, y*fontHeight)
+                t.restore()
+            } else {
+                t.fillText(chr, x*fontWidth, y*fontHeight)
+            }
+        }
+        t.restore()
+    }
+
+    // red ghost cursor
+    t.fillStyle = "rgba(255, 0, 0, 0.5)"
+    t.fillRect(cursorX, cursorY, 6, fontHeight)
+
+    // cursor
+    t.fillStyle = "cyan"
+    var yPos = (fx.cursorLineIndex - fx.offsetY) * fontHeight
+    var xPos = (fx.cursorColIndex - fx.offsetX) * fontWidth
+    t.fillRect(xPos, yPos, 6, fontHeight)
+    cursorLine = fx.lines[fx.cursorLineIndex] || ""
+
+
+    if (!inEdit) {
+        theText.value = cursorLine
+        theTextBefore.value = fx.lines[fx.cursorLineIndex - 1] || ""
+        theTextAfter.value = fx.lines[fx.cursorLineIndex + 1] || ""
+    }
+
+    // set the selection range back to what it was
+    // if it needs to be changed, some functions will change it
+    // after the call to render.
+    // TODO: have a state variable for what it should be.
+    if (document.activeElement == theText) {
+        // this one we don't want to call setSelectionRangeForText
+        // because the arguments are not from cursorColIndex
+        theText.setSelectionRange(selStart, selEnd)
+    }
 }
 
 function ensureSign(sign, v) {
-  if (sign < 0 && v > 0) return -v
-  if (sign > 0 && v < 0) return -v
-  return v
+    if (sign < 0 && v > 0) return -v
+    if (sign > 0 && v < 0) return -v
+    return v
 }
 
 // todo: use min, max in some places where you used bind
 function min(a, b) {
-  return a < b ? a : b
+    return a < b ? a : b
 }
 
 function max(a, b) {
-  return a > b ? a : b
+    return a > b ? a : b
 }
 
 function onStart(e) {
-  e.preventDefault()
-  // this handles all the touch interactions
-  // first define the closuure functions
-  
-  // this is global
-  if (e.touches.length == 1) {
-    selectAction = function() {
-      // return early in case we are already selecting
-      if (cursorType == "select") {
-        return
-      }
-      selectedRegions = []
-      cursorType = "select"
-      var line = fx.lines[fx.cursorLineIndex] || ""
-      selectedRegion.startX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
-      selectedRegion.startY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
-      // Note how the stopY is inclusive
-      // But the stopX is exclusive.
-      // for some reason seemed natural to do it like that
-      // was here
-      selectedRegion.stopX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
-      selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length - 1)
-      if (fx.cursorColIndex < 0) {
-        selectedRegion.stopped = true
-        selectMode = "line"
-        selectedRegion.stopX = expandTabIndex(line, line.length)
-      } else {
-        selectMode = "char"
-      }
-      selectedRegions.push(selectedRegion)
-      render()
-    }
-  }
-  var onMove = function(e) {
-    lastAction = "move"
-    acWord = null
-    clearTimeout(selectTimeout)
-    if (e.touches.length > 1) {
-      return
-    }
-    if (cursorType != "select") {
-      selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
-    }
-    var diffTouchX = e.touches[0].pageX - startTouchX
-    var diffTouchY = e.touches[0].pageY - startTouchY
-    //cursorX = bind(startX + diffTouchX*touchScale, 0, canvasWidth)
-    //cursorY = bind(startY + diffTouchY*touchScale, 0, canvasHeight)
-    
-    moved = true
-    if (diffTouchX > 10 || diffTouchY > 10) {
-      movedWithBuffer = true
-    }
-    var diffLastTouchX = e.touches[0].pageX - lastTouchX
-    var diffLastTouchY = e.touches[0].pageY - lastTouchY
-    var signX = diffLastTouchX < 0 ? -1: 1
-    var signY = diffLastTouchY < 0 ? -1 : 1
-    thePow = firstMove ? 1 : 2
-    cursorX = cursorX + ensureSign(signX, Math.round(Math.pow(diffLastTouchX, thePow)*touchScale))
-    cursorY = cursorY + ensureSign(signY, Math.round(Math.pow(diffLastTouchY, thePow)*touchScale))
-    lastTouchX = e.touches[0].pageX
-    lastTouchY = e.touches[0].pageY
+    e.preventDefault()
+    // this handles all the touch interactions
+    // first define the closuure functions
 
-    var changedY = false
-    //var maxHeight = canvasHeight
-    var maxHeight = (maxLines -1 ) * fontHeight
-    if (cursorY > maxHeight) {
-      var extendY = cursorY - maxHeight
-      cursorY = maxHeight
-      fx.offsetY += Math.ceil(extendY/fontHeight)
-      if (fx.offsetY > fx.lines.length - 10) fx.offsetY = fx.lines.length - 10
-      changedY = true
-    } else if (cursorY < 0) {
-      var extendY = cursorY
-      cursorY = 0
-      fx.offsetY += Math.floor(extendY/fontHeight)
-      changedY = true
-      if (fx.offsetY < 0) fx.offsetY = 0
-    }
-    
-    var maxWidth = (maxCols -1) * fontWidth
-    //var maxWidth = canvasWidth
-    if (cursorX > maxWidth) {
-      var extendX = cursorX - maxWidth
-      cursorX = maxWidth
-      // if (!changedY) fx.offsetX += Math.round(extendX/fontWidth)
-      if (!changedY) fx.offsetX += Math.ceil(extendX/fontWidth)
-    } else if (cursorX < 0) {
-      var extendX = cursorX
-      cursorX = 0
-      // if (!changedY) fx.offsetX += Math.round(extendX/fontWidth)
-      if (!changedY) fx.offsetX += Math.floor(extendX/fontWidth)
-      if (fx.offsetX < -marginLeft) fx.offsetX = -marginLeft
-    }
-    fx.cursorLineIndex = Math.round(cursorY/fontHeight) + fx.offsetY
-    fx.cursorColIndex = Math.round(cursorX/fontWidth) + fx.offsetX
-    firstMove = false
-    if (cursorType == "select") {
-      var line = fx.lines[fx.cursorLineIndex] || ""
-      selectedRegion.stopX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
-      selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
-      selectedRegion.stopped = true
-      if (fx.cursorColIndex < 0) {
-        var _line = fx.lines[fx.cursorLineIndex] || ""
-        selectedRegion.stopX = expandTabIndex(_line, _line.length)
-      }
-
-    }
-    render()
-    if (document.activeElement==theText) {
-      //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-      setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-    }
-    return false
-  }
-  var onEnd = function(e) {
-    clearTimeout(selectTimeout)
-    if (e.touches.length != 0) {
-      return
-    }
-    document.body.removeEventListener("touchmove", onMove)
-    moveListenerCount = max(moveListenerCount-1, 0)
-    document.body.removeEventListener("touchend", onEnd)
-    endListenerCount = max(endListenerCount-1, 0)
-    
-    // it's not straightforward to do a setTimeout
-    // here because iOS Safari doesn't like to focus
-    // text elements when not responding to user action
-    // maybe there are workarounds.
-    if (!moved && cursorType == "move") {
-      if (fx.fileMode == "directory") {
-        var prefix = currentFile.fullPath
-        // To prevent leading double slash
-        if (prefix == "/") {
-          prefix = ""
-        }
-        var addPath = fx.lines[fx.cursorLineIndex]
-        if (addPath == "..") {
-            var parts = prefix.split("/")
-            if (parts.length > 0) {
-               parts = parts.slice(0, parts.length - 1)
+    // this is global
+    if (e.touches.length == 1) {
+        selectAction = function() {
+            // return early in case we are already selecting
+            if (cursorType == "select") {
+                return
             }
-            var newFullPath = parts.join("/") 
-        } else {
-            var newFullPath = prefix + "/" + addPath
-        }
-        var closeCurrentIfDir = true
-        addFile(newFullPath, true, closeCurrentIfDir)
-        return
-      }
-      
-      if (fx.fileMode == "fileList") {
-          // TODO: make it so if they select a certain directory
-          // portion that it will add that directory portion
-          // as a new pane (aka file)
-          
-          var line = fx.lines[fx.cursorLineIndex]
-          // since these fx.lines are > delimited
-          // we can figure out what section was tapped
-          var reversePathIndex = 0
-          for (var lineI = 0; lineI < fx.cursorColIndex; lineI++) {
-             var ch = line[lineI]
-             if (ch == "<") {
-                 reversePathIndex += 1  
-             }
-          }
-          if (reversePathIndex == 0) {
-              // put it at the beginning.
-              var file = files[fx.cursorLineIndex]
-              files.splice(fx.cursorLineIndex, 1)
-              files.unshift(file)
-              setCurrentFile(file)
-              return
-          }
-          var parts = files[fx.cursorLineIndex].fullPath.split("/")
-          parts = parts.slice(0, parts.length - reversePathIndex)
-          addFile(parts.join("/"), true, false, false)
-          return
-      }
-      
-      if (fx.cursorColIndex == -5) {
-        // since we are in the margin, let's force it
-        // to paste line-style.
-        selectMode = "line"
-        paste()
-        return
-      }
-      if (fx.cursorColIndex == -4) {
-        del()
-        return
-      }
-      if (fx.cursorColIndex == -3) {
-        copy()
-        return
-      }
-      if (fx.cursorColIndex == -2) {
-        copy()
-        paste()
-        return
-      }
-      if (fx.cursorColIndex == -1) {
-        insertLine()
-        return
-      }
-      
-      if (document.activeElement == theText) {
-        //toggleWord()
-        acWordToggle()
-      } else {
-        initiateFindWord()
-      }
-      
-      if (document.activeElement != theText) {
-        if (fx.cursorLineIndex >= fx.lines.length) {
-            fx.cursorLineIndex = fx.lines.length - 1
-            updateCursorXY()
+            selectedRegions = []
+            cursorType = "select"
+            var line = fx.lines[fx.cursorLineIndex] || ""
+            selectedRegion.startX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
+            selectedRegion.startY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
+            // Note how the stopY is inclusive
+            // But the stopX is exclusive.
+            // for some reason seemed natural to do it like that
+            // was here
+            selectedRegion.stopX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
+            selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length - 1)
+            if (fx.cursorColIndex < 0) {
+                selectedRegion.stopped = true
+                selectMode = "line"
+                selectedRegion.stopX = expandTabIndex(line, line.length)
+            } else {
+                selectMode = "char"
+            }
+            selectedRegions.push(selectedRegion)
             render()
         }
-        // the handleFocusIn function will do some
-        // processing
-        theText.focus()
-      }  
     }
-    if (moved) {
-      initiateFindWord()
-    }
-     
-    cursorType = "move"
-    if (!selectedRegion.stopped) {// this only matters if it is selected I think
-      // TODO: what is this feature?
-      // for selecting a word?
-      var w = getWordAtCursor()
-      if (w.word != "") {
-        selectedRegion.startY = fx.cursorLineIndex
-        selectedRegion.startX = w.start
-        selectedRegion.stopY = fx.cursorLineIndex
-        selectedRegion.stopX = w.end
-      } else {
-        selectedRegions = []
-      }
-    }
-    render()
-  } 
+    var onMove = function(e) {
+        lastAction = "move"
+        acWord = null
+        clearTimeout(selectTimeout)
+        if (e.touches.length > 1) {
+            return
+        }
+        if (cursorType != "select") {
+            selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
+        }
+        var diffTouchX = e.touches[0].pageX - startTouchX
+        var diffTouchY = e.touches[0].pageY - startTouchY
+        //cursorX = bind(startX + diffTouchX*touchScale, 0, canvasWidth)
+        //cursorY = bind(startY + diffTouchY*touchScale, 0, canvasHeight)
 
-  var onMoveWhileSelected = function(e) {
-    moved = true
-    var diffStartTouchX = e.touches[0].pageX - startTouchX
-    var diffStartTouchY = e.touches[0].pageY - startTouchY
-    lastTouchX = e.touches[0].pageX
-    lastTouchY = e.touches[0].pageY
-    if (Math.abs(diffStartTouchX) < 5 && Math.abs(diffStartTouchY) < 5) {
-      return
+        moved = true
+        if (diffTouchX > 10 || diffTouchY > 10) {
+            movedWithBuffer = true
+        }
+        var diffLastTouchX = e.touches[0].pageX - lastTouchX
+        var diffLastTouchY = e.touches[0].pageY - lastTouchY
+        var signX = diffLastTouchX < 0 ? -1: 1
+        var signY = diffLastTouchY < 0 ? -1 : 1
+        thePow = firstMove ? 1 : 2
+        cursorX = cursorX + ensureSign(signX, Math.round(Math.pow(diffLastTouchX, thePow)*touchScale))
+        cursorY = cursorY + ensureSign(signY, Math.round(Math.pow(diffLastTouchY, thePow)*touchScale))
+        lastTouchX = e.touches[0].pageX
+        lastTouchY = e.touches[0].pageY
+
+        var changedY = false
+        //var maxHeight = canvasHeight
+        var maxHeight = (maxLines -1 ) * fontHeight
+        if (cursorY > maxHeight) {
+            var extendY = cursorY - maxHeight
+            cursorY = maxHeight
+            fx.offsetY += Math.ceil(extendY/fontHeight)
+            if (fx.offsetY > fx.lines.length - 10) fx.offsetY = fx.lines.length - 10
+            changedY = true
+        } else if (cursorY < 0) {
+            var extendY = cursorY
+            cursorY = 0
+            fx.offsetY += Math.floor(extendY/fontHeight)
+            changedY = true
+            if (fx.offsetY < 0) fx.offsetY = 0
+        }
+
+        var maxWidth = (maxCols -1) * fontWidth
+        //var maxWidth = canvasWidth
+        if (cursorX > maxWidth) {
+            var extendX = cursorX - maxWidth
+            cursorX = maxWidth
+            // if (!changedY) fx.offsetX += Math.round(extendX/fontWidth)
+            if (!changedY) fx.offsetX += Math.ceil(extendX/fontWidth)
+        } else if (cursorX < 0) {
+            var extendX = cursorX
+            cursorX = 0
+            // if (!changedY) fx.offsetX += Math.round(extendX/fontWidth)
+            if (!changedY) fx.offsetX += Math.floor(extendX/fontWidth)
+            if (fx.offsetX < -marginLeft) fx.offsetX = -marginLeft
+        }
+        fx.cursorLineIndex = Math.round(cursorY/fontHeight) + fx.offsetY
+        fx.cursorColIndex = Math.round(cursorX/fontWidth) + fx.offsetX
+        firstMove = false
+        if (cursorType == "select") {
+            var line = fx.lines[fx.cursorLineIndex] || ""
+            selectedRegion.stopX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
+            selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
+            selectedRegion.stopped = true
+            if (fx.cursorColIndex < 0) {
+                var _line = fx.lines[fx.cursorLineIndex] || ""
+                selectedRegion.stopX = expandTabIndex(_line, _line.length)
+            }
+
+        }
+        render()
+        if (document.activeElement==theText) {
+            //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+            setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+        }
+        return false
     }
-    if (Math.abs(diffStartTouchX) > Math.abs(diffStartTouchY)) {
-      if (diffStartTouchX < 0) {
-        dedent()
-      } else {
-        indent()
-      } 
+    var onEnd = function(e) {
+        clearTimeout(selectTimeout)
+        if (e.touches.length != 0) {
+            return
+        }
+        document.body.removeEventListener("touchmove", onMove)
+        moveListenerCount = max(moveListenerCount-1, 0)
+        document.body.removeEventListener("touchend", onEnd)
+        endListenerCount = max(endListenerCount-1, 0)
+
+        // it's not straightforward to do a setTimeout
+        // here because iOS Safari doesn't like to focus
+        // text elements when not responding to user action
+        // maybe there are workarounds.
+        if (!moved && cursorType == "move") {
+            if (fx.fileMode == "directory") {
+                var prefix = currentFile.fullPath
+                // To prevent leading double slash
+                if (prefix == "/") {
+                    prefix = ""
+                }
+                var addPath = fx.lines[fx.cursorLineIndex]
+                if (addPath == "..") {
+                    var parts = prefix.split("/")
+                    if (parts.length > 0) {
+                        parts = parts.slice(0, parts.length - 1)
+                    }
+                    var newFullPath = parts.join("/")
+                } else {
+                    var newFullPath = prefix + "/" + addPath
+                }
+                var closeCurrentIfDir = true
+                addFile(newFullPath, true, closeCurrentIfDir)
+                return
+            }
+
+            if (fx.fileMode == "fileList") {
+                // TODO: make it so if they select a certain directory
+                // portion that it will add that directory portion
+                // as a new pane (aka file)
+
+                var line = fx.lines[fx.cursorLineIndex]
+                // since these fx.lines are > delimited
+                // we can figure out what section was tapped
+                var reversePathIndex = 0
+                for (var lineI = 0; lineI < fx.cursorColIndex; lineI++) {
+                    var ch = line[lineI]
+                    if (ch == "<") {
+                        reversePathIndex += 1
+                    }
+                }
+                if (reversePathIndex == 0) {
+                    // put it at the beginning.
+                    var file = files[fx.cursorLineIndex]
+                    files.splice(fx.cursorLineIndex, 1)
+                    files.unshift(file)
+                    setCurrentFile(file)
+                    return
+                }
+                var parts = files[fx.cursorLineIndex].fullPath.split("/")
+                parts = parts.slice(0, parts.length - reversePathIndex)
+                addFile(parts.join("/"), true, false, false)
+                return
+            }
+
+            if (fx.cursorColIndex == -5) {
+                // since we are in the margin, let's force it
+                // to paste line-style.
+                selectMode = "line"
+                paste()
+                return
+            }
+            if (fx.cursorColIndex == -4) {
+                del()
+                return
+            }
+            if (fx.cursorColIndex == -3) {
+                copy()
+                return
+            }
+            if (fx.cursorColIndex == -2) {
+                copy()
+                paste()
+                return
+            }
+            if (fx.cursorColIndex == -1) {
+                insertLine()
+                return
+            }
+
+            if (document.activeElement == theText) {
+                //toggleWord()
+                acWordToggle()
+            } else {
+                initiateFindWord()
+            }
+
+            if (document.activeElement != theText) {
+                if (fx.cursorLineIndex >= fx.lines.length) {
+                    fx.cursorLineIndex = fx.lines.length - 1
+                    updateCursorXY()
+                    render()
+                }
+                // the handleFocusIn function will do some
+                // processing
+                theText.focus()
+            }
+        }
+        if (moved) {
+            initiateFindWord()
+        }
+
+        cursorType = "move"
+        if (!selectedRegion.stopped) {// this only matters if it is selected I think
+            // TODO: what is this feature?
+            // for selecting a word?
+            var w = getWordAtCursor()
+            if (w.word != "") {
+                selectedRegion.startY = fx.cursorLineIndex
+                selectedRegion.startX = w.start
+                selectedRegion.stopY = fx.cursorLineIndex
+                selectedRegion.stopX = w.end
+            } else {
+                selectedRegions = []
+            }
+        }
+        render()
+    }
+
+    var onMoveWhileSelected = function(e) {
+        moved = true
+        var diffStartTouchX = e.touches[0].pageX - startTouchX
+        var diffStartTouchY = e.touches[0].pageY - startTouchY
+        lastTouchX = e.touches[0].pageX
+        lastTouchY = e.touches[0].pageY
+        if (Math.abs(diffStartTouchX) < 5 && Math.abs(diffStartTouchY) < 5) {
+            return
+        }
+        if (Math.abs(diffStartTouchX) > Math.abs(diffStartTouchY)) {
+            if (diffStartTouchX < 0) {
+                dedent()
+            } else {
+                indent()
+            }
+        } else {
+            if (diffStartTouchY < 0) {
+                del()
+            } else {
+                copy()
+            }
+        }
+        // stop handling it once it's handled
+        document.body.removeEventListener("touchmove", onMoveWhileSelected)
+        moveListenerCount = max(moveListenerCount-1, 0)
+    }
+    var onEndWhileSelected = function(e) {
+        if (!moved && selectedRegions.length) {
+            selectedRegions = []
+        }
+        document.body.removeEventListener("touchmove", onMoveWhileSelected)
+        moveListenerCount = max(moveListenerCount-1, 0)
+        document.body.removeEventListener("touchend", onEndWhileSelected)
+        endListenerCount = max(endListenerCount-1, 0)
+        render()
+    }
+
+    var startTouchX = e.touches[0].pageX
+    var startTouchY = e.touches[0].pageY
+    var startX = cursorX
+    var startY = cursorY
+    var lastTouchX = startTouchX
+    var lastTouchY = startTouchY
+    var lastTime = Date.now()
+    var firstMove = true
+    var moved = false
+    var movedWithBuffer = false
+    var selectedRegion = {}
+
+    // scroll right and left and move cursor right and left
+    if (startTouchX > ((canvasWidth/3) - 40)) {
+        if (document.activeElement == theText) {
+            fx.cursorColIndex += 1
+            //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+            setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+            initiateFindWord()
+            ensureCursorInScreen()
+        } else {
+            var origOffsetX = fx.offsetX
+            // scroll by tabstop?
+            if (fx.offsetX < 0) {
+                fx.offsetX = 0
+            }  else {
+                var tabStop = 4
+                fx.offsetX = Math.ceil((fx.offsetX + 1) / tabStop) * tabStop
+            }
+            //fx.offsetX += Math.floor(maxCols/2)
+            fx.cursorColIndex += fx.offsetX - origOffsetX
+        }
+        updateCursorXY()
+        render()
+        return
+    }
+    if (startTouchX < 40) {
+        if (document.activeElement == theText) {
+            fx.cursorColIndex -= 1
+            //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+            setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+            initiateFindWord()
+            ensureCursorInScreen()
+        } else {
+            var origOffsetX = fx.offsetX
+            //fx.offsetX -= Math.floor(maxCols/2)
+            if (fx.offsetX <= 0){
+                fx.offsetX = -5
+            }  else {
+                var tabStop = 4
+                fx.offsetX = Math.floor((fx.offsetX-1) / tabStop) * tabStop
+            }
+            fx.cursorColIndex += fx.offsetX - origOffsetX
+        }
+        if (fx.cursorColIndex < -5){
+            fx.cursorColIndex = -5
+        }
+        updateCursorXY()
+        render()
+        return
+    }
+
+
+    if (selectedRegions.length) {
+        // idea: if 2 touches while selected
+        // do something else like comment
+        document.body.addEventListener("touchmove", onMoveWhileSelected)
+        moveListenerCount += 1
+        document.body.addEventListener("touchend", onEndWhileSelected)
+        endListenerCount += 1
     } else {
-      if (diffStartTouchY < 0) {
-        del()
-      } else {
-        copy()
-      }
+        if (e.touches.length > 1 && cursorType != "select") {
+            // this selectAction is the one from the first touch
+            // select action will not get set on the second touch
+            selectAction()
+            return
+        }
+        selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
+        document.body.addEventListener("touchmove", onMove)
+        moveListenerCount += 1
+        document.body.addEventListener("touchend", onEnd)
+        endListenerCount += 1
     }
-    // stop handling it once it's handled
-    document.body.removeEventListener("touchmove", onMoveWhileSelected)
-    moveListenerCount = max(moveListenerCount-1, 0)
-  }
-  var onEndWhileSelected = function(e) {
-    if (!moved && selectedRegions.length) {
-       selectedRegions = []
-    }
-    document.body.removeEventListener("touchmove", onMoveWhileSelected)
-    moveListenerCount = max(moveListenerCount-1, 0)
-    document.body.removeEventListener("touchend", onEndWhileSelected)
-    endListenerCount = max(endListenerCount-1, 0)
     render()
-  }
-
-  var startTouchX = e.touches[0].pageX
-  var startTouchY = e.touches[0].pageY
-  var startX = cursorX
-  var startY = cursorY
-  var lastTouchX = startTouchX
-  var lastTouchY = startTouchY
-  var lastTime = Date.now()
-  var firstMove = true
-  var moved = false
-  var movedWithBuffer = false
-  var selectedRegion = {}
-  
-  // scroll right and left and move cursor right and left
-  if (startTouchX > ((canvasWidth/3) - 40)) {
-     if (document.activeElement == theText) {
-         fx.cursorColIndex += 1
-         //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-         setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-         initiateFindWord()
-         ensureCursorInScreen()
-     } else {
-         var origOffsetX = fx.offsetX
-         // scroll by tabstop?
-         if (fx.offsetX < 0) {
-             fx.offsetX = 0
-         }  else {
-             var tabStop = 4
-             fx.offsetX = Math.ceil((fx.offsetX + 1) / tabStop) * tabStop
-         }
-         //fx.offsetX += Math.floor(maxCols/2)
-         fx.cursorColIndex += fx.offsetX - origOffsetX
-     }
-     updateCursorXY()
-     render()
-     return
-  }
-  if (startTouchX < 40) {
-     if (document.activeElement == theText) {
-         fx.cursorColIndex -= 1    
-         //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-         setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-         initiateFindWord()
-         ensureCursorInScreen()
-     } else {
-         var origOffsetX = fx.offsetX
-         //fx.offsetX -= Math.floor(maxCols/2)
-         if (fx.offsetX <= 0){
-            fx.offsetX = -5
-         }  else {
-             var tabStop = 4
-             fx.offsetX = Math.floor((fx.offsetX-1) / tabStop) * tabStop
-         }
-         fx.cursorColIndex += fx.offsetX - origOffsetX
-     }
-     if (fx.cursorColIndex < -5){
-        fx.cursorColIndex = -5
-     }
-     updateCursorXY()
-     render()
-     return
-  }
-  
-
-  if (selectedRegions.length) {
-    // idea: if 2 touches while selected
-    // do something else like comment
-    document.body.addEventListener("touchmove", onMoveWhileSelected)
-    moveListenerCount += 1
-    document.body.addEventListener("touchend", onEndWhileSelected)
-    endListenerCount += 1
-  } else {
-    if (e.touches.length > 1 && cursorType != "select") {
-      // this selectAction is the one from the first touch
-      // select action will not get set on the second touch
-      selectAction()
-      return
-    }
-    selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
-    document.body.addEventListener("touchmove", onMove)
-    moveListenerCount += 1
-    document.body.addEventListener("touchend", onEnd)
-    endListenerCount += 1
-  }  
-  render()
 }
 
 // NEW FIND WORD
 var acWord = null
 function acWordToggle() {
-   if (acWord == null) {
-       var w
-       if (lastAction == "move") {
-           w = getWordAtCursor()   
-       } else {
-           w = getWordBeforeCursor()
-       }
-       
-       acWord = {
-           startY: fx.cursorLineIndex,
-           endY: fx.cursorLineIndex,
-       }
-       if (lastAction == "type") {
-          acWord.prefix = w.word
-          acWord.startX = fx.cursorColIndex
-          acWord.endX = fx.cursorColIndex
-       } else {
-          acWord.startX = w.start
-          acWord.endX = w.end
-       }
-       acWord.findUpY = fx.cursorLineIndex
-       acWord.findDownY = acWord.findUpY + 1
-       // because we move the current file to the front
-       // this will be true
-       acWord.fileIndex = 0
-       acWord.findUpX = 0
-       acWord.findDownX = 0
-       acWord.findDirection = 1 // 0: up, 1: down
-       acWord.toggleCount = 0
-       acWord.pastedLastTyped = false
-       acWord.pastedInLine = false
-       acWord.findUpDone = false
-       acWord.findDownDone = false
-   }
-   // single for loop so we can break
-   for (var s=0; s<1; s++) {
-       if (acWord.prefix) {
-         // just autocomplete
-         acWord.findDirection = !acWord.findDirection
-         var found = null
-         
-         while (true) {
-             if (acWord.findUpDone && acWord.findDownDone) {
-                 return   
-             }
-             if (acWord.findDirection) {
-                 found = acFindUp()
-             } else {
-                 found = acFindDown()
-             }
-             return w
-         }
-         break        
-       }
-       
-       
-          
-   }
-   acWord.toggleCount += 1     
+    if (acWord == null) {
+        var w
+        if (lastAction == "move") {
+            w = getWordAtCursor()
+        } else {
+            w = getWordBeforeCursor()
+        }
+
+        acWord = {
+            startY: fx.cursorLineIndex,
+            endY: fx.cursorLineIndex,
+        }
+        if (lastAction == "type") {
+            acWord.prefix = w.word
+            acWord.startX = fx.cursorColIndex
+            acWord.endX = fx.cursorColIndex
+        } else {
+            acWord.startX = w.start
+            acWord.endX = w.end
+        }
+        acWord.findUpY = fx.cursorLineIndex
+        acWord.findDownY = acWord.findUpY + 1
+        // because we move the current file to the front
+        // this will be true
+        acWord.fileIndex = 0
+        acWord.findUpX = 0
+        acWord.findDownX = 0
+        acWord.findDirection = 1 // 0: up, 1: down
+        acWord.toggleCount = 0
+        acWord.pastedLastTyped = false
+        acWord.pastedInLine = false
+        acWord.findUpDone = false
+        acWord.findDownDone = false
+    }
+    // single for loop so we can break
+    for (var s=0; s<1; s++) {
+        if (acWord.prefix) {
+            // just autocomplete
+            acWord.findDirection = !acWord.findDirection
+            var found = null
+
+            while (true) {
+                if (acWord.findUpDone && acWord.findDownDone) {
+                    return
+                }
+                if (acWord.findDirection) {
+                    found = acFindUp()
+                } else {
+                    found = acFindDown()
+                }
+                return w
+            }
+            break
+        }
+
+
+
+    }
+    acWord.toggleCount += 1
 }
 
 function acFindUp() {
-   if (acWord.findUpY < 0) {
-   
-      return
-   }
-   var theLine = fx.lines[acWord.findUpY]
-   var pos = theLine.indexOf(acWord.prefix, acWord.findUpX) 
+    if (acWord.findUpY < 0) {
+
+        return
+    }
+    var theLine = fx.lines[acWord.findUpY]
+    var pos = theLine.indexOf(acWord.prefix, acWord.findUpX)
 }
 // END NEW FIND WORD
 /*
@@ -2107,7 +2107,7 @@ or less indented
 function doFormat() {
     fx.lines = simpleFormat(fx.lines)
     docChanged()
-    render()   
+    render()
 }
 function simpleFormat(lines) {
     var newLines = []
@@ -2116,14 +2116,14 @@ function simpleFormat(lines) {
     for (var i=0; i<lines.length; i++) {
         var line = lines[i]
         if (line.trim() == "") {
-           newLines.push("")
-           continue
+            newLines.push("")
+            continue
         }
         var spaceCount = getSpaceCount(line)
         if (spaceCount > lastSpaceCount) {
-           currentIndent += 1
+            currentIndent += 1
         } else if (spaceCount < lastSpaceCount) {
-           currentIndent -= 1
+            currentIndent -= 1
         }
         if (currentIndent < 0) {
             currentIndent = 0
@@ -2132,44 +2132,44 @@ function simpleFormat(lines) {
             " ".repeat(4 * currentIndent) +
             line.trim()
         )
-        
-        lastSpaceCount = spaceCount  
+
+        lastSpaceCount = spaceCount
     }
     return newLines
 }
 
 function getSpaceCount(line) {
-   spaceCount = 0
-   for (var i=0; i<line.length; i++) {
-       var chr = line[i]
-       if (chr == " ") {
-           spaceCount += 1 
-       } else if (chr == "\t") {
-           spaceCount += 4
-       } else {
-          break
-       } 
-   }
-   return spaceCount
+    spaceCount = 0
+    for (var i=0; i<line.length; i++) {
+        var chr = line[i]
+        if (chr == " ") {
+            spaceCount += 1
+        } else if (chr == "\t") {
+            spaceCount += 4
+        } else {
+            break
+        }
+    }
+    return spaceCount
 }
 
 
 // FINDWORD
 function resetFindWord() {
-  findWordCount = 0
-  findWordUpY = 0
-  findWordUpX = 0
-  findWordDownY = 0
-  findWordDownX = 0
-  findWordY = -1
-  findWordX = -1
-  findWordPrefix = ""
-  findWordEndY = -1
-  findWordEndX = -1
-  findWordUpDone = false
-  findWordDownDone = false
-  findWordFoundWord = ""
-  findWordSpecialLine = ""
+    findWordCount = 0
+    findWordUpY = 0
+    findWordUpX = 0
+    findWordDownY = 0
+    findWordDownX = 0
+    findWordY = -1
+    findWordX = -1
+    findWordPrefix = ""
+    findWordEndY = -1
+    findWordEndX = -1
+    findWordUpDone = false
+    findWordDownDone = false
+    findWordFoundWord = ""
+    findWordSpecialLine = ""
 }
 
 var findWordCount = 0
@@ -2192,62 +2192,62 @@ var findWordSpecialLine = ""
 // It's a little strange because when they return early
 // we still want to remember the loop variables (which are globale
 function findWordUp() {
-  var w = {start: -1, end: -1, word: ""}
-  if (findWordUpDone) {
-    return w
-  }
-  for (findWordUpY=findWordUpY; findWordUpY>=0; findWordUpY--) {
-    var line = fx.lines[findWordUpY]
-    // so word being changed doesn't affect cursor
-    if (findWordY == findWordUpY) {
-      line = findWordSpecialLine
-    }
-    if (findWordUpX < 0) {
-      findWordUpX = line.length
-    }
-    for (findWordUpX; findWordUpX>=0; findWordUpX--) {
-      w = getWordAt(line, findWordUpX)
-      if (w.word != "") {
-        findWordUpX = w.start - 1
-      }
-      if (w.word != "" && w.word != findWordFoundWord &&
-           (findWordPrefix == "" || (w.word != findWordPrefix && w.word.startsWith(findWordPrefix)))) {
-        if (findWordUpX < 0) {
-          findWordUpY -= 1
-        }
+    var w = {start: -1, end: -1, word: ""}
+    if (findWordUpDone) {
         return w
-      }
     }
-  }
-  findWordUpDone = true 
-  return {start: -1, end: -1, word: ""}
+    for (findWordUpY=findWordUpY; findWordUpY>=0; findWordUpY--) {
+        var line = fx.lines[findWordUpY]
+        // so word being changed doesn't affect cursor
+        if (findWordY == findWordUpY) {
+            line = findWordSpecialLine
+        }
+        if (findWordUpX < 0) {
+            findWordUpX = line.length
+        }
+        for (findWordUpX; findWordUpX>=0; findWordUpX--) {
+            w = getWordAt(line, findWordUpX)
+            if (w.word != "") {
+                findWordUpX = w.start - 1
+            }
+            if (w.word != "" && w.word != findWordFoundWord &&
+                (findWordPrefix == "" || (w.word != findWordPrefix && w.word.startsWith(findWordPrefix)))) {
+            if (findWordUpX < 0) {
+                findWordUpY -= 1
+            }
+            return w
+        }
+    }
+}
+findWordUpDone = true
+return {start: -1, end: -1, word: ""}
 }
 
 function findWordDown() {
-  var w = {start: -1, end: -1, word: ""}
-  if (findWordDownDone) {
-    return w
-  }
-  for (findWordDownY; findWordDownY<fx.lines.length; findWordDownY++) {
-    var line = fx.lines[findWordDownY]
-    for (findWordDownX; findWordDownX < line.length; findWordDownX++) {
-      w = getWordAt(line, findWordDownX)
-      if (w.word != "") {
-        findWordDownX = w.end + 1
-      }
-      if (w.word != "" && w.word != findWordFoundWord &&
-           (findWordPrefix == "" || (w.word != findWordPrefix && w.word.startsWith(findWordPrefix)))) {
-        if (findWordDownX >= line.length) {
-          findWordDownY += 1
-          findWordDownX = 0 
-        }
+    var w = {start: -1, end: -1, word: ""}
+    if (findWordDownDone) {
         return w
-      }
+    }
+    for (findWordDownY; findWordDownY<fx.lines.length; findWordDownY++) {
+        var line = fx.lines[findWordDownY]
+        for (findWordDownX; findWordDownX < line.length; findWordDownX++) {
+            w = getWordAt(line, findWordDownX)
+            if (w.word != "") {
+                findWordDownX = w.end + 1
+            }
+            if (w.word != "" && w.word != findWordFoundWord &&
+                (findWordPrefix == "" || (w.word != findWordPrefix && w.word.startsWith(findWordPrefix)))) {
+            if (findWordDownX >= line.length) {
+                findWordDownY += 1
+                findWordDownX = 0
+            }
+            return w
+        }
     }
     findWordDownX = 0
-  }
-  findWordDownDone = true 
-  return {start: -1, end: -1, word: ""}
+}
+findWordDownDone = true
+return {start: -1, end: -1, word: ""}
 }
 
 // if it's at 0 (or only ondented) you could do
@@ -2257,305 +2257,305 @@ function findWordDown() {
 // calls that we aleeady have (jist copy functionality
 // for now.
 function replaceFindWord(r) {
-  // First delete what was already there
-  // Copied from the del() function
-  if (findWordY == findWordEndY) {
-    fx.lines[findWordY] = fx.lines[findWordY].substr(0, findWordX) +
-      fx.lines[findWordY].substr(findWordEndX)
-    // closing for formatter
-  } else {
-    fx.lines[findWordY] = fx.lines[findWordY].slice(0, findWordX) + 
-      fx.lines[findWordEndY].slice(findWordEndX)
-    fx.lines.splice(findWordY + 1, findWordEndY-findWordY)
-  }
-  
-  findWordEndY = findWordY + r.length - 1
-  if (findWordY == findWordEndY) {
-    findWordEndX = findWordX + r[0].length
-  } else {
-    findWordEndX = r[r.length - 1].length     
-  }
-  
-  // Now we look at pasting
-  if (r.length == 1) {
-    fx.lines[findWordY] = fx.lines[findWordY].slice(0, findWordX) +
-      r[0] +
-      fx.lines[findWordY].slice(findWordX)
-    // closing for formatter
-  } else {
-    var line = fx.lines[findWordY]
-    fx.lines[findWordY] = line.slice(0, findWordX) +
-      r[0]
-    r[r.length-1] += line.slice(findWordX)
-    fx.lines.splice(findWordY+1, 0, ...r.slice(1))
-  }
-  
-  fx.cursorLineIndex = findWordEndY
-  fx.cursorColIndex = expandTabIndex(fx.lines[fx.cursorLineIndex], findWordEndX)
-  updateCursorXY()
-  docChanged()
-  render()
-  //theText.setSelectionRange(findWordEndX, findWordEndX)
-  setSelectionRangeForText(findWordEndX, findWordEndX)
+    // First delete what was already there
+    // Copied from the del() function
+    if (findWordY == findWordEndY) {
+        fx.lines[findWordY] = fx.lines[findWordY].substr(0, findWordX) +
+            fx.lines[findWordY].substr(findWordEndX)
+        // closing for formatter
+    } else {
+        fx.lines[findWordY] = fx.lines[findWordY].slice(0, findWordX) +
+            fx.lines[findWordEndY].slice(findWordEndX)
+        fx.lines.splice(findWordY + 1, findWordEndY-findWordY)
+    }
+
+    findWordEndY = findWordY + r.length - 1
+    if (findWordY == findWordEndY) {
+        findWordEndX = findWordX + r[0].length
+    } else {
+        findWordEndX = r[r.length - 1].length
+    }
+
+    // Now we look at pasting
+    if (r.length == 1) {
+        fx.lines[findWordY] = fx.lines[findWordY].slice(0, findWordX) +
+            r[0] +
+            fx.lines[findWordY].slice(findWordX)
+        // closing for formatter
+    } else {
+        var line = fx.lines[findWordY]
+        fx.lines[findWordY] = line.slice(0, findWordX) +
+            r[0]
+        r[r.length-1] += line.slice(findWordX)
+        fx.lines.splice(findWordY+1, 0, ...r.slice(1))
+    }
+
+    fx.cursorLineIndex = findWordEndY
+    fx.cursorColIndex = expandTabIndex(fx.lines[fx.cursorLineIndex], findWordEndX)
+    updateCursorXY()
+    docChanged()
+    render()
+    //theText.setSelectionRange(findWordEndX, findWordEndX)
+    setSelectionRangeForText(findWordEndX, findWordEndX)
 }
 
 function initiateFindWord() {
-  // also see toggleWord
-  resetFindWord()
-  if (fx.cursorLineIndex >= fx.lines.length) {
-    return
-  }
-  var w = getWordAtCursor()
-  // TODO: getWordBeforeCursor works for autocompleting in thr middle
-  // but it doesn't replace the word on iter 0. 
-  //var w = getWordBeforeCursor()
-  findWordY = fx.cursorLineIndex
-  findWordX = u(fx.cursorColIndex)
-  findWordEndY = fx.cursorLineIndex
-  findWordEndX = fx.cursorColIndex
-  findWordUpY = fx.cursorLineIndex
-  findWordUpX = fx.lines[fx.cursorLineIndex].length
-  findWordDownY = fx.cursorLineIndex + 1
-  findWordDownX = 0
-  findWordSpecialLine = fx.lines[findWordY]
-  // TODO: some of the logic for
-  // toggleWord can be be improved/consolidated
-  // by looking at findUp
-  if (w.word != "") {
-    if (w.end == fx.cursorColIndex) {
-      findWordPrefix = w.word 
-    } else {
-      findWordX = w.start
-      findWordEndX = w.end
+    // also see toggleWord
+    resetFindWord()
+    if (fx.cursorLineIndex >= fx.lines.length) {
+        return
     }
-  }
+    var w = getWordAtCursor()
+    // TODO: getWordBeforeCursor works for autocompleting in thr middle
+    // but it doesn't replace the word on iter 0.
+    //var w = getWordBeforeCursor()
+    findWordY = fx.cursorLineIndex
+    findWordX = u(fx.cursorColIndex)
+    findWordEndY = fx.cursorLineIndex
+    findWordEndX = fx.cursorColIndex
+    findWordUpY = fx.cursorLineIndex
+    findWordUpX = fx.lines[fx.cursorLineIndex].length
+    findWordDownY = fx.cursorLineIndex + 1
+    findWordDownX = 0
+    findWordSpecialLine = fx.lines[findWordY]
+    // TODO: some of the logic for
+    // toggleWord can be be improved/consolidated
+    // by looking at findUp
+    if (w.word != "") {
+        if (w.end == fx.cursorColIndex) {
+            findWordPrefix = w.word
+        } else {
+            findWordX = w.start
+            findWordEndX = w.end
+        }
+    }
 }
 
 function toggleWord() {
-  // for loop to simulate goto
-  for (var s=0; s<1; s++) {
-    if (findWordCount == 0 && !findWordPrefix) {
-      replaceFindWord([""])
-      break
+    // for loop to simulate goto
+    for (var s=0; s<1; s++) {
+        if (findWordCount == 0 && !findWordPrefix) {
+            replaceFindWord([""])
+            break
+        }
+
+        if (findWordCount == 1 && !findWordPrefix && lastWord) {
+            replaceFindWord([lastWord])
+            break
+        }
+        if ((findWordCount == 1 || findWordCount == 2) && !findWordPrefix && copyBuffer.length) {
+            replaceFindWord(copyBuffer)
+            break
+        }
+        if ((findWordCount%2 == 0) && !findWordUpDone) {
+            var w = findWordUp()
+            findWordFoundWord = w.word
+            if (w.word) {
+                if (findWordPrefix) w.word = w.word.substr(findWordPrefix.length)
+                replaceFindWord([w.word])
+                break
+            }
+        }
+        if (!findWordDownDone) {
+            var w = findWordDown()
+            findWordFoundWord = w.word
+            if (w.word) {
+                if (findWordPrefix) w.word = w.word.substr(findWordPrefix.length)
+                replaceFindWord([w.word])
+                break
+            }
+        }
+        if (!findWordUpDone) {
+            var w = findWordUp()
+            findWordFoundWord = w.word
+            if (w.word) {
+                if (findWordPrefix) w.word = w.word.substr(findWordPrefix.length)
+                replaceFindWord([w.word])
+                break
+            }
+        }
+
+        if (findWordDownDone && findWordUpDone) {
+            //resetFindWord()
+        }
+
     }
-    
-    if (findWordCount == 1 && !findWordPrefix && lastWord) {
-      replaceFindWord([lastWord])
-      break
-    }
-    if ((findWordCount == 1 || findWordCount == 2) && !findWordPrefix && copyBuffer.length) {
-      replaceFindWord(copyBuffer)
-      break
-    }
-    if ((findWordCount%2 == 0) && !findWordUpDone) {
-      var w = findWordUp()
-      findWordFoundWord = w.word
-      if (w.word) {
-        if (findWordPrefix) w.word = w.word.substr(findWordPrefix.length)
-        replaceFindWord([w.word])
-        break 
-      }
-    }
-    if (!findWordDownDone) {
-      var w = findWordDown()
-      findWordFoundWord = w.word
-      if (w.word) {
-        if (findWordPrefix) w.word = w.word.substr(findWordPrefix.length)
-        replaceFindWord([w.word])
-        break
-      }
-    }
-    if (!findWordUpDone) {
-      var w = findWordUp()
-      findWordFoundWord = w.word
-      if (w.word) {
-        if (findWordPrefix) w.word = w.word.substr(findWordPrefix.length)
-        replaceFindWord([w.word])
-        break
-      }
-    }
-    
-    if (findWordDownDone && findWordUpDone) {
-      //resetFindWord()
-    } 
-    
-  }  
-  
-  findWordCount += 1
-  docChanged()
-  render()
+
+    findWordCount += 1
+    docChanged()
+    render()
 }
 // FINDWORD
 
 function selectSearchRow(e) {
-  var index = e.target.getAttribute("data-index")
-  if (searchText.value == searchTerms[index]) {
-      searchText.value = ""   
-  } else {
-      searchText.value = searchTerms[index]
-      // put it at the beginning.
-      searchTerms.splice(index, 1)
-      searchTerms.unshift(searchText.value)
-      if (!findDown()) {
-         findUp()
-      }
-  }
-  renderSearchTerms()
-  render()
+    var index = e.target.getAttribute("data-index")
+    if (searchText.value == searchTerms[index]) {
+        searchText.value = ""
+    } else {
+        searchText.value = searchTerms[index]
+        // put it at the beginning.
+        searchTerms.splice(index, 1)
+        searchTerms.unshift(searchText.value)
+        if (!findDown()) {
+            findUp()
+        }
+    }
+    renderSearchTerms()
+    render()
 }
 function selectFileRow(e) {
-  var index = e.target.getAttribute("data-index")
-  var file = files[index]
-  
-  // put it at the beginning.
-  files.splice(index, 1)
-  files.unshift(file)
-  setCurrentFile(file)
+    var index = e.target.getAttribute("data-index")
+    var file = files[index]
+
+    // put it at the beginning.
+    files.splice(index, 1)
+    files.unshift(file)
+    setCurrentFile(file)
 }
 function makeFile(fullPath, contents) {
-  var theLines = contents.split("\n")
-  // because this editor intentionally does not support tabs
-  // (for implementation simplicity)
-  // we convert tabs to 4 spaces
-  // In practice for me. this only matters for
-  // * go files (which get go fmt'ed)
-  // * Makefiles (that I hardly write)
-  // * the <<- operator in bash.
-  for (var i=0; i<theLines.length; i++) {
-    var line = theLines[i]
-    // replace leading tabs with 4 times that many spaces
-    // theLines[i] = line.replace(/^\t*/, (x)=> "    ".repeat(x.length))
-  }
-  return {
-    // fullPath should have the leading slash
-    fullPath: fullPath,
-    undoStack: [contents],
-    undoXStack: [0],
-    undoYStack: [0],
-    undoIndex: 0,
-    lines: theLines,
-    cursorLineIndex: 0,
-    cursorColIndex: 0,
-    offsetY: 0,
-    offsetX: 0,
-    fileMode: "file",
-    bashCWD: (fx ? fx.bashCWD : "."),
-    version: 0,
-    savedVersion: 0,
-    savingVersion: -1,
-  }
+    var theLines = contents.split("\n")
+    // because this editor intentionally does not support tabs
+    // (for implementation simplicity)
+    // we convert tabs to 4 spaces
+    // In practice for me. this only matters for
+    // * go files (which get go fmt'ed)
+    // * Makefiles (that I hardly write)
+    // * the <<- operator in bash.
+    for (var i=0; i<theLines.length; i++) {
+        var line = theLines[i]
+        // replace leading tabs with 4 times that many spaces
+        // theLines[i] = line.replace(/^\t*/, (x)=> "    ".repeat(x.length))
+    }
+    return {
+        // fullPath should have the leading slash
+        fullPath: fullPath,
+        undoStack: [contents],
+        undoXStack: [0],
+        undoYStack: [0],
+        undoIndex: 0,
+        lines: theLines,
+        cursorLineIndex: 0,
+        cursorColIndex: 0,
+        offsetY: 0,
+        offsetX: 0,
+        fileMode: "file",
+        bashCWD: (fx ? fx.bashCWD : "."),
+        version: 0,
+        savedVersion: 0,
+        savingVersion: -1,
+    }
 }
 function addFileToList(file) {
-  files.unshift(file)
-  renderFileDropdown()
+    files.unshift(file)
+    renderFileDropdown()
 }
 
 function renderSearchTerms() {
-   // TODO: come back to this.
-   searchRow.innerHTML = ""
-   for (var searchI=0; searchI<searchTerms.length; searchI++) {
-     var searchTerm = searchTerms[searchI]
-     var button = document.createElement("div")
-     button.className = "longButton"
-     // button.className = "square"
-     button.setAttribute("data-index", searchI)
-     button.innerText = searchTerm.substr(0, 15)
-     if (searchText.value == searchTerm) {
-       button.style.backgroundColor = "black"
-     }
-     searchRow.appendChild(button)
-   }
-   
+    // TODO: come back to this.
+    searchRow.innerHTML = ""
+    for (var searchI=0; searchI<searchTerms.length; searchI++) {
+        var searchTerm = searchTerms[searchI]
+        var button = document.createElement("div")
+        button.className = "longButton"
+        // button.className = "square"
+        button.setAttribute("data-index", searchI)
+        button.innerText = searchTerm.substr(0, 15)
+        if (searchText.value == searchTerm) {
+            button.style.backgroundColor = "black"
+        }
+        searchRow.appendChild(button)
+    }
+
 }
 function renderFileDropdown() {
-   fileRow.innerHTML = ""
-   for (var fileI=0; fileI<files.length; fileI++) {
-     var file = files[fileI]
-     // Todo, what causes this bug
-     if (!file) {
-        var err = new Error()
-        log("null file error")
-        log(err.stack)
-        log({fileI, files})
-     }
-     var button = document.createElement("div")
-     button.className = "longButton"
-     // button.className = "square"
-     button.setAttribute("data-index", fileI)
-     var parts = file.fullPath.split("/")
-     var theName = parts[parts.length - 1]
-     button.innerText = theName.substr(0, 15)
-     if (currentFile == file) {
-       button.style.backgroundColor = "black"
-     }
-     
-     fileRow.appendChild(button)
-   }
-   
+    fileRow.innerHTML = ""
+    for (var fileI=0; fileI<files.length; fileI++) {
+        var file = files[fileI]
+        // Todo, what causes this bug
+        if (!file) {
+            var err = new Error()
+            log("null file error")
+            log(err.stack)
+            log({fileI, files})
+        }
+        var button = document.createElement("div")
+        button.className = "longButton"
+        // button.className = "square"
+        button.setAttribute("data-index", fileI)
+        var parts = file.fullPath.split("/")
+        var theName = parts[parts.length - 1]
+        button.innerText = theName.substr(0, 15)
+        if (currentFile == file) {
+            button.style.backgroundColor = "black"
+        }
+
+        fileRow.appendChild(button)
+    }
+
 }
 
 function seeFiles() {
     if (currentFile.fileMode == "fileList") {
-       setCurrentFile(files[0])
-       return
+        setCurrentFile(files[0])
+        return
     }
     var contents = files.map(f => {
-       //return f.fullPath
-       var parts = f.fullPath.split("/")
-       var reversed = parts.reverse().join(" < ")
-       // we reverse to see more unique stuff first
-       return reversed
+        //return f.fullPath
+        var parts = f.fullPath.split("/")
+        var reversed = parts.reverse().join(" < ")
+        // we reverse to see more unique stuff first
+        return reversed
     }).join("\n")
     var f = makeFile("__", contents)
     f.fileMode = "fileList"
     f.cursorLineIndex = 1
-    setCurrentFile(f)  
+    setCurrentFile(f)
 }
 function setCurrentFile(file) {
-  if (!file) {
-     return
-  }
-  
-  currentFile = file
-  // treat fx as alias for currentFile, for easier typing
-  fx = file
-  
-  updateCursorXY()
-  searchText.setAttribute("placeholder", currentFile.fullPath + " (search)")
-  render()
-  renderFileDropdown()
-  
+    if (!file) {
+        return
+    }
+
+    currentFile = file
+    // treat fx as alias for currentFile, for easier typing
+    fx = file
+
+    updateCursorXY()
+    searchText.setAttribute("placeholder", currentFile.fullPath + " (search)")
+    render()
+    renderFileDropdown()
+
 }
 
 function duplicateFile(f) {
-   var fc = JSON.parse(JSON.stringify(f))
-   // copy everything but reference lines
-   fc.lines = f.lines
-   addFileToList(fc)
-   setCurrentFile(fc)
-   renderURL()
-   // TODO: eventually, update cursor position
-   // when text to one file is added.
+    var fc = JSON.parse(JSON.stringify(f))
+    // copy everything but reference lines
+    fc.lines = f.lines
+    addFileToList(fc)
+    setCurrentFile(fc)
+    renderURL()
+    // TODO: eventually, update cursor position
+    // when text to one file is added.
 }
 
 function reloadFile() {
-   addFile(currentFile.fullPath, true, true, true, true)
+    addFile(currentFile.fullPath, true, true, true, true)
 }
 
 var inDebugView = false
 function debugView() {
-  inDebugView = !inDebugView
-  if (inDebugView) {
-    c.style.width = ((canvasWidth/3) * .7) + "px"   
-    c.style.height = ((canvasHeight/3) * .7) + "px"   
+    inDebugView = !inDebugView
+    if (inDebugView) {
+        c.style.width = ((canvasWidth/3) * .7) + "px"
+        c.style.height = ((canvasHeight/3) * .7) + "px"
+        render()
+        return
+    }
+
+    c.style.width = ((canvasWidth/3) * 1) + "px"
+    c.style.height = ((canvasHeight/3) * 1) + "px"
     render()
-    return
-  }
-  
-  c.style.width = ((canvasWidth/3) * 1) + "px"   
-  c.style.height = ((canvasHeight/3) * 1) + "px"   
-  render()
-  
+
 }
 
 var maxUndos = 30
@@ -2591,18 +2591,18 @@ setCurrentFile(initialFile)
 // Starting at index 1 for this reason.
 // NOTE: you could do this async serially.
 for (var i=1; i<paths.length; i++) {
-  addFile(paths[i], false)
+    addFile(paths[i], false)
 }
 
 log("location search")
 log(location.search)
 var ust = new URLSearchParams(window.location.search)
 if (ust.has("searchTerms")) {
-   try {
-     searchTerms = JSON.parse(ust.get("searchTerms"))  
-   } catch (e) {
-      
-   }
+    try {
+        searchTerms = JSON.parse(ust.get("searchTerms"))
+    } catch (e) {
+
+    }
 }
 renderSearchTerms()
 
