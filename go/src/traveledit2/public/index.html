@@ -325,7 +325,6 @@ window.onscroll = function () {
 }
 
 function doScroll() {
-   //log([window.pageYOffset])
    canvasHeightFull = originalCanvasHeightFull - (window.pageYOffset*3) 
    c.height = canvasHeightFull
    setCanvasHeight(canvasHeightFull)
@@ -489,7 +488,7 @@ function addFile(fullPath, changeURL, closeCurrentIfDir, closeCurrent) {
   // If the file is already in the list of open files.
   // then let it have a reference to the existing lines, like vim does.
   for (var i=0; i<files.length; i++) {
-     if (files[i].fullPath == fullPath) {
+     if (files[i].fullPath == fullPath && files[i].fileMode == "file") {
         duplicateFile(files[i])
         return
      }
@@ -742,7 +741,6 @@ function findUp() {
       fx.cursorLineIndex = i
       var colIndex = fx.lines[i].length - (pos + searchText.value.length)
       fx.cursorColIndex = expandTabIndex(fx.lines[i], colIndex)
-      log({colIndex, cci: fx.cursorColIndex})
       updateCursorXY()
       ensureCursorInScreen()
       render()
@@ -865,9 +863,9 @@ function copy() {
         break
       }
       copyBuffer = [
-        fx.lines[r.startY].slice(u(r.startX)),
+        unExpandSlice(fx.lines[r.startY], r.startX),
         ...fx.lines.slice(r.startY + 1, r.stopY),
-        fx.lines[r.stopY].slice(0, u(r.stopX))
+        unExpandTabIndex(fx.lines[r.stopY], 0, r.stopX)
       ]
       selectedRegions = []
       render()
@@ -953,7 +951,7 @@ function del() {
   if (selectedRegions.length>0) {
     var r = selectedRegions[0]
     if (r.startY == r.stopY) {
-      if (u(r.startX) == 0 && u(r.stopX) == fx.lines[r.startY].length) {
+      if (r.startX == 0 && unExpandTabIndex(fx.lines[r.startY], r.stopX) == fx.lines[r.startY].length) {
         selectMode = "line" 
         copyBuffer = [fx.lines[r.startY]]
         fx.lines.splice(r.startY, 1)
@@ -962,9 +960,9 @@ function del() {
         render()
         return
       } else {
-        copyBuffer = [fx.lines[r.startY].slice(u(r.startX), u(r.stopX))]  
-        fx.lines[r.startY] = fx.lines[r.startY].substr(0, u(r.startX)) +
-        fx.lines[r.startY].substr(u(r.stopX))
+        copyBuffer = [unExpandSlice(fx.lines[r.startY], r.startX, r.stopX)] 
+        fx.lines[r.startY] = unExpandSlice(fx.lines[r.startY], 0, r.startX) +
+            unExpandSlice(fx.lines[r.startY], r.stopX)
         selectedRegions = []
         fx.cursorLineIndex = r.startY
         fx.cursorColIndex = r.startX
@@ -980,13 +978,13 @@ function del() {
       }
     }
     copyBuffer = [
-      fx.lines[r.startY].slice(u(r.startX)),
+      unExpandSlice(fx.lines[r.startY], r.startX),
       ...fx.lines.slice(r.startY + 1, r.stopY),
-      fx.lines[r.stopY].slice(0, u(r.stopX))
+      unExpandSlice(lines[r.stopY], 0, r.stopX)
     ]
 
-    fx.lines[r.startY] = fx.lines[r.startY].slice(0, u(r.startX)) + 
-      fx.lines[r.stopY].slice(u(r.stopX))
+    fx.lines[r.startY] = unExpandSlice(fx.lines[r.startY], 0,  r.startX) +
+        unExpandSlice(fx.lines[r.stopY], r.stopX)
     fx.lines.splice(r.startY + 1, r.stopY-r.startY)
     if (fx.lines[r.startY] == "") {
       fx.lines.splice(r.startY, 1)
@@ -1118,6 +1116,7 @@ function runBashCommand(line) {
     fx.cursorLineIndex += copyBuffer.length
     fx.cursorLineIndex = fx.lines.length - 1 
     paste()
+    selectedRegions = []
     fx.cursorLineIndex = fx.lines.length - 1
     updateCursorXY()
     ensureCursorInScreen()
@@ -1136,22 +1135,26 @@ function trimPrefix(str, prefix) {
 
 // was here
 function setSelectionRangeForText(start, end) {
-    var adjustedStart = unExpandTabIndex(start)
+    var adjustedStart = u(start)
     var adjustedEnd
     if (start == end) {
        adjustedEnd = adjustedStart
     } else {
-       adjustedEnd = unExpandTabIndex(end)
+       adjustedEnd = u(end)
     }
-    // log({start, end, adjustedStart, adjustedEnd})
-    // var e = new Error()
-    // log(e.stack)
     theText.setSelectionRange(adjustedStart, adjustedEnd)
 }
 
-function unExpandTabIndex(start) {
-    var theLine = fx.lines[fx.cursorLineIndex+fx.offsetY]   
-    if (!theLine) theLine = ""
+function unExpandSlice(theLine, start, end) {
+    theLine = theLine || ""
+    var adjustedStart = unExpandTabIndex(theLine, start)
+    if (typeof end == "undefined") {
+        return theLine.slice(adjustedStart)
+    }
+    var adjustedEnd = unExpandTabIndex(theLine, end)
+    return theLine.slice(adjustedStart, adjustedEnd)
+}
+function unExpandTabIndex(theLine, start) {
     var expandedLineLength = 0
     var tabStop = 4
     var lastTabPos = -1
@@ -1178,8 +1181,12 @@ function unExpandTabIndex(start) {
     }
     return start - netSpacesAdded
 }
-var u = unExpandTabIndex
+function u(start) {
+    var theLine = fx.lines[fx.cursorLineIndex] || ""
+    unExpandTabIndex(theLine, start)
+}
 function expandTabIndex(theLine, start) {
+    theLine = theLine || ""
     theLine = theLine.substring(0, start)
     var expandedLineLength = 0
     var tabStop = 4
@@ -1938,6 +1945,7 @@ function onStart(e) {
          //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
          setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
          initiateFindWord()
+         ensureCursorInScreen()
      } else {
          var origOffsetX = fx.offsetX
          // scroll by tabstop?
@@ -1960,6 +1968,7 @@ function onStart(e) {
          //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
          setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
          initiateFindWord()
+         ensureCursorInScreen()
      } else {
          var origOffsetX = fx.offsetX
          //fx.offsetX -= Math.floor(maxCols/2)
@@ -2438,6 +2447,8 @@ for (var i=1; i<paths.length; i++) {
   addFile(paths[i], false)
 }
 
+log("location search")
+log(location.search)
 var ust = new URLSearchParams(window.location.search)
 if (ust.has("searchTerms")) {
    try {

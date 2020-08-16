@@ -1,4 +1,5 @@
 make selectedRegions part of the file
+fix reload
 audit some actions to make sure you call ensureCursorInScreen
 redo the while toggle word/inline paste thing.
 * Single tap in edit mode rules
