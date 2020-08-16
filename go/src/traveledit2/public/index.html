@@ -32,6 +32,7 @@
   padding: 0px;
   width: 40px;
   height: 36px;
+  --height: 20px;
   margin: 1px;
   flex: 1 0 auto;
   font-size: 12px;
@@ -129,7 +130,7 @@ onblur=handleBlur()
 <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
 
-<table><tr><td>
+<table cellspacing=0 cellpadding=0><tr><td>
   <!-- 
   as of now the canvas doesn't get resized
   so it has to be at least as big as the biggest canvasHeight x canvasWith size.
@@ -143,10 +144,18 @@ onblur=handleBlur()
   "
   ontouchstart=onStart(event)
   ></canvas>
+  
+  <canvas id=c width=1125 height=1320
+  style="width: 375px; height:440px;
+  border: 1px solid lime;
+  "
+  ontouchstart=onStart(event)
+  ></canvas>
   -->
-  <canvas id=c width=1125 height=1380
-  style="width: 375px; height:460px;
-  border: 0px solid lime;
+  <canvas id=c width=1125 height=1350
+  style="width: 375px; height:450px;
+  border: 1px solid lime;
+  display: block;
   "
   ontouchstart=onStart(event)
   ></canvas>
@@ -166,18 +175,18 @@ onblur=handleBlur()
   -webkit-overflow-scrolling: touch;
   font-size:10px;"
   ></div>
-</td></tr></table> 
-
+</td></tr></table>
 
 <div class=toolbar id=searchRow onclick=selectSearchRow(event)>
 </div>
 <div class=toolbar id=fileRow onclick=selectFileRow(event)>
 </div>
+
 <div class=toolbar>
   <div id=findDownButton class=square onclick=findDown()>find down</div>
   <div id=findUpButton class=square onclick=findUp()>find up</div>
-  <div id=clearSearchButton class=square onclick=clearSearch()>edit search</div>
-  <!-- <div class=square onclick=editSearch()>edit search</div>
+  <div id=clearSearchButton class=square onclick=clearSearch()>clear search</div>
+  <!--<div class=square onclick=editSearch()>edit search</div>
   -->
   <div id=saveButton class=square onclick=saveWrapper()>save</div>
   <div class=square onclick=seeFiles()>files</div>
@@ -187,10 +196,10 @@ onblur=handleBlur()
   <div class=square onclick=addCmdTab()>cmd</div>
   <div class=square onclick=undo()>undo</div>
   <div class=square onclick=redo()>redo</div>
-  <div class=square onclick=duplicateFile()>dupl file</div>
+  <div class=square onclick=duplicateFile(fx)>dupl file</div>
   <div class=square onclick=comment()>//</div>
   <div class=square onclick=unComment()>un //</div>
-  <div id=darkModeButton class=square onclick="toggleDarkMode()">light mode</div>
+  <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
 </div>
 <div class=toolbar>
   <div class=square onclick=debugView()>debug view</div>
@@ -302,8 +311,7 @@ var wasDelete = false
 var selectTimeout
 var selectTimeoutMillis = 750
 var selectedRegions = []
-var searchTerms = []
-
+var searchTerms = ["function"]
 var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
@@ -353,7 +361,7 @@ function importPaste() {
 function toggleDarkMode() {
   isDark = !isDark
   if (!isDark) {
-    darkModeButton.innerText = "dark mode"
+    darkModeButton.innerText = "dark"
     document.body.classList.remove("dark")
     document.body.classList.add("light")
     updateClassForSelector("input", "dark","light")
@@ -363,7 +371,7 @@ function toggleDarkMode() {
     render()
     return
   }
-  darkModeButton.innerText = "light mode"
+  darkModeButton.innerText = "light"
   document.body.classList.remove("light")
   document.body.classList.add("dark")
   updateClassForSelector("input", "light", "dark")
@@ -480,8 +488,14 @@ function addFile(fullPath, changeURL, closeCurrentIfDir, closeCurrent) {
   if (fullPath == "") {
     return
   }
-  // TODO: special case if the file is already in the list of open files.
+  // If the file is already in the list of open files.
   // then let it have a reference to the existing lines, like vim does.
+  for (var i=0; i<files.length; i++) {
+     if (files[i].fullPath == fullPath) {
+        duplicateFile(files[i])
+        return
+     }
+  }
   var isDir = false
   fetch((fullPath) + "?raw=1", {
     cache: "no-cache"
@@ -641,11 +655,25 @@ function findDownForm(e) {
    findDown()
    return false 
 }
+function addSearchTerm() {
+  if (searchText.value == "") {
+     return
+  }
+  var pos = searchTerms.indexOf(searchText.value)
+  if (pos != -1) {
+      // remove it
+      searchTerms.splice(pos, 1)
+  }
+  // then add it to the beginning
+  searchTerms.unshift(searchText.value)
+  renderSearchTerms()
+}
 function findDown() {
   if (searchText.value == "") {
     searchText.value = getWordAtCursor().word
     clearSearchButton.innerText = "clear search"
   }
+  addSearchTerm()
   for (var i=fx.cursorLineIndex; i<fx.lines.length; i++) {
     var lineToSearch = fx.lines[i]
     if (i == fx.cursorLineIndex) {
@@ -662,11 +690,11 @@ function findDown() {
       ensureCursorInScreen()
       render()
       initiateFindWord() // for autocomplete, for if editing?
-      return
+      return true
     }
   }
   render()
-  // alert("not found")
+  return false
 }
 
 function ensureCursorInScreen() {
@@ -699,6 +727,7 @@ function findUp() {
     searchText.value = getWordAtCursor().word
     clearSearchButton.innerText = "clear search"
   }
+  addSearchTerm()
   for (var i=fx.cursorLineIndex; i>=0; i--) {
     var lineToSearch = fx.lines[i]
     if (i == fx.cursorLineIndex) {
@@ -717,11 +746,11 @@ function findUp() {
       ensureCursorInScreen()
       render()
       initiateFindWord() // for autocomplete, for if editing?
-      return
+      return true
     }
   }
-  // alert("not found")
   render()
+  return false
 }
 function clearSearch() {
   if (searchText.value == "") {
@@ -731,6 +760,7 @@ function clearSearch() {
   searchText.value = ""
   clearSearchButton.innerText = "edit search"
   render()
+  renderSearchTerms()
 }
 
 function jsFunc() {
@@ -2190,14 +2220,21 @@ function toggleWord() {
   render()
 }
 
-
 function selectSearchRow(e) {
   var index = e.target.getAttribute("data-index")
-  searchText.value = searchTerms[index]
-  
-  // put it at the beginning.
-  searchTerms.splice(index, 1)
-  searchTerms.unshift(searchText.value)
+  if (searchText.value == searchTerms[index]) {
+      searchText.value = ""   
+  } else {
+      searchText.value = searchTerms[index]
+      // put it at the beginning.
+      searchTerms.splice(index, 1)
+      searchTerms.unshift(searchText.value)
+      if (!findDown()) {
+         findUp()
+      }
+  }
+  renderSearchTerms()
+  render()
 }
 function selectFileRow(e) {
   var index = e.target.getAttribute("data-index")
@@ -2249,26 +2286,17 @@ function addFileToList(file) {
 function renderSearchTerms() {
    // TODO: come back to this.
    searchRow.innerHTML = ""
-   for (var searchI=0; fileI<files.length; fileI++) {
-     var file = files[fileI]
-     // Todo, what causes this bug
-     if (!file) {
-        var err = new Error()
-        log("null file error")
-        log(err.stack)
-        log({fileI, files})
-     }
+   for (var searchI=0; searchI<searchTerms.length; searchI++) {
+     var searchTerm = searchTerms[searchI]
      var button = document.createElement("div")
      button.className = "longButton"
-     button.setAttribute("data-index", fileI)
-     var parts = file.fullPath.split("/")
-     var theName = parts[parts.length - 1]
-     button.innerText = theName.substr(0, 15)
-     if (currentFile == file) {
+     // button.className = "square"
+     button.setAttribute("data-index", searchI)
+     button.innerText = searchTerm.substr(0, 15)
+     if (searchText.value == searchTerm) {
        button.style.backgroundColor = "black"
      }
-     
-     fileRow.appendChild(button)
+     searchRow.appendChild(button)
    }
    
 }
@@ -2285,6 +2313,7 @@ function renderFileDropdown() {
      }
      var button = document.createElement("div")
      button.className = "longButton"
+     // button.className = "square"
      button.setAttribute("data-index", fileI)
      var parts = file.fullPath.split("/")
      var theName = parts[parts.length - 1]
@@ -2329,57 +2358,16 @@ function setCurrentFile(file) {
   render()
   renderFileDropdown()
   
-  return
-  
-  // TODO: remove after this
-  // Note: it might be nice to have a single global
-  // "currentFile" variable, instead of a handful of globals
-  // that have to be saved/restored
-  
-  // currentFile will only be null the very first time.
-  if (currentFile) { 
-    currentFile.undoStack = undoStack
-    currentFile.undoXStack = undoXStack
-    currentFile.undoYStack = undoYStack
-    currentFile.undoIndex = undoIndex
-    currentFile.lines = lines
-    currentFile.cursorLineIndex = cursorLineIndex
-    currentFile.cursorColIndex = cursorColIndex
-    currentFile.offsetY = offsetY
-    currentFile.offsetX = offsetX
-    currentFile.fileMode = fileMode
-    currentFile.bashCWD = bashCWD
-    currentFile.version = version
-    currentFile.savedVersion = savedVersion
-    currentFile.savingVersion = savingVersion
-  }
-  
-  undoStack = file.undoStack
-  undoXStack = file.undoXStack
-  undoYStack = file.undoYStack
-  undoIndex = file.undoIndex
-  lines = file.lines
-  cursorLineIndex = file.cursorLineIndex
-  cursorColIndex = file.cursorColIndex
-  offsetY = file.offsetY
-  offsetX = file.offsetX
-  fileMode = file.fileMode
-  bashCWD = file.bashCWD
-  version = file.version
-  savedVersion = file.savedVersion
-  savingVersion = file.savingVersion
-  currentFile = file
-  
-  updateCursorXY()
-  searchText.setAttribute("placeholder", currentFile.fullPath + " (search)")
-  render()
-  renderFileDropdown()
 }
 
-function duplicateFile() {
-   // really should be used for directories
-   addFileToList(currentFile)
+function duplicateFile(f) {
+   var fc = JSON.parse(JSON.stringify(f))
+   // copy everything but reference lines
+   fc.lines = f.lines
+   addFileToList(fc)
    renderURL()
+   // TODO: eventually, update cursor position
+   // when text to one file is added.
 }
 
 function reloadFile() {
@@ -2438,7 +2426,7 @@ for (var i=1; i<paths.length; i++) {
   addFile(paths[i], false)
 }
 
-
+renderSearchTerms()
 // make sure when selecting in the margin
 // that the selectMode is   line!
 // add a threshold for move, like 5px or something.
