@@ -910,6 +910,15 @@ function setCanvasWidth(w) {
 function paste() {
   if (selectMode == "line") {
     fx.lines.splice(fx.cursorLineIndex + 1, 0, ...copyBuffer)
+    var stopY = fx.cursorLineIndex + copyBuffer.length
+    var lastLine = fx.lines[stopY] 
+    selectedRegions = [{
+       startY: fx.cursorLineIndex + 1,
+       // remember stopY is inclusive, stopX no
+       stopY: stopY,
+       startX: 0,
+       stopX: expandTabIndex(lastLine, lastLine.length),
+    }]
   } else if (selectMode == "char") {
     if (copyBuffer.length == 1) {
       fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex].slice(0, u(fx.cursorColIndex)) +
@@ -1345,7 +1354,9 @@ function saveLine() {
         if (lastTyped == "<" && theText.value.substring(0, theText.selectionStart - 1).trim() != "") {
           break  
         }
-        if ("({[".indexOf(lastTyped) != -1 && nextChar != "" && nextChar != " ") {
+        var mainClosers = "({["
+        var mainClosersEnd = ")}]"
+        if (mainClosers.indexOf(lastTyped) != -1 && nextChar != "" && nextChar != " " && mainClosersEnd.indexOf(nextChar) == -1) {
           break  
         }
         theText.value = 
