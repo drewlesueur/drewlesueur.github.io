@@ -2084,14 +2084,15 @@ function acWordToggle() {
             startY: fx.cursorLineIndex,
             stopY: fx.cursorLineIndex,
         }
+        var theLine = fx.lines[fx.cursorLineIndex]
         if (lastAction == "type") {
             acWord.prefix = w.word
             acWord.word = w.word
             acWord.startX = fx.cursorColIndex
             acWord.stopX = fx.cursorColIndex
         } else {
-            acWord.startX = w.start
-            acWord.stopX = w.end
+            acWord.startX = expandTabIndex(theLine, w.start)
+            acWord.stopX = expandTabIndex(theLine, w.end)
             acWord.word = w.word
         }
         // because we move the current file to the front
