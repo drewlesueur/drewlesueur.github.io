@@ -1,3 +1,6 @@
+bug with miltiple files when you reset what fx.lines is
+like in undo
+a way to go back to where you were!!
 if you are tabbed in gray out anything before that tab level?!
 make selectedRegions part of the file
 audit some actions to make sure you call ensureCursorInScreen
