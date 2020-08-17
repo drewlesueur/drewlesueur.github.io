@@ -677,6 +677,8 @@ function addSearchTerm() {
     renderURL()
 }
 function findDown() {
+    lastAction = "move"
+    acWord = null
     if (searchText.value == "") {
         searchText.value = getWordAtCursor().word
         clearSearchButton.innerText = "clear search"
@@ -731,6 +733,8 @@ function reverse(str) {
     return str.split("").reverse().join("")
 }
 function findUp() {
+    lastAction = "move"
+    acWord = null
     if (searchText.value == "") {
         searchText.value = getWordAtCursor().word
         clearSearchButton.innerText = "clear search"
