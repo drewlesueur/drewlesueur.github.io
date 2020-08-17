@@ -577,8 +577,21 @@ if (fx.undoStack.length > maxUndos) {
     fx.undoIndex -= 1
 }
 }
+
+function setLines(lines) {
+    // because there can be multiple files
+    // referencing the same lines,
+    // we can't just set the lines on one
+    // for when you have to update the whole object 
+    fx.lines = lines
+    for (var i=0; i<files.length; i++) {
+        if (fx != files[i] && files[i].fullPath == fx.fullPath) {
+            files[i].lines = fx.lines
+        }   
+    }
+}
 function repositionUndo() {
-    fx.lines = fx.undoStack[fx.undoIndex].split("\n")
+    setLines(fx.undoStack[fx.undoIndex].split("\n"))
     fx.cursorColIndex = fx.undoXStack[fx.undoIndex]
     fx.cursorLineIndex = fx.undoYStack[fx.undoIndex]
     if (fx.cursorLineIndex < fx.offsetY || fx.cursorLineIndex > fx.offsetY+maxLines) {
@@ -2304,7 +2317,7 @@ function acFindDown() {
 }
 // END NEW FIND WORD
 function doFormat() {
-    fx.lines = simpleFormat(fx.lines)
+    setLines(simpleFormat(fx.lines))
     docChanged()
     render()
 }
