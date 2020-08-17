@@ -284,6 +284,7 @@ canvasWidth=1125
 
 // TODO: make these configurable in UI
 var canvasHeightKeyboard=950
+var canvasHeightKeyboard=1050
 
 var canvasHeightFull=c.height
 //var canvasHeightFull=1000
@@ -784,7 +785,11 @@ function dup() {
 }
 
 function indent() {
+    // not usinf addPrefix, seems to be buggy
+    // when first line indent is more than 
+    // lasst line indent
     addPrefix("    ")
+    
 }
 function dedent() {
     stripPrefixes(["\t", "    "])
@@ -954,20 +959,24 @@ function pasteLastWord() {
 }
 
 
-function del() {
+function del(preventCopy) {
     if (selectedRegions.length>0) {
         var r = selectedRegions[0]
         if (r.startY == r.stopY) {
             if (r.startX == 0 && unExpandTabIndex(fx.lines[r.startY], r.stopX) == fx.lines[r.startY].length) {
                 selectMode = "line"
-                copyBuffer = [fx.lines[r.startY]]
+                if (!preventCopy) {
+                    copyBuffer = [fx.lines[r.startY]]
+                }
                 fx.lines.splice(r.startY, 1)
                 selectedRegions = []
                 docChanged()
                 render()
                 return
             } else {
-                copyBuffer = [unExpandSlice(fx.lines[r.startY], r.startX, r.stopX)]
+                if (!preventCopy) {
+                    copyBuffer = [unExpandSlice(fx.lines[r.startY], r.startX, r.stopX)]
+                }
                 fx.lines[r.startY] = unExpandSlice(fx.lines[r.startY], 0, r.startX) +
                     unExpandSlice(fx.lines[r.startY], r.stopX)
                 selectedRegions = []
@@ -979,17 +988,18 @@ function del() {
                 render()
                 if (document.activeElement == theText) {
                     //theText.setSelectionRange(r.startX, r.startX)
-                    setSelectionRangeForText(r.stsrtX, r.startX)
+                    setSelectionRangeForText(r.startX, r.startX)
                 }
                 return
             }
         }
-        copyBuffer = [
-            unExpandSlice(fx.lines[r.startY], r.startX),
-            ...fx.lines.slice(r.startY + 1, r.stopY),
-            unExpandSlice(lines[r.stopY], 0, r.stopX)
-        ]
-
+        if (!preventCopy) {
+            copyBuffer = [
+                unExpandSlice(fx.lines[r.startY], r.startX),
+                ...fx.lines.slice(r.startY + 1, r.stopY),
+                unExpandSlice(fx.lines[r.stopY], 0, r.stopX)
+            ]
+        }
         fx.lines[r.startY] = unExpandSlice(fx.lines[r.startY], 0,  r.startX) +
             unExpandSlice(fx.lines[r.stopY], r.stopX)
         fx.lines.splice(r.startY + 1, r.stopY-r.startY)
@@ -1009,7 +1019,9 @@ function del() {
         return
     }
     selectMode = "line"
-    copyBuffer = [fx.lines[fx.cursorLineIndex]]
+    if (!preventCopy) {
+        copyBuffer = [fx.lines[fx.cursorLineIndex]]
+    }
     fx.lines.splice(fx.cursorLineIndex, 1)
     docChanged()
     render()
@@ -1347,7 +1359,8 @@ var closingMap = {
     '"': '"',
 }
 function saveLine() {
-    var lastAction = "type"
+    lastAction = "type"
+    log("type")
     var lastTyped = theText.value[theText.selectionStart - 1]
     var secondLastTyped = theText.value[theText.selectionStart - 2] || ""
     var nextChar = theText.value[theText.selectionStart] || ""
@@ -1449,6 +1462,23 @@ function render() {
             }
         }
     }
+    
+    // render autocomplete word
+    if (acWord) {
+        t.fillStyle = "orange"
+        for (var y=acWord.startY-fx.offsetY; y<=acWord.stopY-fx.offsetY; y++) {
+            var line = fx.lines[y + fx.offsetY] || ""
+            if (acWord.startY == acWord.stopY) {
+                t.fillRect((acWord.startX-fx.offsetX)*fontWidth, y*fontHeight, (acWord.stopX-acWord.startX)*fontWidth, fontHeight)
+            } else if (y==acWord.startY-fx.offsetY) {
+                t.fillRect((acWord.startX-fx.offsetX)*fontWidth, y*fontHeight, (expandTabIndex(line, line.length)-acWord.startX)*fontWidth, fontHeight)
+            } else if (y==acWord.stopY-fx.offsetY) {
+                t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight, acWord.stopX*fontWidth, fontHeight)
+            } else {
+                t.fillRect((0-fx.offsetX)*fontWidth  , y*fontHeight, expandTabIndex(line, line.length)*fontWidth, fontHeight)
+            }
+        }
+    }
 
     // draw line where your cursor is for help with finding
     var highlightLine = true
@@ -1487,26 +1517,8 @@ function render() {
     } else if (fx.fileMode == "bash") {
         saveButton.innerText = "run"
     }
-    findWordEl.innerHTML = `
-        <pre>
-    wordAtCursor: ${JSON.stringify(getWordAtCursor().word)}
-    findWordCount: ${findWordCount}
-    findWordUpY: ${findWordUpY}
-    findWordUpX: ${findWordUpX}
-    findWordDownY: ${findWordDownY}
-    findWordDownX: ${findWordDownX}
-    findWordY: ${findWordY}
-    findWordX: ${findWordX}
-    findWordEndY: ${findWordEndY}
-    findWordEndX: ${findWordEndX}
-    findWordPrefix: ${findWordPrefix}
-    findWordUpDone: ${findWordUpDone}
-    findWordDownDone: ${findWordDownDone}
-    findWordFoundWord: ${JSON.stringify(findWordFoundWord)}
-
-    moveListenerCount: ${moveListenerCount}
-    endListenerCount: ${endListenerCount}
-        </pre>
+    findWordEl.innerHTML = `</pre>
+        ${JSON.stringify(acWord, "", "  ")}
     `
 
 
@@ -1702,8 +1714,6 @@ function onStart(e) {
         }
     }
     var onMove = function(e) {
-        lastAction = "move"
-        acWord = null
         clearTimeout(selectTimeout)
         if (e.touches.length > 1) {
             return
@@ -1719,6 +1729,11 @@ function onStart(e) {
         moved = true
         if (diffTouchX > 10 || diffTouchY > 10) {
             movedWithBuffer = true
+            if (lastAction != "move") {
+                lastAction = "move"
+                acWord = null
+                log("move")
+            }
         }
         var diffLastTouchX = e.touches[0].pageX - lastTouchX
         var diffLastTouchY = e.touches[0].pageY - lastTouchY
@@ -1873,8 +1888,8 @@ function onStart(e) {
             }
 
             if (document.activeElement == theText) {
-                toggleWord()
-                //acWordToggle()
+                //toggleWord()
+                acWordToggle()
             } else {
                 initiateFindWord()
             }
@@ -2047,15 +2062,15 @@ function acWordToggle() {
 
         acWord = {
             startY: fx.cursorLineIndex,
-            endY: fx.cursorLineIndex,
+            stopY: fx.cursorLineIndex,
         }
         if (lastAction == "type") {
             acWord.prefix = w.word
             acWord.startX = fx.cursorColIndex
-            acWord.endX = fx.cursorColIndex
+            acWord.stopX = fx.cursorColIndex
         } else {
             acWord.startX = w.start
-            acWord.endX = w.end
+            acWord.stopX = w.end
         }
         acWord.findUpY = fx.cursorLineIndex
         acWord.findDownY = acWord.findUpY + 1
@@ -2066,58 +2081,117 @@ function acWordToggle() {
         acWord.findDownX = 0
         acWord.findDirection = 1 // 0: up, 1: down
         acWord.toggleCount = 0
+        acWord.clearedWord = false
         acWord.pastedLastTyped = false
         acWord.pastedInLine = false
         acWord.findUpDone = false
         acWord.findDownDone = false
     }
     // single for loop so we can break
+    loopBlock:
     for (var s=0; s<1; s++) {
+        log("prefix:" + acWord.prefix)
+        log("lastAction:" + lastAction)
         if (acWord.prefix) {
             // just autocomplete
             acWord.findDirection = !acWord.findDirection
             var found = null
-
+            loopFind:
             while (true) {
                 if (acWord.findUpDone && acWord.findDownDone) {
                     return
                 }
                 if (acWord.findDirection) {
                     found = acFindUp()
-                } else {
-                    found = acFindDown()
+                    if (found == "") {
+                       acWord.findUpDone = true
+                       continue loopFind
+                    }
+                    break loopFind
                 }
-                return w
+                found = acFindDown()
+                if (found == "") {
+                   acWord.findDownDone = true
+                   continue loopFind
+                }
+                break loopFind
             }
-            break
+            // here we have found a word
+            log("should be plopping")
+            acPlop([found])
+            break loopBlock
         }
-
-
-
+        // here we have no prefix
+        if (!acWord.clearedWord) {
+           acPlop([""])
+           break loopBlock
+        } 
+        
+        // here we have no prefix
+        if (!acWord.pastedLastTyped) {
+           acPlop([lastWord])
+           break loopBlock
+        } 
+        
+        if (!acWord.pastedInLine) {
+           acPlop([copyBuffer])
+           break loopBlock
+        } 
     }
     acWord.toggleCount += 1
 }
 
 function acFindUp() {
-    if (acWord.findUpY < 0) {
-
-        return
+    return "hello world"
+}
+function acFindDown() {
+    return "goodbye world"
+}
+function acPlop(buff) {
+    var oldCopyBuffer = copyBuffer
+    copyBuffer = buff
+    var oldSelectMode = selectMode
+    selectedRegions = [{
+        startX: acWord.startX,    
+        stopX: acWord.stopX,    
+        startY: acWord.startY,    
+        stopY: acWord.stopY,    
+    }]
+    render()
+    selectMode = "char"
+    del(true) // note that del does a lot more than maybe we need
+    // TODO: updat xy
+    paste()
+    acWord.stopY = acWord.startY + copyBuffer.length - 1
+    var lastCopyBufferLine = copyBuffer[copyBuffer.length - 1]
+    var stopX = expandTabIndex(lastCopyBufferLine, lastCopyBufferLine.length)
+    log("stopX is " + stopX)
+    if (copyBuffer.length == 1) {
+        acWord.stopX = acWord.startX + stopX 
+    } else {
+        acWord.stopX = stopX
     }
-    var theLine = fx.lines[acWord.findUpY]
-    var pos = theLine.indexOf(acWord.prefix, acWord.findUpX)
+    copyBuffer = oldCopyBuffer
+    selectMode = oldSelectMode
+    selectedRegions = []
+    render()
+    //alert(acWord.stopX)
+       
 }
 // END NEW FIND WORD
-/*
-split lines
-store for each line if it's more intented
-or less indented
-*/
 function doFormat() {
     fx.lines = simpleFormat(fx.lines)
     docChanged()
     render()
 }
 function simpleFormat(lines) {
+    // this will work as long as ever indent
+    // has another lone that "closes" it
+    /*
+    split lines
+    store for each line if it's more intented
+    or less indented
+    */
     var newLines = []
     var lastSpaceCount = 0
     var currentIndent = 0
@@ -2220,15 +2294,15 @@ function findWordUp() {
             }
             if (w.word != "" && w.word != findWordFoundWord &&
                 (findWordPrefix == "" || (w.word != findWordPrefix && w.word.startsWith(findWordPrefix)))) {
-            if (findWordUpX < 0) {
-                findWordUpY -= 1
+                if (findWordUpX < 0) {
+                    findWordUpY -= 1
+                }
+                return w
             }
-            return w
         }
     }
-}
-findWordUpDone = true
-return {start: -1, end: -1, word: ""}
+    findWordUpDone = true
+    return {start: -1, end: -1, word: ""}
 }
 
 function findWordDown() {
@@ -2245,17 +2319,17 @@ function findWordDown() {
             }
             if (w.word != "" && w.word != findWordFoundWord &&
                 (findWordPrefix == "" || (w.word != findWordPrefix && w.word.startsWith(findWordPrefix)))) {
-            if (findWordDownX >= line.length) {
-                findWordDownY += 1
-                findWordDownX = 0
+                if (findWordDownX >= line.length) {
+                    findWordDownY += 1
+                    findWordDownX = 0
+                }
+                return w
             }
-            return w
         }
+        findWordDownX = 0
     }
-    findWordDownX = 0
-}
-findWordDownDone = true
-return {start: -1, end: -1, word: ""}
+    findWordDownDone = true
+    return {start: -1, end: -1, word: ""}
 }
 
 // if it's at 0 (or only ondented) you could do
