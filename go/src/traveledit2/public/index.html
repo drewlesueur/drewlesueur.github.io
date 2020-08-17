@@ -552,6 +552,7 @@ function log(v) {
         d.innerText = v
     }
     logEl.appendChild(d)
+    logEl.scrollTop = logEl.scrollHeight
 }
 
 function docChanged() {
@@ -939,8 +940,10 @@ function paste(unselect) {
             var line = fx.lines[fx.cursorLineIndex]
             fx.lines[fx.cursorLineIndex] = line.slice(0, u(fx.cursorColIndex)) +
                 copyBuffer[0]
-            copyBuffer[copyBuffer.length-1] += line.slice(u(fx.cursorColIndex))
-            fx.lines.splice(fx.cursorLineIndex+1, 0, ...copyBuffer.slice(1))
+            // copyBuffer[copyBuffer.length-1] += line.slice(u(fx.cursorColIndex))
+            // fx.lines.splice(fx.cursorLineIndex+1, 0, ...copyBuffer.slice(1))
+            lastLine = copyBuffer[copyBuffer.length-1] + line.slice(u(fx.cursorColIndex))
+            fx.lines.splice(fx.cursorLineIndex+1, 0, ...copyBuffer.slice(1, -1), lastLine)
         }
     }
     docChanged()
@@ -960,11 +963,11 @@ function pasteLastWord() {
 }
 
 
-function del(preventCopy) {
+function del(preventCopy, preventDeleteWholeLine) {
     if (selectedRegions.length>0) {
         var r = selectedRegions[0]
         if (r.startY == r.stopY) {
-            if (r.startX == 0 && unExpandTabIndex(fx.lines[r.startY], r.stopX) == fx.lines[r.startY].length) {
+            if (!preventDeleteWholeLine && r.startX == 0 && unExpandTabIndex(fx.lines[r.startY], r.stopX) == fx.lines[r.startY].length) {
                 selectMode = "line"
                 if (!preventCopy) {
                     copyBuffer = [fx.lines[r.startY]]
@@ -1004,8 +1007,10 @@ function del(preventCopy) {
         fx.lines[r.startY] = unExpandSlice(fx.lines[r.startY], 0,  r.startX) +
             unExpandSlice(fx.lines[r.stopY], r.stopX)
         fx.lines.splice(r.startY + 1, r.stopY-r.startY)
-        if (fx.lines[r.startY] == "") {
-            fx.lines.splice(r.startY, 1)
+        if (!preventDeleteWholeLine) {
+            if (fx.lines[r.startY] == "") {
+                fx.lines.splice(r.startY, 1)
+            }
         }
         fx.cursorLineIndex = r.startY
         fx.cursorColIndex = r.startX
@@ -1208,6 +1213,12 @@ function u(start) {
 }
 function expandTabIndex(theLine, start) {
     theLine = theLine || ""
+    if (!theLine.substring) {
+       log("bad line")
+       log(theLine)
+       var err = new Error()
+       log(err.stack)
+    }
     theLine = theLine.substring(0, start)
     var expandedLineLength = 0
     var tabStop = 4
@@ -1268,7 +1279,7 @@ function handleFocusBefore() {
 function handleFocusIn() {
     setCanvasHeight(canvasHeightKeyboard)
     ensureCursorInScreen()
-    lastAction = "type"
+    // lastAction = "type"
     acWord = null
     render()
     //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
@@ -1365,7 +1376,6 @@ var closingMap = {
 }
 function saveLine() {
     lastAction = "type"
-    log("type")
     acWord = null
     var lastTyped = theText.value[theText.selectionStart - 1]
     var secondLastTyped = theText.value[theText.selectionStart - 2] || ""
@@ -1723,11 +1733,8 @@ function onStart(e) {
         }
     }
     var onMove = function(e) {
-        if (lastAction != "move") {
-            lastAction = "move"
-            acWord = null
-            log("move")
-        }
+        lastAction = "move"
+        acWord = null
         clearTimeout(selectTimeout)
         if (e.touches.length > 1) {
             return
@@ -2075,24 +2082,24 @@ function acWordToggle() {
         }
         if (lastAction == "type") {
             acWord.prefix = w.word
+            acWord.word = w.word
             acWord.startX = fx.cursorColIndex
             acWord.stopX = fx.cursorColIndex
         } else {
             acWord.startX = w.start
             acWord.stopX = w.end
+            acWord.word = w.word
         }
-        acWord.findUpY = fx.cursorLineIndex
-        acWord.findDownY = acWord.findUpY + 1
         // because we move the current file to the front
         // this will be true
         acWord.fileIndex = 0
-        acWord.findUpX = 0
-        acWord.findDownX = 0
+        acWord.findUpX = fx.lines[fx.cursorLineIndex].length
         acWord.findUpY = fx.cursorLineIndex
+        acWord.findDownX = 0
         acWord.findDownY = fx.cursorLineIndex + 1
-        acWord.findDirection = false // 0: up, 1: down
+        acWord.findDirection = false // true: up, false: down
         acWord.toggleCount = 0
-        acWord.clearedWord = false
+        acWord.clearedWord = acWord == ""
         acWord.pastedLastTyped = false
         acWord.pastedInLine = false
         acWord.findUpDone = false
@@ -2104,8 +2111,6 @@ function acWordToggle() {
     // single for loop so we can break
     loopBlock:
     for (var s=0; s<1; s++) {
-        log("prefix:" + acWord.prefix)
-        log("lastAction:" + lastAction)
         if (acWord.prefix) {
             // just autocomplete
             var loopCount = 0
@@ -2157,24 +2162,30 @@ function acWordToggle() {
             break loopBlock
         }
         // here we have no prefix
-        if (!acWord.clearedWord) {
+        if (!acWord.clearedWord && acWord.word != "") {
            acWord.clearedWord = true
            acPlop([""])
            break loopBlock
         } 
         
         // here we have no prefix
-        if (!acWord.pastedLastTyped) {
+        if (!acWord.pastedLastTyped && lastWord && lastWord != acWord.word) {
            acWord.pastedLastTyped = true
            acPlop([lastWord])
            break loopBlock
         } 
         
-        if (!acWord.pastedInLine) {
+        if (!acWord.pastedInLine && copyBuffer.length) {
            acWord.pastedInLine = true
-           acPlop([copyBuffer])
+           acPlop(copyBuffer)
            break loopBlock
-        } 
+        }
+        acWord.clearedWord = false
+        acWord.pastedLastTyped = false
+        acWord.pastedInLine = false
+        acPlop([acWord.word])
+        
+         
     }
     acWord.toggleCount += 1
 }
@@ -2195,16 +2206,19 @@ function acPlop(buff) {
         stopY: acWord.stopY,    
     }]
     selectMode = "char"
-    del(true) // note that del does a lot more than maybe we need
+    del(true, true) // note that del does a lot more than maybe we need
     acWord.stopY = acWord.startY
     paste()
     acWord.stopY = acWord.startY + copyBuffer.length - 1
     var lastCopyBufferLine = copyBuffer[copyBuffer.length - 1]
     var stopX = expandTabIndex(lastCopyBufferLine, lastCopyBufferLine.length)
-    log("stopX is " + stopX)
     if (copyBuffer.length == 1) {
         acWord.stopX = acWord.startX + stopX 
     } else {
+        log({
+           lastCopyBufferLine: lastCopyBufferLine,
+           stopXIs: stopX
+        })
         acWord.stopX = stopX
     }
     fx.cursorColIndex = acWord.stopX
@@ -2229,7 +2243,7 @@ function acFindUp() {
             return {start: -1, end: -1, word: ""}
         }
         // so word being changed doesn't affect cursor
-        if (acWord.startY == acWord.findUpY) {
+        if (acWord.fileIndex == 0 && acWord.startY == acWord.findUpY) {
             line = acWord.origLine
         }
         if (acWord.findUpX < 0) {
