@@ -168,7 +168,7 @@ onblur=handleBlur()
         style="width: 375px; height: 520px;"
     ></iframe>-->
 </td><td valign=top>
-    <div id=logEl style="height: 200px; width:240px;
+    <div id=logEl style="height: 450px; width:240px;
     overflow:scroll;
     -webkit-overflow-scrolling: touch;
     font-size:10px;"
@@ -200,6 +200,7 @@ onblur=handleBlur()
     <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
 </div>
 <div class=toolbar>
+    <div class=square onclick=selectFileIndex(1)>alt tab</div>
     <div class=square onclick=debugView()>debug view</div>
     <div class=square onclick=reloadFile()>reload</div>
     <div class=square onclick=doEval()>eval</div>
@@ -272,6 +273,7 @@ var fontCSS = (30 * fontScale) + "px 'Courier'"
 
 var fontColor = "white"
 var lightFontColor = "rgba(255, 255, 255, 0.5)"
+var veryLightFontColor = "rgba(255, 255, 255, 0.1)"
 var isDark = true
 var cursorX=0
 var cursorY=0
@@ -369,6 +371,7 @@ function toggleDarkMode() {
         updateClassForSelector("textarea", "dark","light")
         fontColor = "black"
         lightFontColor = "rgba(0, 0, 0, 0.5)"
+        veryLightFontColor = "rgba(0, 0, 0, 0.1)"
         render()
         return
     }
@@ -379,6 +382,7 @@ function toggleDarkMode() {
     updateClassForSelector("textarea", "light", "dark")
     fontColor = "white"
     lightFontColor = "rgba(255, 255, 255, 0.5)"
+    veryLightFontColor = "rgba(255, 255, 255, 0.1)"
     render()
 
 }
@@ -441,7 +445,9 @@ var bashHelpers = [
     "git add -u .",
     "git diff --cached",
     "git log -10",
+    "git log -p -10",
     "git commit -m '' --author='Drew LeSueur <drewalex@gmail.com>'",
+    "git commit -m ''",
     "git push origin HEAD",
     "git branch",
     "golangci-lint run --print-issued-lines=false",
@@ -614,6 +620,7 @@ function redo() {
     repositionUndo()
 }
 function clearLog() {
+    runBashCommand("clear")
     logEl.innerHTML = ""
     render()
 }
@@ -804,9 +811,13 @@ function dup() {
 }
 
 function indent() {
-    // not usinf addPrefix, seems to be buggy
+    // seems to be buggy
     // when first line indent is more than 
-    // lasst line indent
+    // last line indent
+    if ((fx.lines[fx.cursorLineIndex] || "")[0] == "\t") {
+       addPrefix("\t")
+       return
+    }
     addPrefix("    ")
     
 }
@@ -1110,13 +1121,14 @@ function newLine(e) {
 }
 function runBashCommand(line) {
     if (line == "clear") {
-        fx.lines = []
+        fx.lines = [""]
         fx.cursorLineIndex = 0
         fx.cursorColIndex = 0
         updateCursorXY()
         fx.offsetY = 0
-        render()
-        return
+        // render()
+        // return
+        line = "p"
     }
 
     if (line.startsWith("open ")) {
@@ -1159,6 +1171,7 @@ function runBashCommand(line) {
         fx.cursorColIndex = 0
         fx.cursorLineIndex += copyBuffer.length
         fx.cursorLineIndex = fx.lines.length - 1
+        selectMode = "line"
         paste(true)
         fx.cursorLineIndex = fx.lines.length - 1
         updateCursorXY()
@@ -1628,12 +1641,14 @@ function render() {
                 // comments are gray
                 t.fillStyle = lightFontColor 
             } else {
-                var spaceCount = getSpaceCount(theLine)
-                if (spaceCount < fx.offsetX && (y + fx.offsetY) != fx.cursorLineIndex) {
-                    t.fillStyle = lightFontColor
-                } else {
-                    t.fillStyle = fontColor
-                }
+                // feature to gray out lines before where you are scrolled to
+                // var spaceCount = getSpaceCount(theLine)
+                // if (spaceCount < fx.offsetX && (y + fx.offsetY) != fx.cursorLineIndex) {
+                //     t.fillStyle = lightFontColor
+                // } else {
+                //     t.fillStyle = fontColor
+                // }
+                t.fillStyle = fontColor
             }
         } else {
             t.fillStyle = fontColor
@@ -1661,7 +1676,7 @@ function render() {
             var chr = expandedLine[x+fx.offsetX] || ""
             if (chr == "\t") {
                 t.save()
-                t.fillStyle = lightFontColor
+                t.fillStyle = veryLightFontColor
                 t.fillText("•", x*fontWidth, y*fontHeight)
                 t.restore()
             } else {
@@ -2099,6 +2114,8 @@ function acWordToggle() {
         }
         var theLine = fx.lines[fx.cursorLineIndex]
         if (lastAction == "type") {
+            // start on autocomplete line
+            //if (theLine.substring(0, w.start) 
             acWord.prefix = w.word
             acWord.word = w.word
             acWord.startX = fx.cursorColIndex
@@ -2177,6 +2194,10 @@ function acWordToggle() {
                     }
                 }
                 
+                if (found == "") {
+                   continue loopFind
+                }
+                
                 break loopFind
             }
             
@@ -2236,16 +2257,13 @@ function acPlop(buff) {
     acWord.stopY = acWord.startY
     paste()
     acWord.stopY = acWord.startY + copyBuffer.length - 1
-    var lastCopyBufferLine = copyBuffer[copyBuffer.length - 1]
-    var stopX = expandTabIndex(lastCopyBufferLine, lastCopyBufferLine.length)
     if (copyBuffer.length == 1) {
-        acWord.stopX = acWord.startX + stopX 
+        var theLine = fx.lines[fx.cursorLineIndex] || ""
+        
+        acWord.stopX = expandTabIndex(theLine, u(acWord.startX) + copyBuffer[0].length) 
     } else {
-        log({
-           lastCopyBufferLine: lastCopyBufferLine,
-           stopXIs: stopX
-        })
-        acWord.stopX = stopX
+        var lastCopyBufferLine = copyBuffer[copyBuffer.length - 1]
+        acWord.stopX = expandTabIndex(lastCopyBufferLine, lastCopyBufferLine.length)
     }
     fx.cursorColIndex = acWord.stopX
     fx.cursorLineIndex = acWord.stopY
@@ -2293,11 +2311,18 @@ function acFindUp() {
 
 function acFindDown() {
     var w = {start: -1, end: -1, word: ""}
-    for (acWord.findDownY; acWord.findDownY<fx.lines.length; acWord.findDownY++) {
+    for (acWord.findDownY; acWord.findDownY<files[acWord.fileIndex].lines.length; acWord.findDownY++) {
         var line = files[acWord.fileIndex].lines[acWord.findDownY] || ""
         for (acWord.findDownX; acWord.findDownX < line.length; acWord.findDownX++) {
             w = getWordAt(line, acWord.findDownX)
             if (w.word != "") {
+                // if (acWord.fileIndex == 1) {
+                //     log({
+                //        fileIndex: acWord.fileIndex,
+                //        word: w.word,
+                //        y: acWord.findDownY
+                //     })
+                // }
                 acWord.findDownX = w.end + 1
             }
             var seen = acWord.seen[w.word]
@@ -2374,6 +2399,7 @@ function getSpaceCount(line) {
 
 
 // FINDWORD
+// these functions are now deprecated
 function resetFindWord() {
     findWordCount = 0
     findWordUpY = 0
@@ -2623,9 +2649,15 @@ function selectSearchRow(e) {
     render()
 }
 function selectFileRow(e) {
+    if (!e.target.hasAttribute("data-index")) {
+       // thinking we get here if they tap in the margin
+       return
+    }
     var index = e.target.getAttribute("data-index")
+    selectFileIndex(index)
+}
+function selectFileIndex(index) {
     var file = files[index]
-
     // put it at the beginning.
     files.splice(index, 1)
     files.unshift(file)
@@ -2696,6 +2728,9 @@ function renderFileDropdown() {
             log("null file error")
             log(err.stack)
             log({fileI, files})
+            // this bug keeps biting me every once in a while
+            alert("null file issue!! on " + fileI)
+            return
         }
         var button = document.createElement("div")
         button.className = "longButton"

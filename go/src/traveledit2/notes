@@ -1,3 +1,39 @@
+bug: inline paste (by tapping) if it has
+   a tab in it things will be messed up.
+   fixed!
+
+bug: type a word to get last typed word
+  then do an autocomplete that is touching
+  the next word. it will first paste last word
+  before autocompleting
+  
+ideas for gestures
+-- long tap after select to get new mode
+-- left and right are comment and uncomment
+-- down is paste over
+-- long tap selects a word
+-- swiping up cuts and down copies, just like normal
+  -- but left and right will expand the selection  
+-- think thru multiple paste buffers
+swipe left after you are already full left
+swipe right after you are already full right
+swipe fast down goes to next occurance
+swipe up fast goes to prev occurance
+
+
+
+ 
+   
+
+cmd sbouldn't steal the copyBuffer
+why did it autocomplete 2018, (with a comma at the end?)
+
+maintain cursor after closing file from files list
+remember file position across reloads
+optionally autocomple including . and - (for cmd especially)
+button or gesture for going to file (including line number) in bash
+autocomple in first word on line will autocomple
+    the entire line
 bug with miltiple files when you reset what fx.lines is
 like in undo
 a way to go back to where you were!!
