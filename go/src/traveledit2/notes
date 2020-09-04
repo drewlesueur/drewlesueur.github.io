@@ -1,6 +1,44 @@
+
+in bash mode replace some buttons with git commands?
+  (or other helpful commands?!)
+the files list order alphabetically?
+
+autocomplete line
+clear cmd should save last 2 lines
+moving to new file should clear selection (or possibly allow selection per file) 
+first load doesn't show ..
+warning if closed unsaved
+
+hitting cmd on fileList mode 
+make navigating files easier
+  maybe integrate with the search feature?
+    * keep search feature up between file loads tonseasily search the next dir?
+  maybe simply autocomplete with directories in bash mode
+
+lots of programming is research
+it would be cool do have text-only ways 
+to research right in the app
+* stackoverflow
+* go docs (possible now with some command line calls?)
+
+
+jump to corresponding paren or curly etc
+be smart about quotes and comments?
+
+feature: maybe a status line that says
+what function you are in (aka first line with 0 indent... first line with x indent?)
+
+feature: add markers where you can mark a file/line
+   and then see a list of marked lines to go to them
+   and maybe a button to toggle beween marked lines
+   
+bug: search, finding 2 results on same line broken again?
+   does it have to fo with tabs?
+
+idea see all functions (or left-most lines)
 bug: inline paste (by tapping) if it has
-   a tab in it things will be messed up.
-   fixed!
+   a inltab in it things will be messed up.
+   fixed
 
 bug: type a word to get last typed word
   then do an autocomplete that is touching
@@ -21,7 +59,7 @@ swipe fast down goes to next occurance
 swipe up fast goes to prev occurance
 
 
-
+alert(".".charCodeAt(0))
  
    
 

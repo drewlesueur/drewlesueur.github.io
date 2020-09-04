@@ -107,7 +107,7 @@ onfocus=handleFocusBefore()
 onblur=handleBlur()
 >
 <input class=dark id=theText class=text type=text
-style="font: 12px Courier; color: brown;
+style="font: 16px Courier; color: brown;
 width: 375px;
 --position:absolute; top: 100px;
 display: block;
@@ -419,8 +419,7 @@ function inputSearchText() {
 function closeFile() {
     if (fx.fileMode == "fileList") {
         files.splice(fx.cursorLineIndex, 1)
-        seeFiles()
-        seeFiles()
+        fx.lines = getLinesForFileList()
     } else {
         for (var i=0; i<files.length; i++) {
             var file = files[i]
@@ -460,6 +459,7 @@ var bashHelpers = [
     "git --no-pager diff > gitdiff",
     "open gitdiff",
     "git apply --cached gitdiff",
+    "go doc -all ''",
     "clear",
     "",
     "",
@@ -485,7 +485,7 @@ function addCmdTab() {
     runBashCommand("")
     //theText.focus()
 }
-function addFile(fullPath, changeURL, closeCurrentIfDir, closeCurrent, reload) {
+function addFile(fullPath, changeURL, closeCurrent, reload) {
     if (fullPath.charAt(0) != "/") {
         fullPath = "/" + fullPath
     }
@@ -524,7 +524,7 @@ function addFile(fullPath, changeURL, closeCurrentIfDir, closeCurrent, reload) {
         } else {
             file.fileMode = "file"
         }
-        if ((isDir && closeCurrentIfDir) || closeCurrent) {
+        if (closeCurrent) {
             closeFile()
         }
         addFileToList(file)
@@ -630,7 +630,9 @@ function isWordy(a) {
         (a >= 65 && a <= 90) ||  // A-Z
         (a >= 97 && a <= 122) || // a-z
         (a >= 48 && a <= 57) ||  // 0-9
-        (a == 95)                // _
+        (a == 95)            ||    // _
+        (fx.fileMode == "bash" && a == 46) || // .
+        (fx.fileMode == "bash" && a == 45) // -
     )
 }
 function getWordAtCursor() {
@@ -916,7 +918,9 @@ function copy() {
     }
 
     // TODO: figure out why it's not fully copying at os level
-    copyEl.value = copyBuffer.join("\n")
+    var copyBufferString = copyBuffer.join("\n")
+    copyEl.value = copyBufferString
+    navigator.clipboard.writeText(copyBufferString)
     // copyEl.setSelectionRange(0, copyEl.value.length)
     // var range = document.createRange()
     // range.selectNodeContents(copyEl)
@@ -1120,66 +1124,71 @@ function newLine(e) {
     return false
 }
 function runBashCommand(line) {
-    if (line == "clear") {
-        fx.lines = [""]
-        fx.cursorLineIndex = 0
-        fx.cursorColIndex = 0
-        updateCursorXY()
-        fx.offsetY = 0
-        // render()
-        // return
-        line = "p"
+    // outer loop to simulate goto
+    var oldCopyBuffer = copyBuffer
+    for (var s=0; s<1; s++) {
+        if (line == "clear") {
+            fx.lines = [""]
+            fx.cursorLineIndex = 0
+            fx.cursorColIndex = 0
+            updateCursorXY()
+            fx.offsetY = 0
+            // render()
+            // return
+            line = "p"
+        }
+    
+        if (line.startsWith("open ")) {
+            var fileToLoad = line.split(" ")[1]
+            copyBuffer = [""]
+            paste(true)
+            fx.cursorLineIndex += 1
+            fx.cursorColIndex = 0
+            ensureCursorInScreen()
+            addFile(proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad, true)
+            break
+        }
+    
+        if (line == "p") {
+            copyBuffer = bashHelpers
+            paste(true)
+            fx.cursorLineIndex = fx.lines.length - 1
+            fx.cursorColIndex = 0
+            updateCursorXY()
+            ensureCursorInScreen()
+            break
+        }
+    
+        fetch(proxyPath + "/mybash?cwd="+encodeURIComponent(fx.bashCWD)+"&cmd="+encodeURIComponent(line), {
+            cache: "no-cache"
+        }).then(r => {
+            return r.text()
+        }).then(r => {
+            copyBuffer = r.split("\n")
+            copyBuffer.unshift("") // leading newline
+            // second to last item is cwd
+            fx.bashCWD = copyBuffer[copyBuffer.length - 2]
+            // let's restyle the pwd after we grab it
+            copyBuffer[copyBuffer.length - 2] = fx.bashCWD
+                .split("/")
+                .reverse()
+                .join(" < ")
+            copyBuffer.push(line) // add the line so it's easy to run again.
+            copyBuffer.push("")
+            fx.cursorColIndex = 0
+            fx.cursorLineIndex += copyBuffer.length
+            fx.cursorLineIndex = fx.lines.length - 1
+            selectMode = "line"
+            paste(true)
+            fx.cursorLineIndex = fx.lines.length - 1
+            updateCursorXY()
+            ensureCursorInScreen()
+            copyBuffer = oldCopyBuffer
+        }).catch(e => {
+            alert("There was an error running the command: " + e)
+        })
     }
-
-    if (line.startsWith("open ")) {
-        var fileToLoad = line.split(" ")[1]
-        copyBuffer = [""]
-        paste(true)
-        fx.cursorLineIndex += 1
-        fx.cursorColIndex = 0
-        ensureCursorInScreen()
-        addFile(proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad, true)
-        return
-    }
-
-    if (line == "p") {
-        copyBuffer = bashHelpers
-        paste(true)
-        fx.cursorLineIndex = fx.lines.length - 1
-        fx.cursorColIndex = 0
-        updateCursorXY()
-        ensureCursorInScreen()
-        return
-    }
-
-    fetch(proxyPath + "/mybash?cwd="+encodeURIComponent(fx.bashCWD)+"&cmd="+encodeURIComponent(line), {
-        cache: "no-cache"
-    }).then(r => {
-        return r.text()
-    }).then(r => {
-        copyBuffer = r.split("\n")
-        copyBuffer.unshift("") // leading newline
-        // second to last item is cwd
-        fx.bashCWD = copyBuffer[copyBuffer.length - 2]
-        // let's restyle the pwd after we grab it
-        copyBuffer[copyBuffer.length - 2] = fx.bashCWD
-            .split("/")
-            .reverse()
-            .join(" < ")
-        copyBuffer.push(line) // add the line so it's easy to run again.
-        copyBuffer.push("")
-        fx.cursorColIndex = 0
-        fx.cursorLineIndex += copyBuffer.length
-        fx.cursorLineIndex = fx.lines.length - 1
-        selectMode = "line"
-        paste(true)
-        fx.cursorLineIndex = fx.lines.length - 1
-        updateCursorXY()
-        ensureCursorInScreen()
-    }).catch(e => {
-        alert("There was an error running the command: " + e)
-    })
-
+    copyBuffer = oldCopyBuffer
 }
 
 function trimPrefix(str, prefix) {
@@ -1876,8 +1885,7 @@ function onStart(e) {
                 } else {
                     var newFullPath = prefix + "/" + addPath
                 }
-                var closeCurrentIfDir = true
-                addFile(newFullPath, true, closeCurrentIfDir)
+                addFile(newFullPath, true, true)
                 return
             }
 
@@ -1906,7 +1914,7 @@ function onStart(e) {
                 }
                 var parts = files[fx.cursorLineIndex].fullPath.split("/")
                 parts = parts.slice(0, parts.length - reversePathIndex)
-                addFile(parts.join("/"), true, false, false)
+                addFile(parts.join("/"), true, false)
                 return
             }
 
@@ -2201,9 +2209,6 @@ function acWordToggle() {
                 break loopFind
             }
             
-            log({
-               found: found
-            })
             // here we have found a word
             acPlop([trimPrefix(found, acWord.prefix)])
             break loopBlock
@@ -2747,19 +2752,21 @@ function renderFileDropdown() {
     }
 
 }
-
-function seeFiles() {
-    if (currentFile.fileMode == "fileList") {
-        setCurrentFile(files[0])
-        return
-    }
-    var contents = files.map(f => {
+function getLinesForFileList() {
+    return files.map(f => {
         //return f.fullPath
         var parts = f.fullPath.split("/")
         var reversed = parts.reverse().join(" < ")
         // we reverse to see more unique stuff first
         return reversed
-    }).join("\n")
+    })
+}
+function seeFiles() {
+    if (currentFile.fileMode == "fileList") {
+        setCurrentFile(files[0])
+        return
+    }
+    var contents = getLinesForFileList().join("\n")
     var f = makeFile("__", contents)
     f.fileMode = "fileList"
     f.cursorLineIndex = 1
@@ -2793,7 +2800,7 @@ function duplicateFile(f) {
 }
 
 function reloadFile() {
-    addFile(currentFile.fullPath, true, true, true, true)
+    addFile(currentFile.fullPath, true, true, true)
 }
 
 var inDebugView = false
