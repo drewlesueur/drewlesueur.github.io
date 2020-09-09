@@ -1128,7 +1128,11 @@ function runBashCommand(line) {
     var oldCopyBuffer = copyBuffer
     for (var s=0; s<1; s++) {
         if (line == "clear") {
-            fx.lines = [""]
+            // clear everything but the last 2 lines
+            fx.lines = fx.lines.slice(-4)
+            if (fx.lines.length == 0) {
+                fx.lines = [""]
+            }
             fx.cursorLineIndex = 0
             fx.cursorColIndex = 0
             updateCursorXY()
@@ -1890,10 +1894,6 @@ function onStart(e) {
             }
 
             if (fx.fileMode == "fileList") {
-                // TODO: make it so if they select a certain directory
-                // portion that it will add that directory portion
-                // as a new pane (aka file)
-
                 var line = fx.lines[fx.cursorLineIndex]
                 // since these fx.lines are > delimited
                 // we can figure out what section was tapped
@@ -1906,13 +1906,25 @@ function onStart(e) {
                 }
                 if (reversePathIndex == 0) {
                     // put it at the beginning.
-                    var file = files[fx.cursorLineIndex]
-                    files.splice(fx.cursorLineIndex, 1)
+                    var file = sortedFiles[fx.cursorLineIndex]
+                    var fileIndex = -1
+                    for (var fileI=0; fileI < files.length; fileI++) {
+                        if (files[fileI] == file) {
+                           fileIndex = fileI
+                           break
+                        }
+                    }
+                    if (fileIndex == -1) {
+                       alert("data consistency error with file index")
+                       return
+                    }
+                    
+                    files.splice(fileIndex, 1)
                     files.unshift(file)
                     setCurrentFile(file)
                     return
                 }
-                var parts = files[fx.cursorLineIndex].fullPath.split("/")
+                var parts = sortedFiles[fx.cursorLineIndex].fullPath.split("/")
                 parts = parts.slice(0, parts.length - reversePathIndex)
                 addFile(parts.join("/"), true, false)
                 return
@@ -2752,8 +2764,14 @@ function renderFileDropdown() {
     }
 
 }
+var sortedFiles = []
 function getLinesForFileList() {
-    return files.map(f => {
+    // doing the slice so we don't mutate the original array  
+    sortedFiles = files.slice().sort(function(f1, f2) {
+        return f1.fullPath > f2.fullPath
+    })
+    //return files.map(f => {
+    return sortedFiles.map(f => {
         //return f.fullPath
         var parts = f.fullPath.split("/")
         var reversed = parts.reverse().join(" < ")
@@ -2769,7 +2787,20 @@ function seeFiles() {
     var contents = getLinesForFileList().join("\n")
     var f = makeFile("__", contents)
     f.fileMode = "fileList"
-    f.cursorLineIndex = 1
+    
+    var fileIndex = -1
+    for (var fileI=0; fileI<sortedFiles.length; fileI++) {
+       if (sortedFiles[fileI] == currentFile) {
+          fileIndex = fileI
+          break
+       }
+    }
+    
+    f.cursorLineIndex = 0
+    if (fileIndex != -1) {
+       f.cursorLineIndex = fileIndex
+    }
+    
     setCurrentFile(f)
 }
 function setCurrentFile(file) {
