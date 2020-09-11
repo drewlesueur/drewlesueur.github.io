@@ -179,6 +179,15 @@ onblur=handleBlur()
 </div>
 <div class=toolbar id=fileRow onclick=selectFileRow(event)>
 </div>
+<div class=toolbar>
+</div>
+<div class=toolbar id=bashToolbar style="--display: none">
+    <div class=square onclick='runBashCommand("git status")'>git status</div>
+    <div class=square onclick='runBashCommand("git diff")'>git diff</div>
+    <div class=square onclick='runBashCommand("git log -10")'>git log -10</div>
+    <div class=square onclick='runBashCommand("git log -p -3")'>git log -p -3</div>
+    <div class=square onclick='runBashCommand("git log -p -3")'>git log -p -3</div>
+</div>
 
 <div class=toolbar>
     <div id=findDownButton class=square onclick=findDown()>find down</div>
@@ -301,6 +310,7 @@ var pointHeight=500
 var touchScale=2 // was 3 for a while
 
 var lastAction = "move" // move or type
+var hasMovedSinceNewLine = false
 var inEdit = false
 var copyBuffer = []
 var selectMode = "line"
@@ -588,12 +598,12 @@ function setLines(lines) {
     // because there can be multiple files
     // referencing the same lines,
     // we can't just set the lines on one
-    // for when you have to update the whole object 
+    // for when you have to update the whole object
     fx.lines = lines
     for (var i=0; i<files.length; i++) {
         if (fx != files[i] && files[i].fullPath == fx.fullPath) {
             files[i].lines = fx.lines
-        }   
+        }
     }
 }
 function repositionUndo() {
@@ -700,6 +710,7 @@ function addSearchTerm() {
 }
 function findDown() {
     lastAction = "move"
+    hasMovedSinceNewLine = true
     acWord = null
     if (searchText.value == "") {
         searchText.value = getWordAtCursor().word
@@ -756,6 +767,7 @@ function reverse(str) {
 }
 function findUp() {
     lastAction = "move"
+    hasMovedSinceNewLine = true
     acWord = null
     if (searchText.value == "") {
         searchText.value = getWordAtCursor().word
@@ -814,14 +826,14 @@ function dup() {
 
 function indent() {
     // seems to be buggy
-    // when first line indent is more than 
+    // when first line indent is more than
     // last line indent
     if ((fx.lines[fx.cursorLineIndex] || "")[0] == "\t") {
-       addPrefix("\t")
-       return
+        addPrefix("\t")
+        return
     }
     addPrefix("    ")
-    
+
 }
 function dedent() {
     stripPrefixes(["\t", "    "])
@@ -949,6 +961,17 @@ function setCanvasWidth(w) {
     maxCols = Math.floor(canvasWidth / fontWidth)
 }
 
+function insertText(theLines, yOffset, xOffset) {
+    selectMode = "line"
+    var oldCopyBuffer = copyBuffer
+    paste()
+    fx.cursorLineIndex = fx.cursorLineIndex + yOffset
+    var theLine = fx.lines[fx.cursorLineIndex]
+    fx.cursorColIndex = expandTabIndex(theLine, xOffset)
+    ensureCursorInScreen()
+    render()
+    copyBuffer = oldCopyBuffer
+}
 function paste(unselect) {
     if (selectMode == "line") {
         fx.lines.splice(fx.cursorLineIndex + 1, 0, ...copyBuffer)
@@ -1091,6 +1114,7 @@ function getIndent(line) {
 }
 function insertLine(closeCurly) {
     lastAction = "type"
+    hasMovedSinceNewLine = false
     acWord = null
     var theLine = fx.lines[fx.cursorLineIndex]
     var theIndent = getIndent(theLine)
@@ -1141,7 +1165,7 @@ function runBashCommand(line) {
             // return
             line = "p"
         }
-    
+
         if (line.startsWith("open ")) {
             var fileToLoad = line.split(" ")[1]
             copyBuffer = [""]
@@ -1152,7 +1176,7 @@ function runBashCommand(line) {
             addFile(proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad, true)
             break
         }
-    
+
         if (line == "p") {
             copyBuffer = bashHelpers
             paste(true)
@@ -1162,7 +1186,7 @@ function runBashCommand(line) {
             ensureCursorInScreen()
             break
         }
-    
+
         fetch(proxyPath + "/mybash?cwd="+encodeURIComponent(fx.bashCWD)+"&cmd="+encodeURIComponent(line), {
             cache: "no-cache"
         }).then(r => {
@@ -1257,10 +1281,10 @@ function u(start) {
 function expandTabIndex(theLine, start) {
     theLine = theLine || ""
     if (!theLine.substring) {
-       log("bad line")
-       log(theLine)
-       var err = new Error()
-       log(err.stack)
+        log("bad line")
+        log(theLine)
+        var err = new Error()
+        log(err.stack)
     }
     theLine = theLine.substring(0, start)
     var expandedLineLength = 0
@@ -1486,7 +1510,7 @@ var lastRender = 0
 var maxFrameRate = 16
 function render() {
     if (preventRender) {
-       return
+        return
     }
     var timeSinceRender = Date.now() - lastRender
     if (timeSinceRender < maxFrameRate) {
@@ -1524,7 +1548,7 @@ function render() {
             }
         }
     }
-    
+
     // render autocomplete word
     if (acWord) {
         t.fillStyle = "orange"
@@ -1652,7 +1676,7 @@ function render() {
                 t.fillStyle = "red"
             } else if (theLine.trim().startsWith("//")) {
                 // comments are gray
-                t.fillStyle = lightFontColor 
+                t.fillStyle = lightFontColor
             } else {
                 // feature to gray out lines before where you are scrolled to
                 // var spaceCount = getSpaceCount(theLine)
@@ -1779,6 +1803,7 @@ function onStart(e) {
     }
     var onMove = function(e) {
         lastAction = "move"
+        hasMovedSinceNewLine = true
         acWord = null
         clearTimeout(selectTimeout)
         if (e.touches.length > 1) {
@@ -1838,6 +1863,15 @@ function onStart(e) {
             if (fx.offsetX < -marginLeft) fx.offsetX = -marginLeft
         }
         fx.cursorLineIndex = Math.round(cursorY/fontHeight) + fx.offsetY
+        
+        // TODO: this so we can get into full line autocomplete mode
+        // by scrolling into an empty line and starting to type
+        // wondering if this is optimal enough.
+        var _line = fx.lines[fx.cursorLineIndex] || ""
+        if (_line.trim() == "") {
+            hasMovedSinceNewLine = false
+            log("yay, scrolled to empty space")
+        }   
         fx.cursorColIndex = Math.round(cursorX/fontWidth) + fx.offsetX
         firstMove = false
         if (cursorType == "select") {
@@ -1910,15 +1944,15 @@ function onStart(e) {
                     var fileIndex = -1
                     for (var fileI=0; fileI < files.length; fileI++) {
                         if (files[fileI] == file) {
-                           fileIndex = fileI
-                           break
+                            fileIndex = fileI
+                            break
                         }
                     }
                     if (fileIndex == -1) {
-                       alert("data consistency error with file index")
-                       return
+                        alert("data consistency error with file index")
+                        return
                     }
-                    
+
                     files.splice(fileIndex, 1)
                     files.unshift(file)
                     setCurrentFile(file)
@@ -2051,6 +2085,12 @@ function onStart(e) {
             setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
             initiateFindWord()
             ensureCursorInScreen()
+        } else if (currentFile.fileMode == "fileList" || currentFile.fileMode == "directory") {
+            fx.cursorLineIndex += 1
+            if (fx.cursorLineIndex >= fx.lines.length) {
+                fx.cursorLineIndex = fx.lines.length - 1
+            }
+            ensureCursorInScreen()
         } else {
             var origOffsetX = fx.offsetX
             // scroll by tabstop?
@@ -2073,6 +2113,12 @@ function onStart(e) {
             //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
             setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
             initiateFindWord()
+            ensureCursorInScreen()
+        } else if (currentFile.fileMode == "fileList" || currentFile.fileMode == "directory") {
+            fx.cursorLineIndex -= 1
+            if (fx.cursorLineIndex < 0) {
+                fx.cursorLineIndex = 0
+            }
             ensureCursorInScreen()
         } else {
             var origOffsetX = fx.offsetX
@@ -2125,7 +2171,14 @@ function acWordToggle() {
         if (lastAction == "move") {
             w = getWordAtCursor()
         } else {
-            w = getWordBeforeCursor()
+            if (!hasMovedSinceNewLine) {
+                w = {
+                    // do we need statrt and end
+                    word: (fx.lines[fx.cursorLineIndex] || "").trim() 
+                }  
+            } else {
+                w = getWordBeforeCursor()
+            }
         }
 
         acWord = {
@@ -2135,11 +2188,18 @@ function acWordToggle() {
         var theLine = fx.lines[fx.cursorLineIndex]
         if (lastAction == "type") {
             // start on autocomplete line
-            //if (theLine.substring(0, w.start) 
+            //if (theLine.substring(0, w.start)
             acWord.prefix = w.word
             acWord.word = w.word
             acWord.startX = fx.cursorColIndex
             acWord.stopX = fx.cursorColIndex
+
+            // if it's the start of the line
+            // do autocomplete whole line
+            // works for languages where lines start with words usually
+            if (theLine.trim() == w.word) {
+                acWord.autocompleteLine = true
+            }
         } else {
             acWord.startX = expandTabIndex(theLine, w.start)
             acWord.stopX = expandTabIndex(theLine, w.end)
@@ -2150,6 +2210,9 @@ function acWordToggle() {
         acWord.fileIndex = 0
         acWord.findUpX = fx.lines[fx.cursorLineIndex].length
         acWord.findUpY = fx.cursorLineIndex
+        if (acWord.autocompleteLine) {
+            acWord.findUpY = fx.cursorLineIndex <= 0 ? 0 : fx.cursorLineIndex - 1
+        }
         acWord.findDownX = 0
         acWord.findDownY = fx.cursorLineIndex + 1
         acWord.findDirection = false // true: up, false: down
@@ -2177,7 +2240,7 @@ function acWordToggle() {
                 if (loopCount > 1000) {
                     alert("eek!")
                     break loopFind
-                } 
+                }
                 acWord.findDirection = !acWord.findDirection
                 if (acWord.fileIndex == files.length) {
                     //alert("allDone")
@@ -2200,56 +2263,54 @@ function acWordToggle() {
                 if (!acWord.findUpDone && acWord.findDirection) {
                     found = acFindUp().word
                     if (found == "") {
-                       acWord.findUpDone = true
-                       continue loopFind
+                        acWord.findUpDone = true
+                        continue loopFind
                     }
                     break loopFind
                 }
-                
+
                 if (!acWord.findDownDone) {
                     found = acFindDown().word
                     if (found == "") {
-                       acWord.findDownDone = true
-                       continue loopFind
+                        acWord.findDownDone = true
+                        continue loopFind
                     }
                 }
-                
+
                 if (found == "") {
-                   continue loopFind
+                    continue loopFind
                 }
-                
+
                 break loopFind
             }
-            
+
             // here we have found a word
             acPlop([trimPrefix(found, acWord.prefix)])
             break loopBlock
         }
         // here we have no prefix
         if (!acWord.clearedWord && acWord.word != "") {
-           acWord.clearedWord = true
-           acPlop([""])
-           break loopBlock
-        } 
-        
+            acWord.clearedWord = true
+            acPlop([""])
+            break loopBlock
+        }
+
         // here we have no prefix
         if (!acWord.pastedLastTyped && lastWord && lastWord != acWord.word) {
-           acWord.pastedLastTyped = true
-           acPlop([lastWord])
-           break loopBlock
-        } 
-        
+            acWord.pastedLastTyped = true
+            acPlop([lastWord])
+            break loopBlock
+        }
+
         if (!acWord.pastedInLine && copyBuffer.length) {
-           acWord.pastedInLine = true
-           acPlop(copyBuffer)
-           break loopBlock
+            acWord.pastedInLine = true
+            acPlop(copyBuffer)
+            break loopBlock
         }
         acWord.clearedWord = false
         acWord.pastedLastTyped = false
         acWord.pastedInLine = false
         acPlop([acWord.word])
-        
-         
     }
     acWord.toggleCount += 1
 }
@@ -2264,10 +2325,10 @@ function acPlop(buff) {
     copyBuffer = buff
     var oldSelectMode = selectMode
     selectedRegions = [{
-        startX: acWord.startX,    
-        stopX: acWord.stopX,    
-        startY: acWord.startY,    
-        stopY: acWord.stopY,    
+        startX: acWord.startX,
+        stopX: acWord.stopX,
+        startY: acWord.startY,
+        stopY: acWord.stopY,
     }]
     selectMode = "char"
     del(true, true) // note that del does a lot more than maybe we need
@@ -2276,8 +2337,8 @@ function acPlop(buff) {
     acWord.stopY = acWord.startY + copyBuffer.length - 1
     if (copyBuffer.length == 1) {
         var theLine = fx.lines[fx.cursorLineIndex] || ""
-        
-        acWord.stopX = expandTabIndex(theLine, u(acWord.startX) + copyBuffer[0].length) 
+
+        acWord.stopX = expandTabIndex(theLine, u(acWord.startX) + copyBuffer[0].length)
     } else {
         var lastCopyBufferLine = copyBuffer[copyBuffer.length - 1]
         acWord.stopX = expandTabIndex(lastCopyBufferLine, lastCopyBufferLine.length)
@@ -2294,7 +2355,7 @@ function acPlop(buff) {
     // TODO: why do we have to set this after render?
     setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
     //alert(acWord.stopX)
-       
+
 }
 function acFindUp() {
     var w = {start: -1, end: -1, word: ""}
@@ -2307,6 +2368,20 @@ function acFindUp() {
         if (acWord.findUpX < 0) {
             acWord.findUpX = line.length
         }
+
+        if (acWord.autocompleteLine) {
+            var trimmedLine = line.trim()
+            if (trimmedLine.startsWith(acWord.prefix)) {
+                // the start and end don't matter
+                var seen = acWord.seen[trimmedLine]
+                if (!seen) {
+                    acWord.seen[trimmedLine] = true
+                    return {word: trimmedLine}
+                }
+            }
+            continue
+        }
+
         for (acWord.findUpX; acWord.findUpX>=0; acWord.findUpX--) {
             w = getWordAt(line, acWord.findUpX)
             if (w.word != "") {
@@ -2330,6 +2405,20 @@ function acFindDown() {
     var w = {start: -1, end: -1, word: ""}
     for (acWord.findDownY; acWord.findDownY<files[acWord.fileIndex].lines.length; acWord.findDownY++) {
         var line = files[acWord.fileIndex].lines[acWord.findDownY] || ""
+
+        if (acWord.autocompleteLine) {
+            var trimmedLine = line.trim()
+            if (trimmedLine.startsWith(acWord.prefix)) {
+                // the start and end don't matter
+                var seen = acWord.seen[trimmedLine]
+                if (!seen) {
+                    acWord.seen[trimmedLine] = true
+                    return {word: trimmedLine}
+                }
+            }
+            continue
+        }
+
         for (acWord.findDownX; acWord.findDownX < line.length; acWord.findDownX++) {
             w = getWordAt(line, acWord.findDownX)
             if (w.word != "") {
@@ -2667,8 +2756,8 @@ function selectSearchRow(e) {
 }
 function selectFileRow(e) {
     if (!e.target.hasAttribute("data-index")) {
-       // thinking we get here if they tap in the margin
-       return
+        // thinking we get here if they tap in the margin
+        return
     }
     var index = e.target.getAttribute("data-index")
     selectFileIndex(index)
@@ -2766,7 +2855,7 @@ function renderFileDropdown() {
 }
 var sortedFiles = []
 function getLinesForFileList() {
-    // doing the slice so we don't mutate the original array  
+    // doing the slice so we don't mutate the original array
     sortedFiles = files.slice().sort(function(f1, f2) {
         return f1.fullPath > f2.fullPath
     })
@@ -2787,20 +2876,20 @@ function seeFiles() {
     var contents = getLinesForFileList().join("\n")
     var f = makeFile("__", contents)
     f.fileMode = "fileList"
-    
+
     var fileIndex = -1
     for (var fileI=0; fileI<sortedFiles.length; fileI++) {
-       if (sortedFiles[fileI] == currentFile) {
-          fileIndex = fileI
-          break
-       }
+        if (sortedFiles[fileI] == currentFile) {
+            fileIndex = fileI
+            break
+        }
     }
-    
+
     f.cursorLineIndex = 0
     if (fileIndex != -1) {
-       f.cursorLineIndex = fileIndex
+        f.cursorLineIndex = fileIndex
     }
-    
+
     setCurrentFile(f)
 }
 function setCurrentFile(file) {
