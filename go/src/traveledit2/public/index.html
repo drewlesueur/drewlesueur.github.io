@@ -24,6 +24,9 @@
     overflow: scroll;
     -webkit-overflow-scrolling: touch;
 }
+.hidden {
+   display: none;
+}
 .toolbar .square {
     --font-family: 'Courier';
     background-color: #077;
@@ -130,71 +133,51 @@ onblur=handleBlur()
 <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
 
-<table cellspacing=0 cellpadding=0><tr><td>
-    <!--
-    as of now the canvas doesn't get resized
-    so it has to be at least as big as the biggest canvasHeight x canvasWith size.
-    Also note that the css width needs to be 1/3 of
-    the with attribute, and same for height.
-    <canvas id=c width=600 height=1560
-    style="width: 200px; height:520px;
-    <canvas id=c width=1125 height=1560
-    style="width: 375px; height:520px;
-    border: 0px solid lime;;
-    "
-    ontouchstart=onStart(event)
-    ></canvas>
+<!--
+Note that the css width needs to be 1/3 of
+the with attribute, and same for height.
+-->
+<canvas id=c width=1125 height=1470
+style="width: 375px; height:490px;
+display: block;"
+ontouchstart=onStart(event)
+></canvas>
 
-    <canvas id=c width=1125 height=1320
-    style="width: 375px; height:440px;
-    "
-    ontouchstart=onStart(event)
-    ></canvas>
-    -->
-    <canvas id=c width=1125 height=1350
-    style="width: 375px; height:450px;
-    display: block;
-    "
-    ontouchstart=onStart(event)
-    ></canvas>
-</td><td valign=top>
-    <div id=findWordEl style="height: 200px; width:175;
-    overflow:scroll;
-    -webkit-overflow-scrolling: touch;
-    font-size:10px;"
-    ></div>
-<!--</td><td valign=top>
-    <iframe src="http://duckduckgo.com"
-        style="width: 375px; height: 520px;"
-    ></iframe>-->
-</td><td valign=top>
-    <div id=logEl style="height: 450px; width:240px;
-    overflow:scroll;
-    -webkit-overflow-scrolling: touch;
-    font-size:10px;"
-    ></div>
-</td></tr></table>
+<div id=logEl style="height: 450px; width:240px;
+overflow:scroll;
+-webkit-overflow-scrolling: touch;
+font-size:10px;
+display:none;"
+></div>
 
-<div class=toolbar id=searchRow onclick=selectSearchRow(event)>
+<div class="toolbar hidden" id=searchRow onclick=selectSearchRow(event)>
 </div>
-<div class=toolbar id=fileRow onclick=selectFileRow(event)>
+<div class="toolbar hidden" id=fileRow onclick=selectFileRow(event)>
 </div>
-<div class=toolbar>
+<div class="toolbar hidden" id=bashToolbar1 style="--display: none">
+    <div class=square onclick='runBashCommand("git branch")'>branch</div>
+    <div class=square onclick='runBashCommand("git status")'>status</div>
+    <div class=square onclick='runBashCommand("git diff")'>diff</div>
+    <div class=square onclick='insertText(["git checkout "], 0, -1)'>checkout</div>
+    <div class=square onclick='insertText(["git commit -m &apos;&apos;"], 0, 15)'>commit -m</div>
+    <div class=square onclick='insertText(["git checkout -b "], 0, -1)'>checkout -b</div>
+    <div class=square onclick='runBashCommand("git add -u .")'>add -u .</div>
 </div>
-<div class=toolbar id=bashToolbar style="--display: none">
-    <div class=square onclick='runBashCommand("git status")'>git status</div>
-    <div class=square onclick='runBashCommand("git diff")'>git diff</div>
-    <div class=square onclick='runBashCommand("git log -10")'>git log -10</div>
-    <div class=square onclick='runBashCommand("git log -p -3")'>git log -p -3</div>
-    <div class=square onclick='runBashCommand("git log -p -3")'>git log -p -3</div>
+<div class="toolbar hidden" id=bashToolbar2 style="--display: none">
+    <div class=square onclick='runBashCommand("git push origin HEAD")'>push origin H</div>
+    <div class=square onclick='runBashCommand("git stash")'>stash</div>
+    <div class=square onclick='runBashCommand("git stash pop")'> stash pop</div>
+    <div class=square onclick='runBashCommand("git pull origin master")'>pull origin m</div>
+    <div class=square onclick='runBashCommand("git diff --cached")'>diff --cached</div>
+    <div class=square onclick='runBashCommand("git log -10")'>log -10</div>
+    <div class=square onclick='runBashCommand("git log -p -3")'>log -p -3</div>
 </div>
-
 <div class=toolbar>
     <div id=findDownButton class=square onclick=findDown()>find down</div>
     <div id=findUpButton class=square onclick=findUp()>find up</div>
     <div id=clearSearchButton class=square onclick=clearSearch()>clear search</div>
-    <!--<div class=square onclick=editSearch()>edit search</div>
-    -->
+    <div class=square onclick=editSearch()>edit search</div>
+    
     <div id=saveButton class=square onclick=saveWrapper()>save</div>
     <div class=square onclick=seeFiles()>files</div>
     <div class=square onclick=closeFile()>close</div>
@@ -203,17 +186,17 @@ onblur=handleBlur()
     <div class=square onclick=addCmdTab()>cmd</div>
     <div class=square onclick=undo()>undo</div>
     <div class=square onclick=redo()>redo</div>
-    <div class=square onclick=duplicateFile(fx)>dupl file</div>
     <div class=square onclick=comment()>//</div>
     <div class=square onclick=unComment()>un //</div>
     <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
+    <div class=square onclick=debugView()>debug view</div>
 </div>
 <div class=toolbar>
     <div class=square onclick=selectFileIndex(1)>alt tab</div>
-    <div class=square onclick=debugView()>debug view</div>
+    <div class=square onclick=clearLog()>clear log</div>
+    <div class=square onclick=duplicateFile(fx)>dupl file</div>
     <div class=square onclick=reloadFile()>reload</div>
     <div class=square onclick=doEval()>eval</div>
-    <div class=square onclick=clearLog()>clear log</div>
     <div class=square onclick=runScript()>run script</div>
     <div class=square onclick=doFormat()>format</div>
 </div>
@@ -295,11 +278,12 @@ canvasWidth=1125
 // I turned off "Predictive" to get more vertical space
 
 // TODO: make these configurable in UI
-var canvasHeightKeyboard=950
 var canvasHeightKeyboard=1050
-
+// var canvasHeightKeyboard=950// // var canvasHeightKeyboard=950
 var canvasHeightFull=c.height
-//var canvasHeightFull=1000
+// 36 button height plus 1px*2 margin
+// 2 rows of new buttons for bash
+var canvasHeightBash = canvasHeightFull - ((38*3) * 2)
 var maxLines = 0
 var maxCols = 0
 var canvasHeight = 0
@@ -343,7 +327,7 @@ window.onscroll = function () {
 function doScroll() {
     canvasHeightFull = originalCanvasHeightFull - (window.pageYOffset*3)
     c.height = canvasHeightFull
-    setCanvasHeight(canvasHeightFull)
+    setCanvasHeightNonKeyboard()
     c.style.height = (canvasHeightFull/3)+"px"
     topPadding.style.height = window.pageYOffset + "px"
 
@@ -361,7 +345,7 @@ function updateFontScale() {
     fontHeight=36 * fontScale
     fontWidth=18 * fontScale
     fontCSS = (30 * fontScale) + "px 'Courier'"
-    setCanvasHeight(canvasHeightFull)
+    setCanvasHeightNonKeyboard()
     setCanvasWidth(canvasWidth)
     render()
 }
@@ -493,6 +477,7 @@ function addCmdTab() {
     fx.cursorLineIndex = fx.lines.length - 1
     updateCursorXY()
     runBashCommand("")
+    
     //theText.focus()
 }
 function addFile(fullPath, changeURL, closeCurrent, reload) {
@@ -954,8 +939,24 @@ function runScript() {
 
 function setCanvasHeight(h) {
     canvasHeight = h
+    
+    // these 2 lines are new
+    c.height = canvasHeight
+    c.style.height = (canvasHeight/3)+"px"
+     
     maxLines = Math.floor(canvasHeight / fontHeight)
 }
+function setCanvasHeightKeyboard() {
+    setCanvasHeight(canvasHeightKeyboard)
+}
+function setCanvasHeightNonKeyboard() {
+   if (fx.fileMode == "bash") {
+       setCanvasHeight(canvasHeightBash)   
+   } else {
+       setCanvasHeight(canvasHeightFull)   
+   }
+}
+
 function setCanvasWidth(w) {
     canvasWidth = w
     maxCols = Math.floor(canvasWidth / fontWidth)
@@ -963,9 +964,14 @@ function setCanvasWidth(w) {
 
 function insertText(theLines, yOffset, xOffset) {
     selectMode = "line"
+    if (xOffset == -1) {
+       xOffset = theLines[yOffset].length
+    }
     var oldCopyBuffer = copyBuffer
+    copyBuffer = theLines
     paste()
-    fx.cursorLineIndex = fx.cursorLineIndex + yOffset
+    selectedRegions = []
+    fx.cursorLineIndex = fx.cursorLineIndex + yOffset + 1
     var theLine = fx.lines[fx.cursorLineIndex]
     fx.cursorColIndex = expandTabIndex(theLine, xOffset)
     ensureCursorInScreen()
@@ -1317,7 +1323,7 @@ function handleFocusAfter() {
         if (fx.cursorLineIndex == fx.lines.Length - 1) return
         fx.cursorLineIndex += 1
     }
-    setCanvasHeight(canvasHeightKeyboard)
+    setCanvasHeightKeyboard()
     ensureCursorInScreen()
     updateCursorXY()
     render()
@@ -1334,7 +1340,7 @@ function handleFocusBefore() {
         if (fx.cursorLineIndex == 0) return
         fx.cursorLineIndex -= 1
     }
-    setCanvasHeight(canvasHeightKeyboard)
+    setCanvasHeightKeyboard()
     ensureCursorInScreen()
     updateCursorXY()
     render()
@@ -1344,7 +1350,7 @@ function handleFocusBefore() {
 }
 
 function handleFocusIn() {
-    setCanvasHeight(canvasHeightKeyboard)
+    setCanvasHeightKeyboard()
     ensureCursorInScreen()
     // lastAction = "type"
     acWord = null
@@ -1357,7 +1363,7 @@ function handleBlur() {
     //topPadding.style.height = "100px"
     //window.scrollTo(0, 0)
     //setTimeout(() => {window.scrollTo(0,100)}, 100)
-    setCanvasHeight(canvasHeightFull)
+    setCanvasHeightNonKeyboard()
     resetFindWord()
     render()
     window.scrollTo(0, lastPageYOffset)
@@ -1603,9 +1609,6 @@ function render() {
     } else if (fx.fileMode == "bash") {
         saveButton.innerText = "run"
     }
-    findWordEl.innerHTML = `</pre>
-        ${JSON.stringify(acWord, "", "  ")}
-    `
 
 
     // row highlight, what is this? remove it
@@ -2197,7 +2200,8 @@ function acWordToggle() {
             // if it's the start of the line
             // do autocomplete whole line
             // works for languages where lines start with words usually
-            if (theLine.trim() == w.word) {
+            //if (theLine.trim() == w.word) {
+            if (theLine.trim() == w.word && !hasMovedSinceNewLine) {
                 acWord.autocompleteLine = true
             }
         } else {
@@ -2769,6 +2773,12 @@ function selectFileIndex(index) {
     files.unshift(file)
     setCurrentFile(file)
 }
+
+var uniqueID = 0
+function getUniqueID() {
+   uniqueID++
+   return uniqueID
+}
 function makeFile(fullPath, contents) {
     var theLines = contents.split("\n")
     // because this editor intentionally does not support tabs
@@ -2800,6 +2810,7 @@ function makeFile(fullPath, contents) {
         version: 0,
         savedVersion: 0,
         savingVersion: -1,
+        uniqueID: getUniqueID(),
     }
 }
 function addFileToList(file) {
@@ -2857,7 +2868,7 @@ var sortedFiles = []
 function getLinesForFileList() {
     // doing the slice so we don't mutate the original array
     sortedFiles = files.slice().sort(function(f1, f2) {
-        return f1.fullPath > f2.fullPath
+        return (f1.fullPath + f1.uniqueID) > (f2.fullPath + f1.uniqueID)
     })
     //return files.map(f => {
     return sortedFiles.map(f => {
@@ -2900,7 +2911,14 @@ function setCurrentFile(file) {
     currentFile = file
     // treat fx as alias for currentFile, for easier typing
     fx = file
-
+    if (fx.fileMode == "bash") {
+        bashToolbar1.classList.remove("hidden")
+        bashToolbar2.classList.remove("hidden")
+    } else {
+        bashToolbar1.classList.add("hidden")
+        bashToolbar2.classList.add("hidden")
+    }
+    setCanvasHeightNonKeyboard()
     updateCursorXY()
     searchText.setAttribute("placeholder", currentFile.fullPath + " (search)")
     render()
@@ -2910,6 +2928,7 @@ function setCurrentFile(file) {
 
 function duplicateFile(f) {
     var fc = JSON.parse(JSON.stringify(f))
+    fc.uniqueID = getUniqueID()
     // copy everything but reference lines
     fc.lines = f.lines
     addFileToList(fc)
