@@ -132,8 +132,18 @@ onblur=handleBlur()
 >
 <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
-<pre id=statusEl class=hidden style="overflow:scroll">
-</pre>
+<div style="
+    display: flex;
+    flex-flow: row nowrap;
+">
+    <pre id=statusEl class=hidden style="overflow:scroll">
+    </pre>
+    <div id=logEl class=hidden style="height: 450px; width:240px;
+    overflow:scroll;
+    -webkit-overflow-scrolling: touch;
+    font-size:10px;"
+    ></div>
+</div>
 <!--
 Note that the css width needs to be 1/3 of
 the with attribute, and same for height.
@@ -144,12 +154,6 @@ display: block;"
 ontouchstart=onStart(event)
 ></canvas>
 
-<div id=logEl style="height: 450px; width:240px;
-overflow:scroll;
--webkit-overflow-scrolling: touch;
-font-size:10px;
-display:none;"
-></div>
 
 <div class="toolbar hidden" id=searchRow onclick=selectSearchRow(event)>
 </div>
@@ -704,6 +708,7 @@ function addSearchTerm() {
 }
 function findDown() {
     lastAction = "move"
+    shouldAutocompleteLine = false
     hasMovedSinceNewLine = true
     acWord = null
     if (searchText.value == "") {
@@ -761,6 +766,7 @@ function reverse(str) {
 }
 function findUp() {
     lastAction = "move"
+    shouldAutocompleteLine = false
     hasMovedSinceNewLine = true
     acWord = null
     if (searchText.value == "") {
@@ -960,7 +966,8 @@ function setCanvasHeightAccordingly() {
     if (inDebugView) {
         var statusElHeight = 200
         statusEl.style.height = statusElHeight + "px"
-        heightReduction = 200 * 3       
+        logEl.style.height = statusElHeight + "px"
+        heightReduction = statusElHeight * 3       
     }
     if (document.activeElement == theText) {
         setCanvasHeight(canvasHeightKeyboard - heightReduction)
@@ -1683,6 +1690,11 @@ function render() {
                 // Line numbers
                 //t.fillStyle = "magenta"
                 //t.fillStyle = "cyan"
+                // if (shouldAutocompleteLine) {
+                //     t.fillStyle = "brown"
+                // } else {
+                //     t.fillStyle = "yellow"
+                // }
                 t.fillStyle = "brown"
                 for (var i=0; i<-fx.offsetX-1; i++) {
                     var lineNumberIndex = fx.offsetX + marginLeft + i
@@ -1827,6 +1839,7 @@ function onStart(e) {
     }
     var onMove = function(e) {
         lastAction = "move"
+        shouldAutocompleteLine = false
         hasMovedSinceNewLine = true
         acWord = null
         clearTimeout(selectTimeout)
@@ -1894,7 +1907,6 @@ function onStart(e) {
         var _line = fx.lines[fx.cursorLineIndex] || ""
         if (_line.trim() == "") {
             hasMovedSinceNewLine = false
-            log("yay, scrolled to empty space")
         }   
         fx.cursorColIndex = Math.round(cursorX/fontWidth) + fx.offsetX
         firstMove = false
@@ -2188,12 +2200,11 @@ function onStart(e) {
     render()
 }
 
-var shouldAutocompleteLine = true
+var shouldAutocompleteLine = false
 // NEW FIND WORD
 var acWord = null
-function acWordToggle() {
+function acWordToggle(recursive) {
     if (acWord == null) {
-        shouldAutocompleteLine = !shouldAutocompleteLine
         var w
         if (lastAction == "move") {
             w = getWordAtCursor()
@@ -2211,6 +2222,8 @@ function acWordToggle() {
         acWord = {
             startY: fx.cursorLineIndex,
             stopY: fx.cursorLineIndex,
+            hasPlopped: false,
+            seen: {}
         }
         var theLine = fx.lines[fx.cursorLineIndex]
         if (lastAction == "type") {
@@ -2220,6 +2233,11 @@ function acWordToggle() {
             acWord.word = w.word
             acWord.startX = fx.cursorColIndex
             acWord.stopX = fx.cursorColIndex
+            
+            // to prevent autocomplet in the middle
+            // of a word from getting that compound word.
+            var _w = getWordAtCursor()
+            acWord.seen[_w.word] = true
 
             // if it's the start of the line
             // do autocomplete whole line
@@ -2229,6 +2247,7 @@ function acWordToggle() {
             if (shouldAutocompleteLine) {
                 acWord.autocompleteLine = true
             }
+            shouldAutocompleteLine = false 
         } else {
             acWord.startX = expandTabIndex(theLine, w.start)
             acWord.stopX = expandTabIndex(theLine, w.end)
@@ -2251,7 +2270,6 @@ function acWordToggle() {
         acWord.pastedInLine = false
         acWord.findUpDone = false
         acWord.findDownDone = false
-        acWord.seen = {}
         // so replacements don't affect search
         acWord.origLine = fx.lines[fx.cursorLineIndex]
     }
@@ -2274,6 +2292,15 @@ function acWordToggle() {
                 if (acWord.fileIndex == files.length) {
                     //alert("allDone")
                     acPlop([""])
+                    if (!acWord.autocompleteLine) {
+                       shouldAutocompleteLine = true
+                    } 
+                    // if (!acWord.hasPlopped && !recursive) {
+                    //     acWord = null
+                    //     log("all done")
+                    //     acWordToggle(true)
+                    //     return
+                    // }
                     acWord = null
                     log("all done")
                     return
@@ -2314,6 +2341,7 @@ function acWordToggle() {
             }
 
             // here we have found a word
+            log({okfound: found})
             acPlop([trimPrefix(found, acWord.prefix)])
             break loopBlock
         }
@@ -2976,8 +3004,10 @@ function debugView() {
     inDebugView = !inDebugView
     if (inDebugView) {
        statusEl.classList.remove("hidden")
+       logEl.classList.remove("hidden")
     } else {
        statusEl.classList.add("hidden")
+       logEl.classList.add("hidden")
     }
     setCanvasHeightAccordingly()
     // if (inDebugView) {
