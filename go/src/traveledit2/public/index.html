@@ -132,7 +132,8 @@ onblur=handleBlur()
 >
 <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
-
+<pre id=statusEl class=hidden style="overflow:scroll">
+</pre>
 <!--
 Note that the css width needs to be 1/3 of
 the with attribute, and same for height.
@@ -304,6 +305,8 @@ var cursorType = "move"
 // * move
 // * select
 
+var theStatus = {}
+
 // if last keyDown is a backspace
 var wasDelete = false
 var selectTimeout
@@ -327,7 +330,7 @@ window.onscroll = function () {
 function doScroll() {
     canvasHeightFull = originalCanvasHeightFull - (window.pageYOffset*3)
     c.height = canvasHeightFull
-    setCanvasHeightNonKeyboard()
+    setCanvasHeightAccordingly()
     c.style.height = (canvasHeightFull/3)+"px"
     topPadding.style.height = window.pageYOffset + "px"
 
@@ -345,7 +348,7 @@ function updateFontScale() {
     fontHeight=36 * fontScale
     fontWidth=18 * fontScale
     fontCSS = (30 * fontScale) + "px 'Courier'"
-    setCanvasHeightNonKeyboard()
+    setCanvasHeightAccordingly()
     setCanvasWidth(canvasWidth)
     render()
 }
@@ -562,9 +565,11 @@ function log(v) {
 
 function docChanged() {
     fx.version += 1
-    var maybeLastWord = getWordAtCursor().word
-    if (maybeLastWord != "") {
-        lastWord = maybeLastWord
+    if (!inACPlop) {
+        var maybeLastWord = getWordAtCursor().word
+        if (maybeLastWord != "") {
+            lastWord = maybeLastWord
+        }
     }
 if (fx.undoIndex != fx.undoStack.length - 1) {
     fx.undoStack.splice(fx.undoIndex + 1, fx.undoStack.length - fx.undoStack +1)
@@ -950,17 +955,24 @@ function setCanvasHeight(h) {
      
     maxLines = Math.floor(canvasHeight / fontHeight)
 }
-function setCanvasHeightKeyboard() {
-    setCanvasHeight(canvasHeightKeyboard)
+function setCanvasHeightAccordingly() {
+    var heightReduction = 0
+    if (inDebugView) {
+        var statusElHeight = 200
+        statusEl.style.height = statusElHeight + "px"
+        heightReduction = 200 * 3       
+    }
+    if (document.activeElement == theText) {
+        setCanvasHeight(canvasHeightKeyboard - heightReduction)
+    } else {
+       if (fx.fileMode == "bash") {
+           setCanvasHeight(canvasHeightBash - heightReduction)   
+       } else {
+           setCanvasHeight(canvasHeightFull - heightReduction)   
+       }
+    }
+    render()
 }
-function setCanvasHeightNonKeyboard() {
-   if (fx.fileMode == "bash") {
-       setCanvasHeight(canvasHeightBash)   
-   } else {
-       setCanvasHeight(canvasHeightFull)   
-   }
-}
-
 function setCanvasWidth(w) {
     canvasWidth = w
     maxCols = Math.floor(canvasWidth / fontWidth)
@@ -1327,7 +1339,7 @@ function handleFocusAfter() {
         if (fx.cursorLineIndex == fx.lines.Length - 1) return
         fx.cursorLineIndex += 1
     }
-    setCanvasHeightKeyboard()
+    setCanvasHeightAccordingly()
     ensureCursorInScreen()
     updateCursorXY()
     render()
@@ -1344,7 +1356,7 @@ function handleFocusBefore() {
         if (fx.cursorLineIndex == 0) return
         fx.cursorLineIndex -= 1
     }
-    setCanvasHeightKeyboard()
+    setCanvasHeightAccordingly()
     ensureCursorInScreen()
     updateCursorXY()
     render()
@@ -1354,7 +1366,7 @@ function handleFocusBefore() {
 }
 
 function handleFocusIn() {
-    setCanvasHeightKeyboard()
+    setCanvasHeightAccordingly()
     ensureCursorInScreen()
     // lastAction = "type"
     acWord = null
@@ -1367,7 +1379,7 @@ function handleBlur() {
     //topPadding.style.height = "100px"
     //window.scrollTo(0, 0)
     //setTimeout(() => {window.scrollTo(0,100)}, 100)
-    setCanvasHeightNonKeyboard()
+    setCanvasHeightAccordingly()
     resetFindWord()
     render()
     window.scrollTo(0, lastPageYOffset)
@@ -1598,7 +1610,12 @@ function render() {
         " c:" + fx.cursorColIndex + "," + fx.cursorLineIndex +
         " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
         " " + selectMode
-
+    if (inDebugView) {
+        theStatus.acWord = acWord
+        theStatus.shouldAutocompleteLine = shouldAutocompleteLine
+        theStatus.lastWord = lastWord
+        statusEl.innerText = JSON.stringify(theStatus, null, "    ")
+    }
     if (fx.fileMode == "file")   {
         if (fx.savingVersion != -1) {
             saveButton.style.backgroundColor = "gray"
@@ -2171,15 +2188,17 @@ function onStart(e) {
     render()
 }
 
+var shouldAutocompleteLine = true
 // NEW FIND WORD
 var acWord = null
 function acWordToggle() {
     if (acWord == null) {
+        shouldAutocompleteLine = !shouldAutocompleteLine
         var w
         if (lastAction == "move") {
             w = getWordAtCursor()
         } else {
-            if (!hasMovedSinceNewLine) {
+            if (shouldAutocompleteLine) {
                 w = {
                     // do we need statrt and end
                     word: (fx.lines[fx.cursorLineIndex] || "").trim() 
@@ -2206,7 +2225,8 @@ function acWordToggle() {
             // do autocomplete whole line
             // works for languages where lines start with words usually
             //if (theLine.trim() == w.word) {
-            if (theLine.trim() == w.word && !hasMovedSinceNewLine) {
+            // if (theLine.trim() == w.word && !hasMovedSinceNewLine) {
+            if (shouldAutocompleteLine) {
                 acWord.autocompleteLine = true
             }
         } else {
@@ -2323,8 +2343,9 @@ function acWordToggle() {
     }
     acWord.toggleCount += 1
 }
-
+var inACPlop = false
 function acPlop(buff) {
+    inACPlop = true
     // TODO: compare with old implementation
     // replaceFindWord
     // this one calls more orher funcs like del()
@@ -2364,7 +2385,7 @@ function acPlop(buff) {
     // TODO: why do we have to set this after render?
     setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
     //alert(acWord.stopX)
-
+    inACPlop = false
 }
 function acFindUp() {
     var w = {start: -1, end: -1, word: ""}
@@ -2873,13 +2894,15 @@ var sortedFiles = []
 function getLinesForFileList() {
     // doing the slice so we don't mutate the original array
     sortedFiles = files.slice().sort(function(f1, f2) {
-        return (f1.fullPath + f1.uniqueID) > (f2.fullPath + f1.uniqueID)
+        return (f1.fullPath + f1.uniqueID) > (f2.fullPath + f2.uniqueID)
     })
     //return files.map(f => {
     return sortedFiles.map(f => {
         //return f.fullPath
         var parts = f.fullPath.split("/")
-        var reversed = parts.reverse().join(" < ")
+        var reversedParts = parts.reverse()
+        // reversedParts[0] = f.uniqueID + "_" + reversedParts[0]
+        var reversed = reversedParts.join(" < ")
         // we reverse to see more unique stuff first
         return reversed
     })
@@ -2924,7 +2947,7 @@ function setCurrentFile(file) {
         bashToolbar1.classList.add("hidden")
         bashToolbar2.classList.add("hidden")
     }
-    setCanvasHeightNonKeyboard()
+    setCanvasHeightAccordingly()
     updateCursorXY()
     searchText.setAttribute("placeholder", currentFile.fullPath + " (search)")
     render()
@@ -2952,15 +2975,21 @@ var inDebugView = false
 function debugView() {
     inDebugView = !inDebugView
     if (inDebugView) {
-        c.style.width = ((canvasWidth/3) * .7) + "px"
-        c.style.height = ((canvasHeight/3) * .7) + "px"
-        render()
-        return
+       statusEl.classList.remove("hidden")
+    } else {
+       statusEl.classList.add("hidden")
     }
-
-    c.style.width = ((canvasWidth/3) * 1) + "px"
-    c.style.height = ((canvasHeight/3) * 1) + "px"
-    render()
+    setCanvasHeightAccordingly()
+    // if (inDebugView) {
+    //     c.style.width = ((canvasWidth/3) * .7) + "px"
+    //     c.style.height = ((canvasHeight/3) * .7) + "px"
+    //     render()
+    //     return
+    // }
+// 
+    // c.style.width = ((canvasWidth/3) * 1) + "px"
+    // c.style.height = ((canvasHeight/3) * 1) + "px"
+    // render()
 
 }
 

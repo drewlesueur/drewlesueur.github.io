@@ -1,6 +1,9 @@
+BUG: selected index is wrong for files list (at least)
+I think it's disllaying in thr wrong prder too. see unique id
 the second-to-last-thing copied should also appear in the cylce of single tapping 
     so you can select, copy, select something else, delete, paste
 
+check that the cursor is at the end before you autocomplete thr word.
 in bash mode replace some buttons with git commands?
   (or other helpful commands?!)
 the files list order alphabetically?
