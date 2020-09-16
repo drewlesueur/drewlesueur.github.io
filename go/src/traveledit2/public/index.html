@@ -412,7 +412,11 @@ function inputSearchText() {
 }
 function closeFile() {
     if (fx.fileMode == "fileList") {
-        files.splice(fx.cursorLineIndex, 1)
+        var fileIndex = files.indexOf(sortedFiles[fx.cursorLineIndex])
+        if (fileIndex != -1) {
+            files.splice(fileIndex, 1)
+        }
+        // getLinesForFileList will reset sortedFiles
         fx.lines = getLinesForFileList()
     } else {
         for (var i=0; i<files.length; i++) {
@@ -1944,6 +1948,7 @@ function onStart(e) {
                 if (reversePathIndex == 0) {
                     // put it at the beginning.
                     var file = sortedFiles[fx.cursorLineIndex]
+                    // TODO: use indexOf to simplify
                     var fileIndex = -1
                     for (var fileI=0; fileI < files.length; fileI++) {
                         if (files[fileI] == file) {
@@ -2888,6 +2893,7 @@ function seeFiles() {
     var f = makeFile("__", contents)
     f.fileMode = "fileList"
 
+    // TODO: use indexOf 
     var fileIndex = -1
     for (var fileI=0; fileI<sortedFiles.length; fileI++) {
         if (sortedFiles[fileI] == currentFile) {
