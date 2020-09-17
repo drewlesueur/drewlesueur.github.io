@@ -166,7 +166,7 @@ ontouchstart=onStart(event)
     <div class=square onclick='insertText(["git checkout "], 0, -1)'>checkout</div>
     <div class=square onclick='insertText(["git commit -m &apos;&apos;"], 0, 15)'>commit -m</div>
     <div class=square onclick='insertText(["git checkout -b "], 0, -1)'>checkout -b</div>
-    <div class=square onclick='runBashCommand("git add -u .")'>add -u .</div>
+    <div class=square onclick='runBashCommand("git add -u :/")'>add -u :/</div>
 </div>
 <div class="toolbar hidden" id=bashToolbar2 style="--display: none">
     <div class=square onclick='runBashCommand("git push origin HEAD")'>push origin H</div>
@@ -2712,17 +2712,38 @@ var treeFiles = []
 var fileTree = {}
 var treeFilesShadow = []
 function treeToLines(theTree, path, indent) {
-   for (k in theTree) {
-      treeFiles.push(indent + k)
-      if (theTree[k].fileToken == fileToken) {
-          treeFilesShadow.push(theTree[k])
-      } else {
-          var newPath = path + "/" + k
-          treeFilesShadow.push(newPath)
-          treeToLines(theTree[k], newPath, indent + "    ")
-      }
-   }
+    var kPrefix = ""
+    nestLoop:
+    for (var i=0; i<100; i++) {
+        for (var k in theTree) {
+            if (true && Object.keys(theTree[k]).length == 1) {
+                if (theTree[k].fileToken == fileToken) {
+                    treeFiles.push(indent + kPrefix + k)
+                    treeFilesShadow.push(theTree[k])
+                    break nestLoop
+                } else {
+                    path = path + "/" + k
+                    kPrefix += k + "/"
+                    theTree = theTree[k]
+                    continue nestLoop
+                }
+                continue nestLoop
+            }
+            treeFiles.push(indent + kPrefix + k)
+            if (theTree[k].fileToken == fileToken) {
+                treeFilesShadow.push(theTree[k])
+            } else {
+                var newPath = path + "/" + k
+                treeFilesShadow.push(newPath)
+                treeToLines(theTree[k], newPath, indent + "    ")
+            }
+        }
+        break nestLoop
+    }
 }
+
+
+
 function getLinesForFileList() {
     fileTree = {}
     
