@@ -90,7 +90,7 @@ opacity: 0.5;
 
 <form onsubmit=findDownForm(event)>
     <input class=dark type=text id=searchText
-        style="display: none; font-size: 12px; width: 300px"
+        style="display: none; font: 16px Courier; width: 300px"
         onfocus="focusSearchText()"
         onblur="blurSearchText()"
         oninput="inputSearchText()"
@@ -2433,7 +2433,7 @@ function acFindUp() {
                 acWord.findUpX = w.start - 1
             }
             var seen = acWord.seen[w.word]
-            if (!seen && w.word != "" && w.word != findWordFoundWord &&
+            if (!seen && w.word != "" &&
                 (acWord.prefix == "" || (w.word != acWord.prefix && w.word.startsWith(acWord.prefix)))) {
                 if (acWord.findUpX < 0) {
                     acWord.findUpY -= 1
@@ -2477,7 +2477,7 @@ function acFindDown() {
                 acWord.findDownX = w.end + 1
             }
             var seen = acWord.seen[w.word]
-            if (!seen && w.word != "" && w.word != findWordFoundWord &&
+            if (!seen && w.word != "" &&
                 (acWord.prefix == "" || (w.word != acWord.prefix && w.word.startsWith(acWord.prefix)))) {
                 if (acWord.findDownX >= line.length) {
                     acWord.findDownY += 1
