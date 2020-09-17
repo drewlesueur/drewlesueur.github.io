@@ -419,11 +419,10 @@ function inputSearchText() {
 }
 function closeFile() {
     if (fx.fileMode == "fileList") {
-        var fileIndex = files.indexOf(sortedFiles[fx.cursorLineIndex])
+        var fileIndex = files.indexOf(treeFilesShadow[fx.cursorLineIndex])
         if (fileIndex != -1) {
             files.splice(fileIndex, 1)
         }
-        // getLinesForFileList will reset sortedFiles
         fx.lines = getLinesForFileList()
     } else {
         for (var i=0; i<files.length; i++) {
@@ -1616,9 +1615,10 @@ function render() {
         " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
         " " + selectMode
     if (inDebugView) {
-        theStatus.acWord = acWord
+            // theStatus.fileTree = fileTree
         theStatus.shouldAutocompleteLine = shouldAutocompleteLine
         theStatus.lastWord = lastWord
+        theStatus.acWord = acWord
         statusEl.innerText = JSON.stringify(theStatus, null, "    ")
     }
     if (fx.fileMode == "file")   {
@@ -1962,40 +1962,22 @@ function onStart(e) {
             }
 
             if (fx.fileMode == "fileList") {
-                var line = fx.lines[fx.cursorLineIndex]
-                // since these fx.lines are > delimited
-                // we can figure out what section was tapped
-                var reversePathIndex = 0
-                for (var lineI = 0; lineI < fx.cursorColIndex; lineI++) {
-                    var ch = line[lineI]
-                    if (ch == "<") {
-                        reversePathIndex += 1
-                    }
-                }
-                if (reversePathIndex == 0) {
-                    // put it at the beginning.
-                    var file = sortedFiles[fx.cursorLineIndex]
-                    // TODO: use indexOf to simplify
-                    var fileIndex = -1
-                    for (var fileI=0; fileI < files.length; fileI++) {
-                        if (files[fileI] == file) {
-                            fileIndex = fileI
-                            break
-                        }
-                    }
+                var file = treeFilesShadow[fx.cursorLineIndex]
+                if (file.fileToken == fileToken) {
+                    var fileIndex = files.indexOf(file)
                     if (fileIndex == -1) {
                         alert("data consistency error with file index")
                         return
                     }
-
+                    // put it at the beginning for alt tab to work
                     files.splice(fileIndex, 1)
                     files.unshift(file)
                     setCurrentFile(file)
                     return
                 }
-                var parts = sortedFiles[fx.cursorLineIndex].fullPath.split("/")
-                parts = parts.slice(0, parts.length - reversePathIndex)
-                addFile(parts.join("/"), true, false)
+                // here load file that hasn't been loaded
+                // in this case "file" var is just a string
+                addFile(file, true, false)
                 return
             }
 
@@ -2639,6 +2621,7 @@ function getUniqueID() {
    uniqueID++
    return uniqueID
 }
+var fileToken = {}
 function makeFile(fullPath, contents) {
     var theLines = contents.split("\n")
     // because this editor intentionally does not support tabs
@@ -2671,6 +2654,7 @@ function makeFile(fullPath, contents) {
         savedVersion: 0,
         savingVersion: -1,
         uniqueID: getUniqueID(),
+        fileToken: fileToken,
     }
 }
 function addFileToList(file) {
@@ -2724,23 +2708,59 @@ function renderFileDropdown() {
     }
 
 }
-var sortedFiles = []
+var treeFiles = []
+var fileTree = {}
+var treeFilesShadow = []
+function treeToLines(theTree, path, indent) {
+   for (k in theTree) {
+      treeFiles.push(indent + k)
+      if (theTree[k].fileToken == fileToken) {
+          treeFilesShadow.push(theTree[k])
+      } else {
+          var newPath = path + "/" + k
+          treeFilesShadow.push(newPath)
+          treeToLines(theTree[k], newPath, indent + "    ")
+      }
+   }
+}
 function getLinesForFileList() {
+    fileTree = {}
+    
     // doing the slice so we don't mutate the original array
-    sortedFiles = files.slice().sort(function(f1, f2) {
+    var sortedFiles = files.slice().sort(function(f1, f2) {
         return (f1.fullPath + f1.uniqueID) > (f2.fullPath + f2.uniqueID)
     })
-    //return files.map(f => {
-    return sortedFiles.map(f => {
-        //return f.fullPath
+    
+    // taking advantage of sorted order here
+    for (var fileI=0; fileI<sortedFiles.length; fileI++) {
+        var f = sortedFiles[fileI]
         var parts = f.fullPath.split("/")
-        var reversedParts = parts.reverse()
-        // reversedParts[0] = f.uniqueID + "_" + reversedParts[0]
-        var reversed = reversedParts.join(" < ")
-        // we reverse to see more unique stuff first
-        return reversed
-    })
+        var curTree = fileTree 
+        for (var partI=0; partI<parts.length; partI++) {
+           var part = parts[partI]
+           if (part == "") {
+              continue
+           }
+           
+           var childTree = curTree[part]
+           if (!childTree) {
+              if (partI == parts.length-1) {
+                  childTree = f
+              } else {
+                  childTree = {}
+              }
+              curTree[part] = childTree
+           }
+           curTree = childTree 
+        }
+    }
+    treeFiles = []
+    treeFilesShadow = []
+    treeToLines(fileTree, "", "")
+    return treeFiles
 }
+
+
 function seeFiles() {
     if (currentFile.fileMode == "fileList") {
         setCurrentFile(files[0])
@@ -2750,16 +2770,8 @@ function seeFiles() {
     var f = makeFile("__", contents)
     f.fileMode = "fileList"
 
-    // TODO: use indexOf 
-    var fileIndex = -1
-    for (var fileI=0; fileI<sortedFiles.length; fileI++) {
-        if (sortedFiles[fileI] == currentFile) {
-            fileIndex = fileI
-            break
-        }
-    }
-
     f.cursorLineIndex = 0
+    var fileIndex = treeFilesShadow.indexOf(currentFile)
     if (fileIndex != -1) {
         f.cursorLineIndex = fileIndex
     }

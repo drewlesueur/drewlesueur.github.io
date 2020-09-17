@@ -1,3 +1,8 @@
+BUG: reloading a file when there are 2 of the same file open
+  - the lines get unlinked
+
+only autocomplete line if cursor is at the end
+
 file list should be shown in tree view
 
 check that the cursor is at the end before you autocomplete thr word.
