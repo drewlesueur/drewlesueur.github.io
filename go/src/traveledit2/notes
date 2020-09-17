@@ -1,3 +1,5 @@
+file list should be shown in tree view
+
 check that the cursor is at the end before you autocomplete thr word.
 
 moving to new file should clear selection (or possibly allow selection per file) 
