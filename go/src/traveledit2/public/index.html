@@ -731,7 +731,6 @@ function findDown() {
             updateCursorXY()
             ensureCursorInScreen()
             render()
-            initiateFindWord() // for autocomplete, for if editing?
             return true
         }
     }
@@ -790,7 +789,6 @@ function findUp() {
             updateCursorXY()
             ensureCursorInScreen()
             render()
-            initiateFindWord() // for autocomplete, for if editing?
             return true
         }
     }
@@ -1255,7 +1253,6 @@ function trimPrefix(str, prefix) {
     return str
 }
 
-// was here
 function setSelectionRangeForText(start, end) {
     var adjustedStart = u(start)
     var adjustedEnd
@@ -1387,7 +1384,6 @@ function handleBlur() {
     //window.scrollTo(0, 0)
     //setTimeout(() => {window.scrollTo(0,100)}, 100)
     setCanvasHeightAccordingly()
-    resetFindWord()
     render()
     window.scrollTo(0, lastPageYOffset)
 
@@ -1510,7 +1506,6 @@ function saveLine() {
     fx.lines[fx.cursorLineIndex] = theText.value
     cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
     cursorY = (fx.cursorLineIndex - fx.offsetY) * fontHeight
-    initiateFindWord()
     docChanged()
 
     // you need to tell the render to not update the text area
@@ -2027,10 +2022,7 @@ function onStart(e) {
             }
 
             if (document.activeElement == theText) {
-                //toggleWord()
                 acWordToggle()
-            } else {
-                initiateFindWord()
             }
 
             if (document.activeElement != theText) {
@@ -2043,9 +2035,6 @@ function onStart(e) {
                 // processing
                 theText.focus()
             }
-        }
-        if (moved) {
-            initiateFindWord()
         }
 
         cursorType = "move"
@@ -2120,7 +2109,6 @@ function onStart(e) {
             fx.cursorColIndex += 1
             //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
             setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-            initiateFindWord()
             ensureCursorInScreen()
         } else if (currentFile.fileMode == "fileList" || currentFile.fileMode == "directory") {
             fx.cursorLineIndex += 1
@@ -2149,7 +2137,6 @@ function onStart(e) {
             fx.cursorColIndex -= 1
             //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
             setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-            initiateFindWord()
             ensureCursorInScreen()
         } else if (currentFile.fileMode == "fileList" || currentFile.fileMode == "directory") {
             fx.cursorLineIndex -= 1
@@ -2511,7 +2498,7 @@ function doFormat() {
     render()
 }
 function simpleFormat(lines) {
-    // this will work as long as ever indent
+    // this will work as long as every indent
     // has another lone that "closes" it
     /*
     split lines
@@ -2561,110 +2548,13 @@ function getSpaceCount(line) {
     return spaceCount
 }
 
-
-// FINDWORD
-// these functions are now deprecated
-function resetFindWord() {
-    findWordCount = 0
-    findWordUpY = 0
-    findWordUpX = 0
-    findWordDownY = 0
-    findWordDownX = 0
-    findWordY = -1
-    findWordX = -1
-    findWordPrefix = ""
-    findWordEndY = -1
-    findWordEndX = -1
-    findWordUpDone = false
-    findWordDownDone = false
-    findWordFoundWord = ""
-    findWordSpecialLine = ""
-}
-
-var findWordCount = 0
-var findWordUpY = 0
-var findWordUpX = 0
-var findWordDownY = 0
-var findWordDownX = 0
-var findWordY = -1
-var findWordX = -1
-var findWordEndY = -1
-var findWordEndX = -1
-var findWordPrefix = ""
-var findWordUpDone = false
-var findWordDownDone = false
-var findWordFoundWord = "" // for logging purposes
-var findWordSpecialLine = ""
-
-// TODO: I think it might be more readable of these functions
-// had a single loop instead of 2 loops.
-// It's a little strange because when they return early
-// we still want to remember the loop variables (which are globale
-function findWordUp() {
-    var w = {start: -1, end: -1, word: ""}
-    if (findWordUpDone) {
-        return w
-    }
-    for (findWordUpY=findWordUpY; findWordUpY>=0; findWordUpY--) {
-        var line = fx.lines[findWordUpY]
-        // so word being changed doesn't affect cursor
-        if (findWordY == findWordUpY) {
-            line = findWordSpecialLine
-        }
-        if (findWordUpX < 0) {
-            findWordUpX = line.length
-        }
-        for (findWordUpX; findWordUpX>=0; findWordUpX--) {
-            w = getWordAt(line, findWordUpX)
-            if (w.word != "") {
-                findWordUpX = w.start - 1
-            }
-            if (w.word != "" && w.word != findWordFoundWord &&
-                (findWordPrefix == "" || (w.word != findWordPrefix && w.word.startsWith(findWordPrefix)))) {
-                if (findWordUpX < 0) {
-                    findWordUpY -= 1
-                }
-                return w
-            }
-        }
-    }
-    findWordUpDone = true
-    return {start: -1, end: -1, word: ""}
-}
-
-function findWordDown() {
-    var w = {start: -1, end: -1, word: ""}
-    if (findWordDownDone) {
-        return w
-    }
-    for (findWordDownY; findWordDownY<fx.lines.length; findWordDownY++) {
-        var line = fx.lines[findWordDownY]
-        for (findWordDownX; findWordDownX < line.length; findWordDownX++) {
-            w = getWordAt(line, findWordDownX)
-            if (w.word != "") {
-                findWordDownX = w.end + 1
-            }
-            if (w.word != "" && w.word != findWordFoundWord &&
-                (findWordPrefix == "" || (w.word != findWordPrefix && w.word.startsWith(findWordPrefix)))) {
-                if (findWordDownX >= line.length) {
-                    findWordDownY += 1
-                    findWordDownX = 0
-                }
-                return w
-            }
-        }
-        findWordDownX = 0
-    }
-    findWordDownDone = true
-    return {start: -1, end: -1, word: ""}
-}
-
 // if it's at 0 (or only ondented) you could do
 // if, func, for, var!!
 
 // replaceFindWord will be like delete and Paste
 // calls that we aleeady have (jist copy functionality
 // for now.
+// deprecated
 function replaceFindWord(r) {
     // First delete what was already there
     // Copied from the del() function
@@ -2708,93 +2598,6 @@ function replaceFindWord(r) {
     setSelectionRangeForText(findWordEndX, findWordEndX)
 }
 
-function initiateFindWord() {
-    // also see toggleWord
-    resetFindWord()
-    if (fx.cursorLineIndex >= fx.lines.length) {
-        return
-    }
-    var w = getWordAtCursor()
-    // TODO: getWordBeforeCursor works for autocompleting in thr middle
-    // but it doesn't replace the word on iter 0.
-    //var w = getWordBeforeCursor()
-    findWordY = fx.cursorLineIndex
-    findWordX = u(fx.cursorColIndex)
-    findWordEndY = fx.cursorLineIndex
-    findWordEndX = fx.cursorColIndex
-    findWordUpY = fx.cursorLineIndex
-    findWordUpX = fx.lines[fx.cursorLineIndex].length
-    findWordDownY = fx.cursorLineIndex + 1
-    findWordDownX = 0
-    findWordSpecialLine = fx.lines[findWordY]
-    // TODO: some of the logic for
-    // toggleWord can be be improved/consolidated
-    // by looking at findUp
-    if (w.word != "") {
-        if (w.end == fx.cursorColIndex) {
-            findWordPrefix = w.word
-        } else {
-            findWordX = w.start
-            findWordEndX = w.end
-        }
-    }
-}
-
-function toggleWord() {
-    // for loop to simulate goto
-    for (var s=0; s<1; s++) {
-        if (findWordCount == 0 && !findWordPrefix) {
-            replaceFindWord([""])
-            break
-        }
-
-        if (findWordCount == 1 && !findWordPrefix && lastWord) {
-            replaceFindWord([lastWord])
-            break
-        }
-        if ((findWordCount == 1 || findWordCount == 2) && !findWordPrefix && copyBuffer.length) {
-            replaceFindWord(copyBuffer)
-            break
-        }
-        if ((findWordCount%2 == 0) && !findWordUpDone) {
-            var w = findWordUp()
-            findWordFoundWord = w.word
-            if (w.word) {
-                if (findWordPrefix) w.word = w.word.substr(findWordPrefix.length)
-                replaceFindWord([w.word])
-                break
-            }
-        }
-        if (!findWordDownDone) {
-            var w = findWordDown()
-            findWordFoundWord = w.word
-            if (w.word) {
-                if (findWordPrefix) w.word = w.word.substr(findWordPrefix.length)
-                replaceFindWord([w.word])
-                break
-            }
-        }
-        if (!findWordUpDone) {
-            var w = findWordUp()
-            findWordFoundWord = w.word
-            if (w.word) {
-                if (findWordPrefix) w.word = w.word.substr(findWordPrefix.length)
-                replaceFindWord([w.word])
-                break
-            }
-        }
-
-        if (findWordDownDone && findWordUpDone) {
-            //resetFindWord()
-        }
-
-    }
-
-    findWordCount += 1
-    docChanged()
-    render()
-}
-// FINDWORD
 
 function selectSearchRow(e) {
     var index = e.target.getAttribute("data-index")
@@ -3010,17 +2813,6 @@ function debugView() {
        logEl.classList.add("hidden")
     }
     setCanvasHeightAccordingly()
-    // if (inDebugView) {
-    //     c.style.width = ((canvasWidth/3) * .7) + "px"
-    //     c.style.height = ((canvasHeight/3) * .7) + "px"
-    //     render()
-    //     return
-    // }
-// 
-    // c.style.width = ((canvasWidth/3) * 1) + "px"
-    // c.style.height = ((canvasHeight/3) * 1) + "px"
-    // render()
-
 }
 
 var maxUndos = 30

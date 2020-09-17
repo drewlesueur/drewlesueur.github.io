@@ -1,15 +1,5 @@
-BUG: selected index is wrong for files list (at least)
-I think it's disllaying in thr wrong prder too. see unique id
-the second-to-last-thing copied should also appear in the cylce of single tapping 
-    so you can select, copy, select something else, delete, paste
-
 check that the cursor is at the end before you autocomplete thr word.
-in bash mode replace some buttons with git commands?
-  (or other helpful commands?!)
-the files list order alphabetically?
 
-autocomplete line
-clear cmd should save last 2 lines
 moving to new file should clear selection (or possibly allow selection per file) 
 first load doesn't show ..
 warning if closed unsaved
@@ -37,18 +27,12 @@ feature: add markers where you can mark a file/line
    and then see a list of marked lines to go to them
    and maybe a button to toggle beween marked lines
    
-bug: search, finding 2 results on same line broken again?
-   does it have to fo with tabs?
 
 idea see all functions (or left-most lines)
 bug: inline paste (by tapping) if it has
    a inltab in it things will be messed up.
    fixed
 
-bug: type a word to get last typed word
-  then do an autocomplete that is touching
-  the next word. it will first paste last word
-  before autocompleting
   
 ideas for gestures
 -- long tap after select to get new mode
@@ -65,18 +49,11 @@ swipe up fast goes to prev occurance
 
 
 alert(".".charCodeAt(0))
- 
-   
 
-cmd sbouldn't steal the copyBuffer
 why did it autocomplete 2018, (with a comma at the end?)
 
-maintain cursor after closing file from files list
 remember file position across reloads
-optionally autocomple including . and - (for cmd especially)
 button or gesture for going to file (including line number) in bash
-autocomple in first word on line will autocomple
-    the entire line
 bug with miltiple files when you reset what fx.lines is
 like in undo
 a way to go back to where you were!!
@@ -160,30 +137,18 @@ https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 when there is an error with bash, you loose the directory? and it bugs out
 full word search option
 
-support tabs
 
 search should be a new pane and it remembers
 
-if you have 2 files make sure they have 
-the same buffer
 
 remember order when refreshing?
-option to not rearrange files?
 
 make a find in files feature!!!
 it should open a new pane with all the files
 that you can scroll through and open
 
-
-swiping up after selecting sometimes causes keyboard
-to appear but it shouldn't
-
-touching after selecting should copy
-or just selecting should copy
-
-tap to choose word needs work
-eliminate need to double tap
-seems buggy what char position 0
+touching after selecting should copy?
+or just selecting should copy??
 
 ability to make a new file or directory
 
@@ -201,8 +166,6 @@ ensureCursorInScreen()
 are somewhat overlapping.
 
 More ideas:
-tap on right side to jump right a but
-in edit mode tap on right side to move cursor
 if you have text selected you can type "(" to surround
 with parens etc.
 
@@ -210,7 +173,6 @@ two finger tap eithout move to select
 word, then parens, quote, etc etc
 
 ability to script and copy-paste
-autocomplete should only look to the left of cursor
 ------------
 when you are editing, any cursoor change in the canvas
 should affect the cursor change in the input element
