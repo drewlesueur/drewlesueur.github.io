@@ -114,6 +114,9 @@ func main() {
 			if filePath == "" {
 				filePath = "."
 			}
+			// trimming off the :line suffix
+			parts = strings.Split(filePath, ":")
+			filePath = parts[0]
 			fullPath := *location + "/" + filePath
 			log.Printf("the full path is: %s", fullPath)
 			fileInfo, err := os.Stat(fullPath)

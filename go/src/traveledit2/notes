@@ -1,3 +1,6 @@
+for undo just track lines inserted and deleted
+when you undo or redo, you'll have to update all the indexes down the chain.
+
 remember line number on refresh
 an alt-tab (of sorts) within a file
 

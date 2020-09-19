@@ -212,7 +212,7 @@ ontouchstart=onStart(event)
     <div class=square onclick=doFormat()>format</div>
 </div>
 
-<form onsubmit="addFile(this.fullPath.value, true); return false;">
+<form onsubmit="addFile(this.fullPath.value, true, false, false, true); return false;">
     <input class=dark type=text style="width: 275px;" name=fullPath></div>
     <input class=dark type=submit value="Add Pane">
 </form>
@@ -488,7 +488,7 @@ function addCmdTab() {
     
     //theText.focus()
 }
-function addFile(fullPath, changeURL, closeCurrent, reload) {
+function addFile(fullPath, changeURL, closeCurrent, reload, focusFile) {
     if (fullPath.charAt(0) != "/") {
         fullPath = "/" + fullPath
     }
@@ -498,7 +498,7 @@ function addFile(fullPath, changeURL, closeCurrent, reload) {
     if (fullPath == "") {
         return
     }
-
+    
     if (!reload) {
         // If the file is already in the list of open files.
         // then let it have a reference to the existing lines, like vim does.
@@ -510,6 +510,9 @@ function addFile(fullPath, changeURL, closeCurrent, reload) {
         }
     }
     var isDir = false
+    // adding file to list beforehand to preserve order
+    var file = makeFile(fullPath, "")
+    addFileToList(file)
     fetch((fullPath) + "?raw=1", {
         cache: "no-cache"
     }).then(r => {
@@ -521,7 +524,9 @@ function addFile(fullPath, changeURL, closeCurrent, reload) {
         if (isDir) {
             b = "..\n" + b
         }
-        var file = makeFile(fullPath, b)
+        // some mods
+        file.lines = b.split("\n")
+        file.undoStack = [b]
         if (isDir) {
             file.fileMode = "directory"
         } else {
@@ -530,8 +535,9 @@ function addFile(fullPath, changeURL, closeCurrent, reload) {
         if (closeCurrent) {
             closeFile()
         }
-        addFileToList(file)
-        setCurrentFile(file)
+        if (focusFile) {
+            setCurrentFile(file)
+        }
         if (changeURL) {
             renderURL()
         }
@@ -541,7 +547,9 @@ function addFile(fullPath, changeURL, closeCurrent, reload) {
 function renderURL() {
     // For now we don't get files with bash mode.
     var filtered = files.filter(f => f.fileMode != "bash")
-    var theNewPath = "/" + filtered.map(f => f.fullPath.slice(1)).join(",")
+    var theNewPath = "/" + filtered.map(function(f) {
+        return f.fullPath.slice(1) + ":" + (f.cursorLineIndex + 1)
+    }).join(",")
     theNewPath += "?searchTerms=" + encodeURIComponent(JSON.stringify(searchTerms))
     history.replaceState({}, "", theNewPath)
 }
@@ -1196,7 +1204,7 @@ function runBashCommand(line) {
             fx.cursorLineIndex += 1
             fx.cursorColIndex = 0
             ensureCursorInScreen()
-            addFile(proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad, true)
+            addFile(proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad, true, false, false, true)
             break
         }
 
@@ -1525,6 +1533,8 @@ function theCharAt(lines, y, x) {
     return theChar
 }
 
+var renderURLTimeout
+
 var waitingRender = false
 var lastRender = 0
 var maxFrameRate = 16
@@ -1532,6 +1542,13 @@ function render() {
     if (preventRender) {
         return
     }
+    
+    // Now that file names contain line numbers
+    // let's render the url nore frequently
+    clearTimeout(renderURLTimeout)
+    renderURLTimeout = setTimeout(function () {
+        renderURL()
+    }, 1000)
     var timeSinceRender = Date.now() - lastRender
     if (timeSinceRender < maxFrameRate) {
         if (!waitingRender) {
@@ -1951,7 +1968,7 @@ function onStart(e) {
                 } else {
                     var newFullPath = prefix + "/" + addPath
                 }
-                addFile(newFullPath, true, true)
+                addFile(newFullPath, true, true, false, true)
                 return
             }
 
@@ -1971,7 +1988,7 @@ function onStart(e) {
                 }
                 // here load file that hasn't been loaded
                 // in this case "file" var is just a string
-                addFile(file, true, false)
+                addFile(file, true, false, false, true)
                 return
             }
 
@@ -2618,18 +2635,13 @@ function getUniqueID() {
 var fileToken = {}
 function makeFile(fullPath, contents) {
     var theLines = contents.split("\n")
-    // because this editor intentionally does not support tabs
-    // (for implementation simplicity)
-    // we convert tabs to 4 spaces
-    // In practice for me. this only matters for
-    // * go files (which get go fmt'ed)
-    // * Makefiles (that I hardly write)
-    // * the <<- operator in bash.
-    for (var i=0; i<theLines.length; i++) {
-        var line = theLines[i]
-        // replace leading tabs with 4 times that many spaces
-        // theLines[i] = line.replace(/^\t*/, (x)=> "    ".repeat(x.length))
-    }
+    
+    var cursorLineIndex = 0
+    var parts = fullPath.split(":")
+    fullPath = parts[0]
+    if (parts.length > 1) {
+        cursorLineIndex = (parts[1] - 1) || 0   
+    } 
     return {
         // fullPath should have the leading slash
         fullPath: fullPath,
@@ -2638,9 +2650,9 @@ function makeFile(fullPath, contents) {
         undoYStack: [0],
         undoIndex: 0,
         lines: theLines,
-        cursorLineIndex: 0,
+        cursorLineIndex: cursorLineIndex,
         cursorColIndex: 0,
-        offsetY: 0,
+        offsetY: cursorLineIndex, // you could get smarter about this
         offsetX: 0,
         fileMode: "file",
         bashCWD: (fx ? fx.bashCWD : "."),
@@ -2652,7 +2664,11 @@ function makeFile(fullPath, contents) {
     }
 }
 function addFileToList(file) {
-    files.unshift(file)
+    if (initialFileAdding) {
+        files.push(file)
+    } else {
+        files.unshift(file)
+    }
     renderFileDropdown()
 }
 
@@ -2720,14 +2736,16 @@ function treeToLines(theTree, path, indent, kPrefix) {
             }
             continue
         }
-        treeFiles.push(indent + kPrefix + k)
+ 
         kPrefix = ""
         if (theTree[k].fileToken == fileToken) {
+            treeFiles.push(indent + kPrefix + k + "    " + (theTree[k].lines[theTree[k].cursorLineIndex]|| "").trim() )
             treeFilesShadow.push(theTree[k])
         } else {
+            treeFiles.push(indent + kPrefix + k)
             var newPath = path + "/" + k
             treeFilesShadow.push(newPath)
-            treeToLines(theTree[k], newPath, indent + "    ", "")
+            treeToLines(theTree[k], newPath, indent + "  ", "")
         }
     }
 }
@@ -2745,7 +2763,7 @@ function getLinesForFileList() {
     // taking advantage of sorted order here
     for (var fileI=0; fileI<sortedFiles.length; fileI++) {
         var f = sortedFiles[fileI]
-        var parts = (f.fullPath + ":" + (f.cursorLineIndex + "")).split("/")
+        var parts = (f.fullPath + ":" + (f.cursorLineIndex+1)).split("/")
         // var parts = (f.fullPath).split("/")
         var curTree = fileTree 
         for (var partI=0; partI<parts.length; partI++) {
@@ -2829,7 +2847,7 @@ function duplicateFile(f) {
 }
 
 function reloadFile() {
-    addFile(currentFile.fullPath, true, true, true)
+    addFile(currentFile.fullPath, true, true, true, true)
 }
 
 var inDebugView = false
@@ -2876,10 +2894,11 @@ addFileToList(initialFile)
 setCurrentFile(initialFile)
 // Subsequent ones will get added after the fact.
 // Starting at index 1 for this reason.
-// NOTE: you could do this async serially.
+var initialFileAdding = true
 for (var i=1; i<paths.length; i++) {
-    addFile(paths[i], false)
+    addFile(paths[i], false, false, false, false)
 }
+initialFileAdding = false
 
 log("location search")
 log(location.search)
