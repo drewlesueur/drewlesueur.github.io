@@ -1,3 +1,14 @@
+remember line number on refresh
+an alt-tab (of sorts) within a file
+
+bug: sometimes inline pasting puts an extra space at the end.
+bug: pressing // with nonline selection does a weird thing
+
+resurrect the most recently used file view as an optional eay to view files
+
+Prevent file from being changed out from underneath us
+BUG: with tabs search don when 2 results on the same line does't seem to work
+
 BUG: reloading a file when there are 2 of the same file open
   - the lines get unlinked
 

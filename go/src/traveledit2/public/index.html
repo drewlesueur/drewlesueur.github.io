@@ -93,7 +93,6 @@ opacity: 0.5;
         style="display: none; font: 16px Courier; width: 300px"
         onfocus="focusSearchText()"
         onblur="blurSearchText()"
-        oninput="inputSearchText()"
     >
     <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
@@ -147,9 +146,16 @@ onblur=handleBlur()
 <!--
 Note that the css width needs to be 1/3 of
 the with attribute, and same for height.
--->
+See canvasHeightFull
 <canvas id=c width=1125 height=1470
 style="width: 375px; height:490px;
+display: block;"
+ontouchstart=onStart(event)
+></canvas>
+-->
+
+<canvas id=c width=1125 height=1410
+style="width: 375px; height:470px;
 display: block;"
 ontouchstart=onStart(event)
 ></canvas>
@@ -157,7 +163,7 @@ ontouchstart=onStart(event)
 
 <div class="toolbar hidden" id=searchRow onclick=selectSearchRow(event)>
 </div>
-<div class="toolbar hidden" id=fileRow onclick=selectFileRow(event)>
+<div class="toolbar xhidden" id=fileRow onclick=selectFileRow(event)>
 </div>
 <div class="toolbar hidden" id=bashToolbar1 style="--display: none">
     <div class=square onclick='runBashCommand("git branch")'>branch</div>
@@ -408,14 +414,6 @@ function focusSearchText() {
 function blurSearchText() {
     theText.style.display = "block"
     searchText.style.display = "none"
-}
-function inputSearchText() {
-    if (searchText.value == "") {
-        clearSearchButton.innerText = "edit search"
-    } else {
-        clearSearchButton.innerText = "clear search"
-    }
-    render()
 }
 function closeFile() {
     if (fx.fileMode == "fileList") {
@@ -712,21 +710,23 @@ function findDown() {
     acWord = null
     if (searchText.value == "") {
         searchText.value = getWordAtCursor().word
-        clearSearchButton.innerText = "clear search"
     }
     addSearchTerm()
     for (var i=fx.cursorLineIndex; i<fx.lines.length; i++) {
         var lineToSearch = fx.lines[i]
+        var originalLineToSearch = lineToSearch
         if (i == fx.cursorLineIndex) {
             lineToSearch = lineToSearch.substr(u(fx.cursorColIndex))
         }
         var pos = lineToSearch.indexOf(searchText.value)
         if (pos != -1) {
             if (i == fx.cursorLineIndex) {
+                // compensate for that we sliced the line originally
                 pos += u(fx.cursorColIndex)
             }
             fx.cursorLineIndex = i
-            fx.cursorColIndex = expandTabIndex(lineToSearch, pos + searchText.value.length)
+            // fx.cursorColIndex = expandTabIndex(lineToSearch, pos + searchText.value.length)
+            fx.cursorColIndex = expandTabIndex(originalLineToSearch, pos + searchText.value.length)
             updateCursorXY()
             ensureCursorInScreen()
             render()
@@ -769,7 +769,6 @@ function findUp() {
     acWord = null
     if (searchText.value == "") {
         searchText.value = getWordAtCursor().word
-        clearSearchButton.innerText = "clear search"
     }
     addSearchTerm()
     for (var i=fx.cursorLineIndex; i>=0; i--) {
@@ -795,12 +794,7 @@ function findUp() {
     return false
 }
 function clearSearch() {
-    if (searchText.value == "") {
-        editSearch()
-        return
-    }
     searchText.value = ""
-    clearSearchButton.innerText = "edit search"
     render()
     renderSearchTerms()
 }
@@ -2711,34 +2705,30 @@ function renderFileDropdown() {
 var treeFiles = []
 var fileTree = {}
 var treeFilesShadow = []
-function treeToLines(theTree, path, indent) {
-    var kPrefix = ""
-    nestLoop:
-    for (var i=0; i<100; i++) {
-        for (var k in theTree) {
-            if (true && Object.keys(theTree[k]).length == 1) {
-                if (theTree[k].fileToken == fileToken) {
-                    treeFiles.push(indent + kPrefix + k)
-                    treeFilesShadow.push(theTree[k])
-                    break nestLoop
-                } else {
-                    path = path + "/" + k
-                    kPrefix += k + "/"
-                    theTree = theTree[k]
-                    continue nestLoop
-                }
-                continue nestLoop
-            }
-            treeFiles.push(indent + kPrefix + k)
-            if (theTree[k].fileToken == fileToken) {
-                treeFilesShadow.push(theTree[k])
+function treeToLines(theTree, path, indent, kPrefix) {
+    for (var k in theTree) {
+    
+        var childKeys = Object.keys(theTree[k])
+        if (false && (childKeys.length == 1)) {
+            kPrefix += k + "/"
+            if (theTree[k][childKeys[0]].fileToken == fileToken) {
+                treeFiles.push(indent + kPrefix + "/" + childKeys[0])
+                treeFilesShadow.push(theTree[k][childKeys[0]])
             } else {
-                var newPath = path + "/" + k
-                treeFilesShadow.push(newPath)
-                treeToLines(theTree[k], newPath, indent + "    ")
+                newPath = path + "/" + k + "/" + childKeys[0]
+                treeToLines(theTree[k][childKeys[0]], newPath, indent + "", kPrefix)
             }
+            continue
         }
-        break nestLoop
+        treeFiles.push(indent + kPrefix + k)
+        kPrefix = ""
+        if (theTree[k].fileToken == fileToken) {
+            treeFilesShadow.push(theTree[k])
+        } else {
+            var newPath = path + "/" + k
+            treeFilesShadow.push(newPath)
+            treeToLines(theTree[k], newPath, indent + "    ", "")
+        }
     }
 }
 
@@ -2755,7 +2745,8 @@ function getLinesForFileList() {
     // taking advantage of sorted order here
     for (var fileI=0; fileI<sortedFiles.length; fileI++) {
         var f = sortedFiles[fileI]
-        var parts = f.fullPath.split("/")
+        var parts = (f.fullPath + ":" + (f.cursorLineIndex + "")).split("/")
+        // var parts = (f.fullPath).split("/")
         var curTree = fileTree 
         for (var partI=0; partI<parts.length; partI++) {
            var part = parts[partI]
@@ -2777,7 +2768,7 @@ function getLinesForFileList() {
     }
     treeFiles = []
     treeFilesShadow = []
-    treeToLines(fileTree, "", "")
+    treeToLines(fileTree, "", "", "")
     return treeFiles
 }
 
@@ -2798,6 +2789,8 @@ function seeFiles() {
     }
 
     setCurrentFile(f)
+    updateCursorXY()
+    ensureCursorInScreen()
 }
 function setCurrentFile(file) {
     if (!file) {
@@ -2824,6 +2817,7 @@ function setCurrentFile(file) {
 
 function duplicateFile(f) {
     var fc = JSON.parse(JSON.stringify(f))
+    fc.fileToken = fileToken
     fc.uniqueID = getUniqueID()
     // copy everything but reference lines
     fc.lines = f.lines
