@@ -317,6 +317,13 @@ var cursorType = "move"
 
 var theStatus = {}
 
+// note: fileMode can be
+// * file
+// * bash
+// * fileList
+// * bash
+// * directory
+
 // if last keyDown is a backspace
 var wasDelete = false
 var selectTimeout
@@ -469,15 +476,18 @@ var bashHelpers = [
 function addCmdTab() {
     var file = makeFile(proxyPath + "/cmd", bashHelpers.join("\n"))
     file.fileMode = "bash"
-
+    
     if (currentFile.fileMode == "bash") {
         file.bashCWD = fx.bashCWD
+        file.originatingFullPath = currentFile.originatingFullPath
     } else if (currentFile.fileMode == "file") {
         var parts = trimPrefix(currentFile.fullPath, proxyPath).split("/")
         parts = parts.slice(0, parts.length - 1)
         file.bashCWD = rootLocation + parts.join("/")
+        file.originatingFullPath = currentFile.fullPath.split("/").slice(0, -1).join("/") + "/cmd"
     } else if (currentFile.fileMode == "directory") {
         file.bashCWD = rootLocation + trimPrefix(currentFile.fullPath, proxyPath)
+        file.originatingFullPath = currentFile.fullPath + "/cmd"
     }
     addFileToList(file, false)
     setCurrentFile(file)
@@ -2779,13 +2789,21 @@ function getLinesForFileList() {
     
     // doing the slice so we don't mutate the original array
     var sortedFiles = files.slice().sort(function(f1, f2) {
-        return (f1.fullPath + f1.uniqueID) > (f2.fullPath + f2.uniqueID)
+        if (f1.fileMode == "bash") {
+            // TODO: should we set the filePath for bash to be the CWD?  
+            return (f1.originatingFullPath + f1.uniqueID) > (f2.originatingFullPath + f2.uniqueID)
+        } else {
+            return (f1.fullPath + f1.uniqueID) > (f2.fullPath + f2.uniqueID)
+        }
     })
     
     // taking advantage of sorted order here
     for (var fileI=0; fileI<sortedFiles.length; fileI++) {
         var f = sortedFiles[fileI]
         var parts = (f.fullPath + ":" + (f.cursorLineIndex+1)).split("/")
+        if (f.fileMode == "bash") {
+            parts = (f.originatingFullPath + ":" + (f.cursorLineIndex+1)).split("/")
+        }
         // var parts = (f.fullPath).split("/")
         var curTree = fileTree 
         for (var partI=0; partI<parts.length; partI++) {
