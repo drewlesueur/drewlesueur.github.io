@@ -648,6 +648,15 @@ function isWordy(a) {
         (fx.fileMode == "bash" && a == 45) // -
     )
 }
+function isRegularWord(theLine) {
+    // a little regex could replace this :)
+    for (var cI=0; cI<theLine.length; cI++) {
+       if (!isWordy(theLine.charCodeAt(cI))) {
+         return false   
+       }
+    }
+    return true
+}
 function getWordAtCursor() {
     return getWordAt(fx.lines[fx.cursorLineIndex], u(fx.cursorColIndex))
 }
@@ -2278,12 +2287,12 @@ function acWordToggle(recursive) {
                     if (!acWord.autocompleteLine) {
                        shouldAutocompleteLine = true
                     } 
-                    // if (!acWord.hasPlopped && !recursive) {
-                    //     acWord = null
-                    //     log("all done")
-                    //     acWordToggle(true)
-                    //     return
-                    // }
+                    if (acWord.autocompleteLine && !acWord.hasPlopped && !recursive) {
+                        acWord = null
+                        log("all done")
+                        acWordToggle(true)
+                        return
+                    }
                     acWord = null
                     log("all done")
                     return
@@ -2356,6 +2365,9 @@ function acWordToggle(recursive) {
 }
 var inACPlop = false
 function acPlop(buff) {
+    if (buff[0].length > 0){
+       acWord.hasPlopped = true
+    }
     inACPlop = true
     // TODO: compare with old implementation
     // replaceFindWord
@@ -2413,6 +2425,11 @@ function acFindUp() {
         if (acWord.autocompleteLine) {
             var trimmedLine = line.trim()
             if (trimmedLine.startsWith(acWord.prefix)) {
+                // Also make sure it's not a regular word
+                // because we would have seen it in the non autocompleteLine flow.
+                if (isRegularWord(trimmedLine)) {
+                    continue   
+                }
                 // the start and end don't matter
                 var seen = acWord.seen[trimmedLine]
                 if (!seen) {
@@ -2450,6 +2467,11 @@ function acFindDown() {
         if (acWord.autocompleteLine) {
             var trimmedLine = line.trim()
             if (trimmedLine.startsWith(acWord.prefix)) {
+                // Also make sure it's not a regular word
+                // because we would have seen it in the non autocompleteLine flow.
+                if (isRegularWord(trimmedLine)) {
+                    continue   
+                }
                 // the start and end don't matter
                 var seen = acWord.seen[trimmedLine]
                 if (!seen) {

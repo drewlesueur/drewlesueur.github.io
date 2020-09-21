@@ -1,5 +1,8 @@
+make it so you can select backwards or forwards
+ 
 for undo just track lines inserted and deleted
 when you undo or redo, you'll have to update all the indexes down the chain.
+if you get good at that, you can save a file by applying the diffs
 
 remember line number on refresh
 an alt-tab (of sorts) within a file
