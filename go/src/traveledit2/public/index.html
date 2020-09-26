@@ -1774,7 +1774,11 @@ function render() {
         if (theLine) {
             // max 20 highlights per line
             for (var _i=0; _i<20; _i++) {
-                var pos = theLine.indexOf(searchText.value, highlightStartSearch)
+                if (fx.fileMode == "directory") {
+                    var pos = theLine.toLowerCase().indexOf(searchText.value.toLowerCase(), highlightStartSearch)
+                } else {
+                    var pos = theLine.indexOf(searchText.value, highlightStartSearch)
+                }
                 if (pos == -1) {
                     break
                 }
