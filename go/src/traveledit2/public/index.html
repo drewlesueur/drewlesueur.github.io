@@ -330,6 +330,7 @@ var lastSearchDirForSameTerm = "" // up or down or ""
 var hasMovedSinceNewLine = false
 var inEdit = false
 var copyBuffer = []
+var cutBuffer = []
 var selectMode = "line"
 var selectAction
 var cursorType = "move"
@@ -1135,7 +1136,8 @@ function del(preventCopy, preventDeleteWholeLine) {
             if (!preventDeleteWholeLine && r.startX == 0 && unExpandTabIndex(fx.lines[r.startY], r.stopX) == fx.lines[r.startY].length) {
                 selectMode = "line"
                 if (!preventCopy) {
-                    copyBuffer = [fx.lines[r.startY]]
+                    // copyBuffer = [fx.lines[r.startY]]
+                    cutBuffer = [fx.lines[r.startY]]
                 }
                 fx.lines.splice(r.startY, 1)
                 selectedRegions = []
@@ -1144,7 +1146,8 @@ function del(preventCopy, preventDeleteWholeLine) {
                 return
             } else {
                 if (!preventCopy) {
-                    copyBuffer = [unExpandSlice(fx.lines[r.startY], r.startX, r.stopX)]
+                    // copyBuffer = [unExpandSlice(fx.lines[r.startY], r.startX, r.stopX)]
+                    cutBuffer = [unExpandSlice(fx.lines[r.startY], r.startX, r.stopX)]
                 }
                 fx.lines[r.startY] = unExpandSlice(fx.lines[r.startY], 0, r.startX) +
                     unExpandSlice(fx.lines[r.startY], r.stopX)
@@ -1163,7 +1166,7 @@ function del(preventCopy, preventDeleteWholeLine) {
             }
         }
         if (!preventCopy) {
-            copyBuffer = [
+            cutBuffer = [
                 unExpandSlice(fx.lines[r.startY], r.startX),
                 ...fx.lines.slice(r.startY + 1, r.stopY),
                 unExpandSlice(fx.lines[r.stopY], 0, r.stopX)
@@ -1191,7 +1194,7 @@ function del(preventCopy, preventDeleteWholeLine) {
     }
     selectMode = "line"
     if (!preventCopy) {
-        copyBuffer = [fx.lines[fx.cursorLineIndex]]
+        cutBuffer = [fx.lines[fx.cursorLineIndex]]
     }
     fx.lines.splice(fx.cursorLineIndex, 1)
     docChanged()
@@ -2094,23 +2097,30 @@ function onStart(e) {
                 paste()
                 return
             }
-            if (fx.cursorColIndex == -4) {
-                del()
-                return
-            }
-            if (fx.cursorColIndex == -3) {
-                copy()
-                return
-            }
-            if (fx.cursorColIndex == -2) {
-                copy()
+            if (fx.cursorColIndex >= -4 && fx.cursorColIndex <= -1) {
+                var oldCopyBuffer = copyBuffer
+                copyBuffer = cutBuffer
                 paste()
+                copyBuffer = oldCopyBuffer
                 return
             }
-            if (fx.cursorColIndex == -1) {
-                insertLine()
-                return
-            }
+            // if (fx.cursorColIndex == -4) {
+            //     del()
+            //     return
+            // }
+            // if (fx.cursorColIndex == -3) {
+            //     copy()
+            //     return
+            // }
+            // if (fx.cursorColIndex == -2) {
+            //     copy()
+            //     paste()
+            //     return
+            // }
+            // if (fx.cursorColIndex == -1) {
+            //     insertLine()
+            //     return
+            // }
 
             if (document.activeElement == theText) {
                 acWordToggle()
@@ -2195,6 +2205,7 @@ function onStart(e) {
     var selectedRegion = {}
 
     // scroll right and left and move cursor right and left
+    
     if (startTouchX > ((canvasWidth/3) - 40)) {
         if (document.activeElement == theText) {
             fx.cursorColIndex += 1
@@ -2269,6 +2280,11 @@ function onStart(e) {
             selectAction()
             return
         }
+
+        if (startTouchY - c.getBoundingClientRect().top < 40) {
+           shouldAutocompleteLine = true
+        }
+
         selectTimeout = setTimeout(selectAction, selectTimeoutMillis)
         document.body.addEventListener("touchmove", onMove)
         moveListenerCount += 1
@@ -2362,7 +2378,8 @@ function acWordToggle(recursive) {
         acWord.toggleCount = 0
         acWord.clearedWord = acWord == ""
         acWord.pastedLastTyped = false
-        acWord.pastedInLine = false
+        acWord.pastedCopyBufferInLine = false
+        acWord.pastedCutBufferInLine = false
         acWord.findUpDone = false
         acWord.findDownDone = false
         // so replacements don't affect search
@@ -2447,21 +2464,27 @@ function acWordToggle(recursive) {
             break loopBlock
         }
 
-        // here we have no prefix
         if (!acWord.pastedLastTyped && lastWord && lastWord != acWord.word) {
             acWord.pastedLastTyped = true
             acPlop([lastWord])
             break loopBlock
         }
 
-        if (!acWord.pastedInLine && copyBuffer.length) {
-            acWord.pastedInLine = true
+        if (!acWord.pastedCopyBufferInLine && copyBuffer.length) {
+            acWord.pastedCopyBufferInLine = true
             acPlop(copyBuffer)
+            break loopBlock
+        }
+        
+        if (!acWord.pastedCutBufferInLine && cutBuffer.length) {
+            acWord.pastedCutBufferInLine = true
+            acPlop(cutBuffer)
             break loopBlock
         }
         acWord.clearedWord = false
         acWord.pastedLastTyped = false
-        acWord.pastedInLine = false
+        acWord.pastedCopyBufferInLine = false
+        acWord.pastedCutBufferInLine = false
         acPlop([acWord.word])
     }
     acWord.toggleCount += 1
@@ -2478,6 +2501,7 @@ function acPlop(buff) {
     // and paste() and we might cause a little extra work
     preventRender = true
     var oldCopyBuffer = copyBuffer
+    var oldCutBuffer = cutBuffer
     copyBuffer = buff
     var oldSelectMode = selectMode
     selectedRegions = [{
@@ -2499,11 +2523,14 @@ function acPlop(buff) {
         var lastCopyBufferLine = copyBuffer[copyBuffer.length - 1]
         acWord.stopX = expandTabIndex(lastCopyBufferLine, lastCopyBufferLine.length)
     }
-    fx.cursorColIndex = acWord.stopX
+    if (!acWord.autocompleteLine) {
+        fx.cursorColIndex = acWord.stopX
+    }
     fx.cursorLineIndex = acWord.stopY
     updateCursorXY()
     ensureCursorInScreen()
     copyBuffer = oldCopyBuffer
+    cutBuffer = oldCutBuffer
     selectMode = oldSelectMode
     selectedRegions = []
     preventRender = false
