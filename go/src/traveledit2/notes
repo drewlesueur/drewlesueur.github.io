@@ -1,3 +1,27 @@
+have a cut buffer and a copy buffer
+
+when you type a new line or paste lines
+and the same file is open, adjust the cursor index
+
+
+weirdness when you paste when there is nothing there
+if a dorectory is the first file that loads
+it doesn't have the ..
+
+bug when first file is the proxy path?
+
+do something special when searching in directory fileMode.
+keep the search box open. when you hit enter, open that directory.
+as you type, jump to that search and make sure it's in view
+
+a terminal based read only view! using vt-100
+visible with netcat?
+
+
+reload should remember cursor position
+
+save last deleted word to go in pase cycle
+
 make it so you can select backwards or forwards
  
 for undo just track lines inserted and deleted

@@ -89,11 +89,32 @@ opacity: 0.5;
 "></div>
 
 <form onsubmit=findDownForm(event)>
+    <input class=dark id=searchTextBefore class=text type=text
+    style="font: 8px Courier;
+    width: 375px;
+    height:1px; overflow: hidden;
+    display: block;"
+    onfocus=handleSearchFocusBefore()
+    xonblur=handleBlur()
+    >
+    
     <input class=dark type=text id=searchText
         style="display: none; font: 16px Courier; width: 300px"
         onfocus="focusSearchText()"
+        oninput="inputSearchText()"
         onblur="blurSearchText()"
     >
+    
+    <input class=dark id=searchTextAfter class=text type=text
+    style="font: 8px Courier;
+    width: 375px;
+    height:1px; overflow: hidden;
+    display: block;
+    "
+    onfocus=handleSearchFocusAfter()
+    xonblur=handleBlur()
+    >
+    
     <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
 
@@ -163,8 +184,6 @@ ontouchstart=onStart(event)
 
 <div class="toolbar hidden" id=searchRow onclick=selectSearchRow(event)>
 </div>
-<div class="toolbar xhidden" id=fileRow onclick=selectFileRow(event)>
-</div>
 <div class="toolbar hidden" id=bashToolbar1 style="--display: none">
     <div class=square onclick='runBashCommand("git branch")'>branch</div>
     <div class=square onclick='runBashCommand("git status")'>status</div>
@@ -182,6 +201,8 @@ ontouchstart=onStart(event)
     <div class=square onclick='runBashCommand("git diff --cached")'>diff --cached</div>
     <div class=square onclick='runBashCommand("git log -10")'>log -10</div>
     <div class=square onclick='runBashCommand("git log -p -3")'>log -p -3</div>
+</div>
+<div class="toolbar xhidden" id=fileRow onclick=selectFileRow(event)>
 </div>
 <div class=toolbar>
     <div id=findDownButton class=square onclick=findDown()>find down</div>
@@ -305,6 +326,7 @@ var pointHeight=500
 var touchScale=2 // was 3 for a while
 
 var lastAction = "move" // move or type
+var lastSearchDirForSameTerm = "" // up or down or ""
 var hasMovedSinceNewLine = false
 var inEdit = false
 var copyBuffer = []
@@ -414,13 +436,24 @@ function editSearch() {
     searchText.focus()
 }
 function focusSearchText() {
+    log("focus search text")
     window.scrollTo(0, 0)
     searchText.setSelectionRange(0, searchText.value.length)
+    searchText.style.display = "block"
     theText.style.display = "none"
+    setCanvasHeightAccordingly()
+}
+function inputSearchText() {
+    if (fx.fileMode == "directory") {
+        findDown(true, true)
+    }
+    render()
 }
 function blurSearchText() {
+    log("blurSearchText")
     theText.style.display = "block"
     searchText.style.display = "none"
+    setCanvasHeightAccordingly()
 }
 function closeFile() {
     if (fx.fileMode == "fileList") {
@@ -464,6 +497,7 @@ var bashHelpers = [
     "grep -Ri '' --include=*.php",
     "find . -name '**'",
     "go test ./...",
+    "./test.sh",
     // a way to do `git add -p` non-interactively
     "git --no-pager diff > gitdiff",
     "open gitdiff",
@@ -539,6 +573,7 @@ function addFile(fullPath, changeURL, closeCurrent, reload, focusFile) {
         file.undoStack = [b]
         if (isDir) {
             file.fileMode = "directory"
+            file.cursorLineIndex = 1
         } else {
             file.fileMode = "file"
         }
@@ -712,6 +747,11 @@ function getWordBefore(line, x) {
 function findDownForm(e) {
     // TODO: why doesnt preventDefault autocomplete sometimes?
     e.preventDefault()
+    if (fx.fileMode == "directory" && document.activeElement == searchText) {
+        clickItemInDirectory()
+        searchText.select()
+        return   
+    }
     findDown()
     return false
 }
@@ -730,35 +770,54 @@ function addSearchTerm() {
     // because search terms are in url
     renderURL()
 }
-function findDown() {
+function findDown(searchDir, wrap, startTop) {
     lastAction = "move"
     shouldAutocompleteLine = false
     hasMovedSinceNewLine = true
     acWord = null
-    if (searchText.value == "") {
+    
+    var startY = fx.cursorLineIndex
+    if (startTop) {
+       startY = 0
+    } 
+    if (document.activeElement != searchText && searchText.value == "") {
         searchText.value = getWordAtCursor().word
     }
     addSearchTerm()
-    for (var i=fx.cursorLineIndex; i<fx.lines.length; i++) {
+    for (var i=startY; i<fx.lines.length; i++) {
         var lineToSearch = fx.lines[i]
         var originalLineToSearch = lineToSearch
-        if (i == fx.cursorLineIndex) {
-            lineToSearch = lineToSearch.substr(u(fx.cursorColIndex))
+        if (!startTop && i == fx.cursorLineIndex) {
+            var startX = u(fx.cursorColIndex)
+            if (!searchDir && lastSearchDirForSameTerm == "down") {
+                startX = u(fx.cursorColIndex + searchText.value.length)   
+            }
+            lastSearchDirForSameTerm = "down" 
+            lineToSearch = lineToSearch.substr(startX)
         }
-        var pos = lineToSearch.indexOf(searchText.value)
+        if (document.activeElement == searchText) {
+            var pos = lineToSearch.toLowerCase().indexOf(searchText.value.toLowerCase())
+        } else {
+            var pos = lineToSearch.indexOf(searchText.value)
+        }
         if (pos != -1) {
-            if (i == fx.cursorLineIndex) {
+            if (!startTop && i == fx.cursorLineIndex) {
                 // compensate for that we sliced the line originally
-                pos += u(fx.cursorColIndex)
+                pos += startX
             }
             fx.cursorLineIndex = i
-            // fx.cursorColIndex = expandTabIndex(lineToSearch, pos + searchText.value.length)
-            fx.cursorColIndex = expandTabIndex(originalLineToSearch, pos + searchText.value.length)
+            fx.cursorColIndex = expandTabIndex(originalLineToSearch, pos)
+            
             updateCursorXY()
             ensureCursorInScreen()
+            
             render()
             return true
         }
+    }
+    if (wrap) {
+        findDown(searchDir, false, true)   
+        return
     }
     render()
     return false
@@ -803,7 +862,11 @@ function findUp() {
         if (i == fx.cursorLineIndex) {
             lineToSearch = lineToSearch.substr(0, u(fx.cursorColIndex))
         }
-        var pos = reverse(lineToSearch).indexOf(reverse(searchText.value))
+        if (document.activeElement == searchText) {
+            var pos = reverse(lineToSearch.toLowerCase()).indexOf(reverse(searchText.value.toLowerCase()))
+        } else {
+            var pos = reverse(lineToSearch).indexOf(reverse(searchText.value))
+        }
         if (pos != -1) {
             if (i == fx.cursorLineIndex) {
                 pos += (fx.lines[i].length - u(fx.cursorColIndex))
@@ -987,7 +1050,7 @@ function setCanvasHeightAccordingly() {
         logEl.style.height = statusElHeight + "px"
         heightReduction = statusElHeight * 3       
     }
-    if (document.activeElement == theText) {
+    if (document.activeElement == theText || document.activeElement == searchText) {
         setCanvasHeight(canvasHeightKeyboard - heightReduction)
     } else {
        if (fx.fileMode == "bash") {
@@ -1160,6 +1223,10 @@ function getIndent(line) {
     return theIndent
 }
 function insertLine(closeCurly) {
+    if (fx.fileMode == "directory") {
+        clickItemInDirectory()
+        return
+    }
     lastAction = "type"
     hasMovedSinceNewLine = false
     acWord = null
@@ -1377,6 +1444,7 @@ function handleFocusAfter() {
 
 function handleFocusBefore() {
     // if you have something to search, make it search.
+    log("here in before land")
     if (searchText.value) {
         findUp()
     } else {
@@ -1410,6 +1478,24 @@ function handleBlur() {
     render()
     window.scrollTo(0, lastPageYOffset)
 
+}
+function handleSearchFocusBefore() {
+    theText.style.display = "none"
+    searchText.style.display = "block"
+    searchText.focus()
+    setCanvasHeightAccordingly()
+    findUp()
+    searchText.setSelectionRange(searchText.value.length, searchText.value.length)
+    log("searchUppy")
+}
+function handleSearchFocusAfter() {
+    theText.style.display = "none"
+    searchText.style.display = "block"
+    searchText.focus()
+    setCanvasHeightAccordingly()
+    findDown()
+    searchText.setSelectionRange(searchText.value.length, searchText.value.length)
+    log("searchDowny")
 }
 
 // pressing the save button disables autosave
@@ -1867,6 +1953,7 @@ function onStart(e) {
     }
     var onMove = function(e) {
         lastAction = "move"
+        lastSearchDirForSameTerm = ""
         shouldAutocompleteLine = false
         hasMovedSinceNewLine = true
         acWord = null
@@ -1972,22 +2059,7 @@ function onStart(e) {
         // maybe there are workarounds.
         if (!moved && cursorType == "move") {
             if (fx.fileMode == "directory") {
-                var prefix = currentFile.fullPath
-                // To prevent leading double slash
-                if (prefix == "/") {
-                    prefix = ""
-                }
-                var addPath = fx.lines[fx.cursorLineIndex]
-                if (addPath == "..") {
-                    var parts = prefix.split("/")
-                    if (parts.length > 0) {
-                        parts = parts.slice(0, parts.length - 1)
-                    }
-                    var newFullPath = parts.join("/")
-                } else {
-                    var newFullPath = prefix + "/" + addPath
-                }
-                addFile(newFullPath, true, true, false, true)
+                clickItemInDirectory()
                 return
             }
 
@@ -2201,7 +2273,24 @@ function onStart(e) {
     }
     render()
 }
-
+function clickItemInDirectory() {
+    var prefix = currentFile.fullPath
+    // To prevent leading double slash
+    if (prefix == "/") {
+        prefix = ""
+    }
+    var addPath = fx.lines[fx.cursorLineIndex]
+    if (addPath == "..") {
+        var parts = prefix.split("/")
+        if (parts.length > 0) {
+            parts = parts.slice(0, parts.length - 1)
+        }
+        var newFullPath = parts.join("/")
+    } else {
+        var newFullPath = prefix + "/" + addPath
+    }
+    addFile(newFullPath, true, true, false, true)
+}
 var shouldAutocompleteLine = false
 // NEW FIND WORD
 var acWord = null
