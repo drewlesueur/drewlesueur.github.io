@@ -566,9 +566,11 @@ function addFile(fullPath, changeURL, closeCurrent, reload, focusFile) {
         }
         return r.text()
     }).then(b => {
-        if (isDir) {
-            b = "..\n" + b
-        }
+        // Now done server side
+        // if (isDir) {
+        //     b = "..\n" + b
+        // }
+        
         // some mods
         file.lines = b.split("\n")
         file.undoStack = [b]
@@ -587,6 +589,7 @@ function addFile(fullPath, changeURL, closeCurrent, reload, focusFile) {
         if (changeURL) {
             renderURL()
         }
+        render()
     }).catch(e => alert("Error loading file " + e))
 }
 
@@ -1239,7 +1242,7 @@ function insertLine(closeCurly) {
     var nextChar = theLine[u(fx.cursorColIndex)]
     fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent + theLine.substr(theText.selectionStart))
     if (closeCurly && (prevChar in closingMap) && (nextChar == closingMap[prevChar])) {
-        theIndent += "   "
+        theIndent += "    "
         fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent)
     }
     fx.lines[fx.cursorLineIndex] = theLine.substr(0, theText.selectionStart)
@@ -3050,14 +3053,24 @@ var initialFile = makeFile(paths[0], lines.join("\n"))
 initialFile.fileMode = fileMode
 initialFile.bashCWD = rootLocation
 
-addFileToList(initialFile)
-setCurrentFile(initialFile)
+var serverLoadFirstFile = true
+var ajaxLoadStartIndex
+if (serverLoadFirstFile) {
+    ajaxLoadStartIndex = 1
+    addFileToList(initialFile)
+    setCurrentFile(initialFile)
+} else {
+   ajaxLoadStartIndex = 0
+}
+
+
 // Subsequent ones will get added after the fact.
 // Starting at index 1 for this reason.
 var initialFileAdding = true
-for (var i=1; i<paths.length; i++) {
+for (var i=ajaxLoadStartIndex; i<paths.length; i++) {
     addFile(paths[i], false, false, false, false)
 }
+setCurrentFile(files[0])
 initialFileAdding = false
 
 log("location search")

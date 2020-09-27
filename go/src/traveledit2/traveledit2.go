@@ -132,9 +132,10 @@ func main() {
 					http.Error(w, "could not read files", http.StatusInternalServerError)
 					return
 				}
-				fileNames := make([]string, len(files))
+				fileNames := make([]string, len(files) + 1)
+				fileNames[0] = ".."
 				for i, f := range files {
-					fileNames[i] = f.Name()
+					fileNames[i+1] = f.Name()
 				}
 				w.Header().Set("X-Is-Dir", "1")
 
