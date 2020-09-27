@@ -280,6 +280,7 @@ var t = c.getContext("2d")
 var preventRender = false
 var saveEveryMS = 3000
 var lastWord = ""
+var lastCleared = ""
 var fontScale = 1.2
 fontScaleInput.value = fontScale
 //var fontScale = 1
@@ -723,7 +724,6 @@ function getWordAt(line, x) {
             break
         }
     }
-    if (endIndex == fx.lines.length - 1) endIndex = fx.lines.length
     //if (startIndex < endIndex) {
         return {start: startIndex, end: endIndex, word: line.substring(startIndex, endIndex)}
     //}
@@ -742,7 +742,6 @@ function getWordBefore(line, x) {
     }
     if (startIndex < 0) startIndex = 0
     var endIndex = x
-    if (endIndex == fx.lines.length - 1) endIndex = fx.lines.length
     //if (startIndex < endIndex) {
         return {start: startIndex, end: endIndex, word: line.substring(startIndex, endIndex)}
     //}
@@ -1740,6 +1739,7 @@ function render() {
             // theStatus.fileTree = fileTree
         theStatus.shouldAutocompleteLine = shouldAutocompleteLine
         theStatus.lastWord = lastWord
+        theStatus.lastCleared = lastCleared
         theStatus.acWord = acWord
         statusEl.innerText = JSON.stringify(theStatus, null, "    ")
     }
@@ -2380,6 +2380,7 @@ function acWordToggle(recursive) {
         acWord.findDirection = false // true: up, false: down
         acWord.toggleCount = 0
         acWord.clearedWord = acWord == ""
+        acWord.pasteLastCleared = false
         acWord.pastedLastTyped = false
         acWord.pastedCopyBufferInLine = false
         acWord.pastedCutBufferInLine = false
@@ -2460,18 +2461,27 @@ function acWordToggle(recursive) {
             acPlop([trimPrefix(found, acWord.prefix)])
             break loopBlock
         }
-        // here we have no prefix
+        
+        // here we have no prefix, not autocompleting
         if (!acWord.clearedWord && acWord.word != "") {
             acWord.clearedWord = true
+            lastCleared = acWord.word
             acPlop([""])
             break loopBlock
         }
-
+        
         if (!acWord.pastedLastTyped && lastWord && lastWord != acWord.word) {
             acWord.pastedLastTyped = true
             acPlop([lastWord])
             break loopBlock
         }
+        
+        if (!acWord.pasteLastCleared && lastCleared && lastCleared != acWord.word) {
+            acWord.pasteLastCleared = true
+            acPlop([lastCleared])
+            break loopBlock
+        }
+        
 
         if (!acWord.pastedCopyBufferInLine && copyBuffer.length) {
             acWord.pastedCopyBufferInLine = true
@@ -2485,6 +2495,7 @@ function acWordToggle(recursive) {
             break loopBlock
         }
         acWord.clearedWord = false
+        acWord.pasteLastCleared = false
         acWord.pastedLastTyped = false
         acWord.pastedCopyBufferInLine = false
         acWord.pastedCutBufferInLine = false
@@ -2913,7 +2924,7 @@ function getLinesForFileList() {
     // doing the slice so we don't mutate the original array
     var sortedFiles = files.slice().sort(function(f1, f2) {
         if (f1.fileMode == "bash") {
-            // TODO: should we set the filePath for bash to be the CWD?  
+            // TODO: should we set the fullPath for bash to be the CWD?  
             return (f1.originatingFullPath + f1.uniqueID) > (f2.originatingFullPath + f2.uniqueID)
         } else {
             return (f1.fullPath + f1.uniqueID) > (f2.fullPath + f2.uniqueID)

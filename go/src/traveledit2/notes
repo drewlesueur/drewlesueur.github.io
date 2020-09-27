@@ -1,3 +1,5 @@
+reload should preserve location.
+
 have a cut buffer and a copy buffer
 
 when you type a new line or paste lines
@@ -20,7 +22,7 @@ visible with netcat?
 
 reload should remember cursor position
 
-save last deleted word to go in pase cycle
+save last deleted word to go in pase cycle 
 
 make it so you can select backwards or forwards
  
