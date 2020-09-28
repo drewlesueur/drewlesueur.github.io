@@ -5,6 +5,7 @@
 <style>
 * {
     margin: 0; padding: 0;
+    box-sizing: border-box;
 }
 .dark {
     background-color: black;
@@ -43,6 +44,7 @@
     align-items: center;
     justify-content: center;
     text-align: center;
+    border-radius: 0px;
 }
 .toolbar .longButton {
     --font-family: 'Courier';
@@ -524,13 +526,13 @@ function addCmdTab() {
     
     //theText.focus()
 }
-function normalizeFullPath() {
+function normalizeFullPath(fullPath) {
     if (fullPath.charAt(0) != "/") {
         fullPath = "/" + fullPath
     }
     return fullPath
 }
-function addFile(fullPath, reload) {
+function addFile(fullPath) {
     fullPath = normalizeFullPath(fullPath)
     if (fullPath == "") {
         return
@@ -545,15 +547,20 @@ function addFile(fullPath, reload) {
         }
     }
     
-    var isDir = false
     // adding file to list beforehand to preserve order
     var file = makeFile(fullPath, "")
+    if (!initialFileAdding) {
+        setCurrentFile(file)
+        renderURL()
+    }
     addFileToList(file)
     fetchFile(fullPath, file).then(() => {
-        if (!initialFileAdding) {
-            setCurrentFile(file)
-            renderURL()
+        for (var i=0; i<files.length; i++) {
+            if (files[i] != file && files[i].fullPath == fx.fullPath) {
+                files[i].lines = file.lines
+            }
         }
+        
         render()
     }).catch(e => {
         alert("Error loading file " + e)
@@ -2987,6 +2994,7 @@ function duplicateFile(f) {
 }
 
 function fetchFile(fullPath, file) {
+    var isDir = false
     fullPath = normalizeFullPath(fullPath)
     return fetch((fullPath) + "?raw=1", {
         cache: "no-cache"
@@ -3007,7 +3015,6 @@ function fetchFile(fullPath, file) {
         }
     }).catch(e => {
         alert("Error loading file " + e)
-        cb(e)
     })
 }
 
@@ -3017,7 +3024,7 @@ function reloadFile() {
     fetchFile(fx.fullPath, fx).then(() => {
         for (var i=0; i<files.length; i++) {
             if (files[i].fullPath == fx.fullPath) {
-                files[i].lines = file.lines
+                files[i].lines = fx.lines
             }
         }
         render()
