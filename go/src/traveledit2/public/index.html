@@ -212,7 +212,7 @@ ontouchstart=onStart(event)
     
     <div id=saveButton class=square onclick=saveWrapper()>save</div>
     <div class=square onclick=seeFiles()>files</div>
-    <div class=square onclick=closeFile()>close</div>
+    <div class=square onclick=closeFile(0)>close</div>
 </div>
 <div class=toolbar>
     <div class=square onclick=addCmdTab()>cmd</div>
@@ -233,10 +233,6 @@ ontouchstart=onStart(event)
     <div class=square onclick=doFormat()>format</div>
 </div>
 
-<form onsubmit="addFile(this.fullPath.value, true, false, false, true); return false;">
-    <input class=dark type=text style="width: 275px;" name=fullPath></div>
-    <input class=dark type=submit value="Add Pane">
-</form>
 <form method=GET action="" target=_blank>
     <input class=dark type=text id=docTitleEl
         style="width: 275px;"
@@ -457,7 +453,7 @@ function blurSearchText() {
     searchText.style.display = "none"
     setCanvasHeightAccordingly()
 }
-function closeFile() {
+function closeFile(indexToClose) {
     if (fx.fileMode == "fileList") {
         var fileIndex = files.indexOf(treeFilesShadow[fx.cursorLineIndex])
         if (fileIndex != -1) {
@@ -465,13 +461,7 @@ function closeFile() {
         }
         fx.lines = getLinesForFileList()
     } else {
-        for (var i=0; i<files.length; i++) {
-            var file = files[i]
-            if (file == currentFile) {
-                files.splice(i, 1)
-                break
-            }
-        }
+        files.splice(indexToClose, 1)
         setCurrentFile(files[0])
     }
     render()
@@ -534,64 +524,40 @@ function addCmdTab() {
     
     //theText.focus()
 }
-function addFile(fullPath, changeURL, closeCurrent, reload, focusFile) {
+function normalizeFullPath() {
     if (fullPath.charAt(0) != "/") {
         fullPath = "/" + fullPath
     }
-    if (!fullPath) {
-        fullPath = prompt("full path", location.pathname)
-    }
+    return fullPath
+}
+function addFile(fullPath, reload) {
+    fullPath = normalizeFullPath(fullPath)
     if (fullPath == "") {
         return
     }
     
-    if (!reload) {
-        // If the file is already in the list of open files.
-        // then let it have a reference to the existing lines, like vim does.
-        for (var i=0; i<files.length; i++) {
-            if (files[i].fullPath == fullPath && files[i].fileMode == "file") {
-                duplicateFile(files[i])
-                return
-            }
+    // If the file is already in the list of open files.
+    // then let it have a reference to the existing lines, like vim does.
+    for (var i=0; i<files.length; i++) {
+        if (files[i].fullPath == fullPath && files[i].fileMode == "file") {
+            duplicateFile(files[i])
+            return
         }
     }
+    
     var isDir = false
     // adding file to list beforehand to preserve order
     var file = makeFile(fullPath, "")
     addFileToList(file)
-    fetch((fullPath) + "?raw=1", {
-        cache: "no-cache"
-    }).then(r => {
-        if (r.headers.get("X-Is-Dir") == "1") {
-            isDir = true
-        }
-        return r.text()
-    }).then(b => {
-        // Now done server side
-        // if (isDir) {
-        //     b = "..\n" + b
-        // }
-        
-        // some mods
-        file.lines = b.split("\n")
-        file.undoStack = [b]
-        if (isDir) {
-            file.fileMode = "directory"
-            file.cursorLineIndex = 1
-        } else {
-            file.fileMode = "file"
-        }
-        if (closeCurrent) {
-            closeFile()
-        }
-        if (focusFile) {
+    fetchFile(fullPath, file).then(() => {
+        if (!initialFileAdding) {
             setCurrentFile(file)
-        }
-        if (changeURL) {
             renderURL()
         }
         render()
-    }).catch(e => alert("Error loading file " + e))
+    }).catch(e => {
+        alert("Error loading file " + e)
+    })
 }
 
 function renderURL() {
@@ -1295,7 +1261,7 @@ function runBashCommand(line) {
             fx.cursorLineIndex += 1
             fx.cursorColIndex = 0
             ensureCursorInScreen()
-            addFile(proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad, true, false, false, true)
+            addFile(proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad, false)
             break
         }
 
@@ -2089,7 +2055,7 @@ function onStart(e) {
                 }
                 // here load file that hasn't been loaded
                 // in this case "file" var is just a string
-                addFile(file, true, false, false, true)
+                addFile(file, false)
                 return
             }
 
@@ -2312,7 +2278,7 @@ function clickItemInDirectory() {
     } else {
         var newFullPath = prefix + "/" + addPath
     }
-    addFile(newFullPath, true, true, false, true)
+    addFile(newFullPath, false)
 }
 var shouldAutocompleteLine = false
 // NEW FIND WORD
@@ -3020,8 +2986,45 @@ function duplicateFile(f) {
     // when text to one file is added.
 }
 
+function fetchFile(fullPath, file) {
+    fullPath = normalizeFullPath(fullPath)
+    return fetch((fullPath) + "?raw=1", {
+        cache: "no-cache"
+    }).then(r => {
+        if (r.headers.get("X-Is-Dir") == "1") {
+            isDir = true
+        }
+        return r.text()
+    }).then(b => {
+        file.lines = b.split("\n")
+        file.undoStack = [b]
+        file.loadedFirstTime = true
+        if (isDir) {
+            file.fileMode = "directory"
+            file.cursorLineIndex = 1
+        } else {
+            file.fileMode = "file"
+        }
+    }).catch(e => {
+        alert("Error loading file " + e)
+        cb(e)
+    })
+}
+
 function reloadFile() {
-    addFile(currentFile.fullPath, true, true, true, true)
+    // Update all the other instances of this same file.
+    // Start at 1 because we ourselves are at 0.
+    fetchFile(fx.fullPath, fx).then(() => {
+        for (var i=0; i<files.length; i++) {
+            if (files[i].fullPath == fx.fullPath) {
+                files[i].lines = file.lines
+            }
+        }
+        render()
+    }).catch(e => {
+        alert("Error loading file " + e)
+    })
+    
 }
 
 var inDebugView = false
@@ -3063,7 +3066,7 @@ var proxyPath = "/"
 var initialFile = makeFile(paths[0], lines.join("\n"))
 initialFile.fileMode = fileMode
 initialFile.bashCWD = rootLocation
-
+initialFile.loadedFirstTime = true 
 var serverLoadFirstFile = true
 var ajaxLoadStartIndex
 if (serverLoadFirstFile) {
@@ -3079,7 +3082,7 @@ if (serverLoadFirstFile) {
 // Starting at index 1 for this reason.
 var initialFileAdding = true
 for (var i=ajaxLoadStartIndex; i<paths.length; i++) {
-    addFile(paths[i], false, false, false, false)
+    addFile(paths[i], false)
 }
 setCurrentFile(files[0])
 initialFileAdding = false

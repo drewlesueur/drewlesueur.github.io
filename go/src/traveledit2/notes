@@ -1,4 +1,27 @@
+come up with something simpler cor pasting
+maybe a ring of a few slots
+right now we have a copyBuffer and a cutBuffer
+and it doesn't feel great.
+maybe make something similar to acPlop
+also, could you get rid of pasteMode?
+maybe make paste() take an argument of what it's pasting
+example common case:
+
+if (something()) {
+    doThing()
+} else {
+    doOtherThing()
+}
+
+bug, initial load doesn't link files if there are duplicates
+
 reload should preserve location.
+BUG: reloading a file when there are 2 of the same file open
+  - the lines get unlinked
+reload should remember cursor position
+
+
+autocompleted words should be included in lastWord?
 
 have a cut buffer and a copy buffer
 
@@ -20,7 +43,6 @@ a terminal based read only view! using vt-100
 visible with netcat?
 
 
-reload should remember cursor position
 
 save last deleted word to go in pase cycle 
 
@@ -40,9 +62,6 @@ resurrect the most recently used file view as an optional eay to view files
 
 Prevent file from being changed out from underneath us
 BUG: with tabs search don when 2 results on the same line does't seem to work
-
-BUG: reloading a file when there are 2 of the same file open
-  - the lines get unlinked
 
 only autocomplete line if cursor is at the end
 
