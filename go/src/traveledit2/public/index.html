@@ -556,7 +556,7 @@ function addFile(fullPath) {
     addFileToList(file)
     fetchFile(fullPath, file).then(() => {
         for (var i=0; i<files.length; i++) {
-            if (files[i] != file && files[i].fullPath == fx.fullPath) {
+            if (files[i] != file && files[i].fullPath == file.fullPath) {
                 files[i].lines = file.lines
             }
         }
