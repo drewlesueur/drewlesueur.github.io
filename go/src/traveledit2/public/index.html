@@ -1111,8 +1111,8 @@ function del(preventCopy, preventDeleteWholeLine) {
             if (!preventDeleteWholeLine && r.startX == 0 && unExpandTabIndex(fx.lines[r.startY], r.stopX) == fx.lines[r.startY].length) {
                 selectMode = "line"
                 if (!preventCopy) {
-                    // copyBuffer = [fx.lines[r.startY]]
-                    cutBuffer = [fx.lines[r.startY]]
+                    copyBuffer = [fx.lines[r.startY]]
+                    // cutBuffer = [fx.lines[r.startY]]
                 }
                 fx.lines.splice(r.startY, 1)
                 selectedRegions = []
@@ -1121,8 +1121,8 @@ function del(preventCopy, preventDeleteWholeLine) {
                 return
             } else {
                 if (!preventCopy) {
-                    // copyBuffer = [unExpandSlice(fx.lines[r.startY], r.startX, r.stopX)]
-                    cutBuffer = [unExpandSlice(fx.lines[r.startY], r.startX, r.stopX)]
+                    copyBuffer = [unExpandSlice(fx.lines[r.startY], r.startX, r.stopX)]
+                    // cutBuffer = [unExpandSlice(fx.lines[r.startY], r.startX, r.stopX)]
                 }
                 fx.lines[r.startY] = unExpandSlice(fx.lines[r.startY], 0, r.startX) +
                     unExpandSlice(fx.lines[r.startY], r.stopX)
@@ -1141,7 +1141,8 @@ function del(preventCopy, preventDeleteWholeLine) {
             }
         }
         if (!preventCopy) {
-            cutBuffer = [
+            // cutBuffer = [
+            copyBuffer = [
                 unExpandSlice(fx.lines[r.startY], r.startX),
                 ...fx.lines.slice(r.startY + 1, r.stopY),
                 unExpandSlice(fx.lines[r.stopY], 0, r.stopX)
@@ -1169,7 +1170,8 @@ function del(preventCopy, preventDeleteWholeLine) {
     }
     selectMode = "line"
     if (!preventCopy) {
-        cutBuffer = [fx.lines[fx.cursorLineIndex]]
+        // cutBuffer = [fx.lines[fx.cursorLineIndex]]
+        copyBuffer = [fx.lines[fx.cursorLineIndex]]
     }
     fx.lines.splice(fx.cursorLineIndex, 1)
     docChanged()
@@ -1268,7 +1270,7 @@ function runBashCommand(line) {
             fx.cursorLineIndex += 1
             fx.cursorColIndex = 0
             ensureCursorInScreen()
-            addFile(proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad, false)
+            addFile(proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad)
             break
         }
 
@@ -2062,7 +2064,7 @@ function onStart(e) {
                 }
                 // here load file that hasn't been loaded
                 // in this case "file" var is just a string
-                addFile(file, false)
+                addFile(file)
                 return
             }
 
@@ -2073,30 +2075,30 @@ function onStart(e) {
                 paste()
                 return
             }
-            if (fx.cursorColIndex >= -4 && fx.cursorColIndex <= -1) {
-                var oldCopyBuffer = copyBuffer
-                copyBuffer = cutBuffer
-                paste()
-                copyBuffer = oldCopyBuffer
+            // if (fx.cursorColIndex >= -4 && fx.cursorColIndex <= -1) {
+            //     var oldCopyBuffer = copyBuffer
+            //     copyBuffer = cutBuffer
+            //     paste()
+            //     copyBuffer = oldCopyBuffer
+            //     return
+            // }
+            if (fx.cursorColIndex == -4) {
+                del()
                 return
             }
-            // if (fx.cursorColIndex == -4) {
-            //     del()
-            //     return
-            // }
-            // if (fx.cursorColIndex == -3) {
-            //     copy()
-            //     return
-            // }
-            // if (fx.cursorColIndex == -2) {
-            //     copy()
-            //     paste()
-            //     return
-            // }
-            // if (fx.cursorColIndex == -1) {
-            //     insertLine()
-            //     return
-            // }
+            if (fx.cursorColIndex == -3) {
+                copy()
+                return
+            }
+            if (fx.cursorColIndex == -2) {
+                copy()
+                paste()
+                return
+            }
+            if (fx.cursorColIndex == -1) {
+                insertLine()
+                return
+            }
 
             if (document.activeElement == theText) {
                 acWordToggle()
@@ -2285,7 +2287,7 @@ function clickItemInDirectory() {
     } else {
         var newFullPath = prefix + "/" + addPath
     }
-    addFile(newFullPath, false)
+    addFile(newFullPath)
 }
 var shouldAutocompleteLine = false
 // NEW FIND WORD
@@ -2356,7 +2358,7 @@ function acWordToggle(recursive) {
         acWord.pasteLastCleared = false
         acWord.pastedLastTyped = false
         acWord.pastedCopyBufferInLine = false
-        acWord.pastedCutBufferInLine = false
+        // acWord.pastedCutBufferInLine = false
         acWord.findUpDone = false
         acWord.findDownDone = false
         // so replacements don't affect search
@@ -2462,16 +2464,16 @@ function acWordToggle(recursive) {
             break loopBlock
         }
         
-        if (!acWord.pastedCutBufferInLine && cutBuffer.length) {
-            acWord.pastedCutBufferInLine = true
-            acPlop(cutBuffer)
-            break loopBlock
-        }
+        // if (!acWord.pastedCutBufferInLine && cutBuffer.length) {
+        //     acWord.pastedCutBufferInLine = true
+        //     acPlop(cutBuffer)
+        //     break loopBlock
+        // }
         acWord.clearedWord = false
         acWord.pasteLastCleared = false
         acWord.pastedLastTyped = false
         acWord.pastedCopyBufferInLine = false
-        acWord.pastedCutBufferInLine = false
+        // acWord.pastedCutBufferInLine = false
         acPlop([acWord.word])
     }
     acWord.toggleCount += 1
@@ -3089,7 +3091,7 @@ if (serverLoadFirstFile) {
 // Starting at index 1 for this reason.
 var initialFileAdding = true
 for (var i=ajaxLoadStartIndex; i<paths.length; i++) {
-    addFile(paths[i], false)
+    addFile(paths[i])
 }
 setCurrentFile(files[0])
 initialFileAdding = false
