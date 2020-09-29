@@ -1,3 +1,8 @@
+0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMMOPQRSTUV
+
+reload() needs to also reset the undoStack
+also the saved/saving/etc state
+
 come up with something simpler cor pasting
 maybe a ring of a few slots
 right now we have a copyBuffer and a cutBuffer

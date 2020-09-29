@@ -3,6 +3,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
 <meta charset='utf-8'>
 <style>
+@font-face {
+  font-family: GoMono;
+  src: url(/te/tepublic/fonts/Go-Mono.ttf);
+}
 * {
     margin: 0; padding: 0;
     box-sizing: border-box;
@@ -262,11 +266,21 @@ style="width:100%; height:100px;"
         style="font-size: 16px;"
     > font scale
 </div>
+<form onsubmit=uploadFile(event)>
+    Upload files:<br>
+    <input id=filesToUpload type=file multiple>
+    <input type=Submit value=Upload>
+</form>
+
+<select onchange="selectFont(this.value)">
+    <option>Courier</option>
+    <option>GoMono</option>
+</select>
+
 <div id=bottomPadding style="height: 100px;"></div>
 </div>
 
-
-</div> <-- end wrapper -->
+</div> <!-- end wrapper -->
 <script>
 // it's important that this go in it's own script tag
 window.onerror = function(message, url, lineNumber, columnNumber, error) {
@@ -285,7 +299,10 @@ fontScaleInput.value = fontScale
 // some duplication here with fontScale, see updateFontScale
 var fontHeight=36 * fontScale
 var fontWidth=18 * fontScale
-var fontCSS = (30 * fontScale) + "px 'Courier'"
+// var fontCSS = (30 * fontScale) + "px 'Courier'"
+var fontCSS = (30 * fontScale) + "px 'GoMono'"
+
+
 // var fontCSS = (30 * fontScale) + "px 'Menlo'"// yes
 // var fontCSS = (30 * fontScale) + "px 'Monaco'"// no
 // var fontCSS = (30 * fontScale) + "px 'PT Mono'" //no
@@ -378,6 +395,10 @@ function doScroll() {
     }
 
     render()
+}
+function selectFont(fontName) {
+    new FontFace(fontName, url(proxyPath + "/tepublic/fonts/" + fontName + ".ttf"))    
+    fontCSS = (30 * fontScale) + "px '"+fontName+"'"
 }
 function updateFontScale() {
     fontScale = fontScaleInput.value - 0
@@ -1227,6 +1248,21 @@ function insertLine(closeCurly) {
     docChanged()
 
     render()
+}
+function uploadFile(e) {
+    e.preventDefault()
+    let formData = new FormData();
+    for (var i=0; i<filesToUpload.files.length; i++) {
+        formData.append("thefiles", filesToUpload.files[i]);
+    }
+    fetch(proxyPath + '/myuploadfiles', {
+        method: "POST", body: formData
+    }).then(() => {
+        
+    }).catch(e => {
+        alert("error uploading files:" + e)
+    })
+    return false
 }
 function newLine(e) {
     var theLine = fx.lines[fx.cursorLineIndex]

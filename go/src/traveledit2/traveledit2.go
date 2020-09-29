@@ -10,6 +10,7 @@ import "os"
 import "os/exec"
 import "crypto/subtle"
 import "io/ioutil"
+import "io"
 import "encoding/json"
 import "github.com/NYTimes/gziphandler"
 
@@ -38,11 +39,20 @@ func BasicAuth(handler http.Handler) http.HandlerFunc {
 	}
 }
 
+func logAndErr(w http.ResponseWriter, message string, args ...interface{}) {
+	theLog := fmt.Sprintf(message, args...)
+	log.Println(theLog)
+	http.Error(w, theLog, 500)
+}
+
 func main() {
 	serverAddress := flag.String("addr", "localhost:8000", "serverAddress to listen on")
 	indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
 	location := flag.String("location", "", "path to directory to serve")
 	proxyPath := flag.String("proxypath", "", "the path for proxies, what to ignore")
+	// Whether or not the proxypath is removed by the reverse proxy
+	// seems with apache ProxyPath it is removed.
+	proxyPathTrimmed := flag.Bool("proxypathtrimmed", false, "does the reverse proxy trim the proxy path?")
 	allowedIPsStr := os.Getenv("ALLOWEDIPS")
 	allowedIPs := strings.Split(allowedIPsStr, ",")
 	allowedIPsMap := map[string]bool{}
@@ -67,8 +77,8 @@ func main() {
 	}
 	log.Printf("location: %s", *location)
 	mux := http.NewServeMux()
-	// fs := http.FileServer(http.Dir("./public"))
-	//mux.Handle("/", http.StripPrefix("/", fs))
+	fs := http.FileServer(http.Dir("./public"))
+	mux.Handle("/tepublic/", http.StripPrefix("/tepublic/", fs))
 
 	mux.HandleFunc("/yo", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./public/yo.html")
@@ -77,6 +87,46 @@ func main() {
 		log.Printf("the yo path: %s", r.URL.Path)
 		http.ServeFile(w, r, "./public/yo.html")
 	})
+	mux.HandleFunc("/myuploadfiles", func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("uploading files: %s", r.Header.Get("Content-Type"))
+		err := r.ParseMultipartForm(256 << 20) // 256MB
+		if err != nil {
+			http.Error(w, fmt.Sprintf("error parsing body: %v", err), 500)
+			return
+		}
+
+		fhs := r.MultipartForm.File["thefiles"]
+		log.Printf("There are %d files", len(fhs))
+		for _, fh := range fhs {
+			var bytesWritten int64
+			var newF *os.File
+			log.Printf("a file! %s", fh.Filename)
+			f, err := fh.Open()
+			if err != nil {
+				http.Error(w, fmt.Sprintf("file upload error: %v", err), 500)
+				goto finish
+			}
+			newF, err = os.Create("./uploads/" + fh.Filename)
+			if err != nil {
+				logAndErr(w, "file upload error: %v", err)
+				goto finish
+			}
+			bytesWritten, err = io.Copy(newF, f)
+			if bytesWritten != fh.Size {
+				logAndErr(w, "file not written: missing bytes")
+				goto finish
+			}
+			if err != nil {
+				logAndErr(w, fmt.Sprintf("file not written: %v", err), 500)
+				goto finish
+			}
+
+		finish:
+			f.Close()
+			newF.Close()
+		}
+	})
+
 	mux.HandleFunc("/mybash", func(w http.ResponseWriter, r *http.Request) {
 		cmdString := r.FormValue("cmd")
 		if cmdString == "" {
@@ -132,7 +182,7 @@ func main() {
 					http.Error(w, "could not read files", http.StatusInternalServerError)
 					return
 				}
-				fileNames := make([]string, len(files) + 1)
+				fileNames := make([]string, len(files)+1)
 				fileNames[0] = ".."
 				for i, f := range files {
 					fileNames[i+1] = f.Name()
@@ -247,9 +297,12 @@ func main() {
 	if proxyPath != nil && *proxyPath != "" {
 		oldMainMux := mainMux
 		mainMux = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log.Printf("original URL: %s =====", r.URL.Path)
 			parts := strings.Split(r.URL.Path, ",")
 			for i, part := range parts {
-				part = strings.TrimPrefix(part, *proxyPath)
+				if (i == 0 && !*proxyPathTrimmed) || i > 0 {
+					part = strings.TrimPrefix(part, *proxyPath)
+				}
 				parts[i] = part
 			}
 			r.URL.Path = strings.Join(parts, ",")
