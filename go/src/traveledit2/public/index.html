@@ -1654,8 +1654,79 @@ function theCharAt(lines, y, x) {
     return theChar
 }
 
+function r(x) {
+    return Math.round(x)
+}
+// 
+var mockCanvasContext = {
+    commands: [],
+    lastFillStyle: "black",
+    fillStyle: "black",
+    lastFont: "",
+    font: "",
+    lastTextBaseline: "",
+    textBaseline: "",
+    fillRect: function(x, y, w, h) {
+      if (this.lastFillStyle != this.fillStyle) {
+          this.lastFillStyle = this.fillStyle
+          this.commands.push([2, this.fillStyle])    
+      }
+      this.commands.push([1, r(x), r(y), r(w), r(h)])    
+    },
+    fillText: function(str, x, y) {
+      if (this.lastFillStyle != this.fillStyle)  {
+          this.lastFillStyle = this.fillStyle
+          this.commands.push([2, this.fillStyle])    
+      }
+      if (this.lastFont != this.font) {
+          this.lastFont = this.font
+          this.commands.push([3, this.font])    
+      }
+      if (this.lastTextBaseline != this.textBaseline) {
+          this.lastTextBaseline = this.textBaseline
+          this.commands.push([4, this.textBaseline])    
+      }
+      this.commands.push([0, str, r(x), r(y)])    
+    },
+}
+var serverView = true
+var sendingViewToServer = false
+var shouldSendViewToServer = false
+function sendViewToServer() {
+   if (!serverView) {
+       return
+   }
+   if (sendingViewToServer) {
+       shouldSendViewToServer = true
+       return
+   }
+   sendingViewToServer = true
+   // log("sending: " + JSON.stringify(mockCanvasContext.commands))
+   fetch(proxyPath + "/render", {
+        cache: "no-cache",
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+          // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: JSON.stringify(mockCanvasContext.commands),
+   }).then(r => {
+       sendingViewToServer = false
+       if (shouldSendViewToServer) {
+           shouldSendViewToServer = false
+           sendViewToServer()
+       }
+   }).catch(e => {
+       sendingViewToServer = false
+       alert("error rendering to server: " + e)
+       if (shouldSendViewToServer) {
+           shouldSendViewToServer = false
+           sendViewToServer()
+       }
+   })
+      
+}
 var renderURLTimeout
-
 var waitingRender = false
 var lastRender = 0
 var maxFrameRate = 16
@@ -1683,10 +1754,82 @@ function render() {
     }
 
     lastRender = Date.now()
-    var selStart = theText.selectionStart
-    var selEnd = theText.selectionEnd
     c.width = c.width // one way to clear
 
+    var selStart = theText.selectionStart
+    var selEnd = theText.selectionEnd
+    renderInternal()
+    
+    // server rendering
+    var oldOffsetX = fx.offsetX
+    var oldMaxCols = maxCols
+    var oldT = t // canvas rendering context
+    fx.offsetX = 0
+    maxCols = 160
+    t = mockCanvasContext
+    mockCanvasContext.stack = []
+    mockCanvasContext.lastFillStyle = "black",
+    mockCanvasContext.fillStyle = "black",
+    mockCanvasContext.lastFont = "",
+    mockCanvasContext.font = "",
+    mockCanvasContext.lastTextBaseline = "",
+    mockCanvasContext.textBaseline = "",
+    mockCanvasContext.commands = []
+    renderInternal()
+    fx.offsetX = oldOffsetX
+    maxCols = oldMaxCols
+    t = oldT
+    sendViewToServer()
+    
+    
+    s.innerHTML =
+        lastWord + " " +
+        fx.version + "/" + fx.savedVersion +
+        "/" + fx.savingVersion +
+        " p:" + cursorX + "," + cursorY +
+        " c:" + fx.cursorColIndex + "," + fx.cursorLineIndex +
+        " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
+        " " + selectMode
+    if (inDebugView) {
+            // theStatus.fileTree = fileTree
+        theStatus.shouldAutocompleteLine = shouldAutocompleteLine
+        theStatus.lastWord = lastWord
+        theStatus.lastCleared = lastCleared
+        theStatus.acWord = acWord
+        statusEl.innerText = JSON.stringify(theStatus, null, "    ")
+    }
+    if (fx.fileMode == "file")   {
+        if (fx.savingVersion != -1) {
+            saveButton.style.backgroundColor = "gray"
+            saveButton.innerText = "saving"
+        } else if (fx.version == fx.savedVersion) {
+            saveButton.style.backgroundColor = ""
+            saveButton.innerText = "saved"
+        } else {
+            saveButton.style.backgroundColor = "red"
+            saveButton.innerText = "save"
+        }
+    } else if (fx.fileMode == "bash") {
+        saveButton.innerText = "run"
+    }
+    
+    if (!inEdit) {
+        theText.value = cursorLine
+        theTextBefore.value = fx.lines[fx.cursorLineIndex - 1] || ""
+        theTextAfter.value = fx.lines[fx.cursorLineIndex + 1] || ""
+        // set the selection range back to what it was
+        // if it needs to be changed, some functions will change it
+        // after the call to render.
+        // TODO: have a state variable for what it should be.
+        if (document.activeElement == theText) {
+            // this one we don't want to call setSelectionRangeForText
+            // because the arguments are not from cursorColIndex
+            theText.setSelectionRange(selStart, selEnd)
+        }
+    }
+}
+    
+function renderInternal() {
     // the selected areas
     for (var i=0; i<selectedRegions.length;i++) {
         // todo: normalize region start and stop
@@ -1727,10 +1870,8 @@ function render() {
     // draw line where your cursor is for help with finding
     var highlightLine = true
     if (highlightLine) {
-        t.save()
         t.fillStyle = "rgba(0, 255, 255, 0.15)"
         t.fillRect(0, (fx.cursorLineIndex - fx.offsetY) * fontHeight, c.width, fontHeight)
-        t.restore()
     }
 
     t.font = fontCSS
@@ -1738,36 +1879,6 @@ function render() {
     var r = selectedRegions[0]
     // TODO: this element is hitten
     // consider removing it.
-    s.innerHTML =
-        lastWord + " " +
-        fx.version + "/" + fx.savedVersion +
-        "/" + fx.savingVersion +
-        " p:" + cursorX + "," + cursorY +
-        " c:" + fx.cursorColIndex + "," + fx.cursorLineIndex +
-        " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
-        " " + selectMode
-    if (inDebugView) {
-            // theStatus.fileTree = fileTree
-        theStatus.shouldAutocompleteLine = shouldAutocompleteLine
-        theStatus.lastWord = lastWord
-        theStatus.lastCleared = lastCleared
-        theStatus.acWord = acWord
-        statusEl.innerText = JSON.stringify(theStatus, null, "    ")
-    }
-    if (fx.fileMode == "file")   {
-        if (fx.savingVersion != -1) {
-            saveButton.style.backgroundColor = "gray"
-            saveButton.innerText = "saving"
-        } else if (fx.version == fx.savedVersion) {
-            saveButton.style.backgroundColor = ""
-            saveButton.innerText = "saved"
-        } else {
-            saveButton.style.backgroundColor = "red"
-            saveButton.innerText = "save"
-        }
-    } else if (fx.fileMode == "bash") {
-        saveButton.innerText = "run"
-    }
 
 
     // row highlight, what is this? remove it
@@ -1779,10 +1890,8 @@ function render() {
     for (var y=0; y < maxLines; y++) {
         // show the end of the document
         // if (y + fx.offsetY >= fx.lines.length) {
-        //   t.save()
         //   t.fillStyle = "#222"
         //   t.fillRect(0, y*fontHeight, canvasWidth, fontHeight)
-        //   t.restore()
         // }
 
         // highlight search
@@ -1800,7 +1909,6 @@ function render() {
                     break
                 }
                 highlightStartSearch = pos + searchText.value.length
-                t.save()
                 // lime
                 if (isDark) {
                     t.fillStyle = "blue"
@@ -1813,7 +1921,6 @@ function render() {
                     searchText.value.length * fontWidth,
                     fontHeight
                 )
-                t.restore()
             }
         }
 
@@ -1839,7 +1946,6 @@ function render() {
         }
 
         // the actual text
-        t.save()
         if (fx.fileMode == "bash" || fx.fileMode == "file") {
             if (theLine.startsWith("+")) {
                 t.fillStyle = isDark ? "lime" : "green"
@@ -1883,15 +1989,13 @@ function render() {
             //t.fillText( theCharAt(fx.lines, y+fx.offsetY, x+fx.offsetX), x*fontWidth, y*fontHeight)
             var chr = expandedLine[x+fx.offsetX] || ""
             if (chr == "\t") {
-                t.save()
                 t.fillStyle = veryLightFontColor
                 t.fillText("•", x*fontWidth, y*fontHeight)
-                t.restore()
-            } else {
+            } else if (chr != "") {
+                t.fillStyle = fontColor
                 t.fillText(chr, x*fontWidth, y*fontHeight)
             }
         }
-        t.restore()
     }
 
     // red ghost cursor
@@ -1904,23 +2008,6 @@ function render() {
     var xPos = (fx.cursorColIndex - fx.offsetX) * fontWidth
     t.fillRect(xPos, yPos, 6, fontHeight)
     cursorLine = fx.lines[fx.cursorLineIndex] || ""
-
-
-    if (!inEdit) {
-        theText.value = cursorLine
-        theTextBefore.value = fx.lines[fx.cursorLineIndex - 1] || ""
-        theTextAfter.value = fx.lines[fx.cursorLineIndex + 1] || ""
-        // set the selection range back to what it was
-        // if it needs to be changed, some functions will change it
-        // after the call to render.
-        // TODO: have a state variable for what it should be.
-        if (document.activeElement == theText) {
-            // this one we don't want to call setSelectionRangeForText
-            // because the arguments are not from cursorColIndex
-            theText.setSelectionRange(selStart, selEnd)
-        }
-    }
-
 }
 
 function ensureSign(sign, v) {
