@@ -1,5 +1,6 @@
 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMMOPQRSTUV
 
+diff of rendered state to get even smaller renders?
 https://drew.ue1-dev-portal.gpsinsight.com/te
 
 reload() needs to also reset the undoStack

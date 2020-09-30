@@ -7,15 +7,19 @@
    style="width: 100%; height:",
 ></canvas>
 <script>
+var viewCounter = 0
 var t = canvasEl.getContext("2d")
 pullAndRender()
 function pullAndRender() {
-    fetch("/te/view", {
+    fetch("/te/view?viewCounter=" + viewCounter, {
         cache: "no-cache"
-    }).then(r => r.json())
+    }).then(r => {
+        viewCounter = r.headers.get("X-View-Counter") - 1
+        return r.json()
+    })
     .then(v => {
         render(v)
-        setTimeout(pullAndRender, 3000)   
+        setTimeout(pullAndRender, 1000)   
     }).catch(e => {
         console.log("error viewing: " + e)
     })
@@ -45,6 +49,8 @@ var cmds = {
         canvasEl.width = fontWidth * maxCols  
         canvasEl.height = fontHeight * maxLines  
         t = canvasEl.getContext("2d")
+        canvasEl.style.width = (canvasEl.width/2) + "px" 
+        canvasEl.style.height = (canvasEl.height/2) + "px" 
     }
 }
 function render(v) {

@@ -1763,9 +1763,11 @@ function render() {
     // server rendering
     var oldOffsetX = fx.offsetX
     var oldMaxCols = maxCols
+    var oldMaxLines = maxLines
     var oldT = t // canvas rendering context
     fx.offsetX = -5
     maxCols = 160
+    maxLines = 32
     t = mockCanvasContext
     mockCanvasContext.stack = []
     mockCanvasContext.lastFillStyle = "black",
@@ -1778,6 +1780,7 @@ function render() {
     renderInternal()
     fx.offsetX = oldOffsetX
     maxCols = oldMaxCols
+    maxLines = oldMaxLines
     t = oldT
     sendViewToServer()
     
@@ -1871,7 +1874,8 @@ function renderInternal() {
     var highlightLine = true
     if (highlightLine) {
         t.fillStyle = "rgba(0, 255, 255, 0.15)"
-        t.fillRect(0, (fx.cursorLineIndex - fx.offsetY) * fontHeight, c.width, fontHeight)
+        // go twice as wide as you need, for server rendering purposes
+        t.fillRect(0, (fx.cursorLineIndex - fx.offsetY) * fontHeight, c.width*2, fontHeight)
     }
 
     t.font = fontCSS
@@ -1944,16 +1948,16 @@ function renderInternal() {
                 }
             }
         }
-
+        var textFillStyle 
         // the actual text
         if (fx.fileMode == "bash" || fx.fileMode == "file") {
             if (theLine.startsWith("+")) {
-                t.fillStyle = isDark ? "lime" : "green"
+                textFillStyle = isDark ? "lime" : "green"
             } else if (theLine.startsWith("-")){
-                t.fillStyle = "red"
+                textFillStyle = "red"
             } else if (theLine.trim().startsWith("//")) {
                 // comments are gray
-                t.fillStyle = lightFontColor
+                textFillStyle = lightFontColor
             } else {
                 // feature to gray out lines before where you are scrolled to
                 // var spaceCount = getSpaceCount(theLine)
@@ -1962,10 +1966,10 @@ function renderInternal() {
                 // } else {
                 //     t.fillStyle = fontColor
                 // }
-                t.fillStyle = fontColor
+                textFillStyle = fontColor
             }
         } else {
-            t.fillStyle = fontColor
+            textFillStyle = fontColor
         }
 
 
@@ -1992,6 +1996,7 @@ function renderInternal() {
                 t.fillStyle = veryLightFontColor
                 t.fillText("•", x*fontWidth, y*fontHeight)
             } else if (chr != "") {
+                t.fillStyle = textFillStyle
                 t.fillText(chr, x*fontWidth, y*fontHeight)
             }
         }
