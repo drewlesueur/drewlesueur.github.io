@@ -78,10 +78,15 @@ func main() {
 		*location = strings.TrimSpace(string(ret))
 	}
 	log.Printf("location: %s", *location)
-	
 	var renderCommands [][]interface{}
 	var viewCounter int
-	var renderCommandsMu sync.Mutex
+	var viewMu sync.Mutex
+	viewCond := sync.NewCond(&viewMu) 
+	go func() {
+	    for range time.NewTicker(1 * time.Second).C {
+	        viewCond.Broadcast()
+	    }  
+	}()
 	
 	mux := http.NewServeMux()
 	fs := http.FileServer(http.Dir("./public"))
@@ -101,20 +106,39 @@ func main() {
 			logAndErr(w, fmt.Sprintf("could not decode commands: %v", err), 500)
 			return
          }
-         renderCommandsMu.Lock()
-         defer renderCommandsMu.Unlock()
+         viewMu.Lock()
+         defer viewMu.Unlock()
          viewCounter += 1
          renderCommands = commands
+         viewCond.Broadcast()
 	})
 	mux.HandleFunc("/view", func(w http.ResponseWriter, r *http.Request) {
          clientViewCounter, _ := strconv.Atoi(r.FormValue("viewCounter"))
          
-         renderCommandsMu.Lock()
-         defer renderCommandsMu.Unlock()
+         viewMu.Lock()
+         defer viewMu.Unlock()
          
          w.Header().Set("Content-Type", "application/json")
          w.Header().Set("X-View-Counter", strconv.Itoa(viewCounter))
-         if clientViewCounter == viewCounter {
+         // if clientViewCounter == viewCounter {
+         //     fmt.Fprintf(w, "%s", "[[6]]")
+         //     return 
+         // }
+         
+         startWait := time.Now()
+         timedOut := false
+         for  {
+             if time.Since(startWait) > (10 * time.Second) {
+                 timedOut = true
+                 break    
+             }
+             if clientViewCounter != viewCounter {
+                 break
+             }
+             viewCond.Wait()
+         }
+         
+         if timedOut {
              fmt.Fprintf(w, "%s", "[[6]]")
              return 
          }

@@ -8,7 +8,7 @@
 ></canvas>
 <script>
 var viewCounter = 0
-var pullInterval = 100
+var pullInterval = 1
 var t = canvasEl.getContext("2d")
 pullAndRender()
 function pullAndRender() {
@@ -23,7 +23,7 @@ function pullAndRender() {
         render(v)
         setTimeout(pullAndRender, pullInterval)   
     }).catch(e => {
-        console.log("error viewing: " + e)
+        alert("error viewing: " + e)
     })
 }
 
@@ -67,10 +67,10 @@ function render(v) {
         var c = v[i]
         // 6 is special meaning no change
         if (c[0] == 6) {
-            pullInterval = 1000
+            // pullInterval = 1000
             break    
         }
-        pullInterval = 10
+        // pullInterval = 10
         cmds[c[0]](c.slice(1))
     }
 }

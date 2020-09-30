@@ -324,7 +324,6 @@ var marginLeft = 5
 canvasWidth=1125
 //var canvasWidth=600
 // I turned off "Predictive" to get more vertical space
-
 // TODO: make these configurable in UI
 var canvasHeightKeyboard=1050
 // var canvasHeightKeyboard=950// // var canvasHeightKeyboard=950
@@ -1730,6 +1729,7 @@ var renderURLTimeout
 var waitingRender = false
 var lastRender = 0
 var maxFrameRate = 16
+// var maxFrameRate = 32
 function render() {
     if (preventRender) {
         return
