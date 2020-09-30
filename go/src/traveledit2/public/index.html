@@ -1695,6 +1695,7 @@ var mockCanvasContext = {
 var serverView = true
 var sendingViewToServer = false
 var shouldSendViewToServer = false
+var lastViewBodyToSend = ""
 function sendViewToServer() {
    if (!serverView) {
        return
@@ -1703,6 +1704,12 @@ function sendViewToServer() {
        shouldSendViewToServer = true
        return
    }
+   var viewBodyToSend = JSON.stringify(mockCanvasContext.commands)
+   if (viewBodyToSend == lastViewBodyToSend) {
+       log("same!!!")
+       return
+   }
+   lastViewBodyToSend = viewBodyToSend
    sendingViewToServer = true
    // log("sending: " + JSON.stringify(mockCanvasContext.commands))
    fetch(proxyPath + "/render", {
@@ -1712,7 +1719,7 @@ function sendViewToServer() {
           'Content-Type': 'application/json'
           // 'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: JSON.stringify(mockCanvasContext.commands),
+        body: viewBodyToSend,
    }).then(r => {
        sendingViewToServer = false
        if (shouldSendViewToServer) {

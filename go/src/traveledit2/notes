@@ -8,6 +8,8 @@ https://drew.ue1-dev-portal.gpsinsight.com/te
 reload() needs to also reset the undoStack
 also the saved/saving/etc state
 
+cut down on multiple renders in general if we need?
+
 come up with something simpler cor pasting
 maybe a ring of a few slots
 right now we have a copyBuffer and a cutBuffer
