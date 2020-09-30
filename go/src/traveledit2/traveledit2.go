@@ -13,6 +13,7 @@ import "io/ioutil"
 import "io"
 import "encoding/json"
 import "sync"
+import "strconv"
 import "github.com/NYTimes/gziphandler"
 
 type SaveResponse struct {
@@ -79,7 +80,9 @@ func main() {
 	log.Printf("location: %s", *location)
 	
 	var renderCommands [][]interface{}
+	var viewCounter int
 	var renderCommandsMu sync.Mutex
+	
 	mux := http.NewServeMux()
 	fs := http.FileServer(http.Dir("./public"))
 	mux.Handle("/tepublic/", http.StripPrefix("/tepublic/", fs))
@@ -100,12 +103,21 @@ func main() {
          }
          renderCommandsMu.Lock()
          defer renderCommandsMu.Unlock()
+         viewCounter += 1
          renderCommands = commands
 	})
 	mux.HandleFunc("/view", func(w http.ResponseWriter, r *http.Request) {
+         clientViewCounter, _ := strconv.Atoi(r.FormValue("viewCounter"))
+         
          renderCommandsMu.Lock()
          defer renderCommandsMu.Unlock()
+         
          w.Header().Set("Content-Type", "application/json")
+         w.Header().Set("X-View-Counter", strconv.Itoa(viewCounter))
+         if clientViewCounter == viewCounter {
+             fmt.Fprintf(w, "%s", "[[6]]")
+             return 
+         }
          
          b, err := json.Marshal(renderCommands)
          if err != nil {

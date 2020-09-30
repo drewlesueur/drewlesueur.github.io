@@ -8,18 +8,20 @@
 ></canvas>
 <script>
 var viewCounter = 0
+var pullInterval = 100
 var t = canvasEl.getContext("2d")
 pullAndRender()
 function pullAndRender() {
     fetch("/te/view?viewCounter=" + viewCounter, {
         cache: "no-cache"
     }).then(r => {
-        viewCounter = r.headers.get("X-View-Counter") - 1
+        viewCounter = r.headers.get("X-View-Counter") - 0
+        console.log("viewCounter is now", viewCounter)
         return r.json()
     })
     .then(v => {
         render(v)
-        setTimeout(pullAndRender, 1000)   
+        setTimeout(pullAndRender, pullInterval)   
     }).catch(e => {
         console.log("error viewing: " + e)
     })
@@ -47,6 +49,7 @@ var cmds = {
         var maxCols = a[2]
         var maxLines = a[3]
         var isDark = a[4]
+        // canvasEl.width = canvasEl.width
         canvasEl.width = fontWidth * maxCols  
         canvasEl.height = fontHeight * maxLines  
         t = canvasEl.getContext("2d")
@@ -57,12 +60,17 @@ var cmds = {
         } else {
             canvasEl.style.backgroundColor = "white"
         }
-    }
+    },
 }
 function render(v) {
-    canvasEl.width = canvasEl.width
     for (var i=0; i<v.length; i++) {
         var c = v[i]
+        // 6 is special meaning no change
+        if (c[0] == 6) {
+            pullInterval = 1000
+            break    
+        }
+        pullInterval = 10
         cmds[c[0]](c.slice(1))
     }
 }
