@@ -1666,6 +1666,10 @@ var mockCanvasContext = {
     lastTextBaseline: "",
     textBaseline: "",
     fillRect: function(x, y, w, h) {
+      if (this.fillStyle == "rgba(255, 0, 0, 0.5)") {
+          // hack for not rendering red ghost cursor
+          return
+      }
       if (this.lastFillStyle != this.fillStyle) {
           this.lastFillStyle = this.fillStyle
           this.commands.push([2, this.fillStyle])    
