@@ -45,12 +45,18 @@ var cmds = {
         var fontWidth = a[0]
         var fontHeight = a[1]
         var maxCols = a[2]
-        var maxLines = a[2]
+        var maxLines = a[3]
+        var isDark = a[4]
         canvasEl.width = fontWidth * maxCols  
         canvasEl.height = fontHeight * maxLines  
         t = canvasEl.getContext("2d")
         canvasEl.style.width = (canvasEl.width/2) + "px" 
         canvasEl.style.height = (canvasEl.height/2) + "px" 
+        if (isDark) {
+            canvasEl.style.backgroundColor = "black"
+        } else {
+            canvasEl.style.backgroundColor = "white"
+        }
     }
 }
 function render(v) {
