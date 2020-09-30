@@ -1,0 +1,57 @@
+<!doctype html>
+
+<canvas
+   id=canvasEl
+   width=3000
+   height=1410
+   style="width: 100%; height:",
+></canvas>
+<script>
+var t = canvasEl.getContext("2d")
+pullAndRender()
+function pullAndRender() {
+    fetch("/te/view", {
+        cache: "no-cache"
+    }).then(r => r.json())
+    .then(v => {
+        render(v)
+        setTimeout(pullAndRender, 3000)   
+    }).catch(e => {
+        console.log("error viewing: " + e)
+    })
+}
+
+var cmds = {
+    0: function(a) {
+        t.fillText(a[0], a[1], a[2])
+    },
+    1: function(a) {
+        t.fillRect(a[0], a[1], a[2], a[3])
+    },
+    2: function(a) {
+        t.fillStyle = a[0]
+    },
+    3: function(a) {
+        t.font = a[0]
+    },
+    4: function(a) {
+        t.textBaseline = a[0]
+    },
+    5: function(a) {
+        var fontWidth = a[0]
+        var fontHeight = a[1]
+        var maxCols = a[2]
+        var maxLines = a[2]
+        canvasEl.width = fontWidth * maxCols  
+        canvasEl.height = fontHeight * maxLines  
+        t = canvasEl.getContext("2d")
+    }
+}
+function render(v) {
+    canvasEl.width = canvasEl.width
+    for (var i=0; i<v.length; i++) {
+        var c = v[i]
+        cmds[c[0]](c.slice(1))
+    }
+}
+</script>

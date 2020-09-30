@@ -1764,7 +1764,7 @@ function render() {
     var oldOffsetX = fx.offsetX
     var oldMaxCols = maxCols
     var oldT = t // canvas rendering context
-    fx.offsetX = 0
+    fx.offsetX = -5
     maxCols = 160
     t = mockCanvasContext
     mockCanvasContext.stack = []
@@ -1774,7 +1774,7 @@ function render() {
     mockCanvasContext.font = "",
     mockCanvasContext.lastTextBaseline = "",
     mockCanvasContext.textBaseline = "",
-    mockCanvasContext.commands = []
+    mockCanvasContext.commands = [[5, fontWidth, fontHeight, maxCols, maxLines]]
     renderInternal()
     fx.offsetX = oldOffsetX
     maxCols = oldMaxCols
