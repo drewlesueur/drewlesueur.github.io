@@ -299,8 +299,8 @@ fontScaleInput.value = fontScale
 // some duplication here with fontScale, see updateFontScale
 var fontHeight=36 * fontScale
 var fontWidth=18 * fontScale
-// var fontCSS = (30 * fontScale) + "px 'Courier'"
-var fontCSS = (30 * fontScale) + "px 'GoMono'"
+var fontCSS = (30 * fontScale) + "px 'Courier'"
+// var fontCSS = (30 * fontScale) + "px 'GoMono'"
 
 
 // var fontCSS = (30 * fontScale) + "px 'Menlo'"// yes
@@ -2666,6 +2666,9 @@ function acFindDown() {
 }
 // END NEW FIND WORD
 function doFormat() {
+    if (!confirm("format code?")) {
+        return 
+    }
     setLines(simpleFormat(fx.lines))
     docChanged()
     render()
