@@ -78,7 +78,7 @@ func main() {
 		*location = strings.TrimSpace(string(ret))
 	}
 	log.Printf("location: %s", *location)
-	var renderCommands [][]interface{}
+	var renderCommands []interface{}
 	var viewCounter int
 	var viewMu sync.Mutex
 	viewCond := sync.NewCond(&viewMu) 
@@ -100,7 +100,7 @@ func main() {
 		http.ServeFile(w, r, "./public/yo.html")
 	})
 	mux.HandleFunc("/render", func(w http.ResponseWriter, r *http.Request) {
-         commands :=  [][]interface{}{}
+         commands :=  []interface{}{}
          err := json.NewDecoder(r.Body).Decode(&commands)
          if err != nil {
 			logAndErr(w, fmt.Sprintf("could not decode commands: %v", err), 500)

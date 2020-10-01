@@ -1656,7 +1656,20 @@ function theCharAt(lines, y, x) {
 function r(x) {
     return Math.round(x)
 }
-// 
+var fillStyleMap = {
+    black: 0,
+    white: 1,
+    brown: 2,
+    yellow: 3,
+    orange: 4,
+    blue: 5,
+}
+function fillStyleIndex(f) {
+  if (!(f in fillStyleMap)) {
+      return f
+  }
+  return fillStyleMap[f]
+} 
 var mockCanvasContext = {
     commands: [],
     lastFillStyle: "black",
@@ -1665,6 +1678,9 @@ var mockCanvasContext = {
     font: "",
     lastTextBaseline: "",
     textBaseline: "",
+    lastY: -9999,
+    lastWasString: false,
+    lastWasStringIndex: -1,
     fillRect: function(x, y, w, h) {
       if (this.fillStyle == "rgba(255, 0, 0, 0.5)") {
           // hack for not rendering red ghost cursor
@@ -1672,14 +1688,15 @@ var mockCanvasContext = {
       }
       if (this.lastFillStyle != this.fillStyle) {
           this.lastFillStyle = this.fillStyle
-          this.commands.push([2, this.fillStyle])    
+          this.commands.push([2, fillStyleIndex(this.fillStyle)])    
       }
       this.commands.push([1, r(x), r(y), r(w), r(h)])    
     },
     fillText: function(str, x, y) {
       if (this.lastFillStyle != this.fillStyle)  {
           this.lastFillStyle = this.fillStyle
-          this.commands.push([2, this.fillStyle])    
+          this.commands.push([2, fillStyleIndex(this.fillStyle)])    
+          // this.commands.push([2, (this.fillStyle)])    
       }
       if (this.lastFont != this.font) {
           this.lastFont = this.font
@@ -1689,7 +1706,24 @@ var mockCanvasContext = {
           this.lastTextBaseline = this.textBaseline
           this.commands.push([4, this.textBaseline])    
       }
-      this.commands.push([0, str, r(x), r(y)])    
+      if (r(y) == this.lastY) {
+          if (false && this.lastWasString) {
+              this.commands[this.lastWasStringIndex] += (" " + str + r(x))
+              return
+          }
+          this.commands.push(str + r(x))
+          this.lastWasString = true    
+          this.lastWasStringIndex = this.commands.length - 1    
+          // this.commands.push([str + r(x)])    
+          // this.commands.push([str, r(x)])    
+          // this.commands.push([0, str, r(x)])    
+      } else {
+          this.lastWasString = false    
+          // this.commands.push([str+r(x), r(y)])
+          this.commands.push([str, r(x), r(y)])
+          // this.commands.push([0, str, r(x), r(y)])
+          this.lastY = r(y)    
+      }
     },
 }
 var serverView = true
@@ -1707,6 +1741,7 @@ function sendViewToServer() {
    var viewBodyToSend = JSON.stringify(mockCanvasContext.commands)
    if (viewBodyToSend == lastViewBodyToSend) {
        log("same!!!")
+       // this optimization might not be as big as I thought
        return
    }
    lastViewBodyToSend = viewBodyToSend
@@ -1912,7 +1947,7 @@ function renderInternal() {
         // highlight search
         var theLine = fx.lines[y + fx.offsetY] || ""
         var highlightStartSearch = 0
-        if (theLine) {
+        if (theLine && searchText.value.length) {
             // max 20 highlights per line
             for (var _i=0; _i<20; _i++) {
                 if (fx.fileMode == "directory") {
@@ -1955,7 +1990,10 @@ function renderInternal() {
                 t.fillStyle = "brown"
                 for (var i=0; i<-fx.offsetX-1; i++) {
                     var lineNumberIndex = fx.offsetX + marginLeft + i
-                    t.fillText(lineNumber.charAt(lineNumberIndex), i*fontWidth, y*fontHeight)
+                    var lineNoChr = lineNumber.charAt(lineNumberIndex)
+                    if (lineNoChr != " ") {
+                        t.fillText(lineNoChr, i*fontWidth, y*fontHeight)
+                    }
                 }
             }
         }
@@ -2006,7 +2044,7 @@ function renderInternal() {
             if (chr == "\t") {
                 t.fillStyle = veryLightFontColor
                 t.fillText("•", x*fontWidth, y*fontHeight)
-            } else if (chr != "") {
+            } else if (chr != "" && chr != " ") {
                 t.fillStyle = textFillStyle
                 t.fillText(chr, x*fontWidth, y*fontHeight)
             }
