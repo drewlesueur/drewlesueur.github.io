@@ -1679,6 +1679,7 @@ var mockCanvasContext = {
     lastTextBaseline: "",
     textBaseline: "",
     lastY: -9999,
+    lastX: -9999,
     lastWasString: false,
     lastWasStringIndex: -1,
     fillRect: function(x, y, w, h) {
@@ -1694,21 +1695,31 @@ var mockCanvasContext = {
     },
     fillText: function(str, x, y) {
       if (this.lastFillStyle != this.fillStyle)  {
+          this.lastWasString = false    
           this.lastFillStyle = this.fillStyle
           this.commands.push([2, fillStyleIndex(this.fillStyle)])    
           // this.commands.push([2, (this.fillStyle)])    
       }
       if (this.lastFont != this.font) {
+          this.lastWasString = false    
           this.lastFont = this.font
           this.commands.push([3, this.font])    
       }
       if (this.lastTextBaseline != this.textBaseline) {
+          this.lastWasString = false    
           this.lastTextBaseline = this.textBaseline
           this.commands.push([4, this.textBaseline])    
       }
       if (r(y) == this.lastY) {
-          if (false && this.lastWasString) {
-              this.commands[this.lastWasStringIndex] += (" " + str + r(x))
+          if (this.lastWasString) {
+              if (
+                  Math.abs((x - this.lastX) - fontWidth) < 1
+              ) {
+                this.commands[this.lastWasStringIndex] += (" " + str)
+              } else {
+                this.commands[this.lastWasStringIndex] += (" " + str + r(x))
+              }
+              this.lastX = x    
               return
           }
           this.commands.push(str + r(x))
@@ -1724,6 +1735,7 @@ var mockCanvasContext = {
           // this.commands.push([0, str, r(x), r(y)])
           this.lastY = r(y)    
       }
+      this.lastX = x    
     },
 }
 var serverView = true

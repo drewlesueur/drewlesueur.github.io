@@ -27,6 +27,8 @@ function pullAndRender() {
     })
 }
 var lastY = -99999
+var lastX = -99999
+var fontWidth
 var fillStyleMap = {
     0: "black",
     1: "white",
@@ -43,20 +45,27 @@ function fillStyleString(f) {
 } 
 var cmds = {
     0: function(a) {
-        if (a.length ==1) {
+        if (a.length == 1) {
             var parts = a[0].split(" ")
             for (var i=0; i<parts.length; i++) {
                 var part = parts[i]
-                t.fillText(part[0], part.slice(1)-0, lastY)
+                if (part.length > 1) {
+                    t.fillText(part[0], part.slice(1)-0, lastY)
+                    lastX = part.slice(1)-0
+                } else {
+                    t.fillText(part[0], lastX + fontWidth, lastY)
+                    lastX = lastX + fontWidth
+                }
             }
             return
         }
-        if (a.length == 2) {
-            t.fillText(a[0], a[1], lastY)
-            return
-        }
+        // if (a.length == 2) {
+        //     t.fillText(a[0], a[1], lastY)
+        //     return
+        // }
         t.fillText(a[0], a[1], a[2])
         lastY = a[2]
+        lastX = a[1]
     },
     1: function(a) {
         t.fillRect(a[0], a[1], a[2], a[3])
@@ -71,7 +80,7 @@ var cmds = {
         t.textBaseline = a[0]
     },
     5: function(a) {
-        var fontWidth = a[0]
+        fontWidth = a[0]
         var fontHeight = a[1]
         var maxCols = a[2]
         var maxLines = a[3]
