@@ -1,5 +1,8 @@
 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMMOPQRSTUV
 
+make autocomplete save the last word too?
+    but conditionally?
+    
 copyBuffer = ["x".repeat(160)]
 
 

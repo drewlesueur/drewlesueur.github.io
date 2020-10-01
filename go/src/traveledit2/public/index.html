@@ -289,6 +289,9 @@ window.onerror = function(message, url, lineNumber, columnNumber, error) {
 </script>
 <script>
 var t = c.getContext("2d")
+
+var totalViewBytesSent = 0 
+var totalViewRequests = 0
 var preventRender = false
 var saveEveryMS = 3000
 var lastWord = ""
@@ -1752,13 +1755,14 @@ function sendViewToServer() {
    }
    var viewBodyToSend = JSON.stringify(mockCanvasContext.commands)
    if (viewBodyToSend == lastViewBodyToSend) {
-       log("same!!!")
        // this optimization might not be as big as I thought
        return
    }
    lastViewBodyToSend = viewBodyToSend
    sendingViewToServer = true
    // log("sending: " + JSON.stringify(mockCanvasContext.commands))
+   totalViewBytesSent += viewBodyToSend.length
+   totalViewRequests += 1 
    fetch(proxyPath + "/render", {
         cache: "no-cache",
         method: "POST",
@@ -1787,7 +1791,12 @@ var renderURLTimeout
 var waitingRender = false
 var lastRender = 0
 var maxFrameRate = 16
-// var maxFrameRate = 32
+
+
+var waitingServerRender = false
+var lastServerRender = 0
+var maxServerFrameRate = 100
+
 function render() {
     if (preventRender) {
         return
@@ -1799,6 +1808,7 @@ function render() {
     renderURLTimeout = setTimeout(function () {
         renderURL()
     }, 1000)
+    
     var timeSinceRender = Date.now() - lastRender
     if (timeSinceRender < maxFrameRate) {
         if (!waitingRender) {
@@ -1810,38 +1820,13 @@ function render() {
         }
         return
     }
-
     lastRender = Date.now()
+    
     c.width = c.width // one way to clear
 
     var selStart = theText.selectionStart
     var selEnd = theText.selectionEnd
     renderInternal()
-    
-    // server rendering
-    var oldOffsetX = fx.offsetX
-    var oldMaxCols = maxCols
-    var oldMaxLines = maxLines
-    var oldT = t // canvas rendering context
-    fx.offsetX = -5
-    maxCols = 120
-    maxLines = 32
-    t = mockCanvasContext
-    mockCanvasContext.stack = []
-    mockCanvasContext.lastFillStyle = "black",
-    mockCanvasContext.fillStyle = "black",
-    mockCanvasContext.lastFont = "",
-    mockCanvasContext.font = "",
-    mockCanvasContext.lastTextBaseline = "",
-    mockCanvasContext.textBaseline = "",
-    mockCanvasContext.commands = [[5, fontWidth, fontHeight, maxCols, maxLines, isDark]]
-    renderInternal()
-    fx.offsetX = oldOffsetX
-    maxCols = oldMaxCols
-    maxLines = oldMaxLines
-    t = oldT
-    sendViewToServer()
-    
     
     s.innerHTML =
         lastWord + " " +
@@ -1856,6 +1841,8 @@ function render() {
         theStatus.shouldAutocompleteLine = shouldAutocompleteLine
         theStatus.lastWord = lastWord
         theStatus.lastCleared = lastCleared
+        theStatus.totalViewRequests = totalViewRequests 
+        theStatus.totalViewBytesSent = totalViewBytesSent 
         theStatus.acWord = acWord
         statusEl.innerText = JSON.stringify(theStatus, null, "    ")
     }
@@ -1888,6 +1875,42 @@ function render() {
             theText.setSelectionRange(selStart, selEnd)
         }
     }
+    
+    var timeSinceServerRender = Date.now() - lastServerRender
+    if (timeSinceServerRender < maxServerFrameRate) {
+        if (!waitingServerRender) {
+            waitingServerRender = true
+            setTimeout(function () {
+                waitingServerRender = false
+                render()
+            }, maxServerFrameRate - timeSinceServerRender)
+        }
+        return
+    }
+    lastServerRender = Date.now()
+    
+    // server rendering
+    var oldOffsetX = fx.offsetX
+    var oldMaxCols = maxCols
+    var oldMaxLines = maxLines
+    var oldT = t // canvas rendering context
+    fx.offsetX = -5
+    maxCols = 120
+    maxLines = 32
+    t = mockCanvasContext
+    mockCanvasContext.lastFillStyle = "black",
+    mockCanvasContext.fillStyle = "black",
+    mockCanvasContext.lastFont = "",
+    mockCanvasContext.font = "",
+    mockCanvasContext.lastTextBaseline = "",
+    mockCanvasContext.textBaseline = "",
+    mockCanvasContext.commands = [[5, fontWidth, fontHeight, maxCols, maxLines, isDark]]
+    renderInternal()
+    fx.offsetX = oldOffsetX
+    maxCols = oldMaxCols
+    maxLines = oldMaxLines
+    t = oldT
+    sendViewToServer()
 }
     
 function renderInternal() {
@@ -2298,6 +2321,18 @@ function onStart(e) {
                     updateCursorXY()
                     render()
                 }
+                var bbox = c.getBoundingClientRect()
+                var pointX = startTouchX - bbox.left
+                var pointY = startTouchY - bbox.top
+                log([pointX, pointY])
+                fx.cursorColIndex = Math.round(
+                    ((pointX * 3)/fontWidth) + fx.offsetX
+                )  
+                fx.cursorLineIndex = Math.round(
+                    ((pointY * 3)/fontHeight) + fx.offsetY
+                )
+                log([startTouchX, startTouchY, fx.cursorColIndex, fx.cursorLineIndex])
+                updateCursorXY()  
                 // the handleFocusIn function will do some
                 // processing
                 theText.focus()
