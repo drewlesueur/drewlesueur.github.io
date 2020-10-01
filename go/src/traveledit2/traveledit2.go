@@ -81,13 +81,13 @@ func main() {
 	var renderCommands []interface{}
 	var viewCounter int
 	var viewMu sync.Mutex
-	viewCond := sync.NewCond(&viewMu) 
+	viewCond := sync.NewCond(&viewMu)
 	go func() {
-	    for range time.NewTicker(1 * time.Second).C {
-	        viewCond.Broadcast()
-	    }  
+		for range time.NewTicker(1 * time.Second).C {
+			viewCond.Broadcast()
+		}
 	}()
-	
+
 	mux := http.NewServeMux()
 	fs := http.FileServer(http.Dir("./public"))
 	mux.Handle("/tepublic/", http.StripPrefix("/tepublic/", fs))
@@ -99,58 +99,61 @@ func main() {
 		log.Printf("the yo path: %s", r.URL.Path)
 		http.ServeFile(w, r, "./public/yo.html")
 	})
+	mux.HandleFunc("/screenshare", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./public/view.html")
+	})
 	mux.HandleFunc("/render", func(w http.ResponseWriter, r *http.Request) {
-         commands :=  []interface{}{}
-         err := json.NewDecoder(r.Body).Decode(&commands)
-         if err != nil {
+		commands := []interface{}{}
+		err := json.NewDecoder(r.Body).Decode(&commands)
+		if err != nil {
 			logAndErr(w, fmt.Sprintf("could not decode commands: %v", err), 500)
 			return
-         }
-         viewMu.Lock()
-         defer viewMu.Unlock()
-         viewCounter += 1
-         renderCommands = commands
-         viewCond.Broadcast()
+		}
+		viewMu.Lock()
+		defer viewMu.Unlock()
+		viewCounter += 1
+		renderCommands = commands
+		viewCond.Broadcast()
 	})
 	mux.HandleFunc("/view", func(w http.ResponseWriter, r *http.Request) {
-         clientViewCounter, _ := strconv.Atoi(r.FormValue("viewCounter"))
-         
-         viewMu.Lock()
-         defer viewMu.Unlock()
-         
-         w.Header().Set("Content-Type", "application/json")
-         w.Header().Set("X-View-Counter", strconv.Itoa(viewCounter))
-         // if clientViewCounter == viewCounter {
-         //     fmt.Fprintf(w, "%s", "[[6]]")
-         //     return 
-         // }
-         
-         startWait := time.Now()
-         timedOut := false
-         for  {
-             if time.Since(startWait) > (10 * time.Second) {
-                 timedOut = true
-                 break    
-             }
-             if clientViewCounter != viewCounter {
-                 break
-             }
-             viewCond.Wait()
-         }
-         
-         if timedOut {
-             fmt.Fprintf(w, "%s", "[[6]]")
-             return 
-         }
-         
-         b, err := json.Marshal(renderCommands)
-         if err != nil {
+		clientViewCounter, _ := strconv.Atoi(r.FormValue("viewCounter"))
+
+		viewMu.Lock()
+		defer viewMu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-View-Counter", strconv.Itoa(viewCounter))
+		// if clientViewCounter == viewCounter {
+		//     fmt.Fprintf(w, "%s", "[[6]]")
+		//     return
+		// }
+
+		startWait := time.Now()
+		timedOut := false
+		for {
+			if time.Since(startWait) > (10 * time.Second) {
+				timedOut = true
+				break
+			}
+			if clientViewCounter != viewCounter {
+				break
+			}
+			viewCond.Wait()
+		}
+
+		if timedOut {
+			fmt.Fprintf(w, "%s", "[[6]]")
+			return
+		}
+
+		b, err := json.Marshal(renderCommands)
+		if err != nil {
 			logAndErr(w, fmt.Sprintf("could not marshal: %v", err), 500)
 			return
-         }
-         log.Printf("size of view payload: %d", len(b))
-         w.Write(b)
-         // json.NewEncoder(w).Encode(renderCommands)
+		}
+		log.Printf("size of view payload: %d", len(b))
+		w.Write(b)
+		// json.NewEncoder(w).Encode(renderCommands)
 	})
 	mux.HandleFunc("/myuploadfiles", func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("uploading files: %s", r.Header.Get("Content-Type"))

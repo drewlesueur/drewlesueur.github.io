@@ -1,10 +1,20 @@
 <!doctype html>
-
+<style>
+* {
+    margin: 0;
+    padding: 0;
+}
+</style>
 <canvas
    id=canvasEl
    width=3000
    height=1410
-   style="width: 100%; height:",
+   style="border-width: 30px;
+     border-style: solid;
+     margin: 20px;
+     width: 10px;
+     height: 10px;
+   ",
 ></canvas>
 <script>
 var viewCounter = 0
@@ -23,7 +33,8 @@ function pullAndRender() {
         render(v)
         setTimeout(pullAndRender, pullInterval)   
     }).catch(e => {
-        alert("error viewing: " + e)
+        // alert("error viewing: " + e)
+        console.log("error viewing: " + e)
     })
 }
 var lastY = -99999
@@ -93,9 +104,14 @@ var cmds = {
         canvasEl.style.height = (canvasEl.height/2) + "px" 
         if (isDark) {
             canvasEl.style.backgroundColor = "black"
+            canvasEl.style.borderColor = "white"
+            document.body.style.backgroundColor = "white"
         } else {
             canvasEl.style.backgroundColor = "white"
+            canvasEl.style.borderColor = "black"
+            document.body.style.backgroundColor = "black"
         }
+        document.body.style.backgroundColor = "gray"
     },
 }
 function render(v) {
