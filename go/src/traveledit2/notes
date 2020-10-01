@@ -5,7 +5,6 @@ make autocomplete save the last word too?
     
 copyBuffer = ["x".repeat(160)]
 
-
 maybe make a websocket version of the server rendering.
 each letter typed (when typing slowly, makes 2 requestes -- why not 1)
 diff of rendered state to get even smaller renders?

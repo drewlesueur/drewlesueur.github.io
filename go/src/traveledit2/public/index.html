@@ -687,6 +687,10 @@ function clearLog() {
     logEl.innerHTML = ""
     render()
 }
+function isNumeric(s) {
+    var c = s.charCodeAt(0)
+    return (c >= 48 && c <= 57)
+}
 // check for A-Za-z0-9_
 function isWordy(a) {
     return (
@@ -1722,7 +1726,13 @@ var mockCanvasContext = {
               if (
                   Math.abs((x - this.lastX) - fontWidth) < 1
               ) {
-                this.commands[this.lastWasStringIndex] += (" " + str)
+                // you really only care about isNumeric for the first one after?
+                // so you could do one more optimization. 
+                if (!isNumeric(str)) {
+                    this.commands[this.lastWasStringIndex] += (str)
+                } else {
+                    this.commands[this.lastWasStringIndex] += (" " + str)
+                }
               } else {
                 this.commands[this.lastWasStringIndex] += (" " + str + r(x))
               }
@@ -2504,7 +2514,8 @@ function onStart(e) {
                 return
             }
         }
-        if ((bbox.top + bbox.height) - startTouchY < 40) {
+        // commenting out the pahe down feature
+        if (false && (bbox.top + bbox.height) - startTouchY < 40) {
             if (document.activeElement == theText) {
             } else {
                 var origOffsetY = fx.offsetY
