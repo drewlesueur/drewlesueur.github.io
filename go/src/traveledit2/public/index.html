@@ -233,10 +233,14 @@ ontouchstart=onStart(event)
     <div class=square onclick=selectFileIndex(1)>alt tab</div>
     <div class=square onclick=clearLog()>clear log</div>
     <div class=square onclick=duplicateFile(fx)>dupl file</div>
-    <div class=square onclick=reloadFile()>reload</div>
+    <!--<div class=square onclick=reloadFile()>reload</div>
+    -->
     <div class=square onclick=doEval()>eval</div>
     <div class=square onclick=runScript()>run script</div>
-    <div class=square onclick=doFormat()>format</div>
+    <!--<div class=square onclick=doFormat()>format</div>
+    -->
+    <div class=square onclick="theText.focus()">insert</div>
+    <div class=square onclick="newLine()">new line</div>
 </div>
 
 <form method=GET action="" target=_blank>
@@ -1268,7 +1272,7 @@ function uploadFile(e) {
 }
 function newLine(e) {
     var theLine = fx.lines[fx.cursorLineIndex]
-    e.preventDefault()
+    e && e.preventDefault()
     if (fx.fileMode == "bash") {
         runBashCommand(theLine)
         return false
@@ -2321,6 +2325,8 @@ function onStart(e) {
                     updateCursorXY()
                     render()
                 }
+                
+                // This part for moving the cursor where you tapped (if you want that feature) 
                 var bbox = c.getBoundingClientRect()
                 var pointX = startTouchX - bbox.left
                 var pointY = startTouchY - bbox.top
@@ -2333,6 +2339,7 @@ function onStart(e) {
                 )
                 log([startTouchX, startTouchY, fx.cursorColIndex, fx.cursorLineIndex])
                 updateCursorXY()  
+                
                 // the handleFocusIn function will do some
                 // processing
                 theText.focus()
@@ -2449,8 +2456,7 @@ function onStart(e) {
             ensureCursorInScreen()
         } else {
             var origOffsetX = fx.offsetX
-            //fx.offsetX -= Math.floor(maxCols/2)
-            if (fx.offsetX <= 0){
+            if (fx.offsetX <= 0) {
                 fx.offsetX = -5
             }  else {
                 var tabStop = 4
@@ -2482,8 +2488,35 @@ function onStart(e) {
             return
         }
 
-        if (startTouchY - c.getBoundingClientRect().top < 40) {
-           shouldAutocompleteLine = true
+        var bbox = c.getBoundingClientRect()
+        if (startTouchY - bbox.top < 40) {
+            if (document.activeElement == theText) {
+               shouldAutocompleteLine = true
+            } else {
+                var origOffsetY = fx.offsetY
+                fx.offsetY -= Math.round(maxLines/2) 
+                if (fx.offsetY <= 0) {
+                    fx.offsetY = 0
+                }
+                fx.cursorLineIndex += fx.offsetY - origOffsetY
+                updateCursorXY()
+                render()
+                return
+            }
+        }
+        if ((bbox.top + bbox.height) - startTouchY < 40) {
+            if (document.activeElement == theText) {
+            } else {
+                var origOffsetY = fx.offsetY
+                fx.offsetY += Math.round(maxLines/2) 
+                if (fx.offsetY >= lines.length - 10) {
+                    fx.offsetY = lines.length - 10
+                }
+                fx.cursorLineIndex += fx.offsetY - origOffsetY
+                updateCursorXY()
+                render()
+                return
+            }
         }
 
         selectTimeout = setTimeout(selectAction, selectTimeoutMillis)

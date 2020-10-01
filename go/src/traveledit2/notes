@@ -1,5 +1,5 @@
 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMMOPQRSTUV
-
+alert(files[1].lines == files[2].lines)
 make autocomplete save the last word too?
     but conditionally?
     
