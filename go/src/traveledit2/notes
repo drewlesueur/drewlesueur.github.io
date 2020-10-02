@@ -1,6 +1,18 @@
 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMMOPQRSTUV
 alert(files[1].lines == files[2].lines)
 
+
+undo needs to just be a diff of lines changed
+this can also be used to save diffs too!
+do a verification step first.
+
+alternative server render that is smarter
+on scrolling it just sends new lines?? (or maybe just whole new screen only when scrolling.)
+on cursor move it just sends the cursor pos 
+and web sockets
+
+
+
 left/right up/down 
 ummd
 lmmr

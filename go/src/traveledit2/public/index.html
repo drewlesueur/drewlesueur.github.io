@@ -2468,6 +2468,12 @@ function onStart(e) {
                 fx.cursorLineIndex = fx.lines.length - 1
             }
             ensureCursorInScreen()
+            if (document.activeElement != theText) {
+                fx.offsetY += 1
+                if (fx.offsetY > fx.lines.length - 10) {
+                    fx.offsetY = lines.length - 10
+                }
+            }
         } else if (document.activeElement == theText) {
             fx.cursorColIndex += 1
             //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
@@ -2503,6 +2509,12 @@ function onStart(e) {
                 fx.cursorLineIndex = 0
             }
             ensureCursorInScreen()
+            if (document.activeElement != theText) {
+                fx.offsetY -= 1
+                if (fx.offsetY < 0) {
+                    fx.offsetY = 0
+                }
+            }
         } else if (document.activeElement == theText) {
             fx.cursorColIndex -= 1
             //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
