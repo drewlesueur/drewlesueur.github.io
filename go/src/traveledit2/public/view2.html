@@ -1,0 +1,188 @@
+<!doctype html>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+}
+</style>
+<canvas
+   id=canvasEl
+   width=3000
+   height=1410
+   style="border-width: 30px;
+     border-style: solid;
+     margin: 20px;
+     width: 10px;
+     height: 10px;
+   ",
+></canvas>
+<script>
+var viewCounter = 0
+var pullInterval = 1
+var t = canvasEl.getContext("2d")
+
+var ws = new WebSocket("wss://" + location.host + "/myws/wsview")
+// var ws = new WebSocket("wsview")
+ws.onopen = function(e) {
+    console.log("open")   
+}
+ws.onclose = function(e) {
+    console.log("close")   
+}
+ws.onerror = function(e) {
+    console.log("error")   
+}
+ws.onmessage = function(e) {
+    render(JSON.parse(e.data))
+}
+var lastY = -99999
+var lastX = -99999
+var fontWidth
+var fontHeight
+var fillStyleMap = {
+    0: "black",
+    1: "white",
+    2: "brown",
+    3: "yellow",
+    4: "orange",
+    5: "blue",
+    6: "rgba(0, 255, 255, 0.15)",
+    7: "rgba(0, 0, 0, 0.5)",
+    8: "rgba(255, 255, 255, 0.5)",
+}
+function fillStyleString(f) {
+  if (!(f in fillStyleMap)) {
+      return f
+  }
+  return fillStyleMap[f]
+} 
+function isNumeric(s) {
+    var c = s.charCodeAt(0)
+    return (c >= 48 && c <= 57)
+}
+function eX(x) {
+    return x * fontWidth
+}
+function eY(y) {
+    return y * fontHeight
+}
+function getNextNumber(str, index) {
+    var numb = ""
+    for (var i=index; i<str.length; i++) {
+        if (isNumeric(str.charAt(i))) {
+            numb += str.charAt(i)    
+        } else {
+            return [numb-0, str.slice(i), numb]
+        } 
+    }
+    return [numb-0, "", numb]
+}
+var cmds = {
+    0: function(a) {
+        if (a.length == 1) {
+            var parts = a[0].split(" ")
+            for (var i=0; i<parts.length; i++) {
+                var part = parts[i]
+                if (part.length > 1) {
+                    // t.fillText(part[0], part.slice(1)-0, lastY)
+                    var nextNumb = getNextNumber(part, 1)
+                    if (nextNumb[2].length == 0) {
+                        nextNumb[0] = lastX + 1    
+                    }
+                    t.fillText(part[0], eX(nextNumb[0]), eY(lastY))
+                    lastX = nextNumb[0]
+                    // if there is left over...
+                    if (nextNumb[1].length) {
+                        for (var j=0; j<nextNumb[1].length; j++) {
+                            var chr = nextNumb[1].charAt(j)
+                            t.fillText(chr, eX(lastX + 1), eY(lastY))
+                            lastX = lastX + 1
+                        }
+                    }
+                } else {
+                    t.fillText(part[0], eX(lastX + 1), eY(lastY))
+                    lastX = lastX + 1
+                }
+            }
+            return
+        }
+        // if (a.length == 2) {
+        //     t.fillText(a[0], a[1], lastY)
+        //     return
+        // }
+        t.fillText(a[0], eX(a[1]), eY(a[2]))
+        lastY = a[2]
+        lastX = a[1]
+    },
+    1: function(a) {
+        t.fillRect(a[0], a[1], a[2], a[3])
+    },
+    2: function(a) {
+        t.fillStyle = fillStyleString(a[0])
+    },
+    3: function(a) {
+        t.font = a[0]
+    },
+    4: function(a) {
+        t.textBaseline = a[0]
+    },
+    5: function(a) {
+        fontWidth = a[0]
+        fontHeight = a[1]
+        var maxCols = a[2]
+        var maxLines = a[3]
+        var isDark = a[4]
+        // canvasEl.width = canvasEl.width
+        canvasEl.width = fontWidth * maxCols  
+        canvasEl.height = fontHeight * maxLines  
+        t = canvasEl.getContext("2d")
+        canvasEl.style.width = (canvasEl.width/2) + "px" 
+        canvasEl.style.height = (canvasEl.height/2) + "px" 
+        if (isDark) {
+            canvasEl.style.backgroundColor = "black"
+            canvasEl.style.borderColor = "white"
+            document.body.style.backgroundColor = "white"
+        } else {
+            canvasEl.style.backgroundColor = "white"
+            canvasEl.style.borderColor = "black"
+            document.body.style.backgroundColor = "black"
+        }
+        document.body.style.backgroundColor = "gray"
+    },
+    // 6 means no op
+    7: function(a) {
+        t.fillStyle = "black"  
+    },
+    8: function(a) {
+        t.fillStyle = "white"  
+    },
+    9: function(a) {
+        // whatever line number is
+        t.fillStyle = "brown"  
+    },
+}
+function render(v) {
+    if (v == null) {
+        return
+    }
+    for (var i=0; i<v.length; i++) {
+        var c = v[i]
+        if (typeof c === "string") {
+            c = [c]
+        } else if (typeof c === "number") {
+            c = [c]
+        }
+        // 6 is special meaning no change
+        if (c[0] === 6) {
+            // pullInterval = 1000
+            break    
+        }
+        if ((typeof c[0]) == "string") {
+            cmds[0](c)
+            continue
+        }
+        // pullInterval = 10
+        cmds[c[0]](c.slice(1))
+    }
+}
+</script>

@@ -1776,6 +1776,7 @@ var serverViewFeature = true
 var sendingViewToServer = false
 var shouldSendViewToServer = false
 var lastViewBodyToSend = ""
+var ws = new WebSocket("wss://" + location.host + "/myws/wsrender")
 function sendViewToServer() {
    if (sendingViewToServer) {
        shouldSendViewToServer = true
@@ -1786,11 +1787,18 @@ function sendViewToServer() {
        // this optimization might not be as big as I thought
        return
    }
-   lastViewBodyToSend = viewBodyToSend
-   sendingViewToServer = true
    // log("sending: " + JSON.stringify(mockCanvasContext.commands))
    totalViewBytesSent += viewBodyToSend.length
    totalViewRequests += 1 
+   // try {
+   //     ws.send(viewBodyToSend)
+   // } catch (e) {
+   //      log(e) 
+   // }
+   // return
+
+   lastViewBodyToSend = viewBodyToSend
+   sendingViewToServer = true
    fetch(proxyPath + "/render", {
         cache: "no-cache",
         method: "POST",
@@ -2563,10 +2571,10 @@ function onStart(e) {
         var bbox = c.getBoundingClientRect()
         
         // commenting out the page down feature
-        if (false && startTouchY - bbox.top < 40) {
+        if (startTouchY - bbox.top < 40) {
             if (document.activeElement == theText) {
                shouldAutocompleteLine = true
-            } else {
+            } else if (false) {
                 var origOffsetY = fx.offsetY
                 fx.offsetY -= Math.round(maxLines/2) 
                 if (fx.offsetY <= 0) {

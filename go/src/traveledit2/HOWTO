@@ -1,3 +1,4 @@
 If you have an existing apache, start up this server and add this line to proxy
 
 ProxyPass        "/te" "http://localhost:3000"
+ProxyPass        "/myws" "ws://localhost:3000"

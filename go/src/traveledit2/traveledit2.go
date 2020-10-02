@@ -15,6 +15,7 @@ import "encoding/json"
 import "sync"
 import "strconv"
 import "github.com/NYTimes/gziphandler"
+import "github.com/gorilla/websocket"
 
 type SaveResponse struct {
 	Saved bool   `json:"saved"`
@@ -29,9 +30,16 @@ func BasicAuth(handler http.Handler) http.HandlerFunc {
 			log.Fatal("BASICUSER or BASICPASS environment variables not set")
 		}
 
+
+        if r.URL.Path == "/wsrender" {
+            handler.ServeHTTP(w, r) 
+            return
+        }
+
 		log.Printf("url hit: %s by %s", r.URL.Path, r.RemoteAddr)
 		rUser, rPass, ok := r.BasicAuth()
 		if !ok || subtle.ConstantTimeCompare([]byte(rUser), []byte(user)) != 1 || subtle.ConstantTimeCompare([]byte(rPass), []byte(pass)) != 1 {
+            log.Printf("unauthorized: %s", r.URL.Path)
 			w.Header().Set("WWW-Authenticate", `Basic realm="Hi. Please log in."`)
 			w.WriteHeader(401)
 			w.Write([]byte("Unauthorized.\n"))
@@ -114,6 +122,96 @@ func main() {
 		viewCounter += 1
 		renderCommands = commands
 		viewCond.Broadcast()
+	})
+	upgrader := websocket.Upgrader{
+	    CheckOrigin: func(r *http.Request) bool {
+	        return true   
+	    },
+	}
+	mux.HandleFunc("/wsrender", func(w http.ResponseWriter, r *http.Request) {
+        log.Printf("got here!!!=========================")
+	    c, err := upgrader.Upgrade(w, r, nil)
+	    if err != nil {
+	        logAndErr(w, "websocket upgrade: %v", err)
+	        return
+	    }
+	    defer c.Close()
+	    for {
+	        _, message, err := c.ReadMessage()
+	        if err != nil {
+	            log.Printf("error reading: %v", err)
+	            break
+	        }
+            log.Printf("got from websocket: %d", len(message))
+			commands := []interface{}{}
+			err = json.Unmarshal(message, &commands)
+			if err != nil {
+				fmt.Sprintf("could not decode commands: %v", err)
+				break
+			}
+			viewMu.Lock()
+			viewCounter += 1
+			renderCommands = commands
+			viewCond.Broadcast()
+			viewMu.Unlock()
+		}
+	})
+	    
+	
+	mux.HandleFunc("/wsview", func(w http.ResponseWriter, r *http.Request) {
+	    c, err := upgrader.Upgrade(w, r, nil)
+	    if err != nil {
+	        logAndErr(w, "websocket upgrade: %v", err)
+	        return
+	    }
+	    defer c.Close()
+	    clientViewCounter := -1    
+	    var b []byte
+	    for {
+			viewMu.Lock()
+			startWait := time.Now()
+			timedOut := false
+			for {
+				if time.Since(startWait) > (10 * time.Second) {
+					timedOut = true
+					break
+				}
+				if clientViewCounter != viewCounter {
+					break
+				}
+				viewCond.Wait()
+			}
+			if timedOut {
+				err = c.WriteMessage(1, []byte("[[6]]"))
+				if err != nil {
+					log.Printf("error writing to client: %v", err)
+				    goto breakOut
+				}
+				goto finish
+			}
+			clientViewCounter = viewCounter
+			b, err = json.Marshal(renderCommands)
+			if err != nil {
+				log.Printf("could not marshal: %v", err)
+				goto finish
+			}
+			log.Printf("size of view payload: %d", len(b))
+			// save the raw render commands so you don't have to marshal, unmarshal etc.
+			err = c.WriteMessage(1, b)
+			if err != nil {
+				log.Printf("error writing to client: %v", err)
+			    goto breakOut
+			}
+			
+	    finish: 
+	        viewMu.Unlock()
+	    	continue
+	    	
+	    breakOut:
+	        viewMu.Unlock()
+	        break
+	        
+	    }
 	})
 	mux.HandleFunc("/view", func(w http.ResponseWriter, r *http.Request) {
 		clientViewCounter, _ := strconv.Atoi(r.FormValue("viewCounter"))
