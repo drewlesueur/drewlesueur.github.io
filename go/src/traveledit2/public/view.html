@@ -47,6 +47,9 @@ var fillStyleMap = {
     3: "yellow",
     4: "orange",
     5: "blue",
+    6: "rgba(0, 255, 255, 0.15)",
+    7: "rgba(0, 0, 0, 0.5)",
+    8: "rgba(255, 255, 255, 0.5)",
 }
 function fillStyleString(f) {
   if (!(f in fillStyleMap)) {
@@ -141,11 +144,24 @@ var cmds = {
         }
         document.body.style.backgroundColor = "gray"
     },
+    // 6 means no op
+    7: function(a) {
+        t.fillStyle = "black"  
+    },
+    8: function(a) {
+        t.fillStyle = "white"  
+    },
+    9: function(a) {
+        // whatever line number is
+        t.fillStyle = "brown"  
+    },
 }
 function render(v) {
     for (var i=0; i<v.length; i++) {
         var c = v[i]
         if (typeof c === "string") {
+            c = [c]
+        } else if (typeof c === "number") {
             c = [c]
         }
         // 6 is special meaning no change

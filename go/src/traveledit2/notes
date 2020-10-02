@@ -1,9 +1,21 @@
 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMMOPQRSTUV
 alert(files[1].lines == files[2].lines)
+
+left/right up/down 
+ummd
+lmmr
+
 make autocomplete save the last word too?
     but conditionally?
     
 copyBuffer = ["x".repeat(160)]
+
+do gzip compression of the server view  payload
+you'll have to do it all in js I guess.
+
+the idea of doing 2 rendering layers
+so when you move cursor in same screen, you
+don't have to send all the text. worth it?
 
 maybe make a websocket version of the server rendering.
 each letter typed (when typing slowly, makes 2 requestes -- why not 1)

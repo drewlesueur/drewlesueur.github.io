@@ -1323,7 +1323,7 @@ function runBashCommand(line) {
         if (line == "p") {
             copyBuffer = bashHelpers
             paste(true)
-            fx.cursorLineIndex = fx.lines.length - 1
+            fx.cursorLineIndex = fx.lines.length - 2
             fx.cursorColIndex = 0
             updateCursorXY()
             ensureCursorInScreen()
@@ -1674,6 +1674,9 @@ var fillStyleMap = {
     yellow: 3,
     orange: 4,
     blue: 5,
+    "rgba(0, 255, 255, 0.15)": 6,
+    "rgba(0, 0, 0, 0.5)": 7,
+    "rgba(255, 255, 255, 0.5)": 8,
 }
 function fillStyleIndex(f) {
   if (!(f in fillStyleMap)) {
@@ -1700,7 +1703,12 @@ var mockCanvasContext = {
       }
       if (this.lastFillStyle != this.fillStyle) {
           this.lastFillStyle = this.fillStyle
-          this.commands.push([2, fillStyleIndex(this.fillStyle)])    
+          var fsi = fillStyleIndex(this.fillStyle)
+          if (fsi <= 2) {
+              this.commands.push(fsi + 7)    
+          } else {
+              this.commands.push([2, fsi])    
+          }
       }
       this.commands.push([1, r(x), r(y), r(w), r(h)])    
     },
@@ -1708,7 +1716,12 @@ var mockCanvasContext = {
       if (this.lastFillStyle != this.fillStyle)  {
           this.lastWasString = false    
           this.lastFillStyle = this.fillStyle
-          this.commands.push([2, fillStyleIndex(this.fillStyle)])    
+          var fsi = fillStyleIndex(this.fillStyle)
+          if (fsi <= 2) {
+              this.commands.push(fsi + 7)    
+          } else {
+              this.commands.push([2, fsi])    
+          }
           // this.commands.push([2, (this.fillStyle)])    
       }
       if (this.lastFont != this.font) {
@@ -1755,14 +1768,11 @@ var mockCanvasContext = {
       this.lastX = x    
     },
 }
-var serverView = true
+var serverViewFeature = true
 var sendingViewToServer = false
 var shouldSendViewToServer = false
 var lastViewBodyToSend = ""
 function sendViewToServer() {
-   if (!serverView) {
-       return
-   }
    if (sendingViewToServer) {
        shouldSendViewToServer = true
        return
@@ -1903,28 +1913,30 @@ function render() {
     }
     lastServerRender = Date.now()
     
-    // server rendering
-    var oldOffsetX = fx.offsetX
-    var oldMaxCols = maxCols
-    var oldMaxLines = maxLines
-    var oldT = t // canvas rendering context
-    fx.offsetX = -5
-    maxCols = 120
-    maxLines = 32
-    t = mockCanvasContext
-    mockCanvasContext.lastFillStyle = "black",
-    mockCanvasContext.fillStyle = "black",
-    mockCanvasContext.lastFont = "",
-    mockCanvasContext.font = "",
-    mockCanvasContext.lastTextBaseline = "",
-    mockCanvasContext.textBaseline = "",
-    mockCanvasContext.commands = [[5, fontWidth, fontHeight, maxCols, maxLines, isDark]]
-    renderInternal()
-    fx.offsetX = oldOffsetX
-    maxCols = oldMaxCols
-    maxLines = oldMaxLines
-    t = oldT
-    sendViewToServer()
+    if (serverViewFeature) {
+        // server rendering
+        var oldOffsetX = fx.offsetX
+        var oldMaxCols = maxCols
+        var oldMaxLines = maxLines
+        var oldT = t // canvas rendering context
+        fx.offsetX = -5
+        maxCols = 120
+        maxLines = 32
+        t = mockCanvasContext
+        mockCanvasContext.lastFillStyle = "black",
+        mockCanvasContext.fillStyle = "black",
+        mockCanvasContext.lastFont = "",
+        mockCanvasContext.font = "",
+        mockCanvasContext.lastTextBaseline = "",
+        mockCanvasContext.textBaseline = "",
+        mockCanvasContext.commands = [[5, r(fontWidth), r(fontHeight), maxCols, maxLines, isDark ? 1 : 0]]
+        renderInternal()
+        fx.offsetX = oldOffsetX
+        maxCols = oldMaxCols
+        maxLines = oldMaxLines
+        t = oldT
+        sendViewToServer()
+    }
 }
     
 function renderInternal() {
@@ -1985,6 +1997,25 @@ function renderInternal() {
     // t.fillRect(0, yPos, canvasWidth, fontHeight)
     // t.fillStyle = cursorType == "move" ? "cyan" : "yellow"
 
+    // doing an extra loop for line numbers first so we change colors less
+    if (false) {
+        for (var y=0; y < maxLines; y++) {
+            if (y + fx.offsetY < fx.lines.length) {
+                var lineNumber = (y+fx.offsetY+1).toString().padStart(4, " ")
+                if (fx.offsetX < -1) {
+                    // Line numbers
+                    t.fillStyle = "brown"
+                    for (var i=0; i<-fx.offsetX-1; i++) {
+                        var lineNumberIndex = fx.offsetX + marginLeft + i
+                        var lineNoChr = lineNumber.charAt(lineNumberIndex)
+                        if (lineNoChr != " ") {
+                            t.fillText(lineNoChr, i*fontWidth, y*fontHeight)
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     for (var y=0; y < maxLines; y++) {
         // show the end of the document
@@ -2023,25 +2054,19 @@ function renderInternal() {
             }
         }
 
-        // Line numbers
-
-        if (y + fx.offsetY < fx.lines.length) {
-            var lineNumber = (y+fx.offsetY+1).toString().padStart(4, " ")
-            if (fx.offsetX < -1) {
-                // Line numbers
-                //t.fillStyle = "magenta"
-                //t.fillStyle = "cyan"
-                // if (shouldAutocompleteLine) {
-                //     t.fillStyle = "brown"
-                // } else {
-                //     t.fillStyle = "yellow"
-                // }
-                t.fillStyle = "brown"
-                for (var i=0; i<-fx.offsetX-1; i++) {
-                    var lineNumberIndex = fx.offsetX + marginLeft + i
-                    var lineNoChr = lineNumber.charAt(lineNumberIndex)
-                    if (lineNoChr != " ") {
-                        t.fillText(lineNoChr, i*fontWidth, y*fontHeight)
+        // Line numbers (taken care of above)
+        if (true) {
+            if (y + fx.offsetY < fx.lines.length) {
+                var lineNumber = (y+fx.offsetY+1).toString().padStart(4, " ")
+                if (fx.offsetX < -1) {
+                    // Line numbers
+                    t.fillStyle = "brown"
+                    for (var i=0; i<-fx.offsetX-1; i++) {
+                        var lineNumberIndex = fx.offsetX + marginLeft + i
+                        var lineNoChr = lineNumber.charAt(lineNumberIndex)
+                        if (lineNoChr != " ") {
+                            t.fillText(lineNoChr, i*fontWidth, y*fontHeight)
+                        }
                     }
                 }
             }
@@ -2092,7 +2117,8 @@ function renderInternal() {
             var chr = expandedLine[x+fx.offsetX] || ""
             if (chr == "\t") {
                 t.fillStyle = veryLightFontColor
-                t.fillText("•", x*fontWidth, y*fontHeight)
+                // TODO: conditionally show this
+                // t.fillText("•", x*fontWidth, y*fontHeight)
             } else if (chr != "" && chr != " ") {
                 t.fillStyle = textFillStyle
                 t.fillText(chr, x*fontWidth, y*fontHeight)
@@ -2337,18 +2363,20 @@ function onStart(e) {
                 }
                 
                 // This part for moving the cursor where you tapped (if you want that feature) 
-                var bbox = c.getBoundingClientRect()
-                var pointX = startTouchX - bbox.left
-                var pointY = startTouchY - bbox.top
-                log([pointX, pointY])
-                fx.cursorColIndex = Math.round(
-                    ((pointX * 3)/fontWidth) + fx.offsetX
-                )  
-                fx.cursorLineIndex = Math.round(
-                    ((pointY * 3)/fontHeight) + fx.offsetY
-                )
-                log([startTouchX, startTouchY, fx.cursorColIndex, fx.cursorLineIndex])
-                updateCursorXY()  
+                if (false) {
+                    var bbox = c.getBoundingClientRect()
+                    var pointX = startTouchX - bbox.left
+                    var pointY = startTouchY - bbox.top
+                    log([pointX, pointY])
+                    fx.cursorColIndex = Math.round(
+                        ((pointX * 3)/fontWidth) + fx.offsetX
+                    )  
+                    fx.cursorLineIndex = Math.round(
+                        ((pointY * 3)/fontHeight) + fx.offsetY
+                    )
+                    log([startTouchX, startTouchY, fx.cursorColIndex, fx.cursorLineIndex])
+                    updateCursorXY()  
+                }
                 
                 // the handleFocusIn function will do some
                 // processing
@@ -2499,7 +2527,9 @@ function onStart(e) {
         }
 
         var bbox = c.getBoundingClientRect()
-        if (startTouchY - bbox.top < 40) {
+        
+        // commenting out the page down feature
+        if (false && startTouchY - bbox.top < 40) {
             if (document.activeElement == theText) {
                shouldAutocompleteLine = true
             } else {
@@ -2514,7 +2544,7 @@ function onStart(e) {
                 return
             }
         }
-        // commenting out the pahe down feature
+        // commenting out the page down feature
         if (false && (bbox.top + bbox.height) - startTouchY < 40) {
             if (document.activeElement == theText) {
             } else {
