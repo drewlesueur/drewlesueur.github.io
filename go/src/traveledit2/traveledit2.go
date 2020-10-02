@@ -200,6 +200,7 @@ func main() {
 				log.Printf("error writing to client: %v", err)
 				goto breakOut
 			}
+			// you could wait to make sure client got it before continuing the loop
 
 		finish:
 			viewMu.Unlock()

@@ -1776,7 +1776,7 @@ var serverViewFeature = true
 var sendingViewToServer = false
 var shouldSendViewToServer = false
 var lastViewBodyToSend = ""
-var ws = new WebSocket("wss://" + location.host + "/myws/wsrender")
+// var ws = new WebSocket("wss://" + location.host + "/myws/wsrender")
 function sendViewToServer() {
    if (sendingViewToServer) {
        shouldSendViewToServer = true
@@ -1792,6 +1792,7 @@ function sendViewToServer() {
    totalViewRequests += 1 
    // try {
    //     ws.send(viewBodyToSend)
+   // // you could wait to make sure you server got it before sending again.
    // } catch (e) {
    //      log(e) 
    // }
