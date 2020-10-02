@@ -1856,15 +1856,15 @@ function render() {
     var selEnd = theText.selectionEnd
     renderInternal()
     
-    s.innerHTML =
-        lastWord + " " +
-        fx.version + "/" + fx.savedVersion +
-        "/" + fx.savingVersion +
-        " p:" + cursorX + "," + cursorY +
-        " c:" + fx.cursorColIndex + "," + fx.cursorLineIndex +
-        " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
-        " " + selectMode
     if (inDebugView) {
+        s.innerHTML =
+            lastWord + " " +
+            fx.version + "/" + fx.savedVersion +
+            "/" + fx.savingVersion +
+            " p:" + cursorX + "," + cursorY +
+            " c:" + fx.cursorColIndex + "," + fx.cursorLineIndex +
+            " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
+            " " + selectMode
             // theStatus.fileTree = fileTree
         theStatus.shouldAutocompleteLine = shouldAutocompleteLine
         theStatus.lastWord = lastWord
@@ -1924,8 +1924,12 @@ function render() {
         var oldMaxLines = maxLines
         var oldT = t // canvas rendering context
         fx.offsetX = -5
-        maxCols = 120
-        maxLines = 32
+        if (maxCols < 120) {
+            maxCols = 120
+        }
+        if (maxLines < 32) {
+            maxLines = 32
+        }
         t = mockCanvasContext
         mockCanvasContext.lastFillStyle = "black",
         mockCanvasContext.fillStyle = "black",
@@ -2457,7 +2461,14 @@ function onStart(e) {
     // scroll right and left and move cursor right and left
     
     if (startTouchX > ((canvasWidth/3) - 40)) {
-        if (document.activeElement == theText) {
+        var bbox = c.getBoundingClientRect()
+        if (startTouchY - bbox.top < (bbox.height/2)) {
+            fx.cursorLineIndex += 1
+            if (fx.cursorLineIndex >= fx.lines.length) {
+                fx.cursorLineIndex = fx.lines.length - 1
+            }
+            ensureCursorInScreen()
+        } else if (document.activeElement == theText) {
             fx.cursorColIndex += 1
             //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
             setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
@@ -2485,7 +2496,14 @@ function onStart(e) {
         return
     }
     if (startTouchX < 40) {
-        if (document.activeElement == theText) {
+        var bbox = c.getBoundingClientRect()
+        if (startTouchY - bbox.top < (bbox.height/2)) {
+            fx.cursorLineIndex -= 1
+            if (fx.cursorLineIndex < 0) {
+                fx.cursorLineIndex = 0
+            }
+            ensureCursorInScreen()
+        } else if (document.activeElement == theText) {
             fx.cursorColIndex -= 1
             //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
             setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
