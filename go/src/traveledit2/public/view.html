@@ -40,6 +40,7 @@ function pullAndRender() {
 var lastY = -99999
 var lastX = -99999
 var fontWidth
+var fontHeight
 var fillStyleMap = {
     0: "black",
     1: "white",
@@ -60,6 +61,21 @@ function fillStyleString(f) {
 function isNumeric(s) {
     var c = s.charCodeAt(0)
     return (c >= 48 && c <= 57)
+}
+function eX(x) {
+    return x * fontWidth
+}
+function eY(y) {
+    return y * fontHeight
+}
+function totalHack(x) {
+    if (x == 1) {
+        return fontWidth
+    }    
+    if (x == 2) {
+        return fontHeight
+    }    
+    return x
 }
 function getNextNumber(str, index) {
     var numb = ""
@@ -84,6 +100,7 @@ var cmds = {
                     if (nextNumb[2].length == 0) {
                         nextNumb[0] = lastX + fontWidth    
                     }
+                    nextNumb[0] = eX(nextNumb[0])
                     t.fillText(part[0], nextNumb[0], lastY)
                     lastX = nextNumb[0]
                     // if there is left over...
@@ -105,6 +122,8 @@ var cmds = {
         //     t.fillText(a[0], a[1], lastY)
         //     return
         // }
+        a[1] = eX(a[1])
+        a[2] = eY(a[2])
         t.fillText(a[0], a[1], a[2])
         lastY = a[2]
         lastX = a[1]
@@ -123,7 +142,7 @@ var cmds = {
     },
     5: function(a) {
         fontWidth = a[0]
-        var fontHeight = a[1]
+        fontHeight = a[1]
         var maxCols = a[2]
         var maxLines = a[3]
         var isDark = a[4]

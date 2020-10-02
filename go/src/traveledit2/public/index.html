@@ -1667,6 +1667,23 @@ function theCharAt(lines, y, x) {
 function r(x) {
     return Math.round(x)
 }
+function r2(x) {
+    // totalHack
+    var ret =  Math.round(x)
+    if (ret == r(fontWidth)) {
+        return 1
+    }
+    if (ret == r(fontHeight)) {
+        return 2
+    }
+        return ret
+}
+function rW(x) {
+    return Math.round(x/fontWidth)
+}
+function rH(y) {
+    return Math.round(y/fontHeight)
+}
 var fillStyleMap = {
     black: 0,
     white: 1,
@@ -1736,9 +1753,7 @@ var mockCanvasContext = {
       }
       if (r(y) == this.lastY) {
           if (this.lastWasString) {
-              if (
-                  Math.abs((x - this.lastX) - fontWidth) < 1
-              ) {
+              if ((rW(x) - this.lastX) == 1) {
                 // you really only care about isNumeric for the first one after?
                 // so you could do one more optimization. 
                 if (!isNumeric(str)) {
@@ -1747,12 +1762,12 @@ var mockCanvasContext = {
                     this.commands[this.lastWasStringIndex] += (" " + str)
                 }
               } else {
-                this.commands[this.lastWasStringIndex] += (" " + str + r(x))
+                this.commands[this.lastWasStringIndex] += (" " + str + rW(x))
               }
-              this.lastX = x    
+              this.lastX = rW(x)    
               return
           }
-          this.commands.push(str + r(x))
+          this.commands.push(str + rW(x))
           this.lastWasString = true    
           this.lastWasStringIndex = this.commands.length - 1    
           // this.commands.push([str + r(x)])    
@@ -1761,11 +1776,11 @@ var mockCanvasContext = {
       } else {
           this.lastWasString = false    
           // this.commands.push([str+r(x), r(y)])
-          this.commands.push([str, r(x), r(y)])
+          this.commands.push([str, rW(x), rH(y)])
           // this.commands.push([0, str, r(x), r(y)])
           this.lastY = r(y)    
       }
-      this.lastX = x    
+      this.lastX = rW(x)    
     },
 }
 var serverViewFeature = true
