@@ -1667,17 +1667,6 @@ function theCharAt(lines, y, x) {
 function r(x) {
     return Math.round(x)
 }
-function r2(x) {
-    // totalHack
-    var ret =  Math.round(x)
-    if (ret == r(fontWidth)) {
-        return 1
-    }
-    if (ret == r(fontHeight)) {
-        return 2
-    }
-        return ret
-}
 function rW(x) {
     return Math.round(x/fontWidth)
 }
@@ -1751,7 +1740,7 @@ var mockCanvasContext = {
           this.lastTextBaseline = this.textBaseline
           this.commands.push([4, this.textBaseline])    
       }
-      if (r(y) == this.lastY) {
+      if (rH(y) == this.lastY) {
           if (this.lastWasString) {
               if ((rW(x) - this.lastX) == 1) {
                 // you really only care about isNumeric for the first one after?
@@ -1778,7 +1767,7 @@ var mockCanvasContext = {
           // this.commands.push([str+r(x), r(y)])
           this.commands.push([str, rW(x), rH(y)])
           // this.commands.push([0, str, r(x), r(y)])
-          this.lastY = r(y)    
+          this.lastY = rH(y)    
       }
       this.lastX = rW(x)    
     },
@@ -1944,7 +1933,7 @@ function render() {
         mockCanvasContext.font = "",
         mockCanvasContext.lastTextBaseline = "",
         mockCanvasContext.textBaseline = "",
-        mockCanvasContext.commands = [[5, r(fontWidth), r(fontHeight), maxCols, maxLines, isDark ? 1 : 0]]
+        mockCanvasContext.commands = [[5, fontWidth.toFixed(2)-0, fontHeight.toFixed(2)-0, maxCols, maxLines, isDark ? 1 : 0]]
         renderInternal()
         fx.offsetX = oldOffsetX
         maxCols = oldMaxCols
