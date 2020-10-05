@@ -124,7 +124,7 @@ opacity: 0.5;
     <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
 
-<form onsubmit=newLine(event, true)>
+<form onsubmit="newLine(event, true)">
 
 <input class=dark id=theTextBefore class=text type=text
 style="font: 8px Courier;
@@ -543,9 +543,9 @@ var bashHelpers = [
     "git push origin HEAD",
     "git branch",
     "golangci-lint run --print-issued-lines=false",
-    "grep -Ri '' --include=*.pm",
-    "grep -Ri '' --include=*.go",
-    "grep -Ri '' --include=*.php",
+    "grep -Rin '' --include=*.pm",
+    "grep -Rin '' --include=*.go",
+    "grep -Rin '' --include=*.php",
     "find . -name '**'",
     "go test ./...",
     "./test.sh",
@@ -2412,7 +2412,8 @@ function onStart(e) {
                 }
                 
                 // This part for moving the cursor where you tapped (if you want that feature) 
-                if (false) {
+                // if (false) {
+                if (true) {
                     var bbox = c.getBoundingClientRect()
                     var pointX = startTouchX - bbox.left
                     var pointY = startTouchY - bbox.top
@@ -2427,9 +2428,11 @@ function onStart(e) {
                     updateCursorXY()  
                 }
                 
-                // the handleFocusIn function will do some
-                // processing
-                theText.focus()
+                if (false) {
+                    // the handleFocusIn function will do some
+                    // processing
+                    theText.focus()
+                }
             }
         }
 
