@@ -1,10 +1,15 @@
 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMMOPQRSTUV
 alert(files[1].lines == files[2].lines)
 
+allow select backwards
+and allow the up/down/left/right controls
+to work with select
 
 undo needs to just be a diff of lines changed
 this can also be used to save diffs too!
 do a verification step first.
+This can also be used as a completely new way to
+have the screenshare featuere.
 
 alternative server render that is smarter
 on scrolling it just sends new lines?? (or maybe just whole new screen only when scrolling.)
