@@ -124,7 +124,7 @@ opacity: 0.5;
     <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
 
-<form onsubmit=newLine(event)>
+<form onsubmit=newLine(event, true)>
 
 <input class=dark id=theTextBefore class=text type=text
 style="font: 8px Courier;
@@ -236,7 +236,7 @@ ontouchstart=onStart(event)
     <div class=square onclick=addSpace()>space</div>
     <div class=square onclick=backspace()>backspace</div>
     <div class=square onclick="theText.focus()">insert</div>
-    <div class=square onclick="newLine()">new line</div>
+    <div class=square onclick="newLine(null, false)">new line</div>
 </div>
 <div class=toolbar>
     <div class=square onclick=clearLog()>clear log</div>
@@ -1304,7 +1304,7 @@ function uploadFile(e) {
     })
     return false
 }
-function newLine(e) {
+function newLine(e, shouldFocus) {
     var theLine = fx.lines[fx.cursorLineIndex]
     e && e.preventDefault()
     if (fx.fileMode == "bash") {
@@ -1312,9 +1312,11 @@ function newLine(e) {
         return false
     }
     insertLine(true)
-    theText.focus()
-    //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-    setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+    if (shouldFocus) {
+        theText.focus()
+        //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+        setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+    }
     return false
 }
 function runBashCommand(line) {
@@ -2608,12 +2610,12 @@ function onStart(e) {
                  fx.cursorColIndex = -5    
             }
         }
-        // if (fx.cursorColIndex < -5){
-        //     fx.cursorColIndex = -5
-        // }
-        if (fx.cursorColIndex < 0){
-            fx.cursorColIndex = 0
+        if (fx.cursorColIndex < -5){
+            fx.cursorColIndex = -5
         }
+        // if (fx.cursorColIndex < 0){
+        //     fx.cursorColIndex = 0
+        // }
         if (fx.offsetX < -5){
             fx.offsetX = -5
         }
