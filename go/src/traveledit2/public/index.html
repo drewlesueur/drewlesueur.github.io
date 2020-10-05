@@ -233,14 +233,18 @@ ontouchstart=onStart(event)
     <div class=square onclick=selectFileIndex(1)>alt tab</div>
     <div class=square onclick=clearLog()>clear log</div>
     <div class=square onclick=duplicateFile(fx)>dupl file</div>
-    <!--<div class=square onclick=reloadFile()>reload</div>
-    -->
-    <div class=square onclick=doEval()>eval</div>
-    <div class=square onclick=runScript()>run script</div>
-    <!--<div class=square onclick=doFormat()>format</div>
-    -->
+    <div class=square onclick=addSpace()>space</div>
+    <div class=square onclick=backspace()>backspace</div>
     <div class=square onclick="theText.focus()">insert</div>
     <div class=square onclick="newLine()">new line</div>
+</div>
+<div class=toolbar>
+    <div class=square onclick=clearLog()>clear log</div>
+    <div class=square onclick=duplicateFile(fx)>dupl file</div>
+    <div class=square onclick=doEval()>eval</div>
+    <div class=square onclick=runScript()>run script</div>
+    <div class=square onclick=doFormat()>format</div>
+    <div class=square onclick=reloadFile()>reload</div>
 </div>
 
 <form method=GET action="" target=_blank>
@@ -389,7 +393,32 @@ window.onscroll = function () {
     clearTimeout(scrollTimeout)
     scrollTimeout = setTimeout(doScroll, 100)
 }
-
+function addSpace() {
+    var line = fx.lines[fx.cursorLineIndex]
+    if (!line) {
+        return
+    }
+    fx.lines[fx.cursorLineIndex] = line.slice(0, u(fx.cursorColIndex)) + " " + line.slice(u(fx.cursorColIndex))
+    fx.cursorColIndex += 1 
+    updateCursorXY()
+    docChanged()
+    render()   
+}
+function backspace() {
+    var line = fx.lines[fx.cursorLineIndex]
+    if (!line) {
+        return
+    }
+    if (fx.cursorColIndex == 0) {
+    
+        return
+    }
+    fx.lines[fx.cursorLineIndex] = line.slice(0, u(fx.cursorColIndex) - 1) + line.slice(u(fx.cursorColIndex))
+    fx.cursorColIndex = expandTabIndex(line, u(fx.cursorColIndex - 1)) 
+    docChanged()
+    updateCursorXY()
+    render()   
+}
 function doScroll() {
     canvasHeightFull = originalCanvasHeightFull - (window.pageYOffset*3)
     c.height = canvasHeightFull
@@ -2498,28 +2527,30 @@ function onStart(e) {
             if (selectedRegions[0].stopX > expandedIndex) {
                 selectedRegions[0].stopX = expandedIndex
             }    
-        } else if (document.activeElement == theText) {
-            fx.cursorColIndex += 1
-            //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-            setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-            ensureCursorInScreen()
         } else if (currentFile.fileMode == "fileList" || currentFile.fileMode == "directory") {
             fx.cursorLineIndex += 1
             if (fx.cursorLineIndex >= fx.lines.length) {
                 fx.cursorLineIndex = fx.lines.length - 1
             }
             ensureCursorInScreen()
+        } else if (document.activeElement == theText) {
+            fx.cursorColIndex += 1
+            //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+            setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+            ensureCursorInScreen()
         } else {
             var origOffsetX = fx.offsetX
             // scroll by tabstop?
-            if (fx.offsetX < 0) {
+            if (false && fx.offsetX < 0) {
                 fx.offsetX = 0
             }  else {
-                var tabStop = 4
+                // var tabStop = 4
+                var tabStop = 1
                 fx.offsetX = Math.ceil((fx.offsetX + 1) / tabStop) * tabStop
             }
-            //fx.offsetX += Math.floor(maxCols/2)
-            fx.cursorColIndex += fx.offsetX - origOffsetX
+            ////fx.offsetX += Math.floor(maxCols/2)
+            // fx.cursorColIndex += fx.offsetX - origOffsetX
+            fx.cursorColIndex += 1
         }
         updateCursorXY()
         render()
@@ -2551,29 +2582,40 @@ function onStart(e) {
             if (selectedRegions[0].stopX < 0) {
                 selectedRegions[0].stopY = 0
             }    
-        } else if (document.activeElement == theText) {
-            fx.cursorColIndex -= 1
-            //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-            setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-            ensureCursorInScreen()
         } else if (currentFile.fileMode == "fileList" || currentFile.fileMode == "directory") {
             fx.cursorLineIndex -= 1
             if (fx.cursorLineIndex < 0) {
                 fx.cursorLineIndex = 0
             }
             ensureCursorInScreen()
+        } else if (document.activeElement == theText) {
+            fx.cursorColIndex -= 1
+            //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+            setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+            ensureCursorInScreen()
         } else {
             var origOffsetX = fx.offsetX
-            if (fx.offsetX <= 0) {
+            if (false && fx.offsetX <= 0) {
                 fx.offsetX = -5
             }  else {
-                var tabStop = 4
+                // var tabStop = 4
+                var tabStop = 1
                 fx.offsetX = Math.floor((fx.offsetX-1) / tabStop) * tabStop
             }
-            fx.cursorColIndex += fx.offsetX - origOffsetX
+            // fx.cursorColIndex += fx.offsetX - origOffsetX
+            fx.cursorColIndex -= 1
+            if (fx.cursorColIndex < -5) {
+                 fx.cursorColIndex = -5    
+            }
         }
-        if (fx.cursorColIndex < -5){
-            fx.cursorColIndex = -5
+        // if (fx.cursorColIndex < -5){
+        //     fx.cursorColIndex = -5
+        // }
+        if (fx.cursorColIndex < 0){
+            fx.cursorColIndex = 0
+        }
+        if (fx.offsetX < -5){
+            fx.offsetX = -5
         }
         updateCursorXY()
         render()
