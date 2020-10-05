@@ -39,7 +39,7 @@
     color: white;
     padding: 0px;
     width: 40px;
-    height: 36px;
+    height: 34px;
     --height: 20px;
     margin: 1px;
     flex: 1 0 auto;
@@ -57,7 +57,7 @@
     color: white;
     padding: 0px;
     width: 80px;
-    height: 20px;
+    height: 28px;
     margin: 1px;
     flex: 1 0 auto;
     font-size: 12px;
@@ -336,9 +336,9 @@ canvasWidth=1125
 var canvasHeightKeyboard=1050
 // var canvasHeightKeyboard=950// // var canvasHeightKeyboard=950
 var canvasHeightFull=c.height
-// 36 button height plus 1px*2 margin
+// 34 button height plus 1px*2 margin
 // 2 rows of new buttons for bash
-var canvasHeightBash = canvasHeightFull - ((38*3) * 2)
+var canvasHeightBash = canvasHeightFull - ((36*3) * 2)
 var maxLines = 0
 var maxCols = 0
 var canvasHeight = 0
@@ -2468,8 +2468,8 @@ function onStart(e) {
     var movedWithBuffer = false
     var selectedRegion = {}
 
-    // scroll right and left and move cursor right and left
-    
+    // scroll right and left and move cursor right and left or up and down
+    // TODO: remove some duplication here. especially the bounds checks. Make a setter functions.
     if (startTouchX > ((canvasWidth/3) - 40)) {
         var bbox = c.getBoundingClientRect()
         if (startTouchY - bbox.top < (bbox.height/2)) {
@@ -2478,12 +2478,26 @@ function onStart(e) {
                 fx.cursorLineIndex = fx.lines.length - 1
             }
             ensureCursorInScreen()
-            if (document.activeElement != theText) {
+            if (selectedRegions.length) {
+                selectedRegions[0].stopY += 1
+                if (selectedRegions[0].stopY > fx.lines.length - 1) { // stopY is inclusive I think, stopX isn't
+                    selectedRegions[0].stopY = fx.lines.length - 1
+                }    
+                var theLine = fx.lines[selectedRegions[0].stopY] || ""
+                selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length)
+            } else if (document.activeElement != theText) {
                 fx.offsetY += 1
                 if (fx.offsetY > fx.lines.length - 10) {
                     fx.offsetY = lines.length - 10
                 }
             }
+        } else if (selectedRegions.length) {
+            selectedRegions[0].stopX += 1
+            var theLine = fx.lines[selectedRegions[0].stopY] || ""
+            var expandedIndex = expandTabIndex(theLine, theLine.length)
+            if (selectedRegions[0].stopX > expandedIndex) {
+                selectedRegions[0].stopX = expandedIndex
+            }    
         } else if (document.activeElement == theText) {
             fx.cursorColIndex += 1
             //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
@@ -2519,12 +2533,24 @@ function onStart(e) {
                 fx.cursorLineIndex = 0
             }
             ensureCursorInScreen()
-            if (document.activeElement != theText) {
+            if (selectedRegions.length) {
+                selectedRegions[0].stopY -= 1
+                if (selectedRegions[0].stopY < selectedRegions[0].startY) {
+                    selectedRegions[0].stopY = selectedRegions[0].startY
+                }    
+                var theLine = fx.lines[selectedRegions[0].stopY] || ""
+                selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length)
+            } else if (document.activeElement != theText) {
                 fx.offsetY -= 1
                 if (fx.offsetY < 0) {
                     fx.offsetY = 0
                 }
             }
+        } else if (selectedRegions.length) {
+            selectedRegions[0].stopX -= 1
+            if (selectedRegions[0].stopX < 0) {
+                selectedRegions[0].stopY = 0
+            }    
         } else if (document.activeElement == theText) {
             fx.cursorColIndex -= 1
             //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)

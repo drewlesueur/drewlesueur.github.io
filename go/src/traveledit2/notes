@@ -1,6 +1,8 @@
 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMMOPQRSTUV
 alert(files[1].lines == files[2].lines)
 
+It should autocomplete parens, brackets, etc before a comma
+
 allow select backwards
 and allow the up/down/left/right controls
 to work with select
