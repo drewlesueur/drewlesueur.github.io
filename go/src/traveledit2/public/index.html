@@ -203,11 +203,12 @@ ontouchstart=onStart(event)
     <div class=square onclick='runBashCommand("git push origin HEAD")'>push origin H</div>
     <div class=square onclick=openAtCursor()>open</div>
     <div class=square onclick=urlAtCursor()>visit</div>
+    <div class=square onclick='runBashCommand("cd ..")'>cd ..</div>
     <!--
     <div class=square onclick='runBashCommand("git stash")'>stash</div>
     <div class=square onclick='runBashCommand("git stash pop")'> stash pop</div>
-    -->
     <div class=square onclick='runBashCommand("git pull origin master")'>pull origin m</div>
+    -->
     <div class=square onclick='runBashCommand("git diff --cached")'>diff --cached</div>
     <div class=square onclick='runBashCommand("git log -10")'>log -10</div>
     <div class=square onclick='runBashCommand("git log -p -3")'>log -p -3</div>
@@ -244,6 +245,8 @@ ontouchstart=onStart(event)
 </div>
 <!-- Stuff after here is after the fold -->
 <div class=toolbar>
+    <div class=square onclick=openAtCursor()>open</div>
+    <div class=square onclick=urlAtCursor()>visit</div>
     <div class=square onclick=doEval()>eval</div>
     <div class=square onclick=runScript()>run script</div>
     <div class=square onclick=doFormat()>format</div>
@@ -404,13 +407,15 @@ function getAtCursor() {
     var line = fx.lines[fx.cursorLineIndex]
     var strIndex = u(fx.cursorColIndex)
     for (var i=strIndex; i>=0; i--) {
-        if ((line.charAt(i).trim() == "")) {
+        // if ((line.charAt(i).trim() == "")) {
+        log(line.charAt(i) + " " + line.charCodeAt(i))
+        if (line.charCodeAt(i) <= 32) {
             break
         }   
     }
     i += 1
     for (var j=strIndex+1; j<line.length; j++) {
-        if ((line.charAt(j).trim() == "")) {
+        if (line.charCodeAt(j) <= 32) {
             break
         }   
     }
@@ -590,6 +595,7 @@ var bashHelpers = [
     "grep -Rin '' --include=*.go",
     "grep -Rin '' --include=*.php",
     "find . -name '**'",
+    "diff -y --width=240",
     "go test ./...",
     "./test.sh",
     // a way to do `git add -p` non-interactively
@@ -2215,7 +2221,7 @@ function renderInternal() {
             if (chr == "\t") {
                 t.fillStyle = veryLightFontColor
                 // TODO: conditionally show this
-                // t.fillText("•", x*fontWidth, y*fontHeight)
+                t.fillText("•", x*fontWidth, y*fontHeight)
             } else if (chr != "" && chr != " ") {
                 t.fillStyle = textFillStyle
                 t.fillText(chr, x*fontWidth, y*fontHeight)
