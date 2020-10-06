@@ -201,8 +201,12 @@ ontouchstart=onStart(event)
 </div>
 <div class="toolbar hidden" id=bashToolbar2 style="--display: none">
     <div class=square onclick='runBashCommand("git push origin HEAD")'>push origin H</div>
+    <div class=square onclick=openAtCursor()>open</div>
+    <div class=square onclick=urlAtCursor()>visit</div>
+    <!--
     <div class=square onclick='runBashCommand("git stash")'>stash</div>
     <div class=square onclick='runBashCommand("git stash pop")'> stash pop</div>
+    -->
     <div class=square onclick='runBashCommand("git pull origin master")'>pull origin m</div>
     <div class=square onclick='runBashCommand("git diff --cached")'>diff --cached</div>
     <div class=square onclick='runBashCommand("git log -10")'>log -10</div>
@@ -240,8 +244,6 @@ ontouchstart=onStart(event)
 </div>
 <!-- Stuff after here is after the fold -->
 <div class=toolbar>
-    <div class=square onclick=openAtCursor()>open</div>
-    <div class=square onclick=urlAtCursor()>visit</div>
     <div class=square onclick=doEval()>eval</div>
     <div class=square onclick=runScript()>run script</div>
     <div class=square onclick=doFormat()>format</div>
@@ -395,16 +397,42 @@ window.onscroll = function () {
     scrollTimeout = setTimeout(doScroll, 100)
 }
 
-function openAtCursor() {
-}
-
-function urlAtCursor() {
-    // find a path (inlcuding optional lone no.) under cursor
-    // don't worry about files with spaces
+function getAtCursor() {
     if (fx.cursorLineIndex >= fx.lines.length) {
         return
     }
     var line = fx.lines[fx.cursorLineIndex]
+    var strIndex = u(fx.cursorColIndex)
+    for (var i=strIndex; i>=0; i--) {
+        if ((line.charAt(i).trim() == "")) {
+            break
+        }   
+    }
+    i += 1
+    for (var j=strIndex+1; j<line.length; j++) {
+        if ((line.charAt(j).trim() == "")) {
+            break
+        }   
+    }
+    return line.slice(i, j)
+}
+
+function openAtCursor() {
+    var path = getAtCursor()
+    if (fx.fileMode == "bash") {
+        var fileName = proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + path
+    } else {
+        var parts = fx.fullPath.split("/")
+        var basePath = parts.slice(0, -1).join("/")
+        var fileName = basePath + "/" + path
+    }
+    addFile(fileName)
+}
+
+function urlAtCursor() {
+    var url = getAtCursor()
+    alert(JSON.stringify(url))
+    open(url)
 }
 
 function addSpace() {
@@ -1824,6 +1852,7 @@ var mockCanvasContext = {
     },
 }
 var serverViewFeature = true
+// var serverViewFeature = false
 var sendingViewToServer = false
 var shouldSendViewToServer = false
 var lastViewBodyToSend = ""
