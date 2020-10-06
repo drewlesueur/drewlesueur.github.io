@@ -1,6 +1,8 @@
 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMMOPQRSTUV
 alert(files[1].lines == files[2].lines)
 
+bug with entering space in nav mode when the line is empty
+
 There seems to be a bug with nav mode backspace button when there is a tab.
 
 if the first file doesn't exist, whole app doesn't load

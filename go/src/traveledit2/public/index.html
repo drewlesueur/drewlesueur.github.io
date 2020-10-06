@@ -238,9 +238,10 @@ ontouchstart=onStart(event)
     <div class=square onclick="theText.focus()">insert</div>
     <div class=square onclick="newLine(null, false)">new line</div>
 </div>
+<!-- Stuff after here is after the fold -->
 <div class=toolbar>
-    <div class=square onclick=clearLog()>clear log</div>
-    <div class=square onclick=duplicateFile(fx)>dupl file</div>
+    <div class=square onclick=openAtCursor()>open</div>
+    <div class=square onclick=urlAtCursor()>visit</div>
     <div class=square onclick=doEval()>eval</div>
     <div class=square onclick=runScript()>run script</div>
     <div class=square onclick=doFormat()>format</div>
@@ -393,22 +394,36 @@ window.onscroll = function () {
     clearTimeout(scrollTimeout)
     scrollTimeout = setTimeout(doScroll, 100)
 }
-function addSpace() {
-    var line = fx.lines[fx.cursorLineIndex]
-    if (!line) {
+
+function openAtCursor() {
+}
+
+function urlAtCursor() {
+    // find a path (inlcuding optional lone no.) under cursor
+    // don't worry about files with spaces
+    if (fx.cursorLineIndex >= fx.lines.length) {
         return
     }
+    var line = fx.lines[fx.cursorLineIndex]
+}
+
+function addSpace() {
+    if (fx.cursorLineIndex >= fx.lines.length) {
+        return
+    }
+    var line = fx.lines[fx.cursorLineIndex]
     fx.lines[fx.cursorLineIndex] = line.slice(0, u(fx.cursorColIndex)) + " " + line.slice(u(fx.cursorColIndex))
     fx.cursorColIndex += 1 
     updateCursorXY()
     docChanged()
     render()   
 }
+
 function backspace() {
-    var line = fx.lines[fx.cursorLineIndex]
-    if (!line) {
+    if (fx.cursorLineIndex >= fx.lines.length) {
         return
     }
+    var line = fx.lines[fx.cursorLineIndex]
     if (fx.cursorColIndex == 0) {
     
         return
@@ -1263,7 +1278,7 @@ function getIndent(line) {
     }
     return theIndent
 }
-function insertLine(closeCurly) {
+function insertLine(closeCurly, oMode) {
     if (fx.fileMode == "directory") {
         clickItemInDirectory()
         return
@@ -1275,12 +1290,16 @@ function insertLine(closeCurly) {
     var theIndent = getIndent(theLine)
     var prevChar = theLine[u(fx.cursorColIndex - 1)]
     var nextChar = theLine[u(fx.cursorColIndex)]
-    fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent + theLine.substr(theText.selectionStart))
+    var strIndex = theText.selectionStart
+    if (oMode) {
+        strIndex = theLine.length
+    }
+    fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent + theLine.substr(strIndex))
     if (closeCurly && (prevChar in closingMap) && (nextChar == closingMap[prevChar])) {
         theIndent += "    "
         fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent)
     }
-    fx.lines[fx.cursorLineIndex] = theLine.substr(0, theText.selectionStart)
+    fx.lines[fx.cursorLineIndex] = theLine.substr(0, strIndex)
     fx.cursorLineIndex += 1
     fx.cursorColIndex = expandTabIndex(fx.lines[fx.cursorLineIndex], theIndent.length)
     updateCursorXY()
@@ -2396,7 +2415,7 @@ function onStart(e) {
                 return
             }
             if (fx.cursorColIndex == -1) {
-                insertLine()
+                insertLine(true, true)
                 return
             }
 
