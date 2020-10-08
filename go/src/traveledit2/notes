@@ -1,8 +1,18 @@
-feedback: show file you are working on.
-make file list view more readable ("bleed through")
-show what you are searching for.
+big todo: when using the "open" button,
+why did it actually make a request when we already had that file?
+seems to have still kept the files in sync
+this is another reason we need to normalize the paths
+
 regex search
 implement s/foo/bar/gc
+
+make it so you can select a region,
+press a button and it will open a new temporary file.
+and you can type something as simple as
+
+     x.replace(/foo/g, bar) 
+     
+where x is the line and it will map it behind the scenes
 
 local timeout for all fetch requests?
 

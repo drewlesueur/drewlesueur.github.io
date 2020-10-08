@@ -10,7 +10,7 @@
     padding-top: 10px;
     padding-bottom: 10px;
     font-family: monospace;
-    font-size: 20px;
+    font-size: 16px;
 }
 
 </style>
@@ -18,9 +18,10 @@
    id=canvasEl
    width=3000
    height=1410
-   style="border-width: 30px;
+   style="border-width: 10px;
      border-style: solid;
-     margin: 20px;
+     margin-top: 10px;
+     margin-left: 20px;
      width: 10px;
      height: 10px;
    ",
@@ -153,6 +154,7 @@ var cmds = {
         canvasEl.height = fontHeight * maxLines  
         t = canvasEl.getContext("2d")
         canvasEl.style.width = (canvasEl.width/2) + "px" 
+        infoEl.style.width = (canvasEl.width/2 - 10) + "px" 
         canvasEl.style.height = (canvasEl.height/2) + "px" 
         if (isDark) {
             canvasEl.style.backgroundColor = "black"

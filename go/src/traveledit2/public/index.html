@@ -392,7 +392,6 @@ var theStatus = {}
 var wasDelete = false
 var selectTimeout
 var selectTimeoutMillis = 750
-var selectedRegions = []
 var searchTerms = ["function"]
 var moveListenerCount = 0
 var endListenerCount = 0
@@ -616,7 +615,7 @@ var bashHelpers = [
     "",
 ]
 function addCmdTab() {
-    var file = makeFile(proxyPath + "/cmd", bashHelpers.join("\n"))
+    var file = makeFile(proxyPath + "/cmd", 0, bashHelpers.join("\n"))
     file.fileMode = "bash"
     
     if (currentFile.fileMode == "bash") {
@@ -644,6 +643,7 @@ function normalizeFullPath(fullPath) {
     if (fullPath.charAt(0) != "/") {
         fullPath = "/" + fullPath
     }
+    // TODO: also apply the .. and .
     return fullPath
 }
 function addFile(fullPath) {
@@ -651,7 +651,16 @@ function addFile(fullPath) {
     if (fullPath == "") {
         return
     }
+    log("adding file: " + fullPath)
     
+    // adding file to list beforehand to preserve order
+    
+    var cursorLineIndex = 0
+    var parts = fullPath.split(":")
+    fullPath = parts[0]
+    if (parts.length > 1) {
+        cursorLineIndex = (parts[1] - 1) || 0   
+    }
     // If the file is already in the list of open files.
     // then let it have a reference to the existing lines, like vim does.
     for (var i=0; i<files.length; i++) {
@@ -661,8 +670,7 @@ function addFile(fullPath) {
         }
     }
     
-    // adding file to list beforehand to preserve order
-    var file = makeFile(fullPath, "")
+    var file = makeFile(fullPath, cursorLineIndex, "")
     if (!initialFileAdding) {
         setCurrentFile(file)
         renderURL()
@@ -1022,8 +1030,8 @@ function unComment() {
 }
 
 function addPrefix(prefix) {
-    if (selectedRegions.length > 0) {
-        var r = selectedRegions[0]
+    if (fx.selectedRegions.length > 0) {
+        var r = fx.selectedRegions[0]
         var firstIndent = ""
         var line = fx.lines[r.startY]
         var firstNonSpace = 0
@@ -1045,8 +1053,8 @@ function addPrefix(prefix) {
 }
 
 function stripPrefixes(prefixes) {
-    if (selectedRegions.length > 0) {
-        var r = selectedRegions[0]
+    if (fx.selectedRegions.length > 0) {
+        var r = fx.selectedRegions[0]
         for (var y=r.startY; y<=r.stopY; y++) {
             fx.lines[y] = stripPrefixesInner(fx.lines[y], prefixes)
         }
@@ -1083,11 +1091,11 @@ function stripPrefixesInner(line, prefixes) {
 function copy() {
     // wrapping in for loop to simulate goto
     for (var s=0; s<1; s++) {
-        if (selectedRegions.length>0) {
-            var r = selectedRegions[0]
+        if (fx.selectedRegions.length>0) {
+            var r = fx.selectedRegions[0]
             if (r.startY == r.stopY) {
                 copyBuffer = [fx.lines[fx.cursorLineIndex].slice(u(r.startX), u(r.stopX))]
-                selectedRegions = []
+                fx.selectedRegions = []
                 render()
                 break
             }
@@ -1096,7 +1104,7 @@ function copy() {
                 ...fx.lines.slice(r.startY + 1, r.stopY),
                 unExpandSlice(fx.lines[r.stopY], 0, r.stopX)
             ]
-            selectedRegions = []
+            fx.selectedRegions = []
             render()
             break
         }
@@ -1168,7 +1176,7 @@ function insertText(theLines, yOffset, xOffset) {
     var oldCopyBuffer = copyBuffer
     copyBuffer = theLines
     paste()
-    selectedRegions = []
+    fx.selectedRegions = []
     fx.cursorLineIndex = fx.cursorLineIndex + yOffset + 1
     var theLine = fx.lines[fx.cursorLineIndex]
     fx.cursorColIndex = expandTabIndex(theLine, xOffset)
@@ -1182,7 +1190,7 @@ function paste(unselect) {
         var stopY = fx.cursorLineIndex + copyBuffer.length
         var lastLine = fx.lines[stopY] || ""
         if (!unselect) {
-            selectedRegions = [{
+            fx.selectedRegions = [{
                 startY: fx.cursorLineIndex + 1,
                 // remember stopY is inclusive, stopX no
                 stopY: stopY,
@@ -1223,8 +1231,8 @@ function pasteLastWord() {
 
 
 function del(preventCopy, preventDeleteWholeLine) {
-    if (selectedRegions.length>0) {
-        var r = selectedRegions[0]
+    if (fx.selectedRegions.length>0) {
+        var r = fx.selectedRegions[0]
         if (r.startY == r.stopY) {
             if (!preventDeleteWholeLine && r.startX == 0 && unExpandTabIndex(fx.lines[r.startY], r.stopX) == fx.lines[r.startY].length) {
                 selectMode = "line"
@@ -1233,7 +1241,7 @@ function del(preventCopy, preventDeleteWholeLine) {
                     // cutBuffer = [fx.lines[r.startY]]
                 }
                 fx.lines.splice(r.startY, 1)
-                selectedRegions = []
+                fx.selectedRegions = []
                 docChanged()
                 render()
                 return
@@ -1244,11 +1252,11 @@ function del(preventCopy, preventDeleteWholeLine) {
                 }
                 fx.lines[r.startY] = unExpandSlice(fx.lines[r.startY], 0, r.startX) +
                     unExpandSlice(fx.lines[r.startY], r.stopX)
-                selectedRegions = []
+                fx.selectedRegions = []
                 fx.cursorLineIndex = r.startY
                 fx.cursorColIndex = r.startX
                 updateCursorXY()
-                selectedRegions = []
+                fx.selectedRegions = []
                 docChanged()
                 render()
                 if (document.activeElement == theText) {
@@ -1277,7 +1285,7 @@ function del(preventCopy, preventDeleteWholeLine) {
         fx.cursorLineIndex = r.startY
         fx.cursorColIndex = r.startX
         updateCursorXY()
-        selectedRegions = []
+        fx.selectedRegions = []
         docChanged()
         render()
         if (document.activeElement == theText) {
@@ -2054,10 +2062,10 @@ function render() {
     
 function renderInternal() {
     // the selected areas
-    for (var i=0; i<selectedRegions.length;i++) {
+    for (var i=0; i<fx.selectedRegions.length;i++) {
         // todo: normalize region start and stop
         // todo: draw the cursors after the selected regions
-        var r = selectedRegions[i]
+        var r = fx.selectedRegions[i]
         t.fillStyle = "magenta"
         for (var y=r.startY-fx.offsetY; y<=r.stopY-fx.offsetY; y++) {
             var line = fx.lines[y + fx.offsetY] || ""
@@ -2100,7 +2108,7 @@ function renderInternal() {
 
     t.font = fontCSS
     t.textBaseline = "top"
-    var r = selectedRegions[0]
+    var r = fx.selectedRegions[0]
     // TODO: this element is hitten
     // consider removing it.
 
@@ -2278,7 +2286,7 @@ function onStart(e) {
             if (cursorType == "select") {
                 return
             }
-            selectedRegions = []
+            fx.selectedRegions = []
             cursorType = "select"
             var line = fx.lines[fx.cursorLineIndex] || ""
             selectedRegion.startX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
@@ -2296,7 +2304,7 @@ function onStart(e) {
             } else {
                 selectMode = "char"
             }
-            selectedRegions.push(selectedRegion)
+            fx.selectedRegions.push(selectedRegion)
             render()
         }
     }
@@ -2511,7 +2519,7 @@ function onStart(e) {
                 selectedRegion.stopY = fx.cursorLineIndex
                 selectedRegion.stopX = w.end
             } else {
-                selectedRegions = []
+                fx.selectedRegions = []
             }
         }
         render()
@@ -2544,8 +2552,8 @@ function onStart(e) {
         moveListenerCount = max(moveListenerCount-1, 0)
     }
     var onEndWhileSelected = function(e) {
-        if (!moved && selectedRegions.length) {
-            selectedRegions = []
+        if (!moved && fx.selectedRegions.length) {
+            fx.selectedRegions = []
         }
         document.body.removeEventListener("touchmove", onMoveWhileSelected)
         moveListenerCount = max(moveListenerCount-1, 0)
@@ -2576,25 +2584,25 @@ function onStart(e) {
                 fx.cursorLineIndex = fx.lines.length - 1
             }
             ensureCursorInScreen()
-            if (selectedRegions.length) {
-                selectedRegions[0].stopY += 1
-                if (selectedRegions[0].stopY > fx.lines.length - 1) { // stopY is inclusive I think, stopX isn't
-                    selectedRegions[0].stopY = fx.lines.length - 1
+            if (fx.selectedRegions.length) {
+                fx.selectedRegions[0].stopY += 1
+                if (fx.selectedRegions[0].stopY > fx.lines.length - 1) { // stopY is inclusive I think, stopX isn't
+                    fx.selectedRegions[0].stopY = fx.lines.length - 1
                 }    
-                var theLine = fx.lines[selectedRegions[0].stopY] || ""
-                selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length)
+                var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
+                fx.selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length)
             } else if (document.activeElement != theText) {
                 fx.offsetY += 1
                 if (fx.offsetY > fx.lines.length - 10) {
                     fx.offsetY = lines.length - 10
                 }
             }
-        } else if (selectedRegions.length) {
-            selectedRegions[0].stopX += 1
-            var theLine = fx.lines[selectedRegions[0].stopY] || ""
+        } else if (fx.selectedRegions.length) {
+            fx.selectedRegions[0].stopX += 1
+            var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
             var expandedIndex = expandTabIndex(theLine, theLine.length)
-            if (selectedRegions[0].stopX > expandedIndex) {
-                selectedRegions[0].stopX = expandedIndex
+            if (fx.selectedRegions[0].stopX > expandedIndex) {
+                fx.selectedRegions[0].stopX = expandedIndex
             }    
         } else if (currentFile.fileMode == "fileList" || currentFile.fileMode == "directory") {
             fx.cursorLineIndex += 1
@@ -2633,23 +2641,23 @@ function onStart(e) {
                 fx.cursorLineIndex = 0
             }
             ensureCursorInScreen()
-            if (selectedRegions.length) {
-                selectedRegions[0].stopY -= 1
-                if (selectedRegions[0].stopY < selectedRegions[0].startY) {
-                    selectedRegions[0].stopY = selectedRegions[0].startY
+            if (fx.selectedRegions.length) {
+                fx.selectedRegions[0].stopY -= 1
+                if (fx.selectedRegions[0].stopY < fx.selectedRegions[0].startY) {
+                    fx.selectedRegions[0].stopY = fx.selectedRegions[0].startY
                 }    
-                var theLine = fx.lines[selectedRegions[0].stopY] || ""
-                selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length)
+                var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
+                fx.selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length)
             } else if (document.activeElement != theText) {
                 fx.offsetY -= 1
                 if (fx.offsetY < 0) {
                     fx.offsetY = 0
                 }
             }
-        } else if (selectedRegions.length) {
-            selectedRegions[0].stopX -= 1
-            if (selectedRegions[0].stopX < 0) {
-                selectedRegions[0].stopY = 0
+        } else if (fx.selectedRegions.length) {
+            fx.selectedRegions[0].stopX -= 1
+            if (fx.selectedRegions[0].stopX < 0) {
+                fx.selectedRegions[0].stopY = 0
             }    
         } else if (currentFile.fileMode == "fileList" || currentFile.fileMode == "directory") {
             fx.cursorLineIndex -= 1
@@ -2692,7 +2700,7 @@ function onStart(e) {
     }
 
 
-    if (selectedRegions.length) {
+    if (fx.selectedRegions.length) {
         // idea: if 2 touches while selected
         // do something else like comment
         document.body.addEventListener("touchmove", onMoveWhileSelected)
@@ -2971,7 +2979,7 @@ function acPlop(buff) {
     var oldCutBuffer = cutBuffer
     copyBuffer = buff
     var oldSelectMode = selectMode
-    selectedRegions = [{
+    fx.selectedRegions = [{
         startX: acWord.startX,
         stopX: acWord.stopX,
         startY: acWord.startY,
@@ -2999,7 +3007,7 @@ function acPlop(buff) {
     copyBuffer = oldCopyBuffer
     cutBuffer = oldCutBuffer
     selectMode = oldSelectMode
-    selectedRegions = []
+    fx.selectedRegions = []
     preventRender = false
     render()
     // TODO: why do we have to set this after render?
@@ -3255,15 +3263,9 @@ function getUniqueID() {
    return uniqueID
 }
 var fileToken = {}
-function makeFile(fullPath, contents) {
+function makeFile(fullPath, cursorLineIndex, contents) {
     var theLines = contents.split("\n")
     
-    var cursorLineIndex = 0
-    var parts = fullPath.split(":")
-    fullPath = parts[0]
-    if (parts.length > 1) {
-        cursorLineIndex = (parts[1] - 1) || 0   
-    } 
     return {
         // fullPath should have the leading slash
         fullPath: fullPath,
@@ -3283,6 +3285,7 @@ function makeFile(fullPath, contents) {
         savingVersion: -1,
         uniqueID: getUniqueID(),
         fileToken: fileToken,
+        selectedRegions: [],
     }
 }
 function addFileToList(file) {
@@ -3435,7 +3438,7 @@ function seeFiles() {
         return
     }
     var contents = getLinesForFileList().join("\n")
-    var f = makeFile("__", contents)
+    var f = makeFile("__", 0, contents)
     f.fileMode = "fileList"
 
     f.cursorLineIndex = 0
@@ -3561,7 +3564,13 @@ var proxyPath = "/"
 
 // The first one get's "hydrated" by the server
 // ay, joining just to split again. Clean up.
-var initialFile = makeFile(paths[0], lines.join("\n"))
+var cursorLineIndex = 0
+var parts = paths[0].split(":")
+var fullPath = parts[0]
+if (parts.length > 1) {
+    cursorLineIndex = (parts[1] - 1) || 0   
+} 
+var initialFile = makeFile(fullPath, cursorLineIndex, lines.join("\n"))
 initialFile.fileMode = fileMode
 initialFile.bashCWD = rootLocation
 initialFile.loadedFirstTime = true 
