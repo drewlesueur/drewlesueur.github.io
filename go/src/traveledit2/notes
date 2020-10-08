@@ -1,3 +1,7 @@
+swap words with taps
+second copy buffer
+
+
 big todo: when using the "open" button,
 why did it actually make a request when we already had that file?
 seems to have still kept the files in sync
