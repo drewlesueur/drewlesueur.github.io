@@ -248,6 +248,7 @@ ontouchstart=onStart(event)
 </div>
 <!-- Stuff after here is after the fold -->
 <div class=toolbar>
+    <div class=square onclick=scriptLines()>script lines</div>
     <div class=square onclick=openAtCursor()>open</div>
     <div class=square onclick=urlAtCursor()>visit</div>
     <div class=square onclick=doEval()>eval</div>
@@ -1128,10 +1129,67 @@ function copy() {
 function runScript() {
     var oldCopyBuffer = copyBuffer
     copy()
-    var code = copyBuffer.join("\n")
-    copyBuffer = oldCopyBuffer
+    scriptLines = copyBuffer
+    // add return to the last non-empty line
+    for (var i=scriptLines.length-1; i>=0; i--) {
+        if (scriptLines[i].trim() != "") {
+            scriptLines[i] = "return " + scriptLines[i]
+            break
+        }            
+    }
+    var code = scriptLines.join("\n")
     var f = new Function(code)
-    f()
+    var ret = f()
+    if (ret) {
+        ret = ret + ""
+        copyBuffer = ret.split("\n")
+        paste()
+    }
+    copyBuffer = oldCopyBuffer
+}
+
+function scriptLines() {
+    // save old
+    var oldPreventRender = preventRender
+    var oldCopyBuffer = copyBuffer
+    var oldFx = fx
+    
+    // mutate
+    fx = files[1] // second-most-recent file
+    preventRender = true
+    
+    // run and snag
+    del()
+    linesToProcess = copyBuffer
+    
+    // restore
+    fx = oldFx
+    copy()
+    scriptLines = copyBuffer
+    if (scriptLines.length) {
+        // add return to the last non-empty line
+        for (var i=scriptLines.length-1; i>=0; i--) {
+            if (scriptLines[i].trim() != "") {
+                scriptLines[i] = "return " + scriptLines[i]
+                break
+            }            
+        }
+        var funcBody = scriptLines.join("\n")
+        log("funcBody: " + funcBody)
+        var f = new Function("x", funcBody)
+        var retLines = []
+        for (var i=0; i<linesToProcess.length; i++) {
+            retLines.push(f(linesToProcess[i]))
+        }    
+    }
+    copyBuffer = retLines
+    fx = files[1] // second-most-recent file
+    paste(false, true)
+    
+    copyBuffer = oldCopyBuffer
+    preventRender = oldPreventRender
+    render()
+    
 }
 
 
@@ -1184,14 +1242,18 @@ function insertText(theLines, yOffset, xOffset) {
     render()
     copyBuffer = oldCopyBuffer
 }
-function paste(unselect) {
+function paste(unselect, pasteBefore) {
     if (selectMode == "line") {
-        fx.lines.splice(fx.cursorLineIndex + 1, 0, ...copyBuffer)
+        var theOffset = 1
+        if (pasteBefore) {
+            theOffset = 0
+        }
+        fx.lines.splice(fx.cursorLineIndex + theOffset, 0, ...copyBuffer)
         var stopY = fx.cursorLineIndex + copyBuffer.length
         var lastLine = fx.lines[stopY] || ""
         if (!unselect) {
             fx.selectedRegions = [{
-                startY: fx.cursorLineIndex + 1,
+                startY: fx.cursorLineIndex + theOffset,
                 // remember stopY is inclusive, stopX no
                 stopY: stopY,
                 startX: 0,
@@ -1200,7 +1262,7 @@ function paste(unselect) {
         }
     } else if (selectMode == "char") {
         if (copyBuffer.length == 1) {
-        fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex].slice(0, u(fx.cursorColIndex)) +
+            fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex].slice(0, u(fx.cursorColIndex)) +
             copyBuffer[0] +
             fx.lines[fx.cursorLineIndex].slice(u(fx.cursorColIndex))
         } else {
