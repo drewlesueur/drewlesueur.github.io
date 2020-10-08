@@ -4,6 +4,15 @@
     margin: 0;
     padding: 0;
 }
+.outerLabel {
+    padding-left: 30px;
+    margin-left: 20px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    font-family: monospace;
+    font-size: 20px;
+}
+
 </style>
 <canvas
    id=canvasEl
@@ -16,8 +25,11 @@
      height: 10px;
    ",
 ></canvas>
+<pre class=outerLabel id=infoEl></pre>
 <script>
 var viewCounter = 0
+var file = ""
+var search = ""
 var pullInterval = 1
 var t = canvasEl.getContext("2d")
 pullAndRender()
@@ -26,11 +38,13 @@ function pullAndRender() {
         cache: "no-cache"
     }).then(r => {
         viewCounter = r.headers.get("X-View-Counter") - 0
+        file = r.headers.get("X-File")
+        search = r.headers.get("X-Search")
         console.log("viewCounter is now", viewCounter)
         return r.json()
     })
     .then(v => {
-        render(v)
+        render(v, file, search)
         setTimeout(pullAndRender, pullInterval)   
     }).catch(e => {
         // alert("error viewing: " + e)
@@ -143,11 +157,13 @@ var cmds = {
         if (isDark) {
             canvasEl.style.backgroundColor = "black"
             canvasEl.style.borderColor = "white"
-            document.body.style.backgroundColor = "white"
+            infoEl.style.backgroundColor = "black"
+            infoEl.style.color = "white"
         } else {
             canvasEl.style.backgroundColor = "white"
             canvasEl.style.borderColor = "black"
-            document.body.style.backgroundColor = "black"
+            infoEl.style.backgroundColor = "white"
+            infoEl.style.color = "black"
         }
         document.body.style.backgroundColor = "gray"
     },
@@ -163,7 +179,8 @@ var cmds = {
         t.fillStyle = "brown"  
     },
 }
-function render(v) {
+function render(v, file, search) {
+    infoEl.innerText = `file:   ${file}\nsearch: ${search}`
     for (var i=0; i<v.length; i++) {
         var c = v[i]
         if (typeof c === "string") {

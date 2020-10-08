@@ -194,9 +194,12 @@ ontouchstart=onStart(event)
     <div class=square onclick='runBashCommand("git branch")'>branch</div>
     <div class=square onclick='runBashCommand("git status")'>status</div>
     <div class=square onclick='runBashCommand("git diff")'>diff</div>
+    <div class=square onclick='runBashCommand("if go test -cover -coverprofile coverage.out ./...; then go tool cover -func=coverage.out; fi")'>gotest</div>
     <div class=square onclick='insertText(["git checkout "], 0, -1)'>checkout</div>
     <div class=square onclick='insertText(["git commit -m &apos;&apos;"], 0, 15)'>commit -m</div>
+    <!--
     <div class=square onclick='insertText(["git checkout -b "], 0, -1)'>checkout -b</div>
+    -->
     <div class=square onclick='runBashCommand("git add -u :/")'>add -u :/</div>
 </div>
 <div class="toolbar hidden" id=bashToolbar2 style="--display: none">
@@ -253,14 +256,19 @@ ontouchstart=onStart(event)
     <div class=square onclick=reloadFile()>reload</div>
 </div>
 
+<label for=serverViewCheckbox>
+    <input onchange="serverViewFeature = serverViewCheckbox.checked" type=checkbox name=serverViewCheckbox id=serverViewCheckbox checked />
+    Screen Share
+</label>
+<!--
+<iframe width="100%" height=400 src="/te/screenshare"></iframe>
+-->
 <form method=GET action="" target=_blank>
     <input class=dark type=text id=docTitleEl
         style="width: 275px;"
         oninput="this.form.action=this.value"></div>
     <input class=dark type=submit value="Add Tab">
 </form>
-<!--<iframe width="100%" height=400 src="/te/screenshare"></iframe>
--->
 <textarea class=dark id=pasteEl
 style="width:100%; height:100px;"
 onfocus="this.setSelectionRange(0, this.value.length)"
@@ -1890,7 +1898,9 @@ function sendViewToServer() {
         cache: "no-cache",
         method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-File': fx.fullPath, // I want to believe
+          'X-Search': searchText.value,
           // 'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: viewBodyToSend,
@@ -2176,7 +2186,7 @@ function renderInternal() {
         }
         var textFillStyle 
         // the actual text
-        if (fx.fileMode == "bash" || fx.fileMode == "file") {
+        if (true || fx.fileMode == "bash" || fx.fileMode == "file") {
             if (theLine.startsWith("+")) {
                 textFillStyle = isDark ? "lime" : "green"
             } else if (theLine.startsWith("-")){
@@ -2221,7 +2231,7 @@ function renderInternal() {
             if (chr == "\t") {
                 t.fillStyle = veryLightFontColor
                 // TODO: conditionally show this
-                t.fillText("•", x*fontWidth, y*fontHeight)
+                // t.fillText("•", x*fontWidth, y*fontHeight)
             } else if (chr != "" && chr != " ") {
                 t.fillStyle = textFillStyle
                 t.fillText(chr, x*fontWidth, y*fontHeight)
@@ -2467,7 +2477,7 @@ function onStart(e) {
                 
                 // This part for moving the cursor where you tapped (if you want that feature) 
                 // if (false) {
-                if (true) {
+                if (false) {
                     var bbox = c.getBoundingClientRect()
                     var pointX = startTouchX - bbox.left
                     var pointY = startTouchY - bbox.top
@@ -2482,7 +2492,7 @@ function onStart(e) {
                     updateCursorXY()  
                 }
                 
-                if (false) {
+                if (true) {
                     // the handleFocusIn function will do some
                     // processing
                     theText.focus()
@@ -3335,8 +3345,8 @@ var fileTree = {}
 var treeFilesShadow = []
 function treeToLines(theTree, path, indent, kPrefix) {
     for (var k in theTree) {
-    
         var childKeys = Object.keys(theTree[k])
+        
         if (false && (childKeys.length == 1)) {
             kPrefix += k + "/"
             if (theTree[k][childKeys[0]].fileToken == fileToken) {
@@ -3351,10 +3361,18 @@ function treeToLines(theTree, path, indent, kPrefix) {
  
         kPrefix = ""
         if (theTree[k].fileToken == fileToken) {
-            treeFiles.push(indent + kPrefix + k + "    " + (theTree[k].lines[theTree[k].cursorLineIndex]|| "").trim() )
+            if (theTree[k].fileMode == "file") {
+                treeFiles.push("" + indent + kPrefix + k)
+            } else if (theTree[k].fileMode == "bash") {
+                treeFiles.push("" + indent + kPrefix + k)
+            } else {
+                treeFiles.push("" + indent + kPrefix + k)
+            }
+            // add that suffix if you want to show the line they are on
+            // + "    " + (theTree[k].lines[theTree[k].cursorLineIndex]|| "").trim() )
             treeFilesShadow.push(theTree[k])
         } else {
-            treeFiles.push(indent + kPrefix + k)
+            treeFiles.push("" + indent + kPrefix + k)
             var newPath = path + "/" + k
             treeFilesShadow.push(newPath)
             treeToLines(theTree[k], newPath, indent + "  ", "")
@@ -3585,3 +3603,9 @@ renderSearchTerms()
 // add a threshold for move, like 5px or something.
 // todo: in select mode, swipe down is paste. even paste over
 </script>
+
+
+
+public < traveledit2 < src < go < drewlesueur.github.io < drew.lesueur@ad.gpsinsight.com < home < 
+
+

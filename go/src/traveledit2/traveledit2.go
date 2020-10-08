@@ -15,7 +15,7 @@ import "encoding/json"
 import "sync"
 import "strconv"
 import "github.com/NYTimes/gziphandler"
-import "github.com/gorilla/websocket"
+// import "github.com/gorilla/websocket"
 
 type SaveResponse struct {
 	Saved bool   `json:"saved"`
@@ -87,6 +87,8 @@ func main() {
 	log.Printf("location: %s", *location)
 	var renderCommands []interface{}
 	var viewCounter int
+	var viewFile string
+	var viewSearch string
 	var viewMu sync.Mutex
 	viewCond := sync.NewCond(&viewMu)
 	go func() {
@@ -120,8 +122,11 @@ func main() {
 		defer viewMu.Unlock()
 		viewCounter += 1
 		renderCommands = commands
+		viewFile = r.Header.Get("X-File")
+		viewSearch = r.Header.Get("X-Search")
 		viewCond.Broadcast()
 	})
+	/*
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
 			return true
@@ -212,6 +217,7 @@ func main() {
 
 		}
 	})
+	*/
 	mux.HandleFunc("/view", func(w http.ResponseWriter, r *http.Request) {
 		clientViewCounter, _ := strconv.Atoi(r.FormValue("viewCounter"))
 
@@ -220,6 +226,8 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("X-View-Counter", strconv.Itoa(viewCounter))
+		w.Header().Set("X-File", viewFile)
+		w.Header().Set("X-Search", viewSearch)
 		// if clientViewCounter == viewCounter {
 		//     fmt.Fprintf(w, "%s", "[[6]]")
 		//     return

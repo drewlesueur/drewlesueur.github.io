@@ -1,5 +1,23 @@
+feedback: show file you are working on.
+make file list view more readable ("bleed through")
+show what you are searching for.
+regex search
+implement s/foo/bar/gc
+
+local timeout for all fetch requests?
+
+do you have the feature where the last removed word is part of paste cycle?
+
+you need to see how many people are viewing.
+
+wrap in quotes feature
+
 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMMOPQRSTUV
+
 alert(files[1].lines == files[2].lines)
+
+normalize the fullPath, replacing ".." and "."
+make row of bash commands configurable?
 
 Test commenting something that's already commented or uncommenting something that's double commented
     and how it works with multiple lines
