@@ -1443,7 +1443,8 @@ function newLine(e, shouldFocus) {
         runBashCommand(theLine)
         return false
     }
-    insertLine(true)
+    // insertLine(true)
+    insertLine(true, true) // this one just makes a new line
     if (shouldFocus) {
         theText.focus()
         //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
