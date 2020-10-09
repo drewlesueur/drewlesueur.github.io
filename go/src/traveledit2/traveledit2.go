@@ -57,6 +57,7 @@ func logAndErr(w http.ResponseWriter, message string, args ...interface{}) {
 func main() {
 	serverAddress := flag.String("addr", "localhost:8000", "serverAddress to listen on")
 	indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
+	screenshareFile := flag.String("screensharefile", "./public/view.html", "path to view html file")
 	location := flag.String("location", "", "path to directory to serve")
 	proxyPath := flag.String("proxypath", "", "the path for proxies, what to ignore")
 	// Whether or not the proxypath is removed by the reverse proxy
@@ -109,7 +110,19 @@ func main() {
 		http.ServeFile(w, r, "./public/yo.html")
 	})
 	mux.HandleFunc("/screenshare", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./public/view.html")
+		// http.ServeFile(w, r, "./public/view.html")
+		b, err := ioutil.ReadFile(*screenshareFile)
+		if err != nil {
+			http.Error(w, "error reading screenshare file", http.StatusInternalServerError)
+			return
+		}
+		htmlString := string(b)
+		if *proxyPath != "" {
+			replaceProxyPath := "var proxyPath = \"" + *proxyPath + "\""
+			htmlString = strings.Replace(htmlString, "// PROXYPATH GOES HERE", replaceProxyPath, 1)
+			log.Printf("replaceProxyPath: %s", replaceProxyPath)
+		}
+		fmt.Fprintf(w, "%s", htmlString)
 	})
 	mux.HandleFunc("/render", func(w http.ResponseWriter, r *http.Request) {
 		commands := []interface{}{}

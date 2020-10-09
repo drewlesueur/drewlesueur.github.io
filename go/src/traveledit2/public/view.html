@@ -28,6 +28,9 @@
 ></canvas>
 <pre class=outerLabel id=infoEl></pre>
 <script>
+var proxyPath = ""
+// PROXYPATH GOES HERE
+
 var viewCounter = 0
 var file = ""
 var search = ""
@@ -35,7 +38,7 @@ var pullInterval = 1
 var t = canvasEl.getContext("2d")
 pullAndRender()
 function pullAndRender() {
-    fetch("/te/view?viewCounter=" + viewCounter, {
+    fetch(proxyPath + "/view?viewCounter=" + viewCounter, {
         cache: "no-cache"
     }).then(r => {
         viewCounter = r.headers.get("X-View-Counter") - 0

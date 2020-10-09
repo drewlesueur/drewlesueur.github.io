@@ -235,7 +235,7 @@ ontouchstart=onStart(event)
     <div class=square onclick=comment()>//</div>
     <div class=square onclick=unComment()>un //</div>
     <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
-    <div class=square onclick=debugView()>debug view</div>
+    <div class=square onclick=scriptLines()>script lines</div>
 </div>
 <div class=toolbar>
     <div class=square onclick=selectFileIndex(1)>alt tab</div>
@@ -248,7 +248,7 @@ ontouchstart=onStart(event)
 </div>
 <!-- Stuff after here is after the fold -->
 <div class=toolbar>
-    <div class=square onclick=scriptLines()>script lines</div>
+    <div class=square onclick=debugView()>debug view</div>
     <div class=square onclick=openAtCursor()>open</div>
     <div class=square onclick=urlAtCursor()>visit</div>
     <div class=square onclick=doEval()>eval</div>
@@ -3644,7 +3644,7 @@ var rootLocation = "" // will be set server side
 // ROOTLOCATION GOES HERE
 var paths = location.pathname.split(",")
 
-var proxyPath = "/"
+var proxyPath = ""
 // PROXYPATH GOES HERE
 
 // The first one get's "hydrated" by the server
