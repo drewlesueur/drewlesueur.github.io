@@ -620,17 +620,17 @@ function addCmdTab() {
     var file = makeFile(proxyPath + "/cmd", 0, bashHelpers.join("\n"))
     file.fileMode = "bash"
     
-    if (currentFile.fileMode == "bash") {
+    if (fx.fileMode == "bash") {
         file.bashCWD = fx.bashCWD
-        file.originatingFullPath = currentFile.originatingFullPath
-    } else if (currentFile.fileMode == "file") {
-        var parts = trimPrefix(currentFile.fullPath, proxyPath).split("/")
+        file.originatingFullPath = fx.originatingFullPath
+    } else if (fx.fileMode == "file") {
+        var parts = trimPrefix(fx.fullPath, proxyPath).split("/")
         parts = parts.slice(0, parts.length - 1)
         file.bashCWD = rootLocation + parts.join("/")
-        file.originatingFullPath = currentFile.fullPath.split("/").slice(0, -1).join("/") + "/cmd"
-    } else if (currentFile.fileMode == "directory") {
-        file.bashCWD = rootLocation + trimPrefix(currentFile.fullPath, proxyPath)
-        file.originatingFullPath = currentFile.fullPath + "/cmd"
+        file.originatingFullPath = fx.fullPath.split("/").slice(0, -1).join("/") + "/cmd"
+    } else if (fx.fileMode == "directory") {
+        file.bashCWD = rootLocation + trimPrefix(fx.fullPath, proxyPath)
+        file.originatingFullPath = fx.fullPath + "/cmd"
     }
     addFileToList(file, false)
     setCurrentFile(file)
@@ -1708,7 +1708,7 @@ function save() {
             break
         }
         fx.savingVersion = fx.version
-        fetch(currentFile.fullPath, {
+        fetch(fx.fullPath, {
             method: "POST",
             cache: "no-cache",
             headers: { "Content-Type": "application/x-www-form-urlencoded"},
@@ -2668,7 +2668,7 @@ function onStart(e) {
             if (fx.selectedRegions[0].stopX > expandedIndex) {
                 fx.selectedRegions[0].stopX = expandedIndex
             }    
-        } else if (currentFile.fileMode == "fileList" || currentFile.fileMode == "directory") {
+        } else if (fx.fileMode == "fileList" || fx.fileMode == "directory") {
             fx.cursorLineIndex += 1
             if (fx.cursorLineIndex >= fx.lines.length) {
                 fx.cursorLineIndex = fx.lines.length - 1
@@ -2723,7 +2723,7 @@ function onStart(e) {
             if (fx.selectedRegions[0].stopX < 0) {
                 fx.selectedRegions[0].stopY = 0
             }    
-        } else if (currentFile.fileMode == "fileList" || currentFile.fileMode == "directory") {
+        } else if (fx.fileMode == "fileList" || fx.fileMode == "directory") {
             fx.cursorLineIndex -= 1
             if (fx.cursorLineIndex < 0) {
                 fx.cursorLineIndex = 0
@@ -2822,7 +2822,7 @@ function onStart(e) {
     render()
 }
 function clickItemInDirectory() {
-    var prefix = currentFile.fullPath
+    var prefix = fx.fullPath
     // To prevent leading double slash
     if (prefix == "/") {
         prefix = ""
@@ -3399,7 +3399,7 @@ function renderFileDropdown() {
         var parts = file.fullPath.split("/")
         var theName = parts[parts.length - 1]
         button.innerText = theName.substr(0, 15)
-        if (currentFile == file) {
+        if (fx == file) {
             button.style.backgroundColor = "black"
         }
 
@@ -3497,7 +3497,7 @@ function getLinesForFileList() {
 
 
 function seeFiles() {
-    if (currentFile.fileMode == "fileList") {
+    if (fx.fileMode == "fileList") {
         setCurrentFile(files[0])
         return
     }
@@ -3506,7 +3506,7 @@ function seeFiles() {
     f.fileMode = "fileList"
 
     f.cursorLineIndex = 0
-    var fileIndex = treeFilesShadow.indexOf(currentFile)
+    var fileIndex = treeFilesShadow.indexOf(fx)
     if (fileIndex != -1) {
         f.cursorLineIndex = fileIndex
     }
@@ -3520,8 +3520,6 @@ function setCurrentFile(file) {
         return
     }
 
-    currentFile = file
-    // treat fx as alias for currentFile, for easier typing
     fx = file
     if (fx.fileMode == "bash") {
         bashToolbar1.classList.remove("hidden")
@@ -3532,7 +3530,7 @@ function setCurrentFile(file) {
     }
     setCanvasHeightAccordingly()
     updateCursorXY()
-    searchText.setAttribute("placeholder", currentFile.fullPath + " (search)")
+    searchText.setAttribute("placeholder", fx.fullPath + " (search)")
     render()
     renderFileDropdown()
 
@@ -3611,7 +3609,6 @@ function debugView() {
 
 var maxUndos = 30
 
-var currentFile
 var fx
 
 var files = []
