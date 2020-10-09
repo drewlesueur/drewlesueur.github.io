@@ -1177,7 +1177,15 @@ function scriptLines() {
         }
         var funcBody = theScriptLines.join("\n")
         log("funcBody: " + funcBody)
-        var f = new Function("x", funcBody)
+        var f = function(x) {
+            return x
+        }
+        try {
+            line = f(line)
+            f = new Function("x", funcBody)
+        } catch (e) {
+            alert(e)  
+        }
         var retLines = []
         for (var i=0; i<linesToProcess.length; i++) {
             var line = linesToProcess[i]
@@ -1190,7 +1198,7 @@ function scriptLines() {
         }    
     }
     copyBuffer = retLines
-    setCurrentFile(files[1]) // second-most-recent file
+    selectFileIndex(1) // second-most-recent file
     paste(false, true)
     
     copyBuffer = oldCopyBuffer
@@ -1252,11 +1260,13 @@ function insertText(theLines, yOffset, xOffset) {
 function paste(unselect, pasteBefore) {
     if (selectMode == "line") {
         var theOffset = 1
+        var theOffset2 = 0
         if (pasteBefore) {
             theOffset = 0
+            theOffset2 = -1
         }
         fx.lines.splice(fx.cursorLineIndex + theOffset, 0, ...copyBuffer)
-        var stopY = fx.cursorLineIndex + copyBuffer.length
+        var stopY = fx.cursorLineIndex + copyBuffer.length + theOffset2
         var lastLine = fx.lines[stopY] || ""
         if (!unselect) {
             fx.selectedRegions = [{
