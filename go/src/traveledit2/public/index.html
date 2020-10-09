@@ -1130,15 +1130,15 @@ function copy() {
 function runScript() {
     var oldCopyBuffer = copyBuffer
     copy()
-    scriptLines = copyBuffer
+    var theScriptLines = copyBuffer
     // add return to the last non-empty line
-    for (var i=scriptLines.length-1; i>=0; i--) {
-        if (scriptLines[i].trim() != "") {
-            scriptLines[i] = "return " + scriptLines[i]
+    for (var i=theScriptLines.length-1; i>=0; i--) {
+        if (theScriptLines[i].trim() != "") {
+            theScriptLines[i] = "return " + theScriptLines[i]
             break
         }            
     }
-    var code = scriptLines.join("\n")
+    var code = theScriptLines.join("\n")
     var f = new Function(code)
     var ret = f()
     if (ret) {
@@ -1166,27 +1166,31 @@ function scriptLines() {
     // restore
     fx = oldFx
     copy()
-    scriptLines = copyBuffer
-    if (scriptLines.length) {
+    var theScriptLines = copyBuffer
+    if (theScriptLines.length) {
         // add return to the last non-empty line
-        for (var i=scriptLines.length-1; i>=0; i--) {
-            if (scriptLines[i].trim() != "") {
-                scriptLines[i] = "return " + scriptLines[i]
+        for (var i=theScriptLines.length-1; i>=0; i--) {
+            if (theScriptLines[i].trim() != "") {
+                theScriptLines[i] = "return " + theScriptLines[i]
                 break
             }            
         }
-        var funcBody = scriptLines.join("\n")
+        var funcBody = theScriptLines.join("\n")
         log("funcBody: " + funcBody)
         var f = new Function("x", funcBody)
         var retLines = []
         for (var i=0; i<linesToProcess.length; i++) {
-            
-            var processed = f(linesToProcess[i])
-            retLines.push(processed)
+            var line = linesToProcess[i]
+            try {
+                line = f(line)
+            } catch (e) {
+                alert(e)  
+            }
+            retLines.push(line)
         }    
     }
     copyBuffer = retLines
-    fx = files[1] // second-most-recent file
+    setCurrentFile(files[1]) // second-most-recent file
     paste(false, true)
     
     copyBuffer = oldCopyBuffer
