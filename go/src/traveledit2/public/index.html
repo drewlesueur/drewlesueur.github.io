@@ -1180,7 +1180,9 @@ function scriptLines() {
         var f = new Function("x", funcBody)
         var retLines = []
         for (var i=0; i<linesToProcess.length; i++) {
-            retLines.push(f(linesToProcess[i]))
+            
+            var processed = f(linesToProcess[i])
+            retLines.push(processed)
         }    
     }
     copyBuffer = retLines
@@ -1404,7 +1406,11 @@ function insertLine(closeCurly, oMode) {
     var prevChar = theLine[u(fx.cursorColIndex - 1)]
     var nextChar = theLine[u(fx.cursorColIndex)]
     var strIndex = theText.selectionStart
-    if (oMode) {
+    
+    // if they are at the beginning, or there is an auto-closer before us
+    // then we don't want oMode
+    // otherwise oMode is like typing o in vim
+    if (oMode && strIndex != 0 && !(prevChar in closingMap)) {
         strIndex = theLine.length
     }
     fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent + theLine.substr(strIndex))
