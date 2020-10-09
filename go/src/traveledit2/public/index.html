@@ -1426,6 +1426,9 @@ function insertLine(closeCurly, oMode) {
     // otherwise oMode is like typing o in vim
     if (oMode && strIndex != 0 && !(prevChar in closingMap)) {
         strIndex = theLine.length
+        // get the smaller indent
+        var theNextIndent = getIndent(fx.lines[fx.cursorLineIndex + 1] || "")
+        theIndent = max(theIndent, theNextIndent)
     }
     fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent + theLine.substr(strIndex))
     if (closeCurly && (prevChar in closingMap) && (nextChar == closingMap[prevChar])) {
