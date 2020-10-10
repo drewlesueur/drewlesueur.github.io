@@ -711,21 +711,21 @@ function docChanged() {
             lastWord = maybeLastWord
         }
     }
-if (fx.undoIndex != fx.undoStack.length - 1) {
-    fx.undoStack.splice(fx.undoIndex + 1, fx.undoStack.length - fx.undoStack +1)
-    fx.undoYStack.splice(fx.undoIndex + 1, fx.undoYStack.length - fx.undoYStack +1)
-    fx.undoXStack.splice(fx.undoIndex + 1, fx.undoXStack.length - fx.undoXStack +1)
-}
-fx.undoIndex += 1
-fx.undoStack.push(fx.lines.join("\n"))
-fx.undoYStack.push(fx.cursorLineIndex)
-fx.undoXStack.push(fx.cursorColIndex)
-if (fx.undoStack.length > maxUndos) {
-    fx.undoStack.shift()
-    fx.undoYStack.shift()
-    fx.undoXStack.shift()
-    fx.undoIndex -= 1
-}
+    if (fx.undoIndex != fx.undoStack.length - 1) {
+        fx.undoStack.splice(fx.undoIndex + 1, fx.undoStack.length - fx.undoStack +1)
+        fx.undoYStack.splice(fx.undoIndex + 1, fx.undoYStack.length - fx.undoYStack +1)
+        fx.undoXStack.splice(fx.undoIndex + 1, fx.undoXStack.length - fx.undoXStack +1)
+    }
+    fx.undoIndex += 1
+    fx.undoStack.push(fx.lines.join("\n"))
+    fx.undoYStack.push(fx.cursorLineIndex)
+    fx.undoXStack.push(fx.cursorColIndex)
+    if (fx.undoStack.length > maxUndos) {
+        fx.undoStack.shift()
+        fx.undoYStack.shift()
+        fx.undoXStack.shift()
+        fx.undoIndex -= 1
+    }
 }
 
 function setLines(lines) {
