@@ -706,7 +706,7 @@ function log(v) {
     logEl.scrollTop = logEl.scrollHeight
 }
 
-function docChanged() {
+function docChanged(preventUndo) {
     fx.version += 1
     if (!inACPlop) {
         var maybeLastWord = getWordAtCursor().word
@@ -714,12 +714,14 @@ function docChanged() {
             lastWord = maybeLastWord
         }
     }
-    
+    if (!preventUndo) {
+        saveUndo(preventUndo)
+    }
+}
+function saveUndo(preventUndo) {
     var currentContents = fx.lines.join("\n")
-    
-    // is this too expensive?
     if (currentContents == fx.undo.stack[fx.undo.index]) {
-        // return
+        return
     }
     if (fx.undo.index != fx.undo.stack.length - 1) {
         fx.undo.stack.splice(fx.undo.index + 1, fx.undo.stack.length - fx.undo.index +1)
@@ -1638,6 +1640,10 @@ function handleBlur() {
     //topPadding.style.height = "100px"
     //window.scrollTo(0, 0)
     //setTimeout(() => {window.scrollTo(0,100)}, 100)
+    if (dirtyInput) {
+        saveUndo()
+        dirtyInput = false
+    }
     setCanvasHeightAccordingly()
     render()
     window.scrollTo(0, lastPageYOffset)
@@ -1756,7 +1762,9 @@ var closingMap = {
     "`": "`",
     '"': '"',
 }
+var dirtyInput = false
 function saveLine() {
+    dirtyInput = true
     lastAction = "type"
     acWord = null
     var lastTyped = theText.value[theText.selectionStart - 1]
@@ -1796,7 +1804,7 @@ function saveLine() {
     fx.lines[fx.cursorLineIndex] = theText.value
     cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
     cursorY = (fx.cursorLineIndex - fx.offsetY) * fontHeight
-    docChanged()
+    docChanged(true)
 
     // you need to tell the render to not update the text area
     // weird bugs will happen without this
@@ -2030,7 +2038,7 @@ function render() {
         theStatus.totalViewRequests = totalViewRequests 
         theStatus.totalViewBytesSent = totalViewBytesSent 
         // theStatus.acWord = acWord
-        theStatus.undo = fx.undo
+        // theStatus.undo = fx.undo
         statusEl.innerText = JSON.stringify(theStatus, null, "    ")
     }
     if (fx.fileMode == "file")   {
@@ -2398,7 +2406,14 @@ function onStart(e) {
             if (!changedY) fx.offsetX += Math.floor(extendX/fontWidth)
             if (fx.offsetX < -marginLeft) fx.offsetX = -marginLeft
         }
+        var oldCursorLineIndex = fx.cursorLineIndex
+        // maybe have a setter for this?
         fx.cursorLineIndex = Math.round(cursorY/fontHeight) + fx.offsetY
+        if (oldCursorLineIndex != fx.cursorLineIndex && dirtyInput) {
+            log("saving undo")
+            saveUndo()
+            dirtyInput = false
+        }
         
         // TODO: this so we can get into full line autocomplete mode
         // by scrolling into an empty line and starting to type
