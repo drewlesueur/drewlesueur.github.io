@@ -314,9 +314,9 @@ window.onerror = function(message, url, lineNumber, columnNumber, error) {
 <script>
 var t = c.getContext("2d")
 
+var preventRender = true
 var totalViewBytesSent = 0 
 var totalViewRequests = 0
-var preventRender = false
 var saveEveryMS = 3000
 var lastWord = ""
 var lastCleared = ""
@@ -676,6 +676,9 @@ function addFile(fullPath) {
 }
 
 function renderURL() {
+    if (preventRender) {
+        return
+    }
     // For now we don't get files with bash mode.
     var filtered = files.filter(f => f.fileMode != "bash")
     var theNewPath = "/" + filtered.map(function(f) {
@@ -1712,6 +1715,22 @@ function handleKeydown(e) {
         render()
         //theText.setSelectionRange(prevLine.length, prevLine.length)
         setSelectionRangeForText(prevLine.length, prevLine.length)
+        return true // could be false too?
+    }
+    
+    if (document.activeElement == theText && fx.selectedRegions.length) {
+        e.preventDefault()    
+        var closer = closingMap[e.key]
+        if (!closer) {
+            return false
+        }
+        if (fx.selectedRegions[0].startY != fx.selectedRegions[0].stopY) {
+            // for now only deal with singe line
+            return false
+        }
+        docChanged()
+        render()
+        return false
     }
     return true
 }
@@ -2969,6 +2988,7 @@ function acPlop(buff) {
     // replaceFindWord
     // this one calls more orher funcs like del()
     // and paste() and we might cause a little extra work
+    var oldPreventRender = preventRender
     preventRender = true
     var oldCopyBuffer = copyBuffer
     var oldCutBuffer = cutBuffer
@@ -3003,7 +3023,7 @@ function acPlop(buff) {
     cutBuffer = oldCutBuffer
     selectMode = oldSelectMode
     fx.selectedRegions = []
-    preventRender = false
+    preventRender = oldPreventRender
     render()
     // TODO: why do we have to set this after render?
     setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
@@ -3510,8 +3530,12 @@ initialFileAdding = false
 var ust = new URLSearchParams(window.location.search)
 if (ust.has("dark")) {
     isDark = ust.get("dark") == "1"
-    renderDarkMode()
 }
+
+preventRender = false
+render()
+renderDarkMode()
+
 
 // make sure when selecting in the margin
 // that the selectMode is   line!
