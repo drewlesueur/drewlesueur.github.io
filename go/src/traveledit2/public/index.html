@@ -402,12 +402,6 @@ var autoSave = false
 var lastPageYOffset = 0
 var originalCanvasHeightFull = canvasHeightFull
 var scrollTimeout
-window.onscroll = function () {
-    // disable feature
-    return
-    clearTimeout(scrollTimeout)
-    scrollTimeout = setTimeout(doScroll, 100)
-}
 
 function getAtCursor() {
     if (fx.cursorLineIndex >= fx.lines.length) {
@@ -475,19 +469,6 @@ function backspace() {
     docChanged()
     updateCursorXY()
     render()   
-}
-function doScroll() {
-    canvasHeightFull = originalCanvasHeightFull - (window.pageYOffset*3)
-    c.height = canvasHeightFull
-    setCanvasHeightAccordingly()
-    c.style.height = (canvasHeightFull/3)+"px"
-    topPadding.style.height = window.pageYOffset + "px"
-
-    if (document.activeElement.getAttribute("type") != "text") {
-        lastPageYOffset = window.pageYOffset
-    }
-
-    render()
 }
 function selectFont(fontName) {
     new FontFace(fontName, url(proxyPath + "/tepublic/fonts/" + fontName + ".ttf"))    
@@ -1004,11 +985,6 @@ function updateCursorXY() {
     cursorY = (fx.cursorLineIndex - fx.offsetY) * fontHeight
 }
 
-function dup() {
-    copy()
-    paste()
-}
-
 function indent() {
     // seems to be buggy
     // when first line indent is more than
@@ -1204,7 +1180,6 @@ function scriptLines() {
     copyBuffer = oldCopyBuffer
     preventRender = oldPreventRender
     render()
-    
 }
 
 
@@ -1296,19 +1271,6 @@ function paste(unselect, pasteBefore) {
     render()
 }
 
-// TODO: make lastWord an array.
-function pasteLastWord() {
-    var oldCopyBuffer = copyBuffer
-    var oldSelectMode = selectMode
-    copyBuffer = [lastWord]
-    selectMode = "char"
-    deleteWord()
-    paste()
-    copyBuffer = oldCopyBuffer
-    selectMode = oldSelectMode
-}
-
-
 function del(preventCopy, preventDeleteWholeLine) {
     if (fx.selectedRegions.length>0) {
         var r = fx.selectedRegions[0]
@@ -1379,19 +1341,6 @@ function del(preventCopy, preventDeleteWholeLine) {
         copyBuffer = [fx.lines[fx.cursorLineIndex]]
     }
     fx.lines.splice(fx.cursorLineIndex, 1)
-    docChanged()
-    render()
-}
-function deleteWord(e) {
-    var w = getWordAtCursor()
-    if (w.word == "") {
-        return
-    }
-    var line = fx.lines[fx.cursorLineIndex]
-    fx.lines[fx.cursorLineIndex] = line.slice(0, w.start) + line.slice(w.end)
-    fx.cursorColIndex = w.start
-    updateCursorXY()
-    docChanged()
     docChanged()
     render()
 }
@@ -1760,6 +1709,7 @@ if (autoSave) {
     setTimeout(save, saveEveryMS)
 }
 function handleKeydown(e) {
+    // TODO: this is where you could wrap or unwrap quotes, etc
     wasDelete = e.keyCode == 8
     // 8 means backspace
     if (e.keyCode == 8 && theText.selectionStart == 0 && fx.cursorLineIndex != 0) {
@@ -1842,14 +1792,6 @@ function bind(v, min, max) {
     if (v < min) v = min
     if (v > max) v = max
     return v
-}
-function theCharAt(lines, y, x) {
-    var line = fx.lines[y]
-    if (!line) return ""
-
-    var theChar = line[x]
-    if (!theChar) return ""
-    return theChar
 }
 
 function r(x) {
@@ -1976,7 +1918,7 @@ function sendViewToServer() {
        // this optimization might not be as big as I thought
        return
    }
-   // log("sending: " + JSON.stringify(mockCanvasContext.commands))
+   
    totalViewBytesSent += viewBodyToSend.length
    totalViewRequests += 1 
    // try {
@@ -2019,7 +1961,6 @@ var renderURLTimeout
 var waitingRender = false
 var lastRender = 0
 var maxFrameRate = 16
-
 
 var waitingServerRender = false
 var lastServerRender = 0
@@ -2205,25 +2146,8 @@ function renderInternal() {
     // t.fillRect(0, yPos, canvasWidth, fontHeight)
     // t.fillStyle = cursorType == "move" ? "cyan" : "yellow"
 
-    // doing an extra loop for line numbers first so we change colors less
-    if (false) {
-        for (var y=0; y < maxLines; y++) {
-            if (y + fx.offsetY < fx.lines.length) {
-                var lineNumber = (y+fx.offsetY+1).toString().padStart(4, " ")
-                if (fx.offsetX < -1) {
-                    // Line numbers
-                    t.fillStyle = "brown"
-                    for (var i=0; i<-fx.offsetX-1; i++) {
-                        var lineNumberIndex = fx.offsetX + marginLeft + i
-                        var lineNoChr = lineNumber.charAt(lineNumberIndex)
-                        if (lineNoChr != " ") {
-                            t.fillText(lineNoChr, i*fontWidth, y*fontHeight)
-                        }
-                    }
-                }
-            }
-        }
-    }
+    // Note, we tried doing an extra loop for line numbers first so we change colors less
+    //but didn't seem like it improved things
 
     for (var y=0; y < maxLines; y++) {
         // show the end of the document
@@ -2262,7 +2186,6 @@ function renderInternal() {
             }
         }
 
-        // Line numbers (taken care of above)
         if (true) {
             if (y + fx.offsetY < fx.lines.length) {
                 var lineNumber = (y+fx.offsetY+1).toString().padStart(4, " ")
@@ -2321,7 +2244,6 @@ function renderInternal() {
             afterLastTabPos = tabPos + 1
         }
         for (var x=0; x < maxCols; x++) {
-            //t.fillText( theCharAt(fx.lines, y+fx.offsetY, x+fx.offsetX), x*fontWidth, y*fontHeight)
             var chr = expandedLine[x+fx.offsetX] || ""
             if (chr == "\t") {
                 t.fillStyle = veryLightFontColor
@@ -3264,54 +3186,6 @@ function getSpaceCount(line) {
 // if it's at 0 (or only ondented) you could do
 // if, func, for, var!!
 
-// replaceFindWord will be like delete and Paste
-// calls that we aleeady have (jist copy functionality
-// for now.
-// deprecated
-function replaceFindWord(r) {
-    // First delete what was already there
-    // Copied from the del() function
-    if (findWordY == findWordEndY) {
-        fx.lines[findWordY] = fx.lines[findWordY].substr(0, findWordX) +
-            fx.lines[findWordY].substr(findWordEndX)
-        // closing for formatter
-    } else {
-        fx.lines[findWordY] = fx.lines[findWordY].slice(0, findWordX) +
-            fx.lines[findWordEndY].slice(findWordEndX)
-        fx.lines.splice(findWordY + 1, findWordEndY-findWordY)
-    }
-
-    findWordEndY = findWordY + r.length - 1
-    if (findWordY == findWordEndY) {
-        findWordEndX = findWordX + r[0].length
-    } else {
-        findWordEndX = r[r.length - 1].length
-    }
-
-    // Now we look at pasting
-    if (r.length == 1) {
-        fx.lines[findWordY] = fx.lines[findWordY].slice(0, findWordX) +
-            r[0] +
-            fx.lines[findWordY].slice(findWordX)
-        // closing for formatter
-    } else {
-        var line = fx.lines[findWordY]
-        fx.lines[findWordY] = line.slice(0, findWordX) +
-            r[0]
-        r[r.length-1] += line.slice(findWordX)
-        fx.lines.splice(findWordY+1, 0, ...r.slice(1))
-    }
-
-    fx.cursorLineIndex = findWordEndY
-    fx.cursorColIndex = expandTabIndex(fx.lines[fx.cursorLineIndex], findWordEndX)
-    updateCursorXY()
-    docChanged()
-    render()
-    //theText.setSelectionRange(findWordEndX, findWordEndX)
-    setSelectionRangeForText(findWordEndX, findWordEndX)
-}
-
-
 function selectSearchRow(e) {
     var index = e.target.getAttribute("data-index")
     if (searchText.value == searchTerms[index]) {
@@ -3469,8 +3343,6 @@ function treeToLines(theTree, path, indent, kPrefix) {
         }
     }
 }
-
-
 
 function getLinesForFileList() {
     fileTree = {}
