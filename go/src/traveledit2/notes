@@ -1,6 +1,7 @@
 
 x.replace(/scriptLines/g, "theScriptLines")
 
+add ability to "go back" to previous scroll positions
 swap words with taps
 second copy buffer
 

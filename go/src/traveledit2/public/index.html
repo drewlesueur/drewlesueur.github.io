@@ -187,9 +187,6 @@ display: block;"
 ontouchstart=onStart(event)
 ></canvas>
 
-
-<div class="toolbar hidden" id=searchRow onclick=selectSearchRow(event)>
-</div>
 <div class="toolbar hidden" id=bashToolbar1 style="--display: none">
     <div class=square onclick='runBashCommand("git branch")'>branch</div>
     <div class=square onclick='runBashCommand("git status")'>status</div>
@@ -255,6 +252,9 @@ ontouchstart=onStart(event)
     <div class=square onclick=runScript()>run script</div>
     <div class=square onclick=doFormat()>format</div>
     <div class=square onclick=reloadFile()>reload</div>
+</div>
+<div class=toolbar>
+    <div class=square onclick="copyBuffer = [location.href]">copy url</div>
 </div>
 
 <label for=serverViewCheckbox>
@@ -341,7 +341,7 @@ var fontCSS = (30 * fontScale) + "px 'Courier'"
 var fontColor = "white"
 var lightFontColor = "rgba(255, 255, 255, 0.5)"
 var veryLightFontColor = "rgba(255, 255, 255, 0.1)"
-var isDark = true
+var isDark = false
 var cursorX=0
 var cursorY=0
 // 4 chars for line number and 1 for space
@@ -394,7 +394,6 @@ var theStatus = {}
 var wasDelete = false
 var selectTimeout
 var selectTimeoutMillis = 750
-var searchTerms = ["function"]
 var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
@@ -494,6 +493,9 @@ function importPaste() {
 
 function toggleDarkMode() {
     isDark = !isDark
+    renderDarkMode()
+}
+function renderDarkMode() {
     if (!isDark) {
         darkModeButton.innerText = "dark"
         document.body.classList.remove("dark")
@@ -504,6 +506,7 @@ function toggleDarkMode() {
         lightFontColor = "rgba(0, 0, 0, 0.5)"
         veryLightFontColor = "rgba(0, 0, 0, 0.1)"
         render()
+        renderURL()
         return
     }
     darkModeButton.innerText = "light"
@@ -515,7 +518,7 @@ function toggleDarkMode() {
     lightFontColor = "rgba(255, 255, 255, 0.5)"
     veryLightFontColor = "rgba(255, 255, 255, 0.1)"
     render()
-
+    renderURL()
 }
 function updateClassForSelector(selector, remove, add) {
     var inputs = document.querySelectorAll(selector)
@@ -678,7 +681,7 @@ function renderURL() {
     var theNewPath = "/" + filtered.map(function(f) {
         return f.fullPath.slice(1) + ":" + (f.cursorLineIndex + 1)
     }).join(",")
-    theNewPath += "?searchTerms=" + encodeURIComponent(JSON.stringify(searchTerms))
+    theNewPath += "?dark=" + (isDark ? "1" : "0") 
     history.replaceState({}, "", theNewPath)
 }
 
@@ -840,21 +843,7 @@ function findDownForm(e) {
     findDown()
     return false
 }
-function addSearchTerm() {
-    if (searchText.value == "") {
-        return
-    }
-    var pos = searchTerms.indexOf(searchText.value)
-    if (pos != -1) {
-        // remove it
-        searchTerms.splice(pos, 1)
-    }
-    // then add it to the beginning
-    searchTerms.unshift(searchText.value)
-    renderSearchTerms()
-    // because search terms are in url
-    renderURL()
-}
+
 function findDown(searchDir, wrap, startTop) {
     lastAction = "move"
     shouldAutocompleteLine = false
@@ -868,7 +857,6 @@ function findDown(searchDir, wrap, startTop) {
     if (document.activeElement != searchText && searchText.value == "") {
         searchText.value = getWordAtCursor().word
     }
-    addSearchTerm()
     for (var i=startY; i<fx.lines.length; i++) {
         var lineToSearch = fx.lines[i]
         var originalLineToSearch = lineToSearch
@@ -941,7 +929,6 @@ function findUp() {
     if (searchText.value == "") {
         searchText.value = getWordAtCursor().word
     }
-    addSearchTerm()
     for (var i=fx.cursorLineIndex; i>=0; i--) {
         var lineToSearch = fx.lines[i]
         if (i == fx.cursorLineIndex) {
@@ -971,7 +958,6 @@ function findUp() {
 function clearSearch() {
     searchText.value = ""
     render()
-    renderSearchTerms()
 }
 
 function jsFunc() {
@@ -3186,22 +3172,6 @@ function getSpaceCount(line) {
 // if it's at 0 (or only ondented) you could do
 // if, func, for, var!!
 
-function selectSearchRow(e) {
-    var index = e.target.getAttribute("data-index")
-    if (searchText.value == searchTerms[index]) {
-        searchText.value = ""
-    } else {
-        searchText.value = searchTerms[index]
-        // put it at the beginning.
-        searchTerms.splice(index, 1)
-        searchTerms.unshift(searchText.value)
-        if (!findDown()) {
-            findUp()
-        }
-    }
-    renderSearchTerms()
-    render()
-}
 function selectFileRow(e) {
     if (!e.target.hasAttribute("data-index")) {
         // thinking we get here if they tap in the margin
@@ -3258,23 +3228,6 @@ function addFileToList(file) {
     renderFileDropdown()
 }
 
-function renderSearchTerms() {
-    // TODO: come back to this.
-    searchRow.innerHTML = ""
-    for (var searchI=0; searchI<searchTerms.length; searchI++) {
-        var searchTerm = searchTerms[searchI]
-        var button = document.createElement("div")
-        button.className = "longButton"
-        // button.className = "square"
-        button.setAttribute("data-index", searchI)
-        button.innerText = searchTerm.substr(0, 15)
-        if (searchText.value == searchTerm) {
-            button.style.backgroundColor = "black"
-        }
-        searchRow.appendChild(button)
-    }
-
-}
 function renderFileDropdown() {
     fileRow.innerHTML = ""
     for (var fileI=0; fileI<files.length; fileI++) {
@@ -3554,27 +3507,14 @@ for (var i=ajaxLoadStartIndex; i<paths.length; i++) {
 setCurrentFile(files[0])
 initialFileAdding = false
 
-log("location search")
-log(location.search)
 var ust = new URLSearchParams(window.location.search)
-if (ust.has("searchTerms")) {
-    try {
-        searchTerms = JSON.parse(ust.get("searchTerms"))
-    } catch (e) {
-
-    }
+if (ust.has("dark")) {
+    isDark = ust.get("dark") == "1"
+    renderDarkMode()
 }
-renderSearchTerms()
-
 
 // make sure when selecting in the margin
 // that the selectMode is   line!
 // add a threshold for move, like 5px or something.
 // todo: in select mode, swipe down is paste. even paste over
 </script>
-
-
-
-public < traveledit2 < src < go < drewlesueur.github.io < drew.lesueur@ad.gpsinsight.com < home < 
-
-
