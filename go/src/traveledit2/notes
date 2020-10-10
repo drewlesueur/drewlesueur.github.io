@@ -1,5 +1,7 @@
 
 big problem with undo and multiple files!!!
+neet to tie it into setLines call too?
+
 x.replace(/scriptLines/g, "theScriptLines")
 
 add ability to "go back" to previous scroll positions

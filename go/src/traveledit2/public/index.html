@@ -162,7 +162,7 @@ onblur=handleBlur()
     display: flex;
     flex-flow: row nowrap;
 ">
-    <pre id=statusEl class=hidden style="overflow:scroll">
+    <pre id=statusEl class=hidden style="overflow:scroll; font-size: 10px;">
     </pre>
     <div id=logEl class=hidden style="height: 450px; width:240px;
     overflow:scroll;
@@ -714,20 +714,27 @@ function docChanged() {
             lastWord = maybeLastWord
         }
     }
-    if (fx.undoIndex != fx.undoStack.length - 1) {
-        fx.undoStack.splice(fx.undoIndex + 1, fx.undoStack.length - fx.undoStack +1)
-        fx.undoYStack.splice(fx.undoIndex + 1, fx.undoYStack.length - fx.undoYStack +1)
-        fx.undoXStack.splice(fx.undoIndex + 1, fx.undoXStack.length - fx.undoXStack +1)
+    
+    var currentContents = fx.lines.join("\n")
+    
+    // is this too expensive?
+    if (currentContents == fx.undo.stack[fx.undo.index]) {
+        // return
     }
-    fx.undoIndex += 1
-    fx.undoStack.push(fx.lines.join("\n"))
-    fx.undoYStack.push(fx.cursorLineIndex)
-    fx.undoXStack.push(fx.cursorColIndex)
-    if (fx.undoStack.length > maxUndos) {
-        fx.undoStack.shift()
-        fx.undoYStack.shift()
-        fx.undoXStack.shift()
-        fx.undoIndex -= 1
+    if (fx.undo.index != fx.undo.stack.length - 1) {
+        fx.undo.stack.splice(fx.undo.index + 1, fx.undo.stack.length - fx.undo.index +1)
+        fx.undo.yStack.splice(fx.undo.index + 1, fx.undo.yStack.length - fx.undo.index +1)
+        fx.undo.xStack.splice(fx.undo.index + 1, fx.undo.xStack.length - fx.undo.index +1)
+    }
+    fx.undo.index += 1
+    fx.undo.stack.push(currentContents)
+    fx.undo.yStack.push(fx.cursorLineIndex)
+    fx.undo.xStack.push(fx.cursorColIndex)
+    if (fx.undo.stack.length > maxUndos) {
+        fx.undo.stack.shift()
+        fx.undo.yStack.shift()
+        fx.undo.xStack.shift()
+        fx.undo.index -= 1
     }
 }
 
@@ -743,10 +750,15 @@ function setLines(lines) {
         }
     }
 }
-function repositionUndo() {
-    setLines(fx.undoStack[fx.undoIndex].split("\n"))
-    fx.cursorColIndex = fx.undoXStack[fx.undoIndex]
-    fx.cursorLineIndex = fx.undoYStack[fx.undoIndex]
+function repositionUndo(isUndo) {
+    setLines(fx.undo.stack[fx.undo.index].split("\n"))
+    if (isUndo) {
+        fx.cursorColIndex = fx.undo.xStack[fx.undo.index + 1]
+        fx.cursorLineIndex = fx.undo.yStack[fx.undo.index + 1]
+    } else {
+        fx.cursorColIndex = fx.undo.xStack[fx.undo.index]
+        fx.cursorLineIndex = fx.undo.yStack[fx.undo.index]
+    }
     if (fx.cursorLineIndex < fx.offsetY || fx.cursorLineIndex > fx.offsetY+maxLines) {
         fx.offsetY = max(0, fx.cursorLineIndex - 5)
     }
@@ -758,13 +770,13 @@ function repositionUndo() {
 }
 
 function undo() {
-    fx.undoIndex = bind(fx.undoIndex-1, 0, fx.undoIndex)
-    repositionUndo()
+    fx.undo.index = bind(fx.undo.index-1, 0, fx.undo.index)
+    repositionUndo(true)
 }
 
 function redo() {
-    fx.undoIndex = bind(fx.undoIndex+1, fx.undoIndex, fx.undoStack.length-1)
-    repositionUndo()
+    fx.undo.index = bind(fx.undo.index+1, fx.undo.index, fx.undo.stack.length-1)
+    repositionUndo(false)
 }
 function clearLog() {
     runBashCommand("clear")
@@ -2017,7 +2029,8 @@ function render() {
         theStatus.lastCleared = lastCleared
         theStatus.totalViewRequests = totalViewRequests 
         theStatus.totalViewBytesSent = totalViewBytesSent 
-        theStatus.acWord = acWord
+        // theStatus.acWord = acWord
+        theStatus.undo = fx.undo
         statusEl.innerText = JSON.stringify(theStatus, null, "    ")
     }
     if (fx.fileMode == "file")   {
@@ -3220,10 +3233,12 @@ function makeFile(fullPath, cursorLineIndex, contents) {
     return {
         // fullPath should have the leading slash
         fullPath: fullPath,
-        undoStack: [contents],
-        undoXStack: [0],
-        undoYStack: [0],
-        undoIndex: 0,
+        undo: {
+            index: 0,
+            stack: [contents],   
+            xStack: [0],
+            yStack: [0],
+        },
         lines: theLines,
         cursorLineIndex: cursorLineIndex,
         cursorColIndex: 0,
@@ -3410,6 +3425,7 @@ function duplicateFile(f, cursorLineIndex) {
     fc.uniqueID = getUniqueID()
     // copy everything but reference lines
     fc.lines = f.lines
+    fc.undo = f.undo
     addFileToList(fc)
     setCurrentFile(fc)
     if (cursorLineIndex != -1) {
@@ -3433,7 +3449,7 @@ function fetchFile(fullPath, file) {
         return r.text()
     }).then(b => {
         file.lines = b.split("\n")
-        file.undoStack = [b]
+        file.undo = {stack: [b], index:0, xStack: [0], yStack: [0]}
         file.loadedFirstTime = true
         if (isDir) {
             file.fileMode = "directory"
@@ -3453,6 +3469,7 @@ function reloadFile() {
         for (var i=0; i<files.length; i++) {
             if (files[i].fullPath == fx.fullPath) {
                 files[i].lines = fx.lines
+                files[i].undo = fx.undo
             }
         }
         render()
