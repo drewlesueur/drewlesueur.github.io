@@ -255,6 +255,7 @@ ontouchstart=onStart(event)
 </div>
 <div class=toolbar>
     <div class=square onclick="copyBuffer = [location.href]">copy url</div>
+    <div class=square onclick="doDiff()">diff file</div>
 </div>
 
 <label for=serverViewCheckbox>
@@ -402,6 +403,24 @@ var lastPageYOffset = 0
 var originalCanvasHeightFull = canvasHeightFull
 var scrollTimeout
 
+
+function doDiff(aLines, bLines) {
+    var f = makeFile("__", 0, contents)
+    var contents = getLinesForFileList().join("\n")
+    var f = makeFile("__", 0, contents)
+    f.fileMode = "fileList"
+
+    f.cursorLineIndex = 0
+    var fileIndex = treeFilesShadow.indexOf(fx)
+    if (fileIndex != -1) {
+        f.cursorLineIndex = fileIndex
+    }
+
+    setCurrentFile(f)
+    updateCursorXY()
+    ensureCursorInScreen()
+}
+
 function simpleDiff(aLines, bLines) {
     var aLastMatched = -1
     var bLastMatched = -1
@@ -418,24 +437,42 @@ function simpleDiff(aLines, bLines) {
         if (ai >= aLines.length && bi >= bLines.length) {
             break
         }
-        for (var aF=aLastMatched+1; aF<=ai; aF++) {
-            for (var bF=bLastMatched+1; bF<=bi; bF++) {
-                var aLine = aLines[aF]    
-                var bLine = bLines[bF]    
-                log("a comparing " + aLine + " " + bLine)
-                if (aLine == bLine) {
-                    for (var aR=aLastMatched+1; aR<aF; aR++) {
-                        ret.push("-" + aLines[aR])
-                    }
-                    for (var bR=bLastMatched+1; bR<bF; bR++) {
-                        ret.push("+" + bLines[bR])
-                    }
-                    ret.push(" " + aLine)
-                    aLastMatched = aF    
-                    bLastMatched = bF  
-                    continue outerLoop
-                } 
-            }
+        var aLine = aLines[ai]    
+        for (var b=bLastMatched+1; b<=bi; b++) {
+            var bLine = bLines[b]    
+            log("a comparing " + aLine + " " + bLine)
+            if (aLine == bLine) {
+                for (var a=aLastMatched+1; a<ai; a++) {
+                    ret.push("-" + aLines[a])
+                }
+                for (var b2=bLastMatched+1; b2<b; b2++) {
+                    ret.push("+" + bLines[b2])
+                }
+                aLastMatched = ai    
+                bLastMatched = b  
+                bi = b
+                ret.push(" " + aLines[ai])
+                continue outerLoop
+            } 
+        }
+        
+        var bLine = bLines[bi]    
+        for (var a=aLastMatched+1; a<=ai-1; a++) {
+            var aLine = aLines[a]    
+            log("b comparing " + bLine + " " + aLine)
+            if (aLine == bLine) {
+                for (var a2=aLastMatched+1; a2<a; a2++) {
+                    ret.push("-" + aLines[a2])
+                }
+                for (var b=bLastMatched+1; b<bi; b++) {
+                    ret.push("+" + bLines[b])
+                }
+                ret.push(" " + bLines[bi])
+                aLastMatched = a    
+                bLastMatched = bi  
+                ai = a
+                continue outerLoop
+            } 
         }
     }
     if (i == 200000) {
@@ -444,12 +481,12 @@ function simpleDiff(aLines, bLines) {
     
     // any left over
     if (aLastMatched + 1 < aLines.length) {
-        for (var aR=aLastMatched+1; aR<aF; aR++) {
+        for (var aR=aLastMatched+1; aR<aLines.length; aR++) {
             ret.push("-" + aLines[aR])
         }
     }
     if (bLastMatched + 1 < bLines.length) {
-        for (var bR=bLastMatched+1; bR<bF; bR++) {
+        for (var bR=bLastMatched+1; bR<bLines.length; bR++) {
             ret.push("+" + bLines[bR])
         }
     }
