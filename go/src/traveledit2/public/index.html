@@ -741,7 +741,7 @@ function addFile(fullPath) {
     // If the file is already in the list of open files.
     // then let it have a reference to the existing lines, like vim does.
     for (var i=0; i<files.length; i++) {
-        if (files[i].fullPath == fullPath && files[i].fileMode == "file") {
+        if (files[i].fullPath == fullPath) {
             duplicateFile(files[i], cursorLineIndex)
             return
         }
@@ -756,7 +756,11 @@ function addFile(fullPath) {
     fetchFile(fullPath, file).then(() => {
         for (var i=0; i<files.length; i++) {
             if (files[i] != file && files[i].fullPath == file.fullPath) {
+                // Do we evenget here?
+                // I just added the undo
+                alert(file.fileMode + ", " + file.fullPath + ": bug, fetched a file aldready there")
                 files[i].lines = file.lines
+                files[i].undo = file.undo
             }
         }
         
@@ -810,6 +814,29 @@ function docChanged(preventUndo) {
     }
 }
 function saveUndo(preventUndo) {
+    // 3 ways of doing undo
+    //   1. any time you want an undo point just snapshot the whole file
+    //      to a stack of snapshots and just restore the whole file on undo
+    //      pro: simple to implement
+    //      con: more memory usage.
+    //   2. any time you want an undo point just diff the lines from last undo point (lastDocState)
+    //.      and add that diff to a stack of diffs
+    //       then snapahot to a single variable "lastDocState"
+    //.      and just reverse apply the diff on undo.
+    //       pro: Less memory, theoretically allows more undos
+    //.      con: more cpu usage calcing the diff
+    //.      con: more complicated to implement
+    //.  3. make setters for any modification of the document (instead of just manual array modification) 
+    //.     in those setters we'd manually create diffs without diffing the whole document.
+    //.     pro: less cpu and less memory all around
+    //.     pro: would cause us to wrangle the document changes into simple functions
+    //.          and we could reuse some logic for screen share
+    //.     con: also complicated to implementwould have to 
+    //.     con: would have to go through all changes to fx.lines and update code (that actually could be a good thing)
+    //.     con: in first 2 it might be easier to not make every single change cause an undo point 
+    //.          for example we currently don't want every letter typed to be an undo point. we currently undo at the line level
+    //.          (see calls to docChanged)
+    //. 
     var currentContents = fx.lines.join("\n")
     if (currentContents == fx.undo.stack[fx.undo.index]) {
         return
@@ -3344,6 +3371,7 @@ function makeFile(fullPath, cursorLineIndex, contents) {
             stack: [contents],   
             xStack: [0],
             yStack: [0],
+            lastSavedLines: JSON.parse(JSON.stringify(theLines)),
         },
         lines: theLines,
         cursorLineIndex: cursorLineIndex,

@@ -1,4 +1,8 @@
 
+Do the thing where you hash the file
+to make sure the one you are starting with is the right one
+
+
 big problem with undo and multiple files!!!
 neet to tie it into setLines call too?
 
