@@ -407,6 +407,8 @@ function simpleDiff(aLines, bLines) {
     var bLastMatched = -1
     var ai = -1
     var bi = -1
+    
+    // TODO: you can handle a bit better when it gets to the end for one?
     // max 20000 line diff
     var ret = []
     outerLoop:
@@ -438,6 +440,18 @@ function simpleDiff(aLines, bLines) {
     }
     if (i == 200000) {
         alert("likely a bug with diff code")
+    }
+    
+    // any left over
+    if (aLastMatched + 1 < aLines.length) {
+        for (var aR=aLastMatched+1; aR<aF; aR++) {
+            ret.push("-" + aLines[aR])
+        }
+    }
+    if (bLastMatched + 1 < bLines.length) {
+        for (var bR=bLastMatched+1; bR<bF; bR++) {
+            ret.push("+" + bLines[bR])
+        }
     }
     return ret
 }
