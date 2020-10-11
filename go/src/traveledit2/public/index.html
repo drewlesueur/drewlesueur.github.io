@@ -416,35 +416,24 @@ function simpleDiff(aLines, bLines) {
         if (ai >= aLines.length && bi >= bLines.length) {
             break
         }
-        var aLine = aLines[ai]    
-        for (var b=bLastMatched+1; b<=bi; b++) {
-            var bLine = bLines[b]    
-            log("a comparing " + aLine + " " + bLine)
-            if (aLine == bLine) {
-                for (var a=aLastMatched+1; a<ai; a++) {
-                    ret.push("-" + aLines[a])
-                }
-                ret.push(" " + aLines[ai])
-                aLastMatched = ai    
-                bLastMatched = b  
-                continue outerLoop
-            } 
-        }
-        
-        var bLine = bLines[ai]    
-        for (var a=aLastMatched+1; a<=ai-1; a++) {
-            var aLine = aLines[b]    
-            log("b comparing " + aLine + " " + bLine)
-            if (aLine == bLine) {
-                ret.push("matchB")
-                for (var b=bLastMatched+1; b<bi; b++) {
-                    ret.push("+" + bLines[b])
-                }
-                ret.push(" " + bLines[bi])
-                aLastMatched = a    
-                bLastMatched = bi  
-                continue outerLoop
-            } 
+        for (var aF=aLastMatched+1; aF<=ai; aF++) {
+            for (var bF=bLastMatched+1; bF<=bi; bF++) {
+                var aLine = aLines[aF]    
+                var bLine = bLines[bF]    
+                log("a comparing " + aLine + " " + bLine)
+                if (aLine == bLine) {
+                    for (var aR=aLastMatched+1; aR<aF; aR++) {
+                        ret.push("-" + aLines[aR])
+                    }
+                    for (var bR=bLastMatched+1; bR<bF; bR++) {
+                        ret.push("+" + bLines[bR])
+                    }
+                    ret.push(" " + aLine)
+                    aLastMatched = aF    
+                    bLastMatched = bF  
+                    continue outerLoop
+                } 
+            }
         }
     }
     if (i == 200000) {
