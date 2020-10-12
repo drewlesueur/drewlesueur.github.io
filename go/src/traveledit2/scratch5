@@ -1,0 +1,253 @@
+
+
+
+x.slice(1)
+
+
+
+var ret = simpleDiff(
+    "abcdefg".split(""),
+    "abefg".split(""),
+) 
+ret.join("\n")    
+ a
+ b
+@@ -2 @@
+-c
+-d
+ e
+ f
+ g
+
+ a
+ b
+-c
+-d
+ e
+ f
+ g
+
+
+
+
+var ret = simpleDiff(
+    "abcdefg".split(""),
+    "abxydefg".split(""),
+) 
+ret.join("\n")    
+ 
+ 
+ a
+ b
+-c
++x
++y
+ d
+ e
+ f
+ g
+
+
+
+
+ a
+ b
++x
++y
+ c
+ d
+ e
+ f
+ g
+
+
+ // test replacement with something after it
+var ret = simpleDiff(
+    "abcxdefg".split(""),
+    "abxyzddefg".split(""),
+) 
+ret.join("\n")
+ a
+ b
+@@ -2 @@
+-c
+ x
+@@ -4 @@
++y
++z
+ d
+@@ -5 @@
++d
+ e
+ f
+ g
+ 
+ 
+var ret = simpleDiff(
+    "abcdefg".split(""),
+    "a1b1c1d1e1f1g1".split(""),
+) 
+ret.join("\n")
+ 
+
+
+
+
+
+
+var ret = simpleDiff(
+    "rabcdefg".split(""),
+    "abxycdefgz".split(""),
+) 
+ret.join("\n")
+@@ -1 @@
+-r
+@@ -4 @@
++x
++y
+@@ -9 @@
++z
+
+-r
+ a
+ b
++x
++y
+ c
+ d
+ e
+ f
+ g
++z
+
+
+var ret = simpleDiff(
+    "rabcdefg".split(""),
+    "abxycdef".split(""),
+) 
+ret.join("\n")    
+            
+-r
+ a
+ b
++x
++y
+ c
+ d
+ e
+ f
+-g
+
+
+var ret = simpleDiff(
+    "bcdefg".split(""),
+    "abxycdef".split(""),
+) 
+ret.join("\n")    
+
++a
+ b
++x
++y
+ c
+ d
+ e
+ f
+-g
+
+var ret = simpleDiff(
+    "abcdefg".split(""),
+    "abxdefg".split(""),
+) 
+ret.join("\n")
+ a
+ b
+-c
++x
+ d
+ e
+ f
+ g
+
+
+
+var ret = simpleDiff(
+    "abcdefg".split(""),
+    "abxycdefgz".split(""),
+) 
+ret.join("\n")    
+
+
+// this shows a problem with my algorithm.
+var ret = simpleDiff(
+    "{abc}{def}{ghi}{jkl}{mno}".split(""),
+    "{abc}{ghi}{jkl}{mno}".split(""),
+) 
+ret.join("\n")
+@@ -7 @@
+-d
+-e
+-f
++g
++h
++i
+@@ -12 @@
+-g
+-h
+-i
++j
++k
++l
+@@ -17 @@
+-j
+-k
+-l
++m
++n
++o
+@@ -21 @@
+-{
+-m
+-n
+-o
+-}
+
+
+a
+b
+c
+d
+e
+f
+g
+
+a
+b
+x
+d
+e
+f
+g
+
+
+a
+b
+xx
+yy
+c
+d
+e
+f
+g
+
+a
+b
+e
+f
+g
+
+
+
+
+
+x.replace(/a/g, "b")
