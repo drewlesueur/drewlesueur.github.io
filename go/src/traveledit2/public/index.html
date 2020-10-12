@@ -412,7 +412,18 @@ function showDiff() {
     f.fileMode = "file"
     f.cursorLineIndex = 0
     addFileToList(f)
-    setCurrentFile(f)
+    
+    var start = Date.now()
+    var contents = simpleDiffOld(fx.undo.lastSavedLines, fx.lines, false).join("\n")
+    log("it took " + (Date.now()-start) + "to diff.")
+    var f2 = makeFile("__diffOld", 0, contents)
+    f2.fileMode = "file"
+    f2.cursorLineIndex = 0
+    addFileToList(f2)
+    log("4: " + f2.lines.length)
+    setCurrentFile(f2)
+    log("5: " + f2.lines.length)
+    
     updateCursorXY()
     ensureCursorInScreen()
 }
@@ -427,6 +438,9 @@ function simpleDiffOld(aLines, bLines, showSame) {
     // NOTE: this is my experimenting with diff. likely not fastest or most
     // efficient. For example I don't get largest common substring.
     // max 20000 line diff
+    // this has large issues, see scratch5
+    // one thing we can do to improve is another pass where we optimize this output. 
+    // or just implement the Myers diff algorithm and compare speed
     var ret = []
     outerLoop:
     for (var i=0; i<20000; i++) {
@@ -509,6 +523,9 @@ function isCommonEnd(line) {
     if (line == "}") {
         return true
     }
+    if (line === "") {
+        return true
+    }
     if (line.startsWith("</")) {
         return true
     }
@@ -540,7 +557,7 @@ function simpleDiff(aLines, bLines, showSame) {
         for (var b=bLastMatched+1; b<=bi; b++) {
             var bLine = bLines[b]    
             // log("a comparing " + aLine + " " + bLine)
-            if (aLine == bLine && (aLine && aLine.trim() != "}")) {
+            if (aLine == bLine && (aLine && !isCommonEnd(aLine.trim()))) {
                 var tmpMinus = []
                 var tmpPlus = []
                 for (var a=aLastMatched+1; a<ai; a++) {
@@ -566,7 +583,11 @@ function simpleDiff(aLines, bLines, showSame) {
                        ret.push(tmpMinus[t])
                    }
                    for (var t=0; t<tmpPlus.length; t++) {
-                       ret.push(tmpPlus[t])
+                       if (ret[ret.length-1] == "-" + tmpPlus[t].slice(1)) {
+                           ret.pop()
+                       } else {
+                           ret.push(tmpPlus[t])
+                       }
                    }
                 } else if (showSame) {
                    for (var t=0; t<tmpMinus.length; t++) {
@@ -590,7 +611,7 @@ function simpleDiff(aLines, bLines, showSame) {
             // log("b comparing " + bLine + " " + aLine)
             // if (aLine == bLine) {
             // if (aLine == bLine && (aLine && aLine.trim() != "}")) {
-            if (aLine == bLine && (aLine && aLine.trim() != "}")) {
+            if (aLine == bLine && (aLine && !isCommonEnd(aLine.trim()))) {
                 var tmpMinus = []
                 var tmpPlus = []
                 for (var a2=aLastMatched+1; a2<a; a2++) {
@@ -616,7 +637,11 @@ function simpleDiff(aLines, bLines, showSame) {
                        ret.push(tmpMinus[t])
                    }
                    for (var t=0; t<tmpPlus.length; t++) {
-                       ret.push(tmpPlus[t])
+                       if (ret[ret.length-1] == "-" + tmpPlus[t].slice(1)) {
+                           ret.pop()
+                       } else {
+                           ret.push(tmpPlus[t])
+                       }
                    }
                 } else if (showSame) {
                    for (var t=0; t<tmpMinus.length; t++) {
