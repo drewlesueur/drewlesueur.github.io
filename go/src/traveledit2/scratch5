@@ -188,6 +188,29 @@ ret.join("\n")
 -d
 -e
 -f
+-}
++g
++h
++i
++}
+@@ -12 @@
+-g
+-h
+-i
+-}
++j
++k
++l
++}
+@@ -25 @@
+-}
++}
+
+
+@@ -7 @@
+-d
+-e
+-f
 +g
 +h
 +i
@@ -211,6 +234,36 @@ ret.join("\n")
 -n
 -o
 -}
+
+
+
+
+// this shows a problem with my algorithm.
+var ret = simpleDiff(
+    "abc}def}ghi}jkl}mno}".split(""),
+    "abc}ghi}jkl}mno}".split(""),
+) 
+ret.join("\n")
+@@ -4 @@
+-}
+-d
+-e
+-f
+-}
++}
+@@ -20 @@
+-}
++}
+
+
+
+
+
+
+
+
+
+
 
 
 a
