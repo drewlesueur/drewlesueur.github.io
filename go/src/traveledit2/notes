@@ -1,4 +1,12 @@
+are we using http2??
 
+bug with sometimes filemode things it's a file but it's a directory?
+-        if (files[i].fullPath == fullPath && files[i].fileMode == "file") {
++        if (files[i].fullPath == fullPath) {
+             duplicateFile(files[i], cursorLineIndex)
+             return
+         }
+         
 Do the thing where you hash the file
 to make sure the one you are starting with is the right one
 

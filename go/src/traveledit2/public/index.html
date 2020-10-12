@@ -756,9 +756,7 @@ function addFile(fullPath) {
     fetchFile(fullPath, file).then(() => {
         for (var i=0; i<files.length; i++) {
             if (files[i] != file && files[i].fullPath == file.fullPath) {
-                // Do we evenget here?
-                // I just added the undo
-                alert(file.fileMode + ", " + file.fullPath + ": bug, fetched a file aldready there")
+                // TODO: is this needed, I think duplicateFile should get these?
                 files[i].lines = file.lines
                 files[i].undo = file.undo
             }
@@ -2052,6 +2050,43 @@ var shouldSendViewToServer = false
 var lastViewBodyToSend = ""
 // var ws = new WebSocket("wss://" + location.host + "/myws/wsrender")
 function sendViewToServer() {
+   // ideas for server render
+   // 1. call render with a mocked canvas context and store all the commands to send to server
+   //    the viewer will just long poll to get the latest view and render
+   //    use some sort of compression, but each screen is basically the whole current frame
+   //    pro: super simple to implement
+   //    con: sending the whole screen every change is heavy.
+   // 2. like option 1 but have 3 layers - 
+   //      current line,
+   //     everything but the current line,
+   //     the cursor position
+   // 3. a light version like #1, but don't worry about snapshotting
+   //    the canvas commands, just render straight text of the screen
+   //    and cursor position. it won't highlight the search word though.
+   //    render it in an actual text area
+   //    (hmm maybe you could make the search word blink client side)
+   //    pro: super simple to implement
+   // 4. save diffs any time document changes and keep a local state of the document
+   //    on the screenshare client. See comments around undo.
+   //    we could do a diff of the while document every change...
+   //    but probably better would be the "setter functions" that make the diffs as you go
+   //    (still because we are using an os level input box, we may have to diff the current line.)
+   //    pro: likely much more fluid rendering
+   //    con: much more complicated?
+   //    con: having to not miss any messages on the client.
+   //    con: how to handle when screenshare clients refresh page?
+   //         would server have to keep track of document state?
+   //         ah, maybe every few saves the server has to resnapshot the whole document? 
+   //         then diffs would be from most recent server snapshot
+   //         there's a lot I haven't thought through with this option.
+   // 5. like option 3 but just send the diff of the simple rendered screen.
+   //    the server will keep the last n number of full screens.
+   //    when the client asks for the latest screen (including the version number they are seeing)
+   //    the server will do a diff of what they have and what they need.
+   //    if the version that the client has is too old, it gets the full text again.
+   //    pro: still only dealing with current screen
+   //    con: not as fluid as a more advanced solution
+   // I am starting to like option 5
    if (sendingViewToServer) {
        shouldSendViewToServer = true
        return
@@ -3359,7 +3394,9 @@ function getUniqueID() {
    uniqueID++
    return uniqueID
 }
+
 var fileToken = {}
+
 function makeFile(fullPath, cursorLineIndex, contents) {
     var theLines = contents.split("\n")
     
