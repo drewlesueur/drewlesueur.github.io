@@ -406,7 +406,7 @@ var scrollTimeout
 
 function showDiff() {
     var start = Date.now()
-    var contents = simpleDiff(fx.undo.lastSavedLines, fx.lines).join("\n")
+    var contents = simpleDiff(fx.undo.lastSavedLines, fx.lines, false).join("\n")
     log("it took " + (Date.now()-start) + "to diff.")
     var f = makeFile("__diff", 0, contents)
     f.fileMode = "file"
@@ -417,13 +417,15 @@ function showDiff() {
     ensureCursorInScreen()
 }
 
-function simpleDiff(aLines, bLines) {
+function simpleDiff(aLines, bLines, showSame) {
     var aLastMatched = -1
     var bLastMatched = -1
     var ai = -1
     var bi = -1
     
     // TODO: you can handle a bit better when it gets to the end for one?
+    // NOTE: this is my experimenting with diff. likely not fastest or most
+    // efficient. For example I don't get largest common substring.
     // max 20000 line diff
     var ret = []
     outerLoop:
@@ -438,6 +440,9 @@ function simpleDiff(aLines, bLines) {
             var bLine = bLines[b]    
             // log("a comparing " + aLine + " " + bLine)
             if (aLine == bLine) {
+                if (!showSame && (aLastMatched+1<ai || bLastMatched+1<b)) {
+                    ret.push("@@ -" + (aLastMatched+2) + " @@")
+                }
                 for (var a=aLastMatched+1; a<ai; a++) {
                     ret.push("-" + aLines[a])
                 }
@@ -447,7 +452,9 @@ function simpleDiff(aLines, bLines) {
                 aLastMatched = ai    
                 bLastMatched = b  
                 bi = b
-                ret.push(" " + aLines[ai])
+                if (showSame) {
+                    ret.push(" " + aLines[ai])
+                }
                 continue outerLoop
             } 
         }
@@ -457,13 +464,18 @@ function simpleDiff(aLines, bLines) {
             var aLine = aLines[a]    
             // log("b comparing " + bLine + " " + aLine)
             if (aLine == bLine) {
+                if (!showSame && (aLastMatched+1<a || bLastMatched+1<bi)) {
+                    ret.push("@@ -" + (aLastMatched+2) + " @@")
+                }
                 for (var a2=aLastMatched+1; a2<a; a2++) {
                     ret.push("-" + aLines[a2])
                 }
                 for (var b=bLastMatched+1; b<bi; b++) {
                     ret.push("+" + bLines[b])
                 }
-                ret.push(" " + bLines[bi])
+                if (showSame) {
+                    ret.push(" " + bLines[bi])
+                }
                 aLastMatched = a    
                 bLastMatched = bi  
                 ai = a
@@ -476,6 +488,9 @@ function simpleDiff(aLines, bLines) {
     }
     
     // any left over
+    if (aLastMatched+1<aLines.length || bLastMatched+1<bLines.length) {
+        ret.push("@@ -" + (aLastMatched+2) + " @@")
+    }
     if (aLastMatched + 1 < aLines.length) {
         for (var aR=aLastMatched+1; aR<aLines.length; aR++) {
             ret.push("-" + aLines[aR])
