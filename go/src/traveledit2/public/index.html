@@ -255,7 +255,7 @@ ontouchstart=onStart(event)
 </div>
 <div class=toolbar>
     <div class=square onclick="copyBuffer = [location.href]">copy url</div>
-    <div class=square onclick="doDiff()">diff file</div>
+    <div class=square onclick="showDiff()">show diff</div>
 </div>
 
 <label for=serverViewCheckbox>
@@ -404,18 +404,14 @@ var originalCanvasHeightFull = canvasHeightFull
 var scrollTimeout
 
 
-function doDiff(aLines, bLines) {
-    var f = makeFile("__", 0, contents)
-    var contents = getLinesForFileList().join("\n")
-    var f = makeFile("__", 0, contents)
-    f.fileMode = "fileList"
-
+function showDiff() {
+    var start = Date.now()
+    var contents = simpleDiff(fx.undo.lastSavedLines, fx.lines).join("\n")
+    log("it took " + (Date.now()-start) + "to diff.")
+    var f = makeFile("__diff", 0, contents)
+    f.fileMode = "file"
     f.cursorLineIndex = 0
-    var fileIndex = treeFilesShadow.indexOf(fx)
-    if (fileIndex != -1) {
-        f.cursorLineIndex = fileIndex
-    }
-
+    addFileToList(f)
     setCurrentFile(f)
     updateCursorXY()
     ensureCursorInScreen()
@@ -440,7 +436,7 @@ function simpleDiff(aLines, bLines) {
         var aLine = aLines[ai]    
         for (var b=bLastMatched+1; b<=bi; b++) {
             var bLine = bLines[b]    
-            log("a comparing " + aLine + " " + bLine)
+            // log("a comparing " + aLine + " " + bLine)
             if (aLine == bLine) {
                 for (var a=aLastMatched+1; a<ai; a++) {
                     ret.push("-" + aLines[a])
@@ -459,7 +455,7 @@ function simpleDiff(aLines, bLines) {
         var bLine = bLines[bi]    
         for (var a=aLastMatched+1; a<=ai-1; a++) {
             var aLine = aLines[a]    
-            log("b comparing " + bLine + " " + aLine)
+            // log("b comparing " + bLine + " " + aLine)
             if (aLine == bLine) {
                 for (var a2=aLastMatched+1; a2<a; a2++) {
                     ret.push("-" + aLines[a2])
@@ -1814,6 +1810,7 @@ function save() {
             if (v.saved) {
                 fx.savedVersion = fx.savingVersion
                 fx.savingVersion = -1
+            fx.undo.lastSavedLines = JSON.parse(JSON.stringify(fx.lines))
             }
             render()
             renderFileDropdown()
@@ -2191,7 +2188,6 @@ function render() {
         theStatus.totalViewRequests = totalViewRequests 
         theStatus.totalViewBytesSent = totalViewBytesSent 
         // theStatus.acWord = acWord
-        // theStatus.undo = fx.undo
         statusEl.innerText = JSON.stringify(theStatus, null, "    ")
     }
     if (fx.fileMode == "file")   {
@@ -3620,7 +3616,13 @@ function fetchFile(fullPath, file) {
         return r.text()
     }).then(b => {
         file.lines = b.split("\n")
-        file.undo = {stack: [b], index:0, xStack: [0], yStack: [0]}
+        file.undo = {
+            stack: [b],
+            index:0,
+            xStack: [0],
+            yStack: [0],
+            lastSavedLines: JSON.parse(JSON.stringify(file.lines))
+        }
         file.loadedFirstTime = true
         if (isDir) {
             file.fileMode = "directory"
