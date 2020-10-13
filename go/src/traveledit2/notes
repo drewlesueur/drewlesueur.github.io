@@ -1,6 +1,14 @@
 are we using http2??
 
+add file markers - maybe makenit part of find feature
+where you can gondown and up
+
+document all the features
+
 wget "https://unpkg.com/diff@4.0.2/dist/diff.js"
+your simpleDiffOld3 is decent, but try to manually implement
+the Myers algorithm to compare.
+
 why sometimes does autocomplete not move cursor to end
 Dont allow saves while file is loading
 
