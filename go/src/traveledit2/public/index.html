@@ -2,11 +2,12 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
 <meta charset='utf-8'>
+<script src="/te/tepublic/diff.js"></script>
 <style>
-@font-face {
-  font-family: GoMono;
-  src: url(/te/tepublic/fonts/Go-Mono.ttf);
-}
+// @font-face {
+//   font-family: GoMono;
+//   src: url(tepublic/fonts/Go-Mono.ttf);
+// }
 * {
     margin: 0; padding: 0;
     box-sizing: border-box;
@@ -420,10 +421,22 @@ function showDiff() {
     f2.fileMode = "file"
     f2.cursorLineIndex = 0
     addFileToList(f2)
-    log("4: " + f2.lines.length)
-    setCurrentFile(f2)
-    log("5: " + f2.lines.length)
     
+    var oldContents = fx.undo.lastSavedLines.join("\n")
+    var newContents = fx.lines.join("\n")
+    var start = Date.now()
+    var contents = Diff.createPatch("foo", oldContents, newContents, "", "")
+    // var contents = Diff.createPatch("foo", "aaaaa", "bbbbbb", "", "")
+    log("it took " + (Date.now()-start) + "to diff myers")
+    var f3 = makeFile("__diffMyers", 0, contents)
+    f3.fileMode = "file"
+    f3.cursorLineIndex = 0
+    addFileToList(f3)
+    
+    
+    
+    
+    setCurrentFile(f3)
     updateCursorXY()
     ensureCursorInScreen()
 }
@@ -996,7 +1009,9 @@ function docChanged(preventUndo) {
         }
     }
     if (!preventUndo) {
+        // var start = Date.now()
         saveUndo(preventUndo)
+        // log("u1: " + (Date.now() - start))
     }
 }
 function saveUndo(preventUndo) {
@@ -2362,7 +2377,9 @@ function render() {
 
     var selStart = theText.selectionStart
     var selEnd = theText.selectionEnd
+    // var start = Date.now()
     renderInternal()
+    // log("r1: " + (Date.now() - start))
     
     if (inDebugView) {
         s.innerHTML =
@@ -2446,7 +2463,11 @@ function render() {
         mockCanvasContext.lastTextBaseline = "",
         mockCanvasContext.textBaseline = "",
         mockCanvasContext.commands = [[5, fontWidth.toFixed(2)-0, fontHeight.toFixed(2)-0, maxCols, maxLines, isDark ? 1 : 0]]
+        
+        // var start = Date.now()
         renderInternal()
+        // log("r2: " + (Date.now() - start))
+        
         fx.offsetX = oldOffsetX
         maxCols = oldMaxCols
         maxLines = oldMaxLines

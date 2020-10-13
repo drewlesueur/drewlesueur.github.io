@@ -1,5 +1,9 @@
 are we using http2??
 
+wget "https://unpkg.com/diff@4.0.2/dist/diff.js"
+why sometimes does autocomplete not move cursor to end
+Dont allow saves while file is loading
+
 reload should reset version
 bug with sometimes filemode things it's a file but it's a directory?
 -        if (files[i].fullPath == fullPath && files[i].fileMode == "file") {
