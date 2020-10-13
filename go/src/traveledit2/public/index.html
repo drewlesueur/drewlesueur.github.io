@@ -1043,7 +1043,7 @@ function addFile(fullPath) {
                 files[i].undo = file.undo
             }
         }
-        
+        updateCursorXY()
         render()
     }).catch(e => {
         alert("Error loading file " + e)
@@ -3276,6 +3276,7 @@ function clickItemInDirectory() {
     } else {
         var newFullPath = prefix + "/" + addPath
     }
+    closeFile(0)
     addFile(newFullPath)
 }
 var shouldAutocompleteLine = false
