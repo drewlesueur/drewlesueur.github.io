@@ -407,42 +407,47 @@ var scrollTimeout
 
 function showDiff() {
     var start = Date.now()
-    var contents = simpleDiff(fx.undo.lastSavedLines, fx.lines, false).join("\n")
-    log("it took " + (Date.now()-start) + "to diff.")
-    var f = makeFile("__diff", 0, contents)
+    var contents = simpleDiffOld(fx.undo.lastSavedLines, fx.lines, false).join("\n")
+    log("diff1: " + (Date.now()-start))
+    var f = makeFile("__diffOld", 0, contents)
     f.fileMode = "file"
     f.cursorLineIndex = 0
     addFileToList(f)
     
     var start = Date.now()
-    var contents = simpleDiffOld(fx.undo.lastSavedLines, fx.lines, false).join("\n")
-    log("it took " + (Date.now()-start) + "to diff.")
-    var f2 = makeFile("__diffOld", 0, contents)
+    var contents = simpleDiffOld2(fx.undo.lastSavedLines, fx.lines, false).join("\n")
+    log("diff2: " + (Date.now()-start))
+    var f2 = makeFile("__diffOld2", 0, contents)
     f2.fileMode = "file"
     f2.cursorLineIndex = 0
     addFileToList(f2)
+    
+    var start = Date.now()
+    var contents = simpleDiffOld3(fx.undo.lastSavedLines, fx.lines, false).join("\n")
+    log("diff3: " + (Date.now()-start))
+    var f3 = makeFile("__diffOld3", 0, contents)
+    f3.fileMode = "file"
+    f3.cursorLineIndex = 0
+    addFileToList(f3)
     
     var oldContents = fx.undo.lastSavedLines.join("\n")
     var newContents = fx.lines.join("\n")
     var start = Date.now()
     var contents = Diff.createPatch("foo", oldContents, newContents, "", "", {context:0})
     // var contents = Diff.createPatch("foo", "aaaaa", "bbbbbb", "", "")
-    log("it took " + (Date.now()-start) + "to diff myers")
-    var f3 = makeFile("__diffMyers", 0, contents)
-    f3.fileMode = "file"
-    f3.cursorLineIndex = 0
-    addFileToList(f3)
+    log("diffM: " + (Date.now()-start))
+    var f4 = makeFile("__diffMyers", 0, contents)
+    f4.fileMode = "file"
+    f4.cursorLineIndex = 0
+    addFileToList(f4)
     
     
-    
-    
-    setCurrentFile(f3)
+    setCurrentFile(f4)
     updateCursorXY()
     ensureCursorInScreen()
 }
 
-
-function simpleDiffOldOld(aLines, bLines, showSame) {
+function simpleDiffOld(aLines, bLines, showSame) {
     var aLastMatched = -1
     var bLastMatched = -1
     var ai = -1
@@ -532,7 +537,7 @@ function simpleDiffOldOld(aLines, bLines, showSame) {
     return ret
 }
 
-function simpleDiffOld(aLines, bLines, showSame) {
+function simpleDiffOld2(aLines, bLines, showSame) {
     var aLastMatched = -1
     var bLastMatched = -1
     var ai = -1
@@ -628,24 +633,7 @@ function simpleDiffOld(aLines, bLines, showSame) {
     return ret
 }
 
-
-function isCommonEnd(line) {
-    if (line == "}") {
-        return true
-    }
-    if (line === "") {
-        return true
-    }
-    if (line.startsWith("</")) {
-        return true
-    }
-    if (line == "end") {
-        return true
-    }
-    
-    return false
-}
-function simpleDiff(aLines, bLines, showSame) {
+function simpleDiffOld3(aLines, bLines, showSame) {
     var aLastMatched = -1
     var bLastMatched = -1
     var ai = -1
@@ -655,7 +643,11 @@ function simpleDiff(aLines, bLines, showSame) {
     // NOTE: this is my experimenting with diff. likely not fastest or most
     // efficient. For example I don't get largest common substring.
     // max 20000 line diff
+    // this has large issues, see scratch5
+    // one thing we can do to improve is another pass where we optimize this output. 
+    // or just implement the Myers diff algorithm and compare speed
     var ret = []
+    lastMatched = true
     outerLoop:
     for (var i=0; i<20000; i++) {
         ai += 1
@@ -667,52 +659,48 @@ function simpleDiff(aLines, bLines, showSame) {
         for (var b=bLastMatched+1; b<=bi; b++) {
             var bLine = bLines[b]    
             // log("a comparing " + aLine + " " + bLine)
-            if (aLine == bLine && (aLine && !isCommonEnd(aLine.trim()))) {
-                var tmpMinus = []
-                var tmpPlus = []
-                for (var a=aLastMatched+1; a<ai; a++) {
-                    tmpMinus.push("-" + aLines[a])
-                }
-                for (var b2=bLastMatched+1; b2<b; b2++) {
-                    tmpPlus.push("+" + bLines[b2])
-                }
-                var allSame = tmpMinus.length == tmpPlus.length
-                if (allSame) {
-                    for (var t=0; t<tmpMinus.length; t++) {
-                        if (tmpMinus[t].slice(1) != tmpPlus[t].slice(1)) {
-                            allSame = false
-                            break
-                        }    
-                    }  
-                }
-                if (!allSame) {
-                   if (!showSame && (tmpMinus.length || tmpPlus.length)) {
-                       ret.push("@@ -" + (aLastMatched+2) + " @@")
-                   }
-                   for (var t=0; t<tmpMinus.length; t++) {
-                       ret.push(tmpMinus[t])
-                   }
-                   for (var t=0; t<tmpPlus.length; t++) {
-                       if (ret[ret.length-1] == "-" + tmpPlus[t].slice(1)) {
-                           ret.pop()
-                       } else {
-                           ret.push(tmpPlus[t])
-                       }
-                   }
-                } else if (showSame) {
-                   for (var t=0; t<tmpMinus.length; t++) {
-                       ret.push(" " + tmpMinus[t].slice(1))
-                   }
-                }
-                
-                aLastMatched = ai    
-                bLastMatched = b  
-                bi = b
-                if (showSame) {
-                    ret.push(" " + aLines[ai])
-                }
-                continue outerLoop
-            } 
+            if (aLine != bLine) {
+                continue
+            }
+            if (!lastMatched) {
+               // use a hash for this?
+               var trimmed = (aLine || "").trim()   
+               if (trimmed == "") {
+                   continue
+               }
+               if (trimmed == "}") {
+                   continue
+               }
+               if (trimmed.startsWith == "/>") {
+                   continue
+               }
+               if (trimmed == "break") {
+                   continue
+               }
+               if (trimmed == "continue") {
+                   continue
+               }
+               if (trimmed == "return") {
+                   continue
+               }
+            }
+            lastMatched = true
+            if (!showSame && (aLastMatched+1<ai || bLastMatched+1<b)) {
+                ret.push("@@ -" + (aLastMatched+2) + " @@")
+            }
+            for (var a=aLastMatched+1; a<ai; a++) {
+                ret.push("-" + aLines[a])
+            }
+            for (var b2=bLastMatched+1; b2<b; b2++) {
+                ret.push("+" + bLines[b2])
+            }
+            aLastMatched = ai    
+            bLastMatched = b  
+            bi = b
+            if (showSame) {
+                ret.push(" " + aLines[ai])
+            }
+            continue outerLoop
         }
         
         var bLine = bLines[bi]    
@@ -720,60 +708,56 @@ function simpleDiff(aLines, bLines, showSame) {
             var aLine = aLines[a]    
             // log("b comparing " + bLine + " " + aLine)
             // if (aLine == bLine) {
-            // if (aLine == bLine && (aLine && aLine.trim() != "}")) {
-            if (aLine == bLine && (aLine && !isCommonEnd(aLine.trim()))) {
-                var tmpMinus = []
-                var tmpPlus = []
-                for (var a2=aLastMatched+1; a2<a; a2++) {
-                    tmpMinus.push("-" + aLines[a2])
-                }
-                for (var b=bLastMatched+1; b<bi; b++) {
-                    tmpPlus.push("+" + bLines[b])
-                }
-                var allSame = tmpMinus.length == tmpPlus.length
-                if (allSame) {
-                    for (var t=0; t<tmpMinus.length; t++) {
-                        if (tmpMinus[t].slice(1) != tmpPlus[t].slice(1)) {
-                            allSame = false
-                            break
-                        }    
-                    }  
-                }
-                if (!allSame) {
-                   if (!showSame && (tmpMinus.length || tmpPlus.length)) {
-                       ret.push("@@ -" + (aLastMatched+2) + " @@")
-                   }
-                   for (var t=0; t<tmpMinus.length; t++) {
-                       ret.push(tmpMinus[t])
-                   }
-                   for (var t=0; t<tmpPlus.length; t++) {
-                       if (ret[ret.length-1] == "-" + tmpPlus[t].slice(1)) {
-                           ret.pop()
-                       } else {
-                           ret.push(tmpPlus[t])
-                       }
-                   }
-                } else if (showSame) {
-                   for (var t=0; t<tmpMinus.length; t++) {
-                       ret.push(" " + tmpMinus[t].slice(1))
-                   }
-                }
-                aLastMatched = a    
-                bLastMatched = bi  
-                ai = a
-                if (showSame) {
-                    ret.push(" " + bLines[bi])
-                }
-                continue outerLoop
-            } 
+            if (aLine != bLine) {
+                continue
+            }
+            if (!lastMatched) {
+               // use a hash for this?
+               var trimmed = (aLine || "").trim()   
+               if (trimmed == "") {
+                   continue
+               }
+               if (trimmed == "}") {
+                   continue
+               }
+               if (trimmed.startsWith == "/>") {
+                   continue
+               }
+               if (trimmed == "break") {
+                   continue
+               }
+               if (trimmed == "continue") {
+                   continue
+               }
+               if (trimmed == "return") {
+                   continue
+               }
+            }
+            lastMatched = true
+            if (!showSame && (aLastMatched+1<a || bLastMatched+1<bi)) {
+                ret.push("@@ -" + (aLastMatched+2) + " @@")
+            }
+            for (var a2=aLastMatched+1; a2<a; a2++) {
+                ret.push("-" + aLines[a2])
+            }
+            for (var b=bLastMatched+1; b<bi; b++) {
+                ret.push("+" + bLines[b])
+            }
+            if (showSame) {
+                ret.push(" " + bLines[bi])
+            }
+            aLastMatched = a    
+            bLastMatched = bi  
+            ai = a
+            continue outerLoop
         }
+        
+        lastMatched = false
     }
     if (i == 200000) {
         alert("likely a bug with diff code")
     }
     
-    
-    // TODO: apply same optimization here if diffs are the same
     // any left over
     if (aLastMatched+1<aLines.length || bLastMatched+1<bLines.length) {
         ret.push("@@ -" + (aLastMatched+2) + " @@")
