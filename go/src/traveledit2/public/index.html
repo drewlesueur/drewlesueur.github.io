@@ -425,7 +425,7 @@ function showDiff() {
     var oldContents = fx.undo.lastSavedLines.join("\n")
     var newContents = fx.lines.join("\n")
     var start = Date.now()
-    var contents = Diff.createPatch("foo", oldContents, newContents, "", "")
+    var contents = Diff.createPatch("foo", oldContents, newContents, "", "", {context:0})
     // var contents = Diff.createPatch("foo", "aaaaa", "bbbbbb", "", "")
     log("it took " + (Date.now()-start) + "to diff myers")
     var f3 = makeFile("__diffMyers", 0, contents)
@@ -558,7 +558,7 @@ function simpleDiffOld(aLines, bLines, showSame) {
         for (var b=bLastMatched+1; b<=bi; b++) {
             var bLine = bLines[b]    
             // log("a comparing " + aLine + " " + bLine)
-            if (aLine == bLine && (lastMatched || (!aLine || (aLine.trim() != "" && aLine.trim() != "}")))) {
+            if (aLine == bLine && (lastMatched || (!aLine || (aLine.trim() != "" && aLine.trim() != "}" && !aLine.trim().startsWith("</"))))) {
                 lastMatched = true
                 if (!showSame && (aLastMatched+1<ai || bLastMatched+1<b)) {
                     ret.push("@@ -" + (aLastMatched+2) + " @@")
@@ -584,7 +584,7 @@ function simpleDiffOld(aLines, bLines, showSame) {
             var aLine = aLines[a]    
             // log("b comparing " + bLine + " " + aLine)
             // if (aLine == bLine) {
-            if (aLine == bLine && (lastMatched || (!aLine || (aLine.trim() != "" && aLine.trim() != "}")))) {
+            if (aLine == bLine && (lastMatched || (!aLine || (aLine.trim() != "" && aLine.trim() != "}" && !aLine.trim().startsWith("</"))))) {
                 lastMatched = true
                 if (!showSame && (aLastMatched+1<a || bLastMatched+1<bi)) {
                     ret.push("@@ -" + (aLastMatched+2) + " @@")
