@@ -2147,6 +2147,24 @@ function handleKeydown(e) {
             // for now only deal with singe line
             return false
         }
+        var selectedRegion = JSON.parse(JSON.stringify(fx.selectedRegions[0]))
+        // for now only deal with singe line
+        var oldCopyBuffer = copyBuffer 
+        del(false, true)
+        var part = copyBuffer[0]
+        if (!part) {
+            return false
+        }
+        if (part.slice(0, 1) == e.key && part.slice(-1) == closer) {
+            copyBuffer = [part.slice(1,-1)]    
+            selectedRegion.stopX -= 2
+        } else {
+            copyBuffer = [e.key + part + closer]    
+            selectedRegion.stopX += 2
+        }
+        paste()
+        fx.selectedRegions = [selectedRegion]
+        copyBuffer = oldCopyBuffer
         docChanged()
         render()
         return false
