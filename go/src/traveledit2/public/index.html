@@ -1269,6 +1269,12 @@ function findDown(searchDir, wrap, startTop) {
     shouldAutocompleteLine = false
     hasMovedSinceNewLine = true
     acWord = null
+// marker blue    
+    if (searchText.value.slice(0, 1) == ":" && (searchText.value.slice(1) - 0) == searchText.value.slice(1)) {
+        fx.cursorLineIndex = searchText.value.slice(1) - 1
+         ensureCursorInScreen()
+    }
+    true
     
     var startY = fx.cursorLineIndex
     if (startTop) {
@@ -1349,6 +1355,10 @@ function findUp() {
     shouldAutocompleteLine = false
     hasMovedSinceNewLine = true
     acWord = null
+    if (searchText.value.slice(0, 1) == ":" && (searchText.value.slice(1) - 0) == searchText.value.slice(1)) {
+        fx.cursorLineIndex = searchText.value.slice(1) - 1 
+        ensureCursorInScreen()
+    }
     if (searchText.value == "") {
         searchText.value = getWordAtCursor().word
         if (searchText.value == "") {
@@ -2708,7 +2718,6 @@ function renderInternal() {
             } else if (theLine.startsWith("-")){
                 textFillStyle = "red"
             } else if (theLine.trim().startsWith("// mar"+"ker ")) {
-                // marker red
                 // do a fill rect of the color that comes after
                 // Not using save and restore because my mock canvas doesn't support it
                 var oldFillStyle = t.fillStyle
@@ -3361,6 +3370,7 @@ function clickItemInDirectory() {
     closeFile(0)
     addFile(newFullPath)
 }
+// marker orange
 var shouldAutocompleteLine = false
 // NEW FIND WORD
 var acWord = null
@@ -3550,6 +3560,7 @@ function acWordToggle(recursive) {
     }
     acWord.toggleCount += 1
 }
+// marker orange
 var inACPlop = false
 function acPlop(buff) {
     if (buff[0].length > 0){
