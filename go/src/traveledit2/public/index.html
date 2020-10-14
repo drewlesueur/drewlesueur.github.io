@@ -394,6 +394,9 @@ var theStatus = {}
 
 // if last keyDown is a backspace
 var wasDelete = false
+var moveHomeEndTimeout
+var moveHomeEndTimeoutMillis = 200
+var moveHomeEndDirection
 var selectTimeout
 var selectTimeoutMillis = 750
 var moveListenerCount = 0
@@ -2770,6 +2773,25 @@ function max(a, b) {
     return a > b ? a : b
 }
 
+function moveHomeEndAction() {
+   log("moveHomeEndAction")
+   var theLine = fx.lines[fx.cursorLineIndex] || ""
+   switch (moveHomeEndDirection) {
+       case "up":
+           break;
+       case "down":
+           break;
+       case "left":
+           var theIndent = getIndent(theLine)
+           fx.cursorColIndex = expandTabIndex(theLine, theIndent.length)
+           break;
+       case "right":
+           break;
+   }
+   updateCursorXY()
+   render()
+}
+
 function onStart(e) {
     e.preventDefault()
     // this handles all the touch interactions
@@ -3064,6 +3086,12 @@ function onStart(e) {
         endListenerCount = max(endListenerCount-1, 0)
         render()
     }
+    
+    var onEndForEdges = function(e) {
+        document.body.removeEventListener("touchend", onEndForEdges)
+        clearTimeout(moveHomeEndTimeout)
+        render()
+    }
 
     var startTouchX = e.touches[0].pageX
     var startTouchY = e.touches[0].pageY
@@ -3132,6 +3160,7 @@ function onStart(e) {
             // fx.cursorColIndex += fx.offsetX - origOffsetX
             fx.cursorColIndex += 1
         }
+        document.body.addEventListener("touchend", onEndForEdges)
         updateCursorXY()
         render()
         return
@@ -3168,24 +3197,28 @@ function onStart(e) {
                 fx.cursorLineIndex = 0
             }
             ensureCursorInScreen()
-        } else if (document.activeElement == theText) {
-            fx.cursorColIndex -= 1
-            //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-            setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-            ensureCursorInScreen()
         } else {
-            var origOffsetX = fx.offsetX
-            if (false && fx.offsetX <= 0) {
-                fx.offsetX = -5
-            }  else {
-                // var tabStop = 4
-                var tabStop = 1
-                fx.offsetX = Math.floor((fx.offsetX-1) / tabStop) * tabStop
-            }
-            // fx.cursorColIndex += fx.offsetX - origOffsetX
-            fx.cursorColIndex -= 1
-            if (fx.cursorColIndex < -5) {
-                 fx.cursorColIndex = -5    
+            moveHomeEndDirection = "left"
+            moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
+            if (document.activeElement == theText) {
+                fx.cursorColIndex -= 1
+                //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+                setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+                ensureCursorInScreen()
+            } else {
+                var origOffsetX = fx.offsetX
+                if (false && fx.offsetX <= 0) {
+                    fx.offsetX = -5
+                }  else {
+                    // var tabStop = 4
+                    var tabStop = 1
+                    fx.offsetX = Math.floor((fx.offsetX-1) / tabStop) * tabStop
+                }
+                // fx.cursorColIndex += fx.offsetX - origOffsetX
+                fx.cursorColIndex -= 1
+                if (fx.cursorColIndex < -5) {
+                     fx.cursorColIndex = -5    
+                }
             }
         }
         if (fx.cursorColIndex < -5){
@@ -3197,6 +3230,7 @@ function onStart(e) {
         if (fx.offsetX < -5){
             fx.offsetX = -5
         }
+        document.body.addEventListener("touchend", onEndForEdges)
         updateCursorXY()
         render()
         return
@@ -3220,11 +3254,10 @@ function onStart(e) {
 
         var bbox = c.getBoundingClientRect()
         
-        // commenting out the page down feature
         if (startTouchY - bbox.top < 40) {
             if (document.activeElement == theText) {
                shouldAutocompleteLine = true
-            } else if (false) {
+            } else if (false) { // commenting out the page down feature
                 var origOffsetY = fx.offsetY
                 fx.offsetY -= Math.round(maxLines/2) 
                 if (fx.offsetY <= 0) {
