@@ -7,11 +7,14 @@ fix bug with autocomplete not moving cursor
 inline autocomplete: the order could depend on whwt you last did
 
 
-
 // marker lime 
-button for pull origin
+potentially show all markers in file list
+long press for marker jump is jittery because it first scrolls up one line
+same with going to end of line...
 go to end of line
 go to line number
+
+button for pull origin
 
 add file markers - maybe make it part of find feature
 where you can gondown and up

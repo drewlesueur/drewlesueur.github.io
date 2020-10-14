@@ -2399,6 +2399,7 @@ function sendViewToServer() {
    //    pro: still only dealing with current screen
    //    con: not as fluid as a more advanced solution
    // I am starting to like option 5
+   // 6. thinking more about 4. 
    if (sendingViewToServer) {
        shouldSendViewToServer = true
        return
@@ -2765,13 +2766,13 @@ function renderInternal() {
 
     // red ghost cursor
     t.fillStyle = "rgba(255, 0, 0, 0.5)"
-    t.fillRect(cursorX, cursorY, 6, fontHeight)
+    t.fillRect(cursorX, cursorY, 4, fontHeight)
 
     // cursor
-    t.fillStyle = "cyan"
+    t.fillStyle = "orange"
     var yPos = (fx.cursorLineIndex - fx.offsetY) * fontHeight
     var xPos = (fx.cursorColIndex - fx.offsetX) * fontWidth
-    t.fillRect(xPos, yPos, 6, fontHeight)
+    t.fillRect(xPos, yPos, 4, fontHeight)
     cursorLine = fx.lines[fx.cursorLineIndex] || ""
 }
 
