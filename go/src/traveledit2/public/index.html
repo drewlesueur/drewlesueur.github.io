@@ -2774,21 +2774,32 @@ function max(a, b) {
 }
 
 function moveHomeEndAction() {
-   log("moveHomeEndAction")
-   var theLine = fx.lines[fx.cursorLineIndex] || ""
-   switch (moveHomeEndDirection) {
+    log("moveHomeEndAction")
+    var theLine = fx.lines[fx.cursorLineIndex] || ""
+    switch (moveHomeEndDirection) {
        case "up":
+           // TODO: jump to markers once you add that feature?
+           // make an implicit marker of where you last were?
+           fx.cursorLineIndex = 0
            break;
        case "down":
+           // TODO: jump to markers
+           fx.cursorLineIndex = fx.lines.length - 1
            break;
        case "left":
            var theIndent = getIndent(theLine)
            fx.cursorColIndex = expandTabIndex(theLine, theIndent.length)
            break;
        case "right":
+           fx.cursorColIndex = expandTabIndex(theLine, theLine.length)
            break;
    }
-   updateCursorXY()
+   if (document.activeElement == theText) {
+    fx.cursorColIndex += 1
+    //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+    setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+   }
+   ensureCursorInScreen()
    render()
 }
 
@@ -3110,6 +3121,8 @@ function onStart(e) {
     if (startTouchX > ((canvasWidth/3) - 40)) {
         var bbox = c.getBoundingClientRect()
         if (startTouchY - bbox.top < (bbox.height/2)) {
+            moveHomeEndDirection = "down"
+            moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
             fx.cursorLineIndex += 1
             if (fx.cursorLineIndex >= fx.lines.length) {
                 fx.cursorLineIndex = fx.lines.length - 1
@@ -3141,24 +3154,28 @@ function onStart(e) {
                 fx.cursorLineIndex = fx.lines.length - 1
             }
             ensureCursorInScreen()
-        } else if (document.activeElement == theText) {
-            fx.cursorColIndex += 1
-            //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-            setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-            ensureCursorInScreen()
         } else {
-            var origOffsetX = fx.offsetX
-            // scroll by tabstop?
-            if (false && fx.offsetX < 0) {
-                fx.offsetX = 0
-            }  else {
-                // var tabStop = 4
-                var tabStop = 1
-                fx.offsetX = Math.ceil((fx.offsetX + 1) / tabStop) * tabStop
+            moveHomeEndDirection = "right"
+            moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
+            if (document.activeElement == theText) {
+                fx.cursorColIndex += 1
+                //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+                setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+                ensureCursorInScreen()
+            } else {
+                var origOffsetX = fx.offsetX
+                // scroll by tabstop?
+                if (false && fx.offsetX < 0) {
+                    fx.offsetX = 0
+                }  else {
+                    // var tabStop = 4
+                    var tabStop = 1
+                    fx.offsetX = Math.ceil((fx.offsetX + 1) / tabStop) * tabStop
+                }
+                ////fx.offsetX += Math.floor(maxCols/2)
+                // fx.cursorColIndex += fx.offsetX - origOffsetX
+                fx.cursorColIndex += 1
             }
-            ////fx.offsetX += Math.floor(maxCols/2)
-            // fx.cursorColIndex += fx.offsetX - origOffsetX
-            fx.cursorColIndex += 1
         }
         document.body.addEventListener("touchend", onEndForEdges)
         updateCursorXY()
@@ -3168,6 +3185,8 @@ function onStart(e) {
     if (startTouchX < 40) {
         var bbox = c.getBoundingClientRect()
         if (startTouchY - bbox.top < (bbox.height/2)) {
+            moveHomeEndDirection = "up"
+            moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
             fx.cursorLineIndex -= 1
             if (fx.cursorLineIndex < 0) {
                 fx.cursorLineIndex = 0
