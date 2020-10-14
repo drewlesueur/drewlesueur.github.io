@@ -1,18 +1,24 @@
 are we using http2??
 
+do a fuzzy atcmplt!!!
+fix bug with autocomplete not moving cursor
+
+
 inline autocomplete: the order could depend on whwt you last did
 
+
+
+// marker lime 
 button for pull origin
 go to end of line
 go to line number
-close directories!
-start on index 1 for directories
 
 add file markers - maybe make it part of find feature
 where you can gondown and up
+see list of all markers in file list
 
 document all the features
-
+// marker yellow 
 wget "https://unpkg.com/diff@4.0.2/dist/diff.js"
 your simpleDiffOld3 is decent, but try to manually implement
 the Myers algorithm to compare.
@@ -189,6 +195,7 @@ an alt-tab (of sorts) within a file
 bug: sometimes inline pasting puts an extra space at the end.
 bug: pressing // with nonline selection does a weird thing
 
+// marker pink
 resurrect the most recently used file view as an optional eay to view files
 
 Prevent file from being changed out from underneath us

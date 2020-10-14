@@ -217,8 +217,8 @@ ontouchstart=onStart(event)
 <div class="toolbar xhidden" id=fileRow onclick=selectFileRow(event)>
 </div>
 <div class=toolbar>
-    <div id=findDownButton class=square onclick=findDown()>find down</div>
     <div id=findUpButton class=square onclick=findUp()>find up</div>
+    <div id=findDownButton class=square onclick=findDown()>find down</div>
     <div id=clearSearchButton class=square onclick=clearSearch()>clear search</div>
     <div class=square onclick=editSearch()>edit search</div>
     
@@ -395,7 +395,7 @@ var theStatus = {}
 // if last keyDown is a backspace
 var wasDelete = false
 var moveHomeEndTimeout
-var moveHomeEndTimeoutMillis = 200
+var moveHomeEndTimeoutMillis = 100
 var moveHomeEndDirection
 var selectTimeout
 var selectTimeoutMillis = 750
@@ -1276,6 +1276,9 @@ function findDown(searchDir, wrap, startTop) {
     } 
     if (document.activeElement != searchText && searchText.value == "") {
         searchText.value = getWordAtCursor().word
+        if (searchText.value == "") {
+            searchText.value = "// marker"
+        }
     }
     for (var i=startY; i<fx.lines.length; i++) {
         var lineToSearch = fx.lines[i]
@@ -1348,6 +1351,9 @@ function findUp() {
     acWord = null
     if (searchText.value == "") {
         searchText.value = getWordAtCursor().word
+        if (searchText.value == "") {
+            searchText.value = "// marker"
+        }
     }
     for (var i=fx.cursorLineIndex; i>=0; i--) {
         var lineToSearch = fx.lines[i]
@@ -2692,6 +2698,7 @@ function renderInternal() {
                 }
             }
         }
+        // TODO: set variable for line.trim()
         var textFillStyle 
         // the actual text
         if (true || fx.fileMode == "bash" || fx.fileMode == "file") {
@@ -2699,6 +2706,16 @@ function renderInternal() {
                 textFillStyle = isDark ? "lime" : "green"
             } else if (theLine.startsWith("-")){
                 textFillStyle = "red"
+            } else if (theLine.trim().startsWith("// marker ")) {
+                // marker red
+                // do a fill rect of the color that comes after
+                // Not using save and restore because my mock canvas doesn't support it
+                var oldFillStyle = t.fillStyle
+                t.fillStyle = trimPrefix(theLine.trim(), "// marker ").split(" ")[0]
+                // go twice as wide as you need, for server rendering purposes
+                t.fillRect(0, y * fontHeight, c.width*2, fontHeight)
+                t.fillStyle = oldFillStyle
+                textFillStyle = fontColor
             } else if (theLine.trim().startsWith("//")) {
                 // comments are gray
                 textFillStyle = lightFontColor
@@ -2772,7 +2789,7 @@ function min(a, b) {
 function max(a, b) {
     return a > b ? a : b
 }
-
+// marker pink
 function moveHomeEndAction() {
     log("moveHomeEndAction")
     var theLine = fx.lines[fx.cursorLineIndex] || ""
@@ -2780,11 +2797,23 @@ function moveHomeEndAction() {
        case "up":
            // TODO: jump to markers once you add that feature?
            // make an implicit marker of where you last were?
-           fx.cursorLineIndex = 0
+           var oldSearchText = searchText.value
+           searchText.value = "// marker "
+           var found = findUp()
+           searchText.value = oldSearchText
+           if (!found) {
+               fx.cursorLineIndex = 0
+           }
            break;
        case "down":
            // TODO: jump to markers
-           fx.cursorLineIndex = fx.lines.length - 1
+           var oldSearchText = searchText.value
+           searchText.value = "// marker "
+           var found = findDown()
+           searchText.value = oldSearchText
+           if (!found) {
+               fx.cursorLineIndex = fx.lines.length - 1
+           }
            break;
        case "left":
            var theIndent = getIndent(theLine)
