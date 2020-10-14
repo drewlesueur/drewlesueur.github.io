@@ -1277,7 +1277,7 @@ function findDown(searchDir, wrap, startTop) {
     if (document.activeElement != searchText && searchText.value == "") {
         searchText.value = getWordAtCursor().word
         if (searchText.value == "") {
-            searchText.value = "// marker"
+            searchText.value = "// mar"+"ker"
         }
     }
     for (var i=startY; i<fx.lines.length; i++) {
@@ -1352,7 +1352,7 @@ function findUp() {
     if (searchText.value == "") {
         searchText.value = getWordAtCursor().word
         if (searchText.value == "") {
-            searchText.value = "// marker"
+            searchText.value = "// mar"+"ker"
         }
     }
     for (var i=fx.cursorLineIndex; i>=0; i--) {
@@ -2706,12 +2706,12 @@ function renderInternal() {
                 textFillStyle = isDark ? "lime" : "green"
             } else if (theLine.startsWith("-")){
                 textFillStyle = "red"
-            } else if (theLine.trim().startsWith("// marker ")) {
+            } else if (theLine.trim().startsWith("// mar"+"ker ")) {
                 // marker red
                 // do a fill rect of the color that comes after
                 // Not using save and restore because my mock canvas doesn't support it
                 var oldFillStyle = t.fillStyle
-                t.fillStyle = trimPrefix(theLine.trim(), "// marker ").split(" ")[0]
+                t.fillStyle = trimPrefix(theLine.trim(), "// mar"+"ker ").split(" ")[0]
                 // go twice as wide as you need, for server rendering purposes
                 t.fillRect(0, y * fontHeight, c.width*2, fontHeight)
                 t.fillStyle = oldFillStyle
@@ -2798,7 +2798,7 @@ function moveHomeEndAction() {
            // TODO: jump to markers once you add that feature?
            // make an implicit marker of where you last were?
            var oldSearchText = searchText.value
-           searchText.value = "// marker "
+           searchText.value = "// mar"+"ker "
            var found = findUp()
            searchText.value = oldSearchText
            if (!found) {
@@ -2808,7 +2808,7 @@ function moveHomeEndAction() {
        case "down":
            // TODO: jump to markers
            var oldSearchText = searchText.value
-           searchText.value = "// marker "
+           searchText.value = "// mar"+"ker "
            var found = findDown()
            searchText.value = oldSearchText
            if (!found) {
@@ -3856,6 +3856,7 @@ function renderFileDropdown() {
 var treeFiles = []
 var fileTree = {}
 var treeFilesShadow = []
+// marker lime
 function treeToLines(theTree, path, indent, kPrefix) {
     for (var k in theTree) {
         var childKeys = Object.keys(theTree[k])
@@ -3933,6 +3934,7 @@ function getLinesForFileList() {
            curTree = childTree 
         }
     }
+    // marker lime
     treeFiles = []
     treeFilesShadow = []
     treeToLines(fileTree, "", "", "")
