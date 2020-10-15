@@ -1482,6 +1482,7 @@ function stripPrefixesInner(line, prefixes) {
         if (prefixPos != -1) {
             if (isWhiteSpace(line.slice(0, prefixPos))) {
                 line = line.slice(0, prefixPos) + line.slice(prefixPos + prefix.length)
+                break
             }
         }
     }

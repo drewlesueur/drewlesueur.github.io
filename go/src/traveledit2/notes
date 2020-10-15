@@ -1,5 +1,23 @@
 are we using http2??
 
+still close the () {} "" etc if you are right before a comma.
+autocomplete should also add to last saved?
+
+bug with surrounding in quotes etc when the whole line is selected
+  - you need to pass in false to one of the params I think
+
+Do another pass at button consolidation
+for example "//" and "un //" can be the same button
+clear log button can be moved down.
+space and backspace buttons can be removed
+
+something helpful if the line below matches the line above, make it green.
+don't show the red save button if hashed file matches saved file hash.
+ability to have a .color file in a directiory
+and server code will check that to see what color to show files
+in the ui
+or maybe better a // color blue 
+comment in the file.
 do a fuzzy atcmplt!!!
 fix bug with autocomplete not moving cursor
 
