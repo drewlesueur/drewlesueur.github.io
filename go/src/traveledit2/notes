@@ -1,6 +1,6 @@
 are we using http2??
 
-still close the () {} "" etc if you are right before a comma.
+still close the (), {} "" etc if you are right before a comma.
 autocomplete should also add to last saved?
 
 bug with surrounding in quotes etc when the whole line is selected

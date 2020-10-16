@@ -57,10 +57,12 @@
     border: 0px solid cyan;
     color: white;
     padding: 0px;
-    width: 80px;
+    --width: 80px;
+    width: 60px;
     height: 28px;
     margin: 1px;
     flex: 1 0 auto;
+    --font-size: 12px;
     font-size: 12px;
     display: flex;
     align-items: center;
@@ -175,15 +177,15 @@ onblur=handleBlur()
 Note that the css width needs to be 1/3 of
 the with attribute, and same for height.
 See canvasHeightFull
-<canvas id=c width=1125 height=1470
-style="width: 375px; height:490px;
+<canvas id=c width=1125 height=1600
+style="width: 375px; height:10px;
 display: block;"
 ontouchstart=onStart(event)
 ></canvas>
 -->
 
-<canvas id=c width=1125 height=1410
-style="width: 375px; height:470px;
+<canvas id=c width=1125 height=1515
+style="width: 375px; height:10px;
 display: block;"
 ontouchstart=onStart(event)
 ></canvas>
@@ -227,22 +229,23 @@ ontouchstart=onStart(event)
     <div class=square onclick=closeFile(0)>close</div>
 </div>
 <div class=toolbar>
+    <div class=square onclick=selectFileIndex(1)>alt tab</div>
+    <div class=square onclick="duplicateFile(fx, -1)">dupl file</div>
     <div class=square onclick=addCmdTab()>cmd</div>
+    <div class=square onclick=clearLog()>clear log</div>
     <div class=square onclick=undo()>undo</div>
     <div class=square onclick=redo()>redo</div>
     <div class=square onclick=comment()>//</div>
-    <div class=square onclick=unComment()>un //</div>
-    <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
-    <div class=square onclick=scriptLines()>script lines</div>
+    <!--<div class=square onclick=unComment()>un //</div>
+    -->
 </div>
 <div class=toolbar>
-    <div class=square onclick=selectFileIndex(1)>alt tab</div>
-    <div class=square onclick=clearLog()>clear log</div>
-    <div class=square onclick="duplicateFile(fx, -1)">dupl file</div>
-    <div class=square onclick=addSpace()>space</div>
+    
+    <!--<div class=square onclick=addSpace()>space</div>
     <div class=square onclick=backspace()>backspace</div>
     <div class=square onclick="theText.focus()">insert</div>
     <div class=square onclick="newLine(null, false)">new line</div>
+    -->
 </div>
 <!-- Stuff after here is after the fold -->
 <div class=toolbar>
@@ -257,6 +260,8 @@ ontouchstart=onStart(event)
 <div class=toolbar>
     <div class=square onclick="copyBuffer = [location.href]">copy url</div>
     <div class=square onclick="showDiff()">show diff</div>
+    <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
+    <div class=square onclick=scriptLines()>script lines</div>
 </div>
 
 <label for=serverViewCheckbox>
@@ -355,7 +360,7 @@ canvasWidth=1125
 // I turned off "Predictive" to get more vertical space
 // TODO: make these configurable in UI
 var canvasHeightKeyboard=1050
-// var canvasHeightKeyboard=950// // var canvasHeightKeyboard=950
+// var canvasHeightKeyboard=950
 var canvasHeightFull=c.height
 // 34 button height plus 1px*2 margin
 // 2 rows of new buttons for bash
@@ -1423,8 +1428,19 @@ function dedent() {
 }
 
 function comment() {
-    addPrefix("// ")
+    var theLine
+    if (fx.selectedRegions.length > 0) {
+        theLine = fx.lines[fx.selectedRegions[0].startY] 
+    } else {
+        theLine = fx.lines[fx.cursorLineIndex]
+    }
+    if (theLine.trim().startsWith("//")) {
+        stripPrefixes(["// ", "//"])
+    } else {
+        addPrefix("// ")
+    }
 }
+
 function unComment() {
     stripPrefixes(["// ", "//"])
 }
@@ -1446,7 +1462,16 @@ function addPrefix(prefix) {
             fx.lines[y] = fx.lines[y].slice(0, firstNonSpace) + prefix + fx.lines[y].slice(firstNonSpace)
         }
     } else {
-        fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex].slice(0, firstNonSpace) + prefix + fx.lines[fx.cursorLineIndex].slice(firstNonSpace)
+        var line = fx.lines[fx.cursorLineIndex]
+        var firstNonSpace = 0
+        for (var i=0; i<line.length; i++) {
+            var chr = line.charAt(i)
+            if (chr != " " && chr != "\t") {
+                firstNonSpace = i
+                break
+            }
+        }
+        fx.lines[fx.cursorLineIndex] = line.slice(0, firstNonSpace) + prefix + line.slice(firstNonSpace)
     }
     docChanged()
     render()
@@ -1710,6 +1735,8 @@ function del(preventCopy, preventDeleteWholeLine) {
                 render()
                 return
             } else {
+                // I don't remember adding this. Is this right?
+                // selectMode = "char"
                 if (!preventCopy) {
                     copyBuffer = [unExpandSlice(fx.lines[r.startY], r.startX, r.stopX)]
                     // cutBuffer = [unExpandSlice(fx.lines[r.startY], r.startX, r.stopX)]
@@ -2170,6 +2197,7 @@ function handleKeydown(e) {
         var selectedRegion = JSON.parse(JSON.stringify(fx.selectedRegions[0]))
         // for now only deal with singe line
         var oldCopyBuffer = copyBuffer 
+        // marker tan
         del(false, true)
         var part = copyBuffer[0]
         if (!part) {
