@@ -1,5 +1,10 @@
 are we using http2??
 
+
+double left to go back
+double right to go forward
+(of whare you last were? or within document?)
+
 still close the (), {} "" etc if you are right before a comma.
 autocomplete should also add to last saved?
 

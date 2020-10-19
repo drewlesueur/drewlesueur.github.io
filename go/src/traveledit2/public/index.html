@@ -896,6 +896,7 @@ function renderDarkMode() {
     updateClassForSelector("input", "light", "dark")
     updateClassForSelector("textarea", "light", "dark")
     fontColor = "white"
+    fontColor = "rgba(100, 255, 100)"
     lightFontColor = "rgba(255, 255, 255, 0.5)"
     veryLightFontColor = "rgba(255, 255, 255, 0.1)"
     render()
@@ -1011,7 +1012,21 @@ function normalizeFullPath(fullPath) {
         fullPath = "/" + fullPath
     }
     // TODO: also apply the .. and .
-    return fullPath
+    var newParts = []
+    var parts = fullPath.split("/")
+    for (var i=0; i<parts.length; i++) {
+        var part = parts[i]        
+        if (part == ".") {
+            continue
+        }
+        if (part == "..") {
+            newParts.pop()
+        }
+        newParts.push(part)
+    }
+    newFullPath = newParts.join("/")
+    log([fullPath, newFullPath])
+    return newFullPath
 }
 function addFile(fullPath) {
     fullPath = normalizeFullPath(fullPath)
@@ -4101,6 +4116,8 @@ function debugView() {
     }
     setCanvasHeightAccordingly()
 }
+
+
 
 var maxUndos = 30
 
