@@ -7,11 +7,12 @@ import "log"
 
 func main() {
 	port := flag.String("p", "8000", "port to listen on")
+	prefix := flag.String("prefix", "/", "proxy prefix to trim")
 	flag.Parse()
 
 	mux := http.NewServeMux()
 	fs := http.FileServer(http.Dir("."))
-	mux.Handle("/", http.StripPrefix("/", fs))
+	mux.Handle(*prefix, http.StripPrefix(*prefix, fs))
 
 	srv := http.Server{
 		Addr:         ":" + *port,
