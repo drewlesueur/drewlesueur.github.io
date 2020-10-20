@@ -1,6 +1,15 @@
 are we using http2??
 
+short list
+* [done] if you are next to a comma, still close parens
+* cycling autocomplete bug where cursor doesn't move to end
+* autocomplete doesn't save last word? (I think I explicity say not to)
+* move to end bug
+* select expansion?
 
+double bac
+doub
+double bac
 double left to go back
 double right to go forward
 (of whare you last were? or within document?)
