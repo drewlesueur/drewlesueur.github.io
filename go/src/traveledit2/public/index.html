@@ -1290,7 +1290,6 @@ function findDown(searchDir, wrap, startTop) {
     shouldAutocompleteLine = false
     hasMovedSinceNewLine = true
     acWord = null
-// marker blue    
     if (searchText.value.slice(0, 1) == ":" && (searchText.value.slice(1) - 0) == searchText.value.slice(1)) {
         fx.cursorLineIndex = searchText.value.slice(1) - 1
          ensureCursorInScreen()
@@ -1971,7 +1970,7 @@ function trimPrefix(str, prefix) {
     }
     return str
 }
-
+// marker aquamarine
 function setSelectionRangeForText(start, end) {
     var adjustedStart = u(start)
     var adjustedEnd
@@ -1980,6 +1979,7 @@ function setSelectionRangeForText(start, end) {
     } else {
         adjustedEnd = u(end)
     }
+    log("setting selectionStart: " + adjustedStart)
     theText.setSelectionRange(adjustedStart, adjustedEnd)
 }
 
@@ -2213,7 +2213,7 @@ function handleKeydown(e) {
         var selectedRegion = JSON.parse(JSON.stringify(fx.selectedRegions[0]))
         // for now only deal with singe line
         var oldCopyBuffer = copyBuffer 
-        // marker tan
+        
         del(false, true)
         var part = copyBuffer[0]
         if (!part) {
@@ -2578,8 +2578,9 @@ function render() {
     } else if (fx.fileMode == "bash") {
         saveButton.innerText = "run"
     }
-    
+    // marker aquamarine setting text
     if (!inEdit) {
+        log("--setting text")
         theText.value = cursorLine
         theTextBefore.value = fx.lines[fx.cursorLineIndex - 1] || ""
         theTextAfter.value = fx.lines[fx.cursorLineIndex + 1] || ""
@@ -2590,8 +2591,11 @@ function render() {
         if (document.activeElement == theText) {
             // this one we don't want to call setSelectionRangeForText
             // because the arguments are not from cursorColIndex
-            theText.setSelectionRange(selStart, selEnd)
+            // theText.setSelectionRange(selStart, selEnd)
+            setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
         }
+    } else {
+        log("--NOT setting text")
     }
     
     var timeSinceServerRender = Date.now() - lastServerRender
@@ -2665,6 +2669,8 @@ function renderInternal() {
     // render autocomplete word
     if (acWord) {
         t.fillStyle = "orange"
+        // marker aquamarine
+        t.fillStyle = "aquamarine"
         for (var y=acWord.startY-fx.offsetY; y<=acWord.stopY-fx.offsetY; y++) {
             var line = fx.lines[y + fx.offsetY] || ""
             if (acWord.startY == acWord.stopY) {
@@ -2845,7 +2851,7 @@ function min(a, b) {
 function max(a, b) {
     return a > b ? a : b
 }
-// marker pink
+
 function moveHomeEndAction() {
     log("moveHomeEndAction")
     var theLine = fx.lines[fx.cursorLineIndex] || ""
@@ -3642,6 +3648,7 @@ function acPlop(buff) {
         var lastCopyBufferLine = copyBuffer[copyBuffer.length - 1]
         acWord.stopX = expandTabIndex(lastCopyBufferLine, lastCopyBufferLine.length)
     }
+    // marker aquamarine autocomplete
     if (!acWord.autocompleteLine) {
         fx.cursorColIndex = acWord.stopX
     }
@@ -3654,9 +3661,6 @@ function acPlop(buff) {
     fx.selectedRegions = []
     preventRender = oldPreventRender
     render()
-    // TODO: why do we have to set this after render?
-    setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-    //alert(acWord.stopX)
     inACPlop = false
 }
 function acFindUp() {
