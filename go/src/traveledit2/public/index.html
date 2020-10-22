@@ -1444,9 +1444,9 @@ function findUp() {
     }
     if (searchText.value == "") {
         searchText.value = getWordAtCursor().word
-        navBack()
-        return
         if (searchText.value == "") {
+            navBack()
+            return
             searchText.value = "// mar"+"ker"
         }
     }
@@ -3887,6 +3887,18 @@ function selectFileRow(e) {
         return
     }
     var index = e.target.getAttribute("data-index")
+    
+    if (index == 0) {
+    
+        // simple (alt+tab) within file
+        // Won't work if we alrady have been having back.
+        if (fx.locationIndex == fx.locationStack.length - 1) {
+            navBack()
+        } else {
+            navForward()
+        } 
+        return
+    }
     selectFileIndex(index)
 }
 function selectFileIndex(index) {
