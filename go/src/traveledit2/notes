@@ -1,5 +1,9 @@
 are we using http2??
 
+pastebuffer history in a file?
+inline web browser
+b9b57011462004f40e21f1e4771756c0de4b7383
+
 short list
 * [done] if you are next to a comma, still close parens
 * cycling autocomplete bug where cursor doesn't move to end
@@ -7,10 +11,9 @@ short list
 * move to end bug
 * select expansion?
 * solve the delete, then paste problem
+* only save diffs.
+* verify the hash of the file 
 
-double bac
-doub
-double bac
 double left to go back
 double right to go forward
 (of whare you last were? or within document?)

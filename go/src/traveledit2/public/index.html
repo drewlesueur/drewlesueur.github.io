@@ -262,6 +262,7 @@ ontouchstart=onStart(event)
     <div class=square onclick="showDiff()">show diff</div>
     <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
     <div class=square onclick=scriptLines()>script lines</div>
+    <div class=square onclick=addBrowser()>add browser</div>
 </div>
 
 <label for=serverViewCheckbox>
@@ -413,6 +414,10 @@ var originalCanvasHeightFull = canvasHeightFull
 var scrollTimeout
 
 
+function addBrowser() {
+    var f = makeFile("http://google.com", 0, contents)
+    addFileToList(f)
+}
 function showDiff() {
     var start = Date.now()
     var contents = simpleDiffOld(fx.undo.lastSavedLines, fx.lines, false).join("\n")
@@ -2670,7 +2675,6 @@ function renderInternal() {
     if (acWord) {
         t.fillStyle = "orange"
         // marker aquamarine
-        t.fillStyle = "aquamarine"
         for (var y=acWord.startY-fx.offsetY; y<=acWord.stopY-fx.offsetY; y++) {
             var line = fx.lines[y + fx.offsetY] || ""
             if (acWord.startY == acWord.stopY) {
