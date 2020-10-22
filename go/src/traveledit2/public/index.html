@@ -439,6 +439,13 @@ setInterval(function() {
             fx.locationStack.shift()       
             fx.locationIndex--
         }
+    } else {
+        var loc = {
+            offsetY: fx.offsetY,
+            cursorLineIndex: fx.cursorLineIndex,
+            cursorColIndex: fx.cursorColIndex,
+        }
+        fx.locationStack[fx.locationIndex] = loc
     }
 }, 1000)
 
@@ -884,12 +891,14 @@ function urlAtCursor() {
     open(url)
 }
 
+
+
 function addSpace() {
     if (fx.cursorLineIndex >= fx.lines.length) {
         return
     }
     var line = fx.lines[fx.cursorLineIndex]
-    fx.lines[fx.cursorLineIndex] = line.slice(0, u(fx.cursorColIndex)) + " " + line.slice(u(fx.cursorColIndex))
+    updateLine(-1, line.slice(0, u(fx.cursorColIndex)) + " " + line.slice(u(fx.cursorColIndex)))
     fx.cursorColIndex += 1 
     updateCursorXY()
     docChanged()
@@ -1225,7 +1234,21 @@ function saveUndo(preventUndo) {
     }
 }
 
+// setter for lines
+// this should help keep track of changes etc
+// for use in undo maybe, and streaming
+// in the future you can have more granular changes about what in the line
+// is being updated, like a splice?
+// maybe tou can do a line diff too.
+function updateLine(index, value) {
+    if (index == -1) {
+        index = fx.cursorLineIndex
+    }
+    fx.lines[index] = value
+}
+
 function setLines(lines) {
+    // TODO: calc a whole diff here?
     // because there can be multiple files
     // referencing the same lines,
     // we can't just set the lines on one
@@ -2343,7 +2366,7 @@ function saveLine() {
             // closing line for formatter
         }
     }
-    fx.lines[fx.cursorLineIndex] = theText.value
+    updateLine(-1, theText.value)
     cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
     cursorY = (fx.cursorLineIndex - fx.offsetY) * fontHeight
     docChanged(true)
