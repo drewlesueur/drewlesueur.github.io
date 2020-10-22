@@ -263,6 +263,8 @@ ontouchstart=onStart(event)
     <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
     <div class=square onclick=scriptLines()>script lines</div>
     <div class=square onclick=addBrowser()>add browser</div>
+    <div class=square onclick=navBack()>nav back</div>
+    <div class=square onclick=navForward()>nav forward</div>
 </div>
 
 <label for=serverViewCheckbox>
@@ -412,6 +414,60 @@ var autoSave = false
 var lastPageYOffset = 0
 var originalCanvasHeightFull = canvasHeightFull
 var scrollTimeout
+
+// TODO: as you add or delete lines
+// go thru these locations and update them
+setInterval(function() {
+    // has to be at the same place for 2 seconds
+    if (fx.lastOffsetY != fx.offsetY) {
+        fx.lastOffsetY = fx.offsetY   
+        return
+    }
+    var lastLocation = fx.locationStack[fx.locationIndex]
+    if (!lastLocation || (Math.abs(fx.offsetY - lastLocation.offsetY) > maxLines)) {
+        if (fx.locationIndex != fx.locationStack.length - 1) {
+            fx.locationStack = fx.locationStack.slice(0, fx.locationIndex + 1)
+        }
+        var loc = {
+            offsetY: fx.offsetY,
+            cursorLineIndex: fx.cursorLineIndex,
+            cursorColIndex: fx.cursorColIndex,
+        }
+        fx.locationStack.push(loc)
+        fx.locationIndex++
+        if (fx.locationStack.length > 30) {
+            fx.locationStack.shift()       
+            fx.locationIndex--
+        }
+    }
+}, 1000)
+
+function navBack() {
+    if (fx.locationIndex == 0) {
+        return
+    }    
+    fx.locationIndex--
+    var loc = fx.locationStack[fx.locationIndex]
+    gotoLoc(loc)
+}
+function navForward() {
+    if (fx.locationIndex >= fx.locationStack.length - 1) {
+        return
+    }    
+    fx.locationIndex++
+    var loc = fx.locationStack[fx.locationIndex]
+    gotoLoc(loc)
+}
+function gotoLoc(loc) {
+    if (!loc) {
+        return
+    }
+    fx.cursorLineIndex = loc.cursorLineIndex
+    fx.cursorColIndex = loc.cursorColIndex
+    fx.offsetY = loc.offsetY
+    updateCursorXY()
+    render()
+}
 
 
 function addBrowser() {
@@ -1308,6 +1364,8 @@ function findDown(searchDir, wrap, startTop) {
     if (document.activeElement != searchText && searchText.value == "") {
         searchText.value = getWordAtCursor().word
         if (searchText.value == "") {
+            navForward()
+            return
             searchText.value = "// mar"+"ker"
         }
     }
@@ -1386,6 +1444,8 @@ function findUp() {
     }
     if (searchText.value == "") {
         searchText.value = getWordAtCursor().word
+        navBack()
+        return
         if (searchText.value == "") {
             searchText.value = "// mar"+"ker"
         }
@@ -1418,12 +1478,6 @@ function findUp() {
 }
 function clearSearch() {
     searchText.value = ""
-    render()
-}
-
-function jsFunc() {
-    selectMode
-    docChanged()
     render()
 }
 
@@ -1984,7 +2038,6 @@ function setSelectionRangeForText(start, end) {
     } else {
         adjustedEnd = u(end)
     }
-    log("setting selectionStart: " + adjustedStart)
     theText.setSelectionRange(adjustedStart, adjustedEnd)
 }
 
@@ -2585,7 +2638,6 @@ function render() {
     }
     // marker aquamarine setting text
     if (!inEdit) {
-        log("--setting text")
         theText.value = cursorLine
         theTextBefore.value = fx.lines[fx.cursorLineIndex - 1] || ""
         theTextAfter.value = fx.lines[fx.cursorLineIndex + 1] || ""
@@ -3879,6 +3931,10 @@ function makeFile(fullPath, cursorLineIndex, contents) {
         uniqueID: getUniqueID(),
         fileToken: fileToken,
         selectedRegions: [],
+        
+        locationStack: [],
+        locationIndex: -1,
+        lastOffsetY: -1,
     }
 }
 function addFileToList(file) {
