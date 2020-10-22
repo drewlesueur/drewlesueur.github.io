@@ -3,6 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
 <meta charset='utf-8'>
 <script src="/te/tepublic/diff.js"></script>
+<script src="/te/tepublic/md5.js"></script>
 <style>
 // @font-face {
 //   font-family: GoMono;
@@ -325,6 +326,7 @@ window.onerror = function(message, url, lineNumber, columnNumber, error) {
 var t = c.getContext("2d")
 
 var preventRender = true
+var saveDiffs = false
 var totalViewBytesSent = 0 
 var totalViewRequests = 0
 var saveEveryMS = 3000
@@ -482,21 +484,21 @@ function addBrowser() {
     addFileToList(f)
 }
 function showDiff() {
-    var start = Date.now()
-    var contents = simpleDiffOld(fx.undo.lastSavedLines, fx.lines, false).join("\n")
-    log("diff1: " + (Date.now()-start))
-    var f = makeFile("__diffOld", 0, contents)
-    f.fileMode = "file"
-    f.cursorLineIndex = 0
-    addFileToList(f)
-    
-    var start = Date.now()
-    var contents = simpleDiffOld2(fx.undo.lastSavedLines, fx.lines, false).join("\n")
-    log("diff2: " + (Date.now()-start))
-    var f2 = makeFile("__diffOld2", 0, contents)
-    f2.fileMode = "file"
-    f2.cursorLineIndex = 0
-    addFileToList(f2)
+    // var start = Date.now()
+    // var contents = simpleDiffOld(fx.undo.lastSavedLines, fx.lines, false).join("\n")
+    // log("diff1: " + (Date.now()-start))
+    // var f = makeFile("__diffOld", 0, contents)
+    // f.fileMode = "file"
+    // f.cursorLineIndex = 0
+    // addFileToList(f)
+    // 
+    // var start = Date.now()
+    // var contents = simpleDiffOld2(fx.undo.lastSavedLines, fx.lines, false).join("\n")
+    // log("diff2: " + (Date.now()-start))
+    // var f2 = makeFile("__diffOld2", 0, contents)
+    // f2.fileMode = "file"
+    // f2.cursorLineIndex = 0
+    // addFileToList(f2)
     
     var start = Date.now()
     var contents = simpleDiffOld3(fx.undo.lastSavedLines, fx.lines, false).join("\n")
@@ -709,6 +711,7 @@ function simpleDiffOld2(aLines, bLines, showSame) {
     return ret
 }
 
+// heuristical
 function simpleDiffOld3(aLines, bLines, showSame) {
     var aLastMatched = -1
     var bLastMatched = -1
@@ -890,8 +893,6 @@ function urlAtCursor() {
     alert(JSON.stringify(url))
     open(url)
 }
-
-
 
 function addSpace() {
     if (fx.cursorLineIndex >= fx.lines.length) {
@@ -2231,18 +2232,34 @@ function save() {
             break
         }
         fx.savingVersion = fx.version
-        fetch(fx.fullPath, {
-            method: "POST",
-            cache: "no-cache",
-            headers: { "Content-Type": "application/x-www-form-urlencoded"},
-            body: "content=" + encodeURIComponent(fx.lines.join("\n"))
-        })
-        .then(r => r.json())
+        var toSave = fx.lines.join("\n") 
+        var toSaveHash = md5(toSave)
+        var fetchPromise
+        if (saveDiffs) {
+            var theDiff = simpleDiffOld3(fx.undo.lastSavedLines, fx.lines, false).join("\n")
+            fetchPromise = fetch(fx.fullPath, {
+                method: "POST",
+                cache: "no-cache",
+                headers: { "Content-Type": "application/x-www-form-urlencoded"},
+                body: "oldmd5="+fx.undo.lastSavedHash+"&newmd5="+toSaveHash+"&diff=" + encodeURIComponent(theDiff)
+            })
+        } else {
+            fetchPromise = fetch(fx.fullPath, {
+                method: "POST",
+                cache: "no-cache",
+                headers: { "Content-Type": "application/x-www-form-urlencoded"},
+                body: "content=" + encodeURIComponent(toSave)
+            })
+        }
+        fetchPromise.then(r => r.json())
         .then(v => {
             if (v.saved) {
                 fx.savedVersion = fx.savingVersion
                 fx.savingVersion = -1
-            fx.undo.lastSavedLines = JSON.parse(JSON.stringify(fx.lines))
+                fx.undo.lastSavedLines = toSave.split("\n")
+                fx.undo.lastSavedHash = toSaveHash
+            } else {
+                alert("issue saving")
             }
             render()
             renderFileDropdown()
@@ -2674,8 +2691,6 @@ function render() {
             // theText.setSelectionRange(selStart, selEnd)
             setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
         }
-    } else {
-        log("--NOT setting text")
     }
     
     var timeSinceServerRender = Date.now() - lastServerRender
@@ -3952,6 +3967,7 @@ function makeFile(fullPath, cursorLineIndex, contents) {
             xStack: [0],
             yStack: [0],
             lastSavedLines: JSON.parse(JSON.stringify(theLines)),
+            lastSavedHash: md5(contents),
         },
         lines: theLines,
         cursorLineIndex: cursorLineIndex,
@@ -4174,7 +4190,8 @@ function fetchFile(fullPath, file) {
             index:0,
             xStack: [0],
             yStack: [0],
-            lastSavedLines: JSON.parse(JSON.stringify(file.lines))
+            lastSavedLines: JSON.parse(JSON.stringify(file.lines)),
+            lastSavedHash: md5(b),
         }
         file.loadedFirstTime = true
         if (isDir) {

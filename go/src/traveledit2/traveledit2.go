@@ -14,6 +14,7 @@ import "io"
 import "encoding/json"
 import "sync"
 import "strconv"
+import "crypto/md5"
 import "github.com/NYTimes/gziphandler"
 // import "github.com/gorilla/websocket"
 
@@ -50,8 +51,120 @@ func BasicAuth(handler http.Handler) http.HandlerFunc {
 
 func logAndErr(w http.ResponseWriter, message string, args ...interface{}) {
 	theLog := fmt.Sprintf(message, args...)
+	ret := map[string]string{
+	    "error": theLog, 
+	}
+	b, _ := json.Marshal(ret)
 	log.Println(theLog)
-	http.Error(w, theLog, 500)
+	http.Error(w, string(b), 500)
+}
+
+// Index: foo
+// ===================================================================
+// --- foo	
+// +++ foo	
+// @@ -63,1 +63,1 @@
+// -    // formats   
+// +    // Here's what it looks like   
+// 
+
+// @@ -63 @@
+// -    // formats   
+// -}
+// -
+// +    // Here's what it looks like   
+// +}
+// +
+func applyDiff(oldContents, diff string) (string, error) {
+    oldLines := strings.Split(oldContents, "\n")
+    diffLines := strings.Split(diff, "\n")
+    
+    lineI := -1
+    diffI := -1
+    state := "want@"
+    inAtSign := false
+    newContentsSlice := []string{}
+    nextDiffIndex := -1
+    for i := 0; i < 20000; i++ {
+       if state == "want@" {
+           diffI++ 
+           if diffI > len(diff) {
+               break
+           }
+           if !strings.HasPrefix(diff[diffI], "@@") {
+               continue
+           }
+           nextDiffIndex = parseFirstNumber(diff[diffI]) - 1
+           state = "getToNextIndex"
+       } else if state == "getToNextIndex" {
+           lineI++       
+           if lineI >= len(oldLines) {
+               break   
+           }
+           if lineI == nextDiffIndex { 
+               state = "in@"
+               if diffI >= len(diffLines) {
+                   break
+               }
+           } else {
+               newContentsSlice = append(newContentsSlice, oldLines[lineI])   
+           }
+       } else if "in@" {
+           diffI++ 
+           if diffI > len(diff) {
+               break
+           }
+           if strings.HasPrefix(diffLines[diffI], "-") {
+               lineI++       
+               if lineI >= len(oldLines) {
+                   break   
+               }
+               // don't add   
+               // you could check that the removed lines match
+               // possibly optimize diff to not include the line removed, just the "-"?
+           }  else if strings.HasPrefix(diffLines[diffI], "+") {
+               newContentsSlice = append(newContentsSlice, diffLines[diffI][1:])   
+           }  else if strings.HasPrefix(diffLines[diffI], "@@") {
+               nextDiffIndex = parseFirstNumber(diff[diffI]) - 1
+               state = "getToNextIndex"
+           }  else {
+               lineI++       
+               if lineI >= len(oldLines) {
+                   break   
+               }
+               // you could check that the lines match
+               newContentsSlice = append(newContentsSlice, oldLines[lineI])   
+           }
+       }
+    }
+    if state == "want@" {
+        return oldContents, nil
+    }
+    return strings.Join(newContentsSlice, "\n"), nil
+}
+
+func parseFirstNumber(s string) int {
+    numb := ""
+    inNumber := false
+    for i, r := range s {
+        if inNumber {
+            if c >= 48 && c <= 57 {
+                numb += string(c)
+            } else {
+                break
+            }
+        } else {
+            if c >= 48 && c <= 57 {
+                numb += string(c)
+                inNumber := true
+            }
+        }
+    }
+    if len(numb) > 10 {
+        numb := numb[0:10]
+    }
+    n, _ := strconv.Atoi(numb)
+    return n
 }
 
 func main() {
@@ -113,7 +226,7 @@ func main() {
 		// http.ServeFile(w, r, "./public/view.html")
 		b, err := ioutil.ReadFile(*screenshareFile)
 		if err != nil {
-			http.Error(w, "error reading screenshare file", http.StatusInternalServerError)
+			logAndErr(w, "error reading screenshare file: %v", err)
 			return
 		}
 		htmlString := string(b)
@@ -128,7 +241,7 @@ func main() {
 		commands := []interface{}{}
 		err := json.NewDecoder(r.Body).Decode(&commands)
 		if err != nil {
-			logAndErr(w, fmt.Sprintf("could not decode commands: %v", err), 500)
+			logAndErr(w, "could not decode commands: %v", err)
 			return
 		}
 		viewMu.Lock()
@@ -266,7 +379,7 @@ func main() {
 
 		b, err := json.Marshal(renderCommands)
 		if err != nil {
-			logAndErr(w, fmt.Sprintf("could not marshal: %v", err), 500)
+			logAndErr(w, "could not marshal: %v", err)
 			return
 		}
 		log.Printf("size of view payload: %d", len(b))
@@ -277,7 +390,7 @@ func main() {
 		log.Printf("uploading files: %s", r.Header.Get("Content-Type"))
 		err := r.ParseMultipartForm(256 << 20) // 256MB
 		if err != nil {
-			http.Error(w, fmt.Sprintf("error parsing body: %v", err), 500)
+			logAndErr(w, "error parsing body: %v", err)
 			return
 		}
 
@@ -289,7 +402,7 @@ func main() {
 			log.Printf("a file! %s", fh.Filename)
 			f, err := fh.Open()
 			if err != nil {
-				http.Error(w, fmt.Sprintf("file upload error: %v", err), 500)
+				logAndErr(w, "file upload error: %v", err)
 				goto finish
 			}
 			newF, err = os.Create("./uploads/" + fh.Filename)
@@ -303,7 +416,7 @@ func main() {
 				goto finish
 			}
 			if err != nil {
-				logAndErr(w, fmt.Sprintf("file not written: %v", err), 500)
+				logAndErr(w, "file not written: %v", err)
 				goto finish
 			}
 
@@ -327,8 +440,7 @@ func main() {
 		cmd := exec.Command("bash", "-c", cmdString)
 		ret, err := cmd.CombinedOutput()
 		if err != nil {
-			log.Printf("there was and error running command: %s", cmdString)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logAndErr(w, "error running command: %s: %v", cmdString, err) 
 			return
 		}
 		//lines := strings.Split(string(r), "\n")
@@ -338,7 +450,7 @@ func main() {
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains("..", r.URL.Path) {
-			http.Error(w, "the path has a .. in it", http.StatusBadRequest)
+			logAndErr(w, "the path has a .. in it")
 			return
 		}
 		if r.Method == "GET" {
@@ -357,7 +469,7 @@ func main() {
 			log.Printf("the full path is: %s", fullPath)
 			fileInfo, err := os.Stat(fullPath)
 			if err != nil {
-				http.Error(w, "error determining file type", http.StatusInternalServerError)
+				logAndErr(w, "error determining file type
 				return
 			}
 			isDir := false
@@ -365,7 +477,7 @@ func main() {
 				isDir = true
 				files, err := ioutil.ReadDir(fullPath)
 				if err != nil {
-					http.Error(w, "could not read files", http.StatusInternalServerError)
+					logAndErr(w, "could not read files: %v", err)
 					return
 				}
 				fileNames := make([]string, len(files)+1)
@@ -386,7 +498,7 @@ func main() {
 				c2, err := ioutil.ReadFile(fullPath)
 
 				if err != nil {
-					http.Error(w, "error reading requested file", http.StatusInternalServerError)
+					logAndErr(w, "error reading requested file: %v", err)
 					return
 				}
 				c = c2
@@ -400,7 +512,7 @@ func main() {
 
 			b, err := ioutil.ReadFile(*indexFile)
 			if err != nil {
-				http.Error(w, "error reading index file", http.StatusInternalServerError)
+				logAndErr(w, "error reading index file: %v", err)
 				return
 			}
 			htmlString := string(b)
@@ -430,16 +542,56 @@ func main() {
 			ioutil.WriteFile("tmp", []byte(htmlString), 0777)
 			fmt.Fprintf(w, "%s", htmlString)
 		} else if r.Method == "POST" {
-			content := r.FormValue("content")
-			// added this because once when I was traveling and
-			// lost network connection while it was trying to save
-			// it somehow saved an empty file. Partial request?
-			if len(content) == 0 {
-				http.Error(w, "empty content", http.StatusBadRequest)
-				return
+			theFilePath := *location+"/"+r.URL.Path[1:]
+			content := ""
+			diff := r.FormValue("diff")
+			oldmd5 := r.FormValue("oldmd5")
+			newmd5 := r.FormValue("newmd5")
+			if diff != "" && oldmd5 != "" & newmd5 != "" {
+			    oldBytes, err := ioutil.ReadFile(theFilePath)
+			    if err != nil {
+					logAndErr(w, "couldn't open file: %v", err)
+			        return
+			    }
+			    oldH := md5.New()
+			    if _, err = oldH.Write(oldBytes); err != nil {
+					logAndErr(w, "couldn't md5 old bytes: %v", err)
+			        return
+			    }
+			    expectedOldMD5 := fmt.Printf("%x", h.Sum(nil))
+			    if expectedOldMD5 != oldmd5 {
+					logAndErr(w, "couldn't hex old bytes: %v", err)
+			    	return
+			    } 
+			    content, err = applyDiff(string(oldBytes), diff)
+			    if err != nil {
+					logAndErr(w, "couldn't apply diff: %v", err)
+			    	return
+			    }
+			    newBytes := []byte(content)
+			    newH := md5.New()
+			    if _, err = newH.Write(newBytes); err != nil {
+					logAndErr(w, "couldn't md5 new bytes: %v", err)
+			        return
+			    }
+			    expectedOldMD5 := fmt.Printf("%x", h.Sum(nil))
+			    if expectedOldMD5 != oldmd5 {
+					logAndErr(w, "couldn't hex new bytes: %v", err)
+			    	return
+			    } 
+			    
+			} else {
+				content = r.FormValue("content")
+				// added this because once when I was traveling and
+				// lost network connection while it was trying to save
+				// it somehow saved an empty file. Partial request?
+				if len(content) == 0 {
+					logAndErr(w, "empty content: %v", err)
+					return
+				}
 			}
 			s := SaveResponse{}
-			err := ioutil.WriteFile(*location+"/"+r.URL.Path[1:], []byte(content), 0644)
+			err := ioutil.WriteFile(theFilePath, []byte(content), 0644)
 			if err != nil {
 				s.Error = err.Error()
 			} else {
