@@ -82,7 +82,6 @@ func applyDiff(oldContents, diff string) (string, error) {
     lineI := -1
     diffI := -1
     state := "want@"
-    inAtSign := false
     newContentsSlice := []string{}
     nextDiffIndex := -1
     for i := 0; i < 20000; i++ {
@@ -91,17 +90,18 @@ func applyDiff(oldContents, diff string) (string, error) {
            if diffI > len(diff) {
                break
            }
-           if !strings.HasPrefix(diff[diffI], "@@") {
+           if !strings.HasPrefix(diffLines[diffI], "@@") {
                continue
            }
-           nextDiffIndex = parseFirstNumber(diff[diffI]) - 1
+           nextDiffIndex = parseFirstNumber(diffLines[diffI]) - 1
            state = "getToNextIndex"
        } else if state == "getToNextIndex" {
            lineI++       
            if lineI >= len(oldLines) {
                break   
            }
-           if lineI == nextDiffIndex { 
+           // -1 works because chunks can't be adjacent?
+           if lineI == nextDiffIndex - 1 { 
                state = "in@"
                if diffI >= len(diffLines) {
                    break
@@ -109,7 +109,7 @@ func applyDiff(oldContents, diff string) (string, error) {
            } else {
                newContentsSlice = append(newContentsSlice, oldLines[lineI])   
            }
-       } else if "in@" {
+       } else if state == "in@" {
            diffI++ 
            if diffI > len(diff) {
                break
@@ -125,7 +125,7 @@ func applyDiff(oldContents, diff string) (string, error) {
            }  else if strings.HasPrefix(diffLines[diffI], "+") {
                newContentsSlice = append(newContentsSlice, diffLines[diffI][1:])   
            }  else if strings.HasPrefix(diffLines[diffI], "@@") {
-               nextDiffIndex = parseFirstNumber(diff[diffI]) - 1
+               nextDiffIndex = parseFirstNumber(diffLines[diffI]) - 1
                state = "getToNextIndex"
            }  else {
                lineI++       
@@ -146,7 +146,7 @@ func applyDiff(oldContents, diff string) (string, error) {
 func parseFirstNumber(s string) int {
     numb := ""
     inNumber := false
-    for i, r := range s {
+    for _, c := range s {
         if inNumber {
             if c >= 48 && c <= 57 {
                 numb += string(c)
@@ -156,12 +156,12 @@ func parseFirstNumber(s string) int {
         } else {
             if c >= 48 && c <= 57 {
                 numb += string(c)
-                inNumber := true
+                inNumber = true
             }
         }
     }
     if len(numb) > 10 {
-        numb := numb[0:10]
+        numb = numb[0:10]
     }
     n, _ := strconv.Atoi(numb)
     return n
@@ -469,7 +469,7 @@ func main() {
 			log.Printf("the full path is: %s", fullPath)
 			fileInfo, err := os.Stat(fullPath)
 			if err != nil {
-				logAndErr(w, "error determining file type
+				logAndErr(w, "error determining file type")
 				return
 			}
 			isDir := false
@@ -547,7 +547,7 @@ func main() {
 			diff := r.FormValue("diff")
 			oldmd5 := r.FormValue("oldmd5")
 			newmd5 := r.FormValue("newmd5")
-			if diff != "" && oldmd5 != "" & newmd5 != "" {
+			if diff != "" && oldmd5 != "" && newmd5 != "" {
 			    oldBytes, err := ioutil.ReadFile(theFilePath)
 			    if err != nil {
 					logAndErr(w, "couldn't open file: %v", err)
@@ -558,7 +558,7 @@ func main() {
 					logAndErr(w, "couldn't md5 old bytes: %v", err)
 			        return
 			    }
-			    expectedOldMD5 := fmt.Printf("%x", h.Sum(nil))
+			    expectedOldMD5 := fmt.Sprintf("%x", oldH.Sum(nil))
 			    if expectedOldMD5 != oldmd5 {
 					logAndErr(w, "couldn't hex old bytes: %v", err)
 			    	return
@@ -574,11 +574,12 @@ func main() {
 					logAndErr(w, "couldn't md5 new bytes: %v", err)
 			        return
 			    }
-			    expectedOldMD5 := fmt.Printf("%x", h.Sum(nil))
-			    if expectedOldMD5 != oldmd5 {
+			    expectedNewMD5 := fmt.Sprintf("%x", newH.Sum(nil))
+			    if expectedNewMD5 != newmd5 {
 					logAndErr(w, "couldn't hex new bytes: %v", err)
 			    	return
 			    } 
+                // Not done
 			    
 			} else {
 				content = r.FormValue("content")
@@ -586,7 +587,7 @@ func main() {
 				// lost network connection while it was trying to save
 				// it somehow saved an empty file. Partial request?
 				if len(content) == 0 {
-					logAndErr(w, "empty content: %v", err)
+					logAndErr(w, "empty content: no content")
 					return
 				}
 			}

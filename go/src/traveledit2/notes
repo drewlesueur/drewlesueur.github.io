@@ -1,12 +1,20 @@
 are we using http2??
-s
+use gopls and or go guru (language server?)
+
+test that you opened a ../ file correctly
 pastebuffer history in a file?
 inline web browser
 b9b57011462004f40e21f1e4771756c0de4b7383
 
+bug when running bash comand, if you switch tab
+result will be pasted on new window
+
 newline at { doesnt indent (becsuse not o mode?)
 when you scroll, just start the rendering
 in the canvas further down
+* paste over?
+* fast paste multiple?
+* left and right entire word?
 
 you could divide sides into 3 sections
 * left right
