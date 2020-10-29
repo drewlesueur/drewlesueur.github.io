@@ -30,11 +30,18 @@ func BasicAuth(handler http.Handler) http.HandlerFunc {
 		if user == "" || pass == "" {
 			log.Fatal("BASICUSER or BASICPASS environment variables not set")
 		}
-
-		if r.URL.Path == "/wsrender" {
-			handler.ServeHTTP(w, r)
-			return
+		
+		if os.Getenv("SCREENSHARENOAUTH") == "1" {
+		    if r.URL.Path == "/screenshare" || r.URL.Path == "/view" {
+				handler.ServeHTTP(w, r)
+				return
+		    }
 		}
+
+		// if r.URL.Path == "/wsrender" {
+		// 	handler.ServeHTTP(w, r)
+		// 	return
+		// }
 
 		log.Printf("url hit: %s by %s", r.URL.Path, r.RemoteAddr)
 		rUser, rPass, ok := r.BasicAuth()

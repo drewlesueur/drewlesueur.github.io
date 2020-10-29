@@ -2722,6 +2722,12 @@ function render() {
         if (maxLines < 32) {
             maxLines = 32
         }
+        
+        // 5 for the line number margin
+        var section = Math.floor((fx.cursorColIndex + 5) / maxCols)
+        fx.offsetX = (section * maxCols) - 5
+        log(section)
+        
         t = mockCanvasContext
         mockCanvasContext.lastFillStyle = "black",
         mockCanvasContext.fillStyle = "black",
