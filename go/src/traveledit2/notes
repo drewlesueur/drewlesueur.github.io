@@ -1,3 +1,9 @@
+consistent order in files view
+
+Autocomplete should update lastTypedWord
+more setters - example moving selection does not make sure cursor is in view.
+make a setter for everytime you move so you
+don't have to have that setInterval for nav
 are we using http2??
 use gopls and or go guru (language server?)
 

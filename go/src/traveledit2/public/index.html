@@ -1533,10 +1533,20 @@ function comment() {
     } else {
         theLine = fx.lines[fx.cursorLineIndex]
     }
-    if (theLine.trim().startsWith("//")) {
-        stripPrefixes(["// ", "//"])
+    
+    
+    if (fx.fullPath.endsWith(".sh")) {
+        if (theLine.trim().startsWith("#")) {
+            stripPrefixes(["# ", "#"])
+        } else {
+            addPrefix("# ")
+        }
     } else {
-        addPrefix("// ")
+        if (theLine.trim().startsWith("//")) {
+            stripPrefixes(["// ", "//"])
+        } else {
+            addPrefix("// ")
+        }
     }
 }
 
