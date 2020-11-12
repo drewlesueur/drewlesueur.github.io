@@ -2736,7 +2736,7 @@ function render() {
         // 5 for the line number margin
         var section = Math.floor((fx.cursorColIndex + 5) / maxCols)
         fx.offsetX = (section * maxCols) - 5
-        log(section)
+        // log(section)
         
         t = mockCanvasContext
         mockCanvasContext.lastFillStyle = "black",
@@ -2999,9 +2999,8 @@ function moveHomeEndAction() {
            break;
    }
    if (document.activeElement == theText) {
-    fx.cursorColIndex += 1
-    //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-    setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+       //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+       setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
    }
    ensureCursorInScreen()
    render()
@@ -3361,10 +3360,14 @@ function onStart(e) {
         } else {
             moveHomeEndDirection = "right"
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
-            if (document.activeElement == theText) {
+            // the "true ||" essentially comments out the shift screen to the left feature
+            // in practice it wasn't that helpful because I did one char at a time
+            if (true || document.activeElement == theText) {
                 fx.cursorColIndex += 1
-                //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-                setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+                if (document.activeElement == theText) {
+                    //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+                    setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+                }
                 ensureCursorInScreen()
             } else {
                 var origOffsetX = fx.offsetX
@@ -3385,8 +3388,7 @@ function onStart(e) {
         updateCursorXY()
         render()
         return
-    }
-    if (startTouchX < 40) {
+    } else if (startTouchX < 40) {
         var bbox = c.getBoundingClientRect()
         if (startTouchY - bbox.top < (bbox.height/2)) {
             moveHomeEndDirection = "up"
@@ -3423,10 +3425,14 @@ function onStart(e) {
         } else {
             moveHomeEndDirection = "left"
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
-            if (document.activeElement == theText) {
+            // the "true ||" essentially comments out the shift screen to the left feature
+            // in practice it wasn't that helpful because I did one char at a time
+            if (true || document.activeElement == theText) {
                 fx.cursorColIndex -= 1
-                //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-                setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+                if (document.activeElement == theText) {
+                    //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+                    setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+                }
                 ensureCursorInScreen()
             } else {
                 var origOffsetX = fx.offsetX
