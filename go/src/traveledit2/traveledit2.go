@@ -11,6 +11,7 @@ import "os/exec"
 import "crypto/subtle"
 import "io/ioutil"
 import "io"
+import "bufio"
 import "encoding/json"
 import "sync"
 import "strconv"
@@ -174,6 +175,37 @@ func parseFirstNumber(s string) int {
     return n
 }
 
+// needs to be able to
+// ctrl+c
+// ctrl+d
+type ShellCommand struct {
+    // not breaking it into command and args
+    // because we don't parse the command,
+    // we run i thru bash -c
+    Command string        
+    CWD string
+    
+    ClientID int
+    
+    // the line index of where the client has loaded
+    // it's meant for simple streaming of output like tail.
+    // Maybe in the future we do a full terminal emulator
+    // tty, pty, Raw Mode? vt100?
+    ClientOutIndex int
+    ClientErrIndex int
+    
+    // This does not (yet?) understand terminal escape codes 
+    OutLines []string
+    ErrLines []string
+    
+    PID int
+    
+    // not specifying environment because
+    // it's not yet an interactive shell
+    // env vars will be the default plus whatever
+    // is in the command itself 
+}
+
 func main() {
 	serverAddress := flag.String("addr", "localhost:8000", "serverAddress to listen on")
 	indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
@@ -212,9 +244,19 @@ func main() {
 	var viewSearch string
 	var viewMu sync.Mutex
 	viewCond := sync.NewCond(&viewMu)
+	
+	// trying to use a single mutex for multiple shells? 
+	// TODO: serialize and de-serialize the state
+	
+	shellIndex := -1
+	var shellMu sync.Mutex
+	shellCond := sync.NewCond(&shellMu) 
+	shellCommands := map[int]*ShellCommand{}
+	
 	go func() {
 		for range time.NewTicker(1 * time.Second).C {
 			viewCond.Broadcast()
+			shellCond.Broadcast()
 		}
 	}()
 
@@ -259,98 +301,100 @@ func main() {
 		viewSearch = r.Header.Get("X-Search")
 		viewCond.Broadcast()
 	})
-	/*
-	upgrader := websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
-	mux.HandleFunc("/wsrender", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("got here!!!=========================")
-		c, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			logAndErr(w, "websocket upgrade: %v", err)
-			return
-		}
-		defer c.Close()
-		for {
-			_, message, err := c.ReadMessage()
-			if err != nil {
-				log.Printf("error reading: %v", err)
-				break
-			}
-			log.Printf("got from websocket: %d", len(message))
-			commands := []interface{}{}
-			err = json.Unmarshal(message, &commands)
-			if err != nil {
-				fmt.Sprintf("could not decode commands: %v", err)
-				break
-			}
-			viewMu.Lock()
-			viewCounter += 1
-			renderCommands = commands
-			viewCond.Broadcast()
-			viewMu.Unlock()
-		}
-	})
-
-	mux.HandleFunc("/wsview", func(w http.ResponseWriter, r *http.Request) {
-		c, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			logAndErr(w, "websocket upgrade: %v", err)
-			return
-		}
-		defer c.Close()
-		clientViewCounter := -1
-		var b []byte
-		for {
-			viewMu.Lock()
-			startWait := time.Now()
-			timedOut := false
-			for {
-				if time.Since(startWait) > (10 * time.Second) {
-					timedOut = true
-					break
-				}
-				if clientViewCounter != viewCounter {
-					break
-				}
-				viewCond.Wait()
-			}
-			if timedOut {
-				err = c.WriteMessage(1, []byte("[[6]]"))
-				if err != nil {
-					log.Printf("error writing to client: %v", err)
-					goto breakOut
-				}
-				goto finish
-			}
-			clientViewCounter = viewCounter
-			b, err = json.Marshal(renderCommands)
-			if err != nil {
-				log.Printf("could not marshal: %v", err)
-				goto finish
-			}
-			log.Printf("size of view payload: %d", len(b))
-			// save the raw render commands so you don't have to marshal, unmarshal etc.
-			err = c.WriteMessage(1, b)
-			if err != nil {
-				log.Printf("error writing to client: %v", err)
-				goto breakOut
-			}
-			// you could wait to make sure client got it before continuing the loop
-
-		finish:
-			viewMu.Unlock()
-			continue
-
-		breakOut:
-			viewMu.Unlock()
-			break
-
-		}
-	})
-	*/
+	
+	// Not using the websockets anymore
+	// but still cool to see the code
+	// upgrader := websocket.Upgrader{
+	// 	CheckOrigin: func(r *http.Request) bool {
+	// 		return true
+	// 	},
+	// }
+	// mux.HandleFunc("/wsrender", func(w http.ResponseWriter, r *http.Request) {
+	// 	log.Printf("got here!!!=========================")
+	// 	c, err := upgrader.Upgrade(w, r, nil)
+	// 	if err != nil {
+	// 		logAndErr(w, "websocket upgrade: %v", err)
+	// 		return
+	// 	}
+	// 	defer c.Close()
+	// 	for {
+	// 		_, message, err := c.ReadMessage()
+	// 		if err != nil {
+	// 			log.Printf("error reading: %v", err)
+	// 			break
+	// 		}
+	// 		log.Printf("got from websocket: %d", len(message))
+	// 		commands := []interface{}{}
+	// 		err = json.Unmarshal(message, &commands)
+	// 		if err != nil {
+	// 			fmt.Sprintf("could not decode commands: %v", err)
+	// 			break
+	// 		}
+	// 		viewMu.Lock()
+	// 		viewCounter += 1
+	// 		renderCommands = commands
+	// 		viewCond.Broadcast()
+	// 		viewMu.Unlock()
+	// 	}
+	// })
+// 
+	// mux.HandleFunc("/wsview", func(w http.ResponseWriter, r *http.Request) {
+	// 	c, err := upgrader.Upgrade(w, r, nil)
+	// 	if err != nil {
+	// 		logAndErr(w, "websocket upgrade: %v", err)
+	// 		return
+	// 	}
+	// 	defer c.Close()
+	// 	clientViewCounter := -1
+	// 	var b []byte
+	// 	for {
+	// 		viewMu.Lock()
+	// 		startWait := time.Now()
+	// 		timedOut := false
+	// 		for {
+	// 			if time.Since(startWait) > (10 * time.Second) {
+	// 				timedOut = true
+	// 				break
+	// 			}
+	// 			if clientViewCounter != viewCounter {
+	// 				break
+	// 			}
+	// 			viewCond.Wait()
+	// 		}
+	// 		if timedOut {
+	// 			err = c.WriteMessage(1, []byte("[[6]]"))
+	// 			if err != nil {
+	// 				log.Printf("error writing to client: %v", err)
+	// 				goto breakOut
+	// 			}
+	// 			goto finish
+	// 		}
+	// 		clientViewCounter = viewCounter
+	// 		b, err = json.Marshal(renderCommands)
+	// 		if err != nil {
+	// 			log.Printf("could not marshal: %v", err)
+	// 			goto finish
+	// 		}
+	// 		log.Printf("size of view payload: %d", len(b))
+	// 		// save the raw render commands so you don't have to marshal, unmarshal etc.
+	// 		err = c.WriteMessage(1, b)
+	// 		if err != nil {
+	// 			log.Printf("error writing to client: %v", err)
+	// 			goto breakOut
+	// 		}
+	// 		// you could wait to make sure client got it before continuing the loop
+// 
+	// 	finish:
+	// 		viewMu.Unlock()
+	// 		continue
+// 
+	// 	breakOut:
+	// 		viewMu.Unlock()
+	// 		break
+// 
+	// 	}
+	// })
+	
 	mux.HandleFunc("/view", func(w http.ResponseWriter, r *http.Request) {
 		clientViewCounter, _ := strconv.Atoi(r.FormValue("viewCounter"))
 
@@ -432,7 +476,74 @@ func main() {
 			newF.Close()
 		}
 	})
-
+	
+	mux.HandleFunc("/mybashstream", func(w http.ResponseWriter, r *http.Request) {
+		cmdString := r.FormValue("cmd")
+		if cmdString == "" {
+			cmdString = ":"
+		}
+		cwd := r.FormValue("cwd") // current working directory
+		cmdString = "cd " + cwd + ";\n" + cmdString + ";\necho ''; pwd"
+		shellCommand := &ShellCommand{
+		    CWD: cwd,
+		    Command: cmdString,
+		}
+		
+		cmd := exec.Command("bash", "-c", cmdString)
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			logAndErr(w, "getting stderr: %s: %v", cmdString, err) 
+			return
+		}
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			logAndErr(w, "getting stdout: %s: %v", cmdString, err) 
+			return
+		}
+		
+		shellMu.Lock()
+		shellIndex += 1
+		shellCommands[shellIndex] = shellCommand
+		shellMu.Unlock()
+		
+		err = cmd.Start()
+		if err != nil {
+			logAndErr(w, "starting command: %s: %v", cmdString, err) 
+			return
+		}
+		
+		
+		// Docs say: It is thus incorrect to call Wait before all reads from the pipe have completed.
+		// so we will read and then call wait
+		
+		// could have used channel
+		var wg sync.WaitGroup
+		go func() {
+		    reader := bufio.NewReader(stdout)
+		    wg.Add(1)
+		    for {
+		        line, err := reader.ReadString('\n')   
+		        _ = line
+		        if err != nil {
+		            break
+		        } 
+		    }
+		}()
+		
+		go func() {
+		   _ = stderr   
+		}()
+		
+		wg.Wait()
+		
+		err = cmd.Wait()
+		if err != nil {
+			logAndErr(w, "waiting for command: %s: %v", cmdString, err) 
+			return
+		}
+	})
+	
+	
 	mux.HandleFunc("/mybash", func(w http.ResponseWriter, r *http.Request) {
 		cmdString := r.FormValue("cmd")
 		if cmdString == "" {
