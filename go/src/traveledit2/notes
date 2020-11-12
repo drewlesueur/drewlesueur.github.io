@@ -1,3 +1,25 @@
+database queryer
+tail mode
+2 types 
+    - simple jobs manager with streaming output
+    - tmux or tty integration
+improved file view
+    
+newline in middle goes for most indented,
+     but newline at end doesn't
+fuzzy autocomplete
+are you sure you want to close unsaved
+copy and paste
+tmux integration or your own tmux-like thing (at least with tail.)
+tap on edges should not scroll left and right, just move cursor (in practice it wasn't so great)
+context aware inline paste
+    * if the last thing you did was copy,
+      first thing should paste
+      if last thing you did was type,
+      first thing should be comlelted word
+
+automatic hoghlight of words under cursor?
+
 consistent order in files view
 
 Autocomplete should update lastTypedWord
