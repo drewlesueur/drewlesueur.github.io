@@ -268,6 +268,10 @@ ontouchstart=onStart(event)
     <div class=square onclick=navBack()>nav back</div>
     <div class=square onclick=navForward()>nav forward</div>
 </div>
+<div class=toolbar>
+    <button class=square onclick="osCopyText()">os copy</button>
+    <button class=square onclick="osPasteText()">os paste</button>
+</div>
 
 <label for=serverViewCheckbox>
     <input onchange="serverViewFeature = serverViewCheckbox.checked" type=checkbox name=serverViewCheckbox id=serverViewCheckbox checked />
@@ -479,6 +483,19 @@ function gotoLoc(loc) {
     render()
 }
 
+function osCopyText() {
+    navigator.clipboard.writeText(copyBuffer.join("\n")).then(function() {
+    }, function() {
+        alert("not copied")
+    })
+}
+function osPasteText() {
+    navigator.clipboard.readText().then(function(text) {
+        copyBuffer = text.split("\n")
+    }, function(e) {
+        alert("not copied: " + e)
+    })
+}
 
 function addBrowser() {
     var f = makeFile("http://google.com", 0, contents)
@@ -891,7 +908,6 @@ function openAtCursor() {
 
 function urlAtCursor() {
     var url = getAtCursor()
-    alert(JSON.stringify(url))
     open(url)
 }
 
@@ -1647,10 +1663,18 @@ function copy() {
         copyBuffer = [fx.lines[fx.cursorLineIndex]]
     }
 
-    // TODO: figure out why it's not fully copying at os level
     var copyBufferString = copyBuffer.join("\n")
     copyEl.value = copyBufferString
-    navigator.clipboard.writeText(copyBufferString)
+    
+    // I think this is not working because it's on a touchmove event?
+    // And not a simple on like onclick
+    // navigator.clipboard.writeText(copyBufferString).then(function() {
+    //    alert("copied") 
+    // }, function(e) {
+    //    alert("not copied: " + e) 
+    // })
+    
+    
     // copyEl.setSelectionRange(0, copyEl.value.length)
     // var range = document.createRange()
     // range.selectNodeContents(copyEl)
@@ -1790,6 +1814,9 @@ function insertText(theLines, yOffset, xOffset) {
     copyBuffer = oldCopyBuffer
 }
 function paste(unselect, pasteBefore) {
+    if (copyBuffer.length == 0) {
+        return
+    }
     if (selectMode == "line") {
         var theOffset = 1
         var theOffset2 = 0

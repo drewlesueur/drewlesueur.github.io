@@ -4,6 +4,39 @@ tail mode
 2 types 
     - simple jobs manager with streaming output
     - tmux or tty integration
+    https://xtermjs.org/
+    https://github.com/accetto/ubuntu-vnc-xfce-chromium
+    https://stackoverflow.com/questions/45372066/is-it-possible-to-run-google-chrome-in-headless-mode-with-extensions
+    https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-vnc-on-ubuntu-20-04
+    https://www.google.com/amp/s/www.tecmint.com/install-tightvnc-remote-desktop/amp/
+    
+centos
+// https://www.rootusers.com/how-to-install-xfce-gui-in-centos-7-linux/
+// yum install epel-release -y
+// yum groupinstall "Server with GUI" -y
+// yum groupinstall "Xfce" -y
+https://www.google.com/amp/s/www.tecmint.com/install-tightvnc-remote-desktop/amp/
+    yum groupinstall "X Window System" "Desktop"
+    yum -y install tigervnc-server xorg-x11-fonts-Type1
+
+    http://www.tuxfixer.com/install-xfce-4-desktop-environment-on-centos-7/
+    sudo yum install epel-release
+    sudo yum groupinstall "X Window system"
+    sudo yum groupinstall xfce
+    
+    # in .vnc/xstartup (from the digitalocean documentation)
+    #!/bin/bash
+    xrdb $HOME/.Xresources
+    startxfce4 &
+    
+    yum install -y chromium
+    
+    and then when connected to vnc,
+    open terminal and run chromium-browser
+
+    wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
+    
+    
 improved file view
     
 newline in middle goes for most indented,
