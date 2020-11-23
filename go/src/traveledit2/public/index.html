@@ -2,8 +2,9 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
 <meta charset='utf-8'>
-<script src="/te/tepublic/diff.js"></script>
-<script src="/te/tepublic/md5.js"></script>
+<!-- TODO: make this work with path proxy -->
+<script src="tepublic/diff.js"></script>
+<script src="tepublic/md5.js"></script>
 <style>
 // @font-face {
 //   font-family: GoMono;
@@ -425,6 +426,9 @@ var scrollTimeout
 // TODO: as you add or delete lines
 // go thru these locations and update them
 setInterval(function() {
+    if (!fx) {
+        return
+    }
     // has to be at the same place for 2 seconds
     if (fx.lastOffsetY != fx.offsetY) {
         fx.lastOffsetY = fx.offsetY   
