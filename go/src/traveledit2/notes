@@ -1,3 +1,7 @@
+
+maybe get rid of the mock url path and just use wuery strings
+will be easier to path proxy that way.
+
 http://www.myersdaily.org/joseph/javascript/md5-text.html
 
 maybe lightly highlight the line if the search term is found on it?!
