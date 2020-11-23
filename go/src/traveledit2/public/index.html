@@ -197,7 +197,10 @@ ontouchstart=onStart(event)
     <div class=square onclick='runBashCommand("git branch")'>branch</div>
     <div class=square onclick='runBashCommand("git status")'>status</div>
     <div class=square onclick='runBashCommand("git diff")'>diff</div>
+    <!-- this one tries to make light backgroud, but doesn't work with mac sed.
     <div class=square onclick='runBashCommand("rm coverage.out coverage.html; if go test -cover -coverprofile coverage.out ./...; then go tool cover -func=coverage.out; go tool cover -o=coverage.html -html=coverage.out; sed -i &apos;s/black;/white;/g&apos; coverage.html; fi")'>gotest</div>
+    -->
+    <div class=square onclick='runBashCommand("rm coverage.out coverage.html; if go test -cover -coverprofile coverage.out ./...; then go tool cover -func=coverage.out; go tool cover -o=coverage.html -html=coverage.out; fi")'>gotest</div>
     <div class=square onclick='insertText(["git checkout "], 0, -1)'>checkout</div>
     <div class=square onclick='insertText(["git commit -m &apos;&apos;"], 0, 15)'>commit -m</div>
     <!--
@@ -1059,9 +1062,9 @@ var bashHelpers = [
     "git push origin HEAD",
     "git branch",
     "golangci-lint run --print-issued-lines=false",
-    "grep -Rin '' --include=*.pm",
-    "grep -Rin '' --include=*.go",
-    "grep -Rin '' --include=*.php",
+    "grep -Rin '' --include=*.pm .",
+    "grep -Rin '' --include=*.go .",
+    "grep -Rin '' --include=*.php .",
     "find . -name '**'",
     "diff -y --width=240",
     "go test ./...",
