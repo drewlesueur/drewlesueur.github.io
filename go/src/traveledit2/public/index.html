@@ -1723,8 +1723,16 @@ function scriptLines() {
     fx = files[1] // second-most-recent file
     preventRender = true
     
+    var isWholeFile = false
     // run and snag
-    del()
+    if (fx.selectedRegions.length) {
+        // now copyBuffer has the lines we want to tweak
+        del()
+    } else {
+        // if nothing is selected, let's deal eith all the lines
+        copyBuffer = fx.lines.slice() // slice here acts as a copy. Do we need a copy? doing it to be safe
+        isWholeFile = true
+    }
     linesToProcess = copyBuffer
     
     // restore
@@ -1763,7 +1771,12 @@ function scriptLines() {
     }
     copyBuffer = retLines
     selectFileIndex(1) // second-most-recent file
-    paste(false, true)
+    if (isWholeFile) {
+        setLines(retLines) 
+        docChanged()
+    } else {
+        paste(false, true)
+    }
     
     copyBuffer = oldCopyBuffer
     preventRender = oldPreventRender
