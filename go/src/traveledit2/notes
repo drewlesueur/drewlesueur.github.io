@@ -1,3 +1,5 @@
+make sure files list doesn't rearrange
+
 idea: optionally put line numbers on the right
 
 you have a script liens feature, but need a script all lines feature
@@ -5,6 +7,9 @@ maybe get rid of the mock url path and just use wuery strings
 will be easier to path proxy that way.
 
 http://www.myersdaily.org/joseph/javascript/md5-text.html
+
+https://github.com/creack/pty
+use example, try sending \r\n
 
 maybe lightly highlight the line if the search term is found on it?!
 database queryer
