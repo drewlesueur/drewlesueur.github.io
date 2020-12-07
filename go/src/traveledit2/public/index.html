@@ -1645,7 +1645,7 @@ function copy() {
         if (fx.selectedRegions.length>0) {
             var r = fx.selectedRegions[0]
             if (r.startY == r.stopY) {
-                copyBuffer = [fx.lines[fx.cursorLineIndex].slice(u(r.startX), u(r.stopX))]
+                copyBuffer = [fx.lines[r.startY].slice(u(r.startX), u(r.stopX))]
                 fx.selectedRegions = []
                 render()
                 break
@@ -2269,7 +2269,12 @@ function handleSearchFocusAfter() {
 // pressing the save button disables autosave
 function saveWrapper() {
     if (fx.fileMode == "bash") {
-        runBashCommand(fx.lines[fx.cursorLineIndex] || "")
+        if (fx.selectedRegions.length) {
+            copy()
+            runBashCommand(copyBuffer.join("\n"))
+        } else {
+            runBashCommand(fx.lines[fx.cursorLineIndex] || "")
+        }
         return
     }
     autoSave = false
@@ -2562,8 +2567,8 @@ var mockCanvasContext = {
       this.lastX = rW(x)    
     },
 }
-var serverViewFeature = true
-// var serverViewFeature = false
+// var serverViewFeature = true
+var serverViewFeature = false
 var sendingViewToServer = false
 var shouldSendViewToServer = false
 var lastViewBodyToSend = ""
