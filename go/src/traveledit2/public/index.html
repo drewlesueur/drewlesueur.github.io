@@ -261,7 +261,7 @@ ontouchstart=onStart(event)
     <div class=square onclick=doEval()>eval</div>
     <div class=square onclick=runScript()>run script</div>
     <div class=square onclick=doFormat()>format</div>
-    <div class=square onclick=reloadFile()>reload</div>
+    <div class=square onclick=reloadFile(fx)>reload</div>
 </div>
 <div class=toolbar>
     <div class=square onclick="copyBuffer = [location.href]">copy url</div>
@@ -275,6 +275,7 @@ ontouchstart=onStart(event)
 <div class=toolbar>
     <button class=square onclick="osCopyText()">os copy</button>
     <button class=square onclick="osPasteText()">os paste</button>
+    <div class=square onclick="reloadAll()">reload All</div>
 </div>
 
 <label for=serverViewCheckbox>
@@ -4290,14 +4291,27 @@ function fetchFile(fullPath, file) {
     })
 }
 
-function reloadFile() {
-    // Update all the other instances of this same file.
-    // Start at 1 because we ourselves are at 0.
-    fetchFile(fx.fullPath, fx).then(() => {
+function reloadAll() {
+    var seen = {}
+    for (var i=0; i<files.length; i++) {
+        var theFile = files[i]
+        if (!seen[theFile.fullPath]) {
+            reloadFile(theFile)    
+        }
+        seen[theFile.fullPath] = true
+    }
+}
+
+function reloadFile(theFile) {
+    if (theFile.fileMode != "file" && theFile.fileMode != "directory") {
+        return
+    }
+    // Update all the other instances of this same file, no matter if it's the current file I guess
+    fetchFile(theFile.fullPath, theFile).then(() => {
         for (var i=0; i<files.length; i++) {
-            if (files[i].fullPath == fx.fullPath) {
-                files[i].lines = fx.lines
-                files[i].undo = fx.undo
+            if (files[i].fullPath == theFile.fullPath) {
+                files[i].lines = theFile.lines
+                files[i].undo = theFile.undo
             }
         }
         render()
