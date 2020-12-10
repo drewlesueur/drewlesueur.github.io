@@ -2034,6 +2034,7 @@ function runBashCommand(line) {
     for (var s=0; s<1; s++) {
         if (line == "clear") {
             // clear everything but the last 2 lines
+            // TODO: should we be using set lines here?
             fx.lines = fx.lines.slice(-4)
             if (fx.lines.length == 0) {
                 fx.lines = [""]
@@ -2059,9 +2060,17 @@ function runBashCommand(line) {
         }
 
         if (line == "p") {
-            copyBuffer = bashHelpers
+            // TODO: should we be restoring the old copyBuffer here?
+            copyBuffer = bashHelpers.concat([
+                // Adding the cwd here because it's helpful
+                fx.bashCWD
+                    .split("/")
+                    .reverse()
+                    .join(" < ")
+            ])
             paste(true)
             fx.cursorLineIndex = fx.lines.length - 2
+            
             fx.cursorColIndex = 0
             updateCursorXY()
             ensureCursorInScreen()
@@ -4101,9 +4110,15 @@ var fileTree = {}
 var treeFilesShadow = []
 // marker lime
 function treeToLines(theTree, path, indent, kPrefix) {
-    for (var k in theTree) {
-        var childKeys = Object.keys(theTree[k])
+    var theKeys = Object.keys(theTree)
+    theKeys.sort()
+    // for (var k in theTree) {
+    for (var ki = 0; ki < theKeys.length; ki++ ) {
+        var k = theKeys[ki]
         
+        var childKeys = Object.keys(theTree[k])
+        // Do I need this?
+        childKeys.sort()
         if (false && (childKeys.length == 1)) {
             kPrefix += k + "/"
             if (theTree[k][childKeys[0]].fileToken == fileToken) {
