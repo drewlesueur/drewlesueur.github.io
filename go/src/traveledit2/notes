@@ -1,4 +1,7 @@
-
+button to delete line?
+make it a file server
+ability to link to certain line within
+see list of commands run
 
 the save ui needs to be isolated per file
 button to join lines
@@ -17,6 +20,8 @@ http://www.myersdaily.org/joseph/javascript/md5-text.html
 
 https://github.com/creack/pty
 use example, try sending \r\n
+
+take a look at Mosh for ssh alternative
 
 maybe lightly highlight the line if the search term is found on it?!
 database queryer

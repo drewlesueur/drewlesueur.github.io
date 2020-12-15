@@ -242,8 +242,6 @@ ontouchstart=onStart(event)
     <div class=square onclick=undo()>undo</div>
     <div class=square onclick=redo()>redo</div>
     <div class=square onclick=comment()>//</div>
-    <!--<div class=square onclick=unComment()>un //</div>
-    -->
 </div>
 <div class=toolbar>
     
@@ -276,6 +274,7 @@ ontouchstart=onStart(event)
     <button class=square onclick="osCopyText()">os copy</button>
     <button class=square onclick="osPasteText()">os paste</button>
     <div class=square onclick="reloadAll()">reload All</div>
+    <div class=square onclick="comment('--')">--</div>
 </div>
 
 <label for=serverViewCheckbox>
@@ -1543,7 +1542,7 @@ function dedent() {
     stripPrefixes(["\t", "    "])
 }
 
-function comment() {
+function comment(prefix) {
     var theLine
     if (fx.selectedRegions.length > 0) {
         theLine = fx.lines[fx.selectedRegions[0].startY] 
@@ -1551,25 +1550,21 @@ function comment() {
         theLine = fx.lines[fx.cursorLineIndex]
     }
     
+    if (!prefix) {
+        if (fx.fullPath.endsWith(".sh")) {
+            prefix = "#"
+        } else {
+            prefix = "//"
+        }
+    }
     
-    if (fx.fullPath.endsWith(".sh")) {
-        if (theLine.trim().startsWith("#")) {
-            stripPrefixes(["# ", "#"])
-        } else {
-            addPrefix("# ")
-        }
+    if (theLine.trim().startsWith(prefix)) {
+        stripPrefixes([prefix+" ", prefix])
     } else {
-        if (theLine.trim().startsWith("//")) {
-            stripPrefixes(["// ", "//"])
-        } else {
-            addPrefix("// ")
-        }
+        addPrefix(prefix+" ")
     }
 }
 
-function unComment() {
-    stripPrefixes(["// ", "//"])
-}
 
 function addPrefix(prefix) {
     if (fx.selectedRegions.length > 0) {
