@@ -275,6 +275,7 @@ ontouchstart=onStart(event)
     <button class=square onclick="osPasteText()">os paste</button>
     <div class=square onclick="reloadAll()">reload All</div>
     <div class=square onclick="comment('--')">--</div>
+    <div class=square onclick="copyString(fx.fullPath + ':' + (fx.cursorLineIndex + 1))">copy path</div>
 </div>
 
 <label for=serverViewCheckbox>
@@ -904,6 +905,12 @@ function openAtCursor() {
     var path = getAtCursor()
     if (fx.fileMode == "bash") {
         var fileName = proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + path
+    } else if (path.startsWith("/")) {
+        var fileName = path
+        // TODO, audit the double slash thing across the board
+        if (proxyPath != "/") {
+            fileName = proxyPath + fileName
+        }
     } else {
         var parts = fx.fullPath.split("/")
         var basePath = parts.slice(0, -1).join("/")
@@ -1635,6 +1642,10 @@ function stripPrefixesInner(line, prefixes) {
     return line
 }
 
+function copyString(s) {
+    copyBuffer = s.split("\n")    
+    copyEl.value = s
+}
 function copy() {
     // wrapping in for loop to simulate goto
     for (var s=0; s<1; s++) {
