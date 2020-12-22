@@ -276,6 +276,11 @@ ontouchstart=onStart(event)
     <div class=square onclick="reloadAll()">reload All</div>
     <div class=square onclick="comment('--')">--</div>
     <div class=square onclick="copyString(fx.fullPath + ':' + (fx.cursorLineIndex + 1))">copy path</div>
+    <div class=square onclick="searchText.value = getWordAtCursor().word; render();">highlight word</div>
+    <div id=toggleTabStopButton class=square onclick="toggleTabStop()">tabs</div>
+</div>
+<div class=toolbar>
+    <div class=square onclick="toggleSeeTabs()">see tabs</div>
 </div>
 
 <label for=serverViewCheckbox>
@@ -1558,7 +1563,11 @@ function comment(prefix) {
     }
     
     if (!prefix) {
-        if (fx.fullPath.endsWith(".sh")) {
+        if (
+            fx.fullPath.endsWith(".sh") ||
+            fx.fullPath.endsWith(".ini") ||
+            fx.fullPath.endsWith(".env") 
+        ) {
             prefix = "#"
         } else {
             prefix = "//"
@@ -2143,9 +2152,37 @@ function unExpandSlice(theLine, start, end) {
     var adjustedEnd = unExpandTabIndex(theLine, end)
     return theLine.slice(adjustedStart, adjustedEnd)
 }
+
+var globalTabStop = 4
+function toggleTabStop() {
+    switch (globalTabStop) {
+        case 2:
+            globalTabStop = 4
+            break;    
+        case 4:
+            globalTabStop = 8
+            break;    
+        case 8:
+            globalTabStop = 16
+            break;    
+        case 16:
+            globalTabStop = 32
+            break;    
+        case 32:
+            globalTabStop = 2
+            break;    
+    }
+    toggleTabStopButton.innerText = globalTabStop + " tabs" 
+    render()
+}
+var shouldSeeTabs = false
+function toggleSeeTabs() {
+    shouldSeeTabs = !shouldSeeTabs
+    render()    
+}
 function unExpandTabIndex(theLine, start) {
     var expandedLineLength = 0
-    var tabStop = 4
+    var tabStop = globalTabStop
     var lastTabPos = -1
     var netSpacesAdded = 0
     while (true) {
@@ -2184,7 +2221,7 @@ function expandTabIndex(theLine, start) {
     }
     theLine = theLine.substring(0, start)
     var expandedLineLength = 0
-    var tabStop = 4
+    var tabStop = globalTabStop
     var lastTabPos = -1
     var netSpacesAdded = 0
     while (true) {
@@ -2972,7 +3009,7 @@ function renderInternal() {
 
         theLine = theLine || ""
         var expandedLine = ""
-        var tabStop = 4
+        var tabStop = globalTabStop
         var afterLastTabPos = 0
         while (true) {
             tabPos = theLine.indexOf("\t", afterLastTabPos)
@@ -2989,9 +3026,10 @@ function renderInternal() {
         for (var x=0; x < maxCols; x++) {
             var chr = expandedLine[x+fx.offsetX] || ""
             if (chr == "\t") {
-                t.fillStyle = veryLightFontColor
-                // TODO: conditionally show this
-                // t.fillText("•", x*fontWidth, y*fontHeight)
+                if (shouldSeeTabs) {
+                    t.fillStyle = veryLightFontColor
+                    t.fillText("•", x*fontWidth, y*fontHeight)
+                }
             } else if (chr != "" && chr != " ") {
                 t.fillStyle = textFillStyle
                 t.fillText(chr, x*fontWidth, y*fontHeight)
@@ -3437,7 +3475,7 @@ function onStart(e) {
                     fx.offsetX = 0
                 }  else {
                     // var tabStop = 4
-                    var tabStop = 1
+                    var tabStop = 1 // we changed this to only move one cursor at a time
                     fx.offsetX = Math.ceil((fx.offsetX + 1) / tabStop) * tabStop
                 }
                 ////fx.offsetX += Math.floor(maxCols/2)
@@ -3501,7 +3539,7 @@ function onStart(e) {
                     fx.offsetX = -5
                 }  else {
                     // var tabStop = 4
-                    var tabStop = 1
+                    var tabStop = 1 // we changed this to only move one cursor at a time
                     fx.offsetX = Math.floor((fx.offsetX-1) / tabStop) * tabStop
                 }
                 // fx.cursorColIndex += fx.offsetX - origOffsetX
@@ -3978,7 +4016,7 @@ function simpleFormat(lines) {
             currentIndent = 0
         }
         newLines.push(
-            " ".repeat(4 * currentIndent) +
+            " ".repeat(globalTabStop * currentIndent) +
             line.trim()
         )
 
@@ -3994,7 +4032,7 @@ function getSpaceCount(line) {
         if (chr == " ") {
             spaceCount += 1
         } else if (chr == "\t") {
-            spaceCount += 4
+            spaceCount += globalTabStop
         } else {
             break
         }
