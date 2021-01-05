@@ -281,6 +281,7 @@ ontouchstart=onStart(event)
 </div>
 <div class=toolbar>
     <div class=square onclick="toggleSeeTabs()">see tabs</div>
+    <div class=square onclick="diffFiles()">diff files</div>
 </div>
 
 <label for=serverViewCheckbox>
@@ -868,7 +869,7 @@ function simpleDiffOld3(aLines, bLines, showSame) {
     }
     
     // any left over
-    if (aLastMatched+1<aLines.length || bLastMatched+1<bLines.length) {
+    if (!showSame && (aLastMatched+1<aLines.length || bLastMatched+1<bLines.length)) {
         ret.push("@@ -" + (aLastMatched+2) + " @@")
     }
     if (aLastMatched + 1 < aLines.length) {
@@ -1067,7 +1068,7 @@ var bashHelpers = [
     "git checkout master",
     "git pull origin master",
     "git checkout -b ",
-    "git log --all --decorate -10",
+    "git log --all --decorate --graph -10",
     "grep -Rin '' --include=*.pm .",
     "grep -Rin '' --include=*.go .",
     "grep -Rin '' --include=*.php .",
@@ -1722,32 +1723,88 @@ function runScript() {
     copyBuffer = oldCopyBuffer
 }
 
-function scriptLines() {
+function diffFiles() {
+    // second-most-recent file
+    var aLines = getSelectedLines(files[1]).lines    
+    var bLines = getSelectedLines(fx).lines    
+    
+    var start = Date.now()
+    var contents = simpleDiffOld3(aLines, bLines, true).join("\n")
+    log("diff3: " + (Date.now()-start))
+    var f3 = makeFile("__diffOld3", 0, contents)
+    f3.fileMode = "file"
+    f3.cursorLineIndex = 0
+    addFileToList(f3)
+    
+    // var oldContents = aLines.join("\n")
+    // var newContents = bLines.join("\n")
+    // var start = Date.now()
+    // var contents = Diff.createPatch("foo", oldContents, newContents, "", "", {context:0})
+    // // var contents = Diff.createPatch("foo", "aaaaa", "bbbbbb", "", "")
+    // log("diffM: " + (Date.now()-start))
+    // var f4 = makeFile("__diffMyers", 0, contents)
+    // f4.fileMode = "file"
+    // f4.cursorLineIndex = 0
+    // addFileToList(f4)
+    // setCurrentFile(f4)
+    
+    setCurrentFile(f3)
+    updateCursorXY()
+    ensureCursorInScreen()
+}
+
+// this is a little hacky by changing and restoring state.
+function getSelectedLines(f, shouldDeleteSelected) {
     // save old
+    // in scriptLines we also have "oldPreventRender" business going on. doesn't 'harm' anything but a bit ugly.
     var oldPreventRender = preventRender
     var oldCopyBuffer = copyBuffer
     var oldFx = fx
     
     // mutate
-    fx = files[1] // second-most-recent file
+    fx = f
     preventRender = true
-    
     var isWholeFile = false
     // run and snag
     if (fx.selectedRegions.length) {
         // now copyBuffer has the lines we want to tweak
-        del()
+        if (shouldDeleteSelected) {
+            // TODO: make it so this delete doesn't update the undo stack
+            // or change use so there is no option to delete here
+            del()
+        } else {
+            copy()
+        }
     } else {
-        // if nothing is selected, let's deal eith all the lines
+        // if nothing is selected, let's deal with all the lines
+        // note that we don't yet support shouldDeleteSelected here. 
         copyBuffer = fx.lines.slice() // slice here acts as a copy. Do we need a copy? doing it to be safe
         isWholeFile = true
     }
-    linesToProcess = copyBuffer
+    theLines = copyBuffer
     
     // restore
+    copyBuffer = oldCopyBuffer
+    preventRender = oldPreventRender
     fx = oldFx
-    copy()
-    var theScriptLines = copyBuffer
+    
+    return {
+        lines: theLines,
+        isWholeFile: isWholeFile,
+    }
+}
+
+function scriptLines() {
+    var oldPreventRender = preventRender
+    preventRender = true
+    
+    // second-most-recent file
+    var _t = getSelectedLines(files[1], true)
+    var linesToProcess = _t.lines
+    var isWholeFile = _t.isWholeFile
+    
+    var theScriptLines = getSelectedLines(fx, false).lines
+    
     if (theScriptLines.length) {
         // add return to the last non-empty line
         for (var i=theScriptLines.length-1; i>=0; i--) {
@@ -1778,16 +1835,14 @@ function scriptLines() {
             retLines.push(line)
         }    
     }
-    copyBuffer = retLines
     selectFileIndex(1) // second-most-recent file
     if (isWholeFile) {
         setLines(retLines) 
         docChanged()
     } else {
-        paste(false, true)
+        pasteLines(retLines,false, true)
     }
     
-    copyBuffer = oldCopyBuffer
     preventRender = oldPreventRender
     render()
 }
@@ -1843,6 +1898,9 @@ function insertText(theLines, yOffset, xOffset) {
     copyBuffer = oldCopyBuffer
 }
 function paste(unselect, pasteBefore) {
+    pasteLines(copyBuffer, unselect, pasteBefore)
+}
+function pasteLines(copyBuffer, unselect, pasteBefore) {
     if (copyBuffer.length == 0) {
         return
     }
@@ -2961,7 +3019,13 @@ function renderInternal() {
                 var lineNumber = (y+fx.offsetY+1).toString().padStart(4, " ")
                 if (fx.offsetX < -1) {
                     // Line numbers
-                    t.fillStyle = "brown"
+                    
+                    if (fx.lines[y + fx.offsetY - 1] == fx.lines[y + fx.offsetY]) {
+                        // handy feature to see if lines are same
+                        t.fillStyle = "lime"
+                    } else {
+                        t.fillStyle = "brown"
+                    } 
                     for (var i=0; i<-fx.offsetX-1; i++) {
                         var lineNumberIndex = fx.offsetX + marginLeft + i
                         var lineNoChr = lineNumber.charAt(lineNumberIndex)
@@ -3298,11 +3362,12 @@ function onStart(e) {
             }
             if (fx.cursorColIndex == -3) {
                 copy()
+                paste()
+                fx.selectedRegions = []
                 return
             }
             if (fx.cursorColIndex == -2) {
                 copy()
-                paste()
                 return
             }
             if (fx.cursorColIndex == -1) {
