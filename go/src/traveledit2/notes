@@ -1,3 +1,6 @@
+lightly highlight line if it has a search match anywhere
+color whitespace to easily line up tabs
+
 a no-whitespace option for "diff files"
 
 a filetree-style viewer and you can copy/paste files by copy/pasting lines!

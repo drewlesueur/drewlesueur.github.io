@@ -235,7 +235,7 @@ ontouchstart=onStart(event)
     <div class=square onclick=closeFile(0)>close</div>
 </div>
 <div class=toolbar>
-    <div class=square onclick=selectFileIndex(1)>alt tab</div>
+    <div class=square onclick=setCurrentFile(lastFile)>alt tab</div>
     <div class=square onclick="duplicateFile(fx, -1)">dupl file</div>
     <div class=square onclick=addCmdTab()>cmd</div>
     <div class=square onclick=clearLog()>clear log</div>
@@ -282,11 +282,24 @@ ontouchstart=onStart(event)
 <div class=toolbar>
     <div class=square onclick="toggleSeeTabs()">see tabs</div>
     <div class=square onclick="diffFiles()">diff files</div>
+    <div class=square onclick="moveFileAllTheWayLeft()">move home</div>
+    <div class=square onclick="moveFileLeft()">move left</div>
+    <div class=square onclick="moveFileRight()">move right</div>
 </div>
 
 <label for=serverViewCheckbox>
-    <input onchange="serverViewFeature = serverViewCheckbox.checked" type=checkbox name=serverViewCheckbox id=serverViewCheckbox checked />
+    <input onchange="serverViewFeature = serverViewCheckbox.checked" type=checkbox name=serverViewCheckbox id=serverViewCheckbox />
     Screen Share
+</label>
+<br>
+<label for=lockXCheckbox>
+    <input onchange="lockX = lockXCheckbox.checked" type=checkbox name=lockXCheckbox id=lockXCheckbox />
+    Lock X
+</label>
+<br>
+<label for=reorderFilesCheckbox>
+    <input onchange="reorderFiles = reorderFilesCheckbox.checked" type=checkbox name=reorderFilesCheckbox id=reorderFilesCheckbox />
+    Auto-Reorder Files
 </label>
 <!--
 <iframe width="100%" height=400 src="/te/screenshare"></iframe>
@@ -364,7 +377,15 @@ var fontCSS = (30 * fontScale) + "px 'Courier'"
 // var fontCSS = (30 * fontScale) + "px 'Osaka-Mono'" //no
 // var fontCSS = (30 * fontScale) + "px 'Courier New'" //yes
 
+var lastFile = fx
+// not using indexes so we can move files around without worrying about the indexes
+// It means we'll have to use files.indexOf in various places
+    // var currentFileIndex = 0
+    // var lastFileIndex = 0
 
+var reorderFiles = false
+
+var lockX = false
 var fontColor = "white"
 var lightFontColor = "rgba(255, 255, 255, 0.5)"
 var veryLightFontColor = "rgba(255, 255, 255, 0.1)"
@@ -1043,7 +1064,7 @@ function blurSearchText() {
     searchText.style.display = "none"
     setCanvasHeightAccordingly()
 }
-function closeFile(indexToClose) {
+function closeFile() {
     if (fx.fileMode == "fileList") {
         var fileIndex = files.indexOf(treeFilesShadow[fx.cursorLineIndex])
         if (fileIndex != -1) {
@@ -1051,8 +1072,11 @@ function closeFile(indexToClose) {
         }
         fx.lines = getLinesForFileList()
     } else {
-        files.splice(indexToClose, 1)
-        setCurrentFile(files[0])
+        var indexToClose = files.indexOf(fx)
+        if (indexToClose != -1) {
+            files.splice(indexToClose, 1)
+            selectFileIndex(indexToClose-1 < 0 ? 0: indexToClose-1)
+        }
     }
     render()
     renderFileDropdown()
@@ -1129,50 +1153,6 @@ function normalizeFullPath(fullPath) {
     newFullPath = newParts.join("/")
     log([fullPath, newFullPath])
     return newFullPath
-}
-function addFile(fullPath) {
-    fullPath = normalizeFullPath(fullPath)
-    if (fullPath == "") {
-        return
-    }
-    log("adding file: " + fullPath)
-    
-    // adding file to list beforehand to preserve order
-    
-    var cursorLineIndex = 0
-    var parts = fullPath.split(":")
-    fullPath = parts[0]
-    if (parts.length > 1) {
-        cursorLineIndex = (parts[1] - 1) || 0   
-    }
-    // If the file is already in the list of open files.
-    // then let it have a reference to the existing lines, like vim does.
-    for (var i=0; i<files.length; i++) {
-        if (files[i].fullPath == fullPath) {
-            duplicateFile(files[i], cursorLineIndex)
-            return
-        }
-    }
-    
-    var file = makeFile(fullPath, cursorLineIndex, "")
-    if (!initialFileAdding) {
-        setCurrentFile(file)
-        renderURL()
-    }
-    addFileToList(file)
-    fetchFile(fullPath, file).then(() => {
-        for (var i=0; i<files.length; i++) {
-            if (files[i] != file && files[i].fullPath == file.fullPath) {
-                // TODO: is this needed, I think duplicateFile should get these?
-                files[i].lines = file.lines
-                files[i].undo = file.undo
-            }
-        }
-        updateCursorXY()
-        render()
-    }).catch(e => {
-        alert("Error loading file " + e)
-    })
 }
 
 function renderURL() {
@@ -1725,7 +1705,7 @@ function runScript() {
 
 function diffFiles() {
     // second-most-recent file
-    var aLines = getSelectedLines(files[1]).lines    
+    var aLines = getSelectedLines(lastFile).lines    
     var bLines = getSelectedLines(fx).lines    
     
     var start = Date.now()
@@ -1799,7 +1779,7 @@ function scriptLines() {
     preventRender = true
     
     // second-most-recent file
-    var _t = getSelectedLines(files[1], true)
+    var _t = getSelectedLines(lastFile, true)
     var linesToProcess = _t.lines
     var isWholeFile = _t.isWholeFile
     
@@ -1835,7 +1815,7 @@ function scriptLines() {
             retLines.push(line)
         }    
     }
-    selectFileIndex(1) // second-most-recent file
+    setCurrentFile(lastFile) // second-most-recent file
     if (isWholeFile) {
         setLines(retLines) 
         docChanged()
@@ -3020,7 +3000,7 @@ function renderInternal() {
                 if (fx.offsetX < -1) {
                     // Line numbers
                     
-                    if (fx.lines[y + fx.offsetY - 1] == fx.lines[y + fx.offsetY]) {
+                    if (fx.lines[y + fx.offsetY] != "" && fx.lines[y + fx.offsetY - 1] == fx.lines[y + fx.offsetY]) {
                         // handy feature to see if lines are same
                         t.fillStyle = "lime"
                     } else {
@@ -3230,7 +3210,9 @@ function onStart(e) {
         var signX = diffLastTouchX < 0 ? -1: 1
         var signY = diffLastTouchY < 0 ? -1 : 1
         thePow = firstMove ? 1 : 2
-        cursorX = cursorX + ensureSign(signX, Math.round(Math.pow(diffLastTouchX, thePow)*touchScale))
+        if (!lockX) {
+            cursorX = cursorX + ensureSign(signX, Math.round(Math.pow(diffLastTouchX, thePow)*touchScale))
+        }
         cursorY = cursorY + ensureSign(signY, Math.round(Math.pow(diffLastTouchY, thePow)*touchScale))
         lastTouchX = e.touches[0].pageX
         lastTouchY = e.touches[0].pageY
@@ -3325,19 +3307,16 @@ function onStart(e) {
             if (fx.fileMode == "fileList") {
                 var file = treeFilesShadow[fx.cursorLineIndex]
                 if (file.fileToken == fileToken) {
-                    var fileIndex = files.indexOf(file)
-                    if (fileIndex == -1) {
-                        alert("data consistency error with file index")
-                        return
-                    }
-                    // put it at the beginning for alt tab to work
-                    files.splice(fileIndex, 1)
-                    files.unshift(file)
+                    // #filestuff
                     setCurrentFile(file)
                     return
                 }
                 // here load file that hasn't been loaded
                 // in this case "file" var is just a string
+                // #filestuff
+                // TODO: you could see if there is already one "dir" file here!
+                // also TODO: you could not overwrite the lastFile when showing the files view.
+                fx = lastFile || files[0]
                 addFile(file)
                 return
             }
@@ -3702,7 +3681,7 @@ function clickItemInDirectory() {
     } else {
         var newFullPath = prefix + "/" + addPath
     }
-    closeFile(0)
+    closeFile()
     addFile(newFullPath)
 }
 // marker orange
@@ -4115,8 +4094,7 @@ function selectFileRow(e) {
     }
     var index = e.target.getAttribute("data-index")
     
-    if (index == 0) {
-    
+    if (index == 0 && reorderFiles) {
         // simple (alt+tab) within file
         // Won't work if we alrady have been having back.
         if (fx.locationIndex == fx.locationStack.length - 1) {
@@ -4131,9 +4109,52 @@ function selectFileRow(e) {
 function selectFileIndex(index) {
     var file = files[index]
     // put it at the beginning.
-    files.splice(index, 1)
-    files.unshift(file)
+    
+    if (reorderFiles) {
+        files.splice(index, 1)
+        files.unshift(file)
+    }
     setCurrentFile(file)
+}
+
+function moveFileAllTheWayLeft() {
+    var theIndex = files.indexOf(fx)
+    if (theIndex == -1) {
+        return
+    } 
+    if (theIndex == 0) {
+        return
+    } 
+    files.splice(theIndex, 1)   
+    files.splice(0, 0, fx)   
+    render()
+    renderFileDropdown()
+}
+function moveFileLeft() {
+    var theIndex = files.indexOf(fx)
+    if (theIndex == -1) {
+        return
+    } 
+    if (theIndex == 0) {
+        return
+    } 
+    files.splice(theIndex, 1)   
+    files.splice(theIndex - 1, 0, fx)   
+    render()
+    renderFileDropdown()
+}
+function moveFileRight() {
+    var theIndex = files.indexOf(fx)
+    if (theIndex == -1) {
+        return
+    } 
+    if (theIndex == files.length - 1) {
+        return
+    } 
+    files.splice(theIndex, 1)   
+    files.splice(theIndex+1, 0, fx)   
+    render()
+    renderFileDropdown()
 }
 
 var uniqueID = 0
@@ -4181,9 +4202,62 @@ function addFileToList(file) {
     if (initialFileAdding) {
         files.push(file)
     } else {
-        files.unshift(file)
+        // add it after current file if it exists in list, otherwise unshift it to the start.
+        var theIndex = files.indexOf(fx)
+        if (theIndex != -1) {
+            files.splice(theIndex + 1, 0, file)
+        } else {
+            if (fx) {
+                alert("fx not found: " + fx.fullPath)
+            }
+            files.unshift(file)
+        }
     }
     renderFileDropdown()
+}
+function addFile(fullPath) {
+    fullPath = normalizeFullPath(fullPath)
+    if (fullPath == "") {
+        return
+    }
+    log("adding file: " + fullPath)
+    
+    // adding file to list beforehand to preserve order
+    
+    var cursorLineIndex = 0
+    var parts = fullPath.split(":")
+    fullPath = parts[0]
+    if (parts.length > 1) {
+        cursorLineIndex = (parts[1] - 1) || 0   
+    }
+    // If the file is already in the list of open files.
+    // then let it have a reference to the existing lines, like vim does.
+    for (var i=0; i<files.length; i++) {
+        if (files[i].fullPath == fullPath) {
+            duplicateFile(files[i], cursorLineIndex)
+            return
+        }
+    }
+    
+    var file = makeFile(fullPath, cursorLineIndex, "")
+    addFileToList(file)
+    if (!initialFileAdding) {
+        setCurrentFile(file)
+        renderURL()
+    }
+    fetchFile(fullPath, file).then(() => {
+        for (var i=0; i<files.length; i++) {
+            if (files[i] != file && files[i].fullPath == file.fullPath) {
+                // TODO: is this needed, I think duplicateFile should get these?
+                files[i].lines = file.lines
+                files[i].undo = file.undo
+            }
+        }
+        updateCursorXY()
+        render()
+    }).catch(e => {
+        alert("Error loading file " + e)
+    })
 }
 
 function renderFileDropdown() {
@@ -4265,22 +4339,30 @@ function treeToLines(theTree, path, indent, kPrefix) {
 function getLinesForFileList() {
     fileTree = {}
     
+    // reset the index
+    for (var i=0; i<files.length; i++) {
+        // tmpIndex should only be used in this function
+        files[i].tmpIndex = i
+    }
+    
     // doing the slice so we don't mutate the original array
     var sortedFiles = files.slice().sort(function(f1, f2) {
         if (f1.fileMode == "bash") {
             // TODO: should we set the fullPath for bash to be the CWD?  
-            return (f1.originatingFullPath + f1.uniqueID) > (f2.originatingFullPath + f2.uniqueID)
+            return (f1.originatingFullPath + f1.tmpIndex) > (f2.originatingFullPath + f2.tmpIndex)
         } else {
-            return (f1.fullPath + f1.uniqueID) > (f2.fullPath + f2.uniqueID)
+            return (f1.fullPath + f1.tmpIndex) > (f2.fullPath + f2.tmpIndex)
         }
     })
     
     // taking advantage of sorted order here
     for (var fileI=0; fileI<sortedFiles.length; fileI++) {
         var f = sortedFiles[fileI]
-        var parts = (f.fullPath + ":" + (f.cursorLineIndex+1)).split("/")
+        // var parts = (f.fullPath + ":" + (f.cursorLineIndex+1)).split("/")
+        var parts = (f.fullPath + "(" + (f.tmpIndex) + ")").split("/")
         if (f.fileMode == "bash") {
-            parts = (f.originatingFullPath + ":" + (f.cursorLineIndex+1)).split("/")
+            // parts = (f.originatingFullPath + ":" + (f.cursorLineIndex+1)).split("/")
+            parts = (f.originatingFullPath + " (" + (f.tmpIndex+1) + ")").split("/")
         }
         // var parts = (f.fullPath).split("/")
         var curTree = fileTree 
@@ -4334,6 +4416,7 @@ function setCurrentFile(file) {
         return
     }
 
+    lastFile = fx
     fx = file
     if (fx.fileMode == "bash") {
         bashToolbar1.classList.remove("hidden")
