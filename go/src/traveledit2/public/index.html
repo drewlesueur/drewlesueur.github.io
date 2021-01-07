@@ -4394,7 +4394,7 @@ function getLinesForFileList() {
 
 function seeFiles() {
     if (fx.fileMode == "fileList") {
-        setCurrentFile(files[0])
+        setCurrentFile(lastFile)
         return
     }
     var contents = getLinesForFileList().join("\n")
