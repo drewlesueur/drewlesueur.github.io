@@ -62,7 +62,8 @@
     padding: 0px;
     --width: 80px;
     width: 60px;
-    height: 28px;
+    --height: 28px;
+    height: 34px;
     margin: 1px;
     flex: 1 0 auto;
     --font-size: 12px;
@@ -180,14 +181,9 @@ onblur=handleBlur()
 Note that the css width needs to be 1/3 of
 the with attribute, and same for height.
 See canvasHeightFull
-<canvas id=c width=1125 height=1600
-style="width: 375px; height:10px;
-display: block;"
-ontouchstart=onStart(event)
-></canvas>
 -->
 
-<canvas id=c width=1125 height=1515
+<canvas id=c width=1125 height=1497
 style="width: 375px; height:10px;
 display: block;"
 ontouchstart=onStart(event)
@@ -222,7 +218,7 @@ ontouchstart=onStart(event)
     <div class=square onclick='runBashCommand("git log -10")'>log -10</div>
     <div class=square onclick='runBashCommand("git log -p -3")'>log -p -3</div>
 </div>
-<div class="toolbar xhidden" id=fileRow onclick=selectFileRow(event)>
+<div class="toolbar xhidden" id=fileRow ontouchstart=selectFileRow(event)>
 </div>
 <div class=toolbar>
     <div id=findUpButton class=square onclick=findUp()>find up</div>
@@ -235,7 +231,7 @@ ontouchstart=onStart(event)
     <div class=square onclick=closeFile(0)>close</div>
 </div>
 <div class=toolbar>
-    <div class=square onclick=setCurrentFile(lastFile)>alt tab</div>
+    <div class=square ontouchstart="setCurrentFile(lastFile); event.preventDefault()">alt tab</div>
     <div class=square onclick="duplicateFile(fx, -1)">dupl file</div>
     <div class=square onclick=addCmdTab()>cmd</div>
     <div class=square onclick=clearLog()>clear log</div>
@@ -1308,6 +1304,10 @@ function isNumeric(s) {
     var c = s.charCodeAt(0)
     return (c >= 48 && c <= 57)
 }
+
+function isWordyChar(c) {
+    return isWordy(c.charCodeAt(0))    
+}
 // check for A-Za-z0-9_
 function isWordy(a) {
     return (
@@ -1695,11 +1695,9 @@ function runScript() {
     var code = theScriptLines.join("\n")
     var f = new Function(code)
     var ret = f()
-    if (ret) {
-        ret = ret + ""
-        copyBuffer = ret.split("\n")
-        paste()
-    }
+    ret = ret + ""
+    copyBuffer = ret.split("\n")
+    paste()
     copyBuffer = oldCopyBuffer
 }
 
@@ -1826,6 +1824,221 @@ function scriptLines() {
     preventRender = oldPreventRender
     render()
 }
+
+
+
+function regexer(r) {
+    return function(c, line, index) {
+       return r.test(c)    
+    }
+}
+function notRegexer(r) {
+    return function(c, line, index) {
+       return !r.test(c)    
+    }
+}
+function ll(line, script, replacement) {
+    var cmds = script.split(" ")
+    var index = 0
+    var startSelect = 0
+    var vars = {"$": "$"}
+    var cmd
+    var c
+    var matchIndex = 0
+    matchVars = "abcdefghijklmnoqrs"
+    var findCurrentOrNext = function(rs, re) {
+        var start = -1
+        
+        // need to go past the end, this <=
+        for (index = index; index <= line.length; index++) {
+            if (start == -1) {
+                // you could do fewer checks if you manage more state
+                if (rs(line[index], line, index) && (index == 0 || !rs(line[index-1], line, index))) {
+                    start = index    
+                }
+            } else {
+                if (re(line[index], line, index)) {
+                    // you could have a processor func
+                    vars[matchVars[matchIndex]] = line.slice(start, index)        
+                    matchIndex++
+                    break
+                }
+            }
+        }
+    }
+    for (var i=0; i<cmds.length; i++) {
+        cmd = cmds[i]
+        c = cmd[0]
+        switch (c) {
+        case "w":
+            findCurrentOrNext(regexer(/[\w]/), notRegexer(/[\w]/))
+            break
+        case "n":
+            findCurrentOrNext(regexer(/[0-9\.\-]/), notRegexer(/[0-9\.\-]/))
+            break
+        case "r":
+            findCurrentOrNext(regexer(/[\w]/), function(c, line, index) {
+              if (index == line.length) {
+                  return true
+              }
+              return false     
+            })
+            break
+        // you could use closures to things like capture strings with escaping?
+        }
+    }
+    return replacement.replace(/\$[a-z\$]/g, function(match) {
+        return vars[match[1]]      
+    }) 
+    
+}
+/*
+r = ll(
+    `-34.2 number %% 400.123 # forever young `,
+    "n w n r",
+    "$b is $a and $c === $d"
+)
+r
+number is -34.2 and 400.123 === forever young 
+$b is $a and $c === $d
+number is -34.2 and 400.123 === forever young 
+*/
+
+
+// little language for manipulating lines. inspired by vim.
+/*
+ll(`food   => ate:  dog: and that's a wrap!`, "Ca w Cb w Cc w Ed", "yo $c $b $a ($d)")
+yo dog ate food (and that's a wrap!)
+: Ca : $a 
+*/
+
+function llOld(line, script, replacement) {
+    // w v e ya
+    var cmds = script.split(" ")
+    var index = 0
+    var startSelect = 0
+    var vars = {"$": "$"}
+    var cmd
+    var c
+    
+    log(`${index} ${line[index]} ${wordyFunc(line[index])}`)
+    var w = function(wordyFunc) {
+        var finishedWord = false
+        log("w at " + line.slice(index))
+        var isw = wordyFunc(line[index]) 
+        for (index = index; index < line.length; index++) {
+            log(`${index} ${line[index]} ${wordyFunc(line[index])} (${isw})`)
+            if (line[index] == " ") {
+                finishedWord = true
+                continue
+            } 
+            isw2 = wordyFunc(line[index])
+            if (isw != isw2 || finishedWord) {
+                break
+            }
+        }
+    }
+    var e = function(wordyFunc) {
+        log("e at " + line.slice(index))
+        var isw = wordyFunc(line[index]) 
+        for (index = index; index < line.length; index++) {
+            log(`${index} ${line[index]} ${wordyFunc(line[index])}`)
+            isw2 = wordyFunc(line[index])
+            if (isw != isw2) {
+                index--
+                log(`${index} ${line[index]} ${wordyFunc(line[index])}`)
+                break
+            }
+        }
+    }
+    var endLine = function() {
+        log("$ at " + line.slice(index))
+        index = line.length - 1
+    }
+    var v = function() {
+        log("v at " + line.slice(index))
+        startSelect = index
+    }
+    var y = function() {
+        log("y at " + line.slice(index))
+        var varName = cmd.slice(1)
+        vars[varName] = line.slice(startSelect, index+1)
+    }
+    var f = function() {
+        log("f at " + line.slice(index))
+        var theChar = cmd[1]
+        for (index = index; index < line.length; index++) {
+            if (line[index] == theChar) {
+                break
+            }
+        }
+    }
+    var t = function() {
+        log("t at " + line.slice(index))
+        var theChar = cmd[1]
+        for (index = index; index < line.length; index++) {
+            if (line[index] == theChar) {
+                index--
+                break
+            }
+        }
+    }
+    var r = function() {
+        log("r at " + line.slice(index))
+        index++
+    }
+    for (var i=0; i<cmds.length; i++) {
+        cmd = cmds[i]
+        c = cmd[0]
+        switch (c) {
+        case "w":
+            w(isWordyChar)
+            break
+        case "e":
+            e(isWordyChar)
+            break
+        case "n":
+            w(isNumberChar)
+            break
+        case "m":
+            e(isNumberChar)
+            break
+        case "v":
+            v()
+            break
+        case "$":
+            endLine()
+            break
+        case "y":
+            y()
+            break
+        case "C": // copy word and go to next
+            v()
+            e(isWordyChar)
+            y()
+            w()
+            break   
+        case "E": // copy to end
+            v()
+            endLine()
+            y()
+            break
+        case "r":
+            r()
+            break
+        case "f":
+            f()
+            break
+        case "t":
+            t()
+            break
+        }
+    }
+    return replacement.replace(/\$[a-z\$]/g, function(match) {
+        return vars[match[1]]      
+    }) 
+}
+
 
 
 function setCanvasHeight(h) {
@@ -4090,6 +4303,7 @@ function getSpaceCount(line) {
 function selectFileRow(e) {
     if (!e.target.hasAttribute("data-index")) {
         // thinking we get here if they tap in the margin
+        // or now the handle
         return
     }
     var index = e.target.getAttribute("data-index")
@@ -4274,6 +4488,13 @@ function renderFileDropdown() {
             alert("null file issue!! on " + fileI)
             return
         }
+        // this is for the "grip handles" because we are experimenting with selecting files ontouchstart.
+        if (fileI % 5 == 0 && fileI != 0) {
+            var button = document.createElement("div")
+            button.className = "longButton handle"
+            button.innerText = ""
+            fileRow.appendChild(button)
+        }
         var button = document.createElement("div")
         button.className = "longButton"
         // button.className = "square"
@@ -4284,15 +4505,15 @@ function renderFileDropdown() {
         if (fx == file) {
             button.style.backgroundColor = "black"
         }
-
         fileRow.appendChild(button)
+        
     }
 
 }
 var treeFiles = []
 var fileTree = {}
 var treeFilesShadow = []
-// marker lime
+// marker green
 function treeToLines(theTree, path, indent, kPrefix) {
     var theKeys = Object.keys(theTree)
     theKeys.sort()
