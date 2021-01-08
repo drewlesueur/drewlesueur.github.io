@@ -262,7 +262,9 @@ ontouchstart=onStart(event)
     <div class=square onclick="showDiff()">show diff</div>
     <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
     <div class=square onclick=scriptLines()>script lines</div>
-    <div class=square onclick=addBrowser()>add browser</div>
+    <div class=square onclick=scriptLinesInline()>script inline</div>
+    <!--<div class=square onclick=addBrowser()>add browser</div>
+    -->
     <div class=square onclick=navBack()>nav back</div>
     <div class=square onclick=navForward()>nav forward</div>
 </div>
@@ -337,6 +339,7 @@ style="width:100%; height:100px;"
 </select>
 
 <div id=bottomPadding style="height: 100px;"></div>
+<div id=colorGetterEl style="width: 100px; height: 100px;"></div>
 </div>
 
 </div> <!-- end wrapper -->
@@ -433,7 +436,7 @@ var theStatus = {}
 // * fileList
 // * bash
 // * directory
-
+var knownContrastingColors = {}
 // if last keyDown is a backspace
 var wasDelete = false
 var moveHomeEndTimeout
@@ -1147,7 +1150,6 @@ function normalizeFullPath(fullPath) {
         newParts.push(part)
     }
     newFullPath = newParts.join("/")
-    log([fullPath, newFullPath])
     return newFullPath
 }
 
@@ -1772,6 +1774,65 @@ function getSelectedLines(f, shouldDeleteSelected) {
     }
 }
 
+function scriptLinesInline() {
+    var oldPreventRender = preventRender
+    preventRender = true
+    
+    // second-most-recent file
+    var _t = getSelectedLines(fx, true)
+    var linesToProcess = _t.lines
+    var isWholeFile = _t.isWholeFile
+    var s = linesToProcess[0].trim().slice(2).trim()
+    if (s.slice(0, 2) == "r ") {
+        var parts = s.split(" ")
+        s = `x.replaceAll("${parts[1]}", "${parts[2]}")`
+    } else if (s.slice(0, 2) == "l ") {
+        // l w w x n r - $a $b $c $d
+        var parts = s.split(" - ")
+        s = `ll(x,"${parts[0].slice(2)}", "${parts.slice(1).join(" - ")}")`
+    }
+    var theScriptLines = [s]
+    linesToProcess = linesToProcess.slice(1)
+    if (theScriptLines.length) {
+        // add return to the last non-empty line
+        for (var i=theScriptLines.length-1; i>=0; i--) {
+            if (theScriptLines[i].trim() != "") {
+                theScriptLines[i] = "return " + theScriptLines[i]
+                break
+            }            
+        }
+        var funcBody = theScriptLines.join("\n")
+        log("funcBody: " + funcBody)
+        var f = function(x) {
+            return x
+        }
+        try {
+            line = f(line)
+            f = new Function("x", funcBody)
+        } catch (e) {
+            alert(e)  
+        }
+        var retLines = []
+        for (var i=0; i<linesToProcess.length; i++) {
+            var line = linesToProcess[i]
+            try {
+                line = f(line)
+            } catch (e) {
+                alert(e)  
+            }
+            retLines.push(line)
+        }    
+    }
+    if (isWholeFile) {
+        setLines(retLines) 
+        docChanged()
+    } else {
+        pasteLines(retLines,false, true)
+    }
+    
+    preventRender = oldPreventRender
+    render()
+}
 function scriptLines() {
     var oldPreventRender = preventRender
     preventRender = true
@@ -1834,7 +1895,7 @@ function regexer(r) {
 }
 function notRegexer(r) {
     return function(c, line, index) {
-       return !r.test(c)    
+       return (line.length == index) || !r.test(c)    
     }
 }
 function ll(line, script, replacement) {
@@ -1842,11 +1903,12 @@ function ll(line, script, replacement) {
     var index = 0
     var startSelect = 0
     var vars = {"$": "$"}
+    var varsArray = []
     var cmd
     var c
     var matchIndex = 0
     matchVars = "abcdefghijklmnoqrs"
-    var findCurrentOrNext = function(rs, re) {
+    var findCurrentOrNext = function(capture, rs, re, process) {
         var start = -1
         
         // need to go past the end, this <=
@@ -1859,7 +1921,15 @@ function ll(line, script, replacement) {
             } else {
                 if (re(line[index], line, index)) {
                     // you could have a processor func
-                    vars[matchVars[matchIndex]] = line.slice(start, index)        
+                    if (!capture) {
+                        break
+                    }
+                    var v = line.slice(start, index) 
+                    if (process) {
+                       v = process(v)    
+                    }
+                    vars[matchVars[matchIndex]] = v 
+                    varsArray.push(v)
                     matchIndex++
                     break
                 }
@@ -1868,16 +1938,23 @@ function ll(line, script, replacement) {
     }
     for (var i=0; i<cmds.length; i++) {
         cmd = cmds[i]
-        c = cmd[0]
-        switch (c) {
+        switch (cmd) {
         case "w":
-            findCurrentOrNext(regexer(/[\w]/), notRegexer(/[\w]/))
+            findCurrentOrNext(true, regexer(/[\w]/), notRegexer(/[\w]/))
+            break
+        case "x":
+            findCurrentOrNext(false, regexer(/[\w]/), notRegexer(/[\w]/))
             break
         case "n":
-            findCurrentOrNext(regexer(/[0-9\.\-]/), notRegexer(/[0-9\.\-]/))
+            findCurrentOrNext(true, regexer(/[0-9\.\-]/), notRegexer(/[0-9\.\-]/), function(x) {
+                return x - 0
+            })
+            break
+        case "0":
+            findCurrentOrNext(false, regexer(/[0-9\.\-]/), notRegexer(/[0-9\.\-]/))
             break
         case "r":
-            findCurrentOrNext(regexer(/[\w]/), function(c, line, index) {
+            findCurrentOrNext(true, regexer(/[\w]/), function(c, line, index) {
               if (index == line.length) {
                   return true
               }
@@ -1887,9 +1964,13 @@ function ll(line, script, replacement) {
         // you could use closures to things like capture strings with escaping?
         }
     }
-    return replacement.replace(/\$[a-z\$]/g, function(match) {
-        return vars[match[1]]      
-    }) 
+    if (typeof replacement ==  "function") {
+        return replacement.apply(null, varsArray)    
+    } else {
+        return replacement.replace(/\$[a-z\$]/g, function(match) {
+            return vars[match[1]]      
+        }) 
+    }
     
 }
 /*
@@ -1899,6 +1980,15 @@ r = ll(
     "$b is $a and $c === $d"
 )
 r
+
+r = ll("1/2/300", "n 0 n", (a,b) => {
+   return a + b
+})
+r
+301
+NaN
+303
+
 number is -34.2 and 400.123 === forever young 
 $b is $a and $c === $d
 number is -34.2 and 400.123 === forever young 
@@ -2779,6 +2869,7 @@ var fillStyleMap = {
     yellow: 3,
     orange: 4,
     blue: 5,
+    // TODO: add updated highlight line here this one is old
     "rgba(0, 255, 255, 0.15)": 6,
     "rgba(0, 0, 0, 0.5)": 7,
     "rgba(255, 255, 255, 0.5)": 8,
@@ -3128,6 +3219,20 @@ function renderInternal() {
             }
         }
     }
+    
+    // draw line where your cursor is for help with finding
+    var highlightLine = true
+    if (highlightLine) {
+        // t.fillStyle = "rgba(0, 255, 255, 0.15)"
+        // more apparent highlight line
+        if (isDark) {
+            t.fillStyle = "rgba(0, 128, 128, 0.55)"
+        } else {
+            t.fillStyle = "rgba(0, 255, 255, 0.55)"
+        }
+        // go twice as wide as you need, for server rendering purposes
+        t.fillRect(0, (fx.cursorLineIndex - fx.offsetY) * fontHeight, c.width*2, fontHeight)
+    }
 
     // render autocomplete word
     if (acWord) {
@@ -3147,13 +3252,6 @@ function renderInternal() {
         }
     }
 
-    // draw line where your cursor is for help with finding
-    var highlightLine = true
-    if (highlightLine) {
-        t.fillStyle = "rgba(0, 255, 255, 0.15)"
-        // go twice as wide as you need, for server rendering purposes
-        t.fillRect(0, (fx.cursorLineIndex - fx.offsetY) * fontHeight, c.width*2, fontHeight)
-    }
 
     t.font = fontCSS
     t.textBaseline = "top"
@@ -3241,11 +3339,31 @@ function renderInternal() {
                 // do a fill rect of the color that comes after
                 // Not using save and restore because my mock canvas doesn't support it
                 var oldFillStyle = t.fillStyle
-                t.fillStyle = trimPrefix(theLine.trim(), "// mar"+"ker ").split(" ")[0]
+                var theFillStyle = trimPrefix(theLine.trim(), "// mar"+"ker ").split(" ")[0]
+                t.fillStyle = theFillStyle
                 // go twice as wide as you need, for server rendering purposes
                 t.fillRect(0, y * fontHeight, c.width*2, fontHeight)
-                t.fillStyle = oldFillStyle
                 textFillStyle = fontColor
+                if (knownContrastingColors[t.fillStyle]) {
+                    textFillStyle = knownContrastingColors[t.fillStyle]
+                } else {
+                    colorGetterEl.style.backgroundColor = t.fillStyle
+                    // I think the t.fillStyle gets normalized as #RRGGBB, so you could have used that.
+                    var rgbColor = window.getComputedStyle(colorGetterEl).backgroundColor
+                    var grayed = ll(rgbColor, "n n n", function(r, g, b) {
+                        // googled this
+                        return (0.3 * r) + (.59 * g) + (.11 * b)
+                    })
+                    log("looking up color " + theFillStyle + " "+ grayed)
+                    if (grayed < 128) {
+                        textFillStyle = "white"    
+                    } else {
+                        textFillStyle = "black"    
+                    }
+                    knownContrastingColors[t.fillStyle] = textFillStyle
+                }
+                t.fillStyle = oldFillStyle
+                
             } else if (theLine.trim().startsWith("//")) {
                 // comments are gray
                 textFillStyle = lightFontColor
@@ -3305,6 +3423,7 @@ function renderInternal() {
     t.fillRect(xPos, yPos, 4, fontHeight)
     cursorLine = fx.lines[fx.cursorLineIndex] || ""
 }
+
 
 function ensureSign(sign, v) {
     if (sign < 0 && v > 0) return -v
@@ -3952,8 +4071,10 @@ function acWordToggle(recursive) {
             acWord.word = w.word
         }
         // because we move the current file to the front
-        // this will be true
-        acWord.fileIndex = 0
+        // this will be true.
+        // update: not true anymore
+        // acWord.fileIndex = 0
+        acWord.fileIndex = files.indexOf(fx)
         acWord.findUpX = fx.lines[fx.cursorLineIndex].length
         acWord.findUpY = fx.cursorLineIndex
         if (acWord.autocompleteLine) {
@@ -3989,7 +4110,7 @@ function acWordToggle(recursive) {
                     break loopFind
                 }
                 acWord.findDirection = !acWord.findDirection
-                if (acWord.fileIndex == files.length) {
+                if (acWord.fileIndex >= files.length) {
                     //alert("allDone")
                     acPlop([""])
                     if (!acWord.autocompleteLine) {
@@ -4013,7 +4134,14 @@ function acWordToggle(recursive) {
                     acWord.findDirection = true // so next loop it goes down
                     acWord.findUpDone = true
                     acWord.findDownDone = false
-                    acWord.fileIndex+=1
+                    if (acWord.fileIndex == files.indexOf(fx)) {
+                        acWord.fileIndex = 0
+                    } else {
+                        acWord.fileIndex+=1
+                        if (acWord.fileIndex == files.indexOf(fx)) {
+                            acWord.fileIndex+=1
+                        }
+                    }
                     continue loopFind
                 }
                 if (!acWord.findUpDone && acWord.findDirection) {
@@ -4143,7 +4271,7 @@ function acFindUp() {
     for (acWord.findUpY; acWord.findUpY>=0; acWord.findUpY--) {
         var line = files[acWord.fileIndex].lines[acWord.findUpY] || ""
         // so word being changed doesn't affect cursor
-        if (acWord.fileIndex == 0 && acWord.startY == acWord.findUpY) {
+        if (acWord.fileIndex == files.indexOf(fx) && acWord.startY == acWord.findUpY) {
             line = acWord.origLine
         }
         if (acWord.findUpX < 0) {
@@ -4434,7 +4562,6 @@ function addFile(fullPath) {
     if (fullPath == "") {
         return
     }
-    log("adding file: " + fullPath)
     
     // adding file to list beforehand to preserve order
     

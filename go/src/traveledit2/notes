@@ -1,3 +1,6 @@
+autocomplete wholenline - autocomplete non-spaced chunk!
+script sub line
+
 lightly highlight line if it has a search match anywhere
 color whitespace to easily line up tabs
 
