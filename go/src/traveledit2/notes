@@ -1,5 +1,21 @@
+make paste the first thing in order
+on autocomplete remember last works
+fuzzy find
+have 2 paste buffers -- a ring buffer
+nnn
+fix undo with scripting lines
+make it so you don't have to hit an extra tap affer pasting
+long swipe down - paste over (don't cut)
+short swipe down - paste
+short swipe up - delete
+long swipe up cut (delete and copy) 
+
+scroll down all the way left select?
+swipe left when all the way left - select line       
+
 autocomplete wholenline - autocomplete non-spaced chunk!
 script sub line
+  
 
 lightly highlight line if it has a search match anywhere
 color whitespace to easily line up tabs

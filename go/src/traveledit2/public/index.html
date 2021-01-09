@@ -4075,6 +4075,9 @@ function acWordToggle(recursive) {
         // update: not true anymore
         // acWord.fileIndex = 0
         acWord.fileIndex = files.indexOf(fx)
+        if (acWord.fileIndex == -1) {
+            acWord.fileIndex = 0
+        }
         acWord.findUpX = fx.lines[fx.cursorLineIndex].length
         acWord.findUpY = fx.cursorLineIndex
         if (acWord.autocompleteLine) {
@@ -4134,7 +4137,7 @@ function acWordToggle(recursive) {
                     acWord.findDirection = true // so next loop it goes down
                     acWord.findUpDone = true
                     acWord.findDownDone = false
-                    if (acWord.fileIndex == files.indexOf(fx)) {
+                    if (acWord.fileIndex == files.indexOf(fx) && acWord.fileIndex != 0) {
                         acWord.fileIndex = 0
                     } else {
                         acWord.fileIndex+=1
@@ -4341,13 +4344,6 @@ function acFindDown() {
         for (acWord.findDownX; acWord.findDownX < line.length; acWord.findDownX++) {
             w = getWordAt(line, acWord.findDownX)
             if (w.word != "") {
-                // if (acWord.fileIndex == 1) {
-                //     log({
-                //        fileIndex: acWord.fileIndex,
-                //        word: w.word,
-                //        y: acWord.findDownY
-                //     })
-                // }
                 acWord.findDownX = w.end + 1
             }
             var seen = acWord.seen[w.word]
@@ -4549,9 +4545,6 @@ function addFileToList(file) {
         if (theIndex != -1) {
             files.splice(theIndex + 1, 0, file)
         } else {
-            if (fx) {
-                alert("fx not found: " + fx.fullPath)
-            }
             files.unshift(file)
         }
     }
