@@ -284,6 +284,7 @@ ontouchstart=onStart(event)
     <div class=square onclick="moveFileAllTheWayLeft()">move home</div>
     <div class=square onclick="moveFileLeft()">move left</div>
     <div class=square onclick="moveFileRight()">move right</div>
+    <div class=square onclick="stopServer()">stop server</div>
 </div>
 
 <label for=serverViewCheckbox>
@@ -2549,6 +2550,16 @@ function unExpandTabIndex(theLine, start) {
     }
     return start - netSpacesAdded
 }
+function stopServer() {
+   fetch(proxyPath + "/stop", {
+        cache: "no-cache",
+        method: "POST",
+        headers: {},
+        body: "",
+   }).then(r => {
+   }).catch(e => {
+   })
+}
 function u(start) {
     var theLine = fx.lines[fx.cursorLineIndex] || ""
     return unExpandTabIndex(theLine, start)
@@ -3633,6 +3644,7 @@ function onStart(e) {
         // maybe there are workarounds.
         if (!moved && cursorType == "move") {
             if (fx.fileMode == "directory") {
+                // #filestuff
                 clickItemInDirectory()
                 return
             }
@@ -4014,8 +4026,12 @@ function clickItemInDirectory() {
     } else {
         var newFullPath = prefix + "/" + addPath
     }
-    closeFile()
-    addFile(newFullPath)
+    var preventSelect = true
+    if (fx.cursorColIndex != -5) {
+        closeFile()
+        preventSelect = false
+    }
+    addFile(newFullPath, preventSelect)
 }
 // marker orange
 var shouldAutocompleteLine = false
@@ -4551,7 +4567,7 @@ function addFileToList(file) {
     }
     renderFileDropdown()
 }
-function addFile(fullPath) {
+function addFile(fullPath, preventSelect) {
     fullPath = normalizeFullPath(fullPath)
     if (fullPath == "") {
         return
@@ -4577,7 +4593,9 @@ function addFile(fullPath) {
     var file = makeFile(fullPath, cursorLineIndex, "")
     addFileToList(file)
     if (!initialFileAdding) {
-        setCurrentFile(file)
+        if (!preventSelect) {
+            setCurrentFile(file)
+        }
         renderURL()
     }
     fetchFile(fullPath, file).then(() => {
@@ -4758,7 +4776,12 @@ function setCurrentFile(file) {
         return
     }
 
-    lastFile = fx
+    // #filestuff
+    // this check doesn't seem to work
+    // alt-tab after viewing files is broken
+    if (fx && fx.fileMode != "fileList" && fx != file) {
+        lastFile = fx
+    }
     fx = file
     if (fx.fileMode == "bash") {
         bashToolbar1.classList.remove("hidden")

@@ -566,6 +566,9 @@ func main() {
 		log.Printf("the combined output of the command is: %s", string(ret))
 		w.Write(ret)
 	})
+	mux.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
+	    os.Exit(1)    
+	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains("..", r.URL.Path) {
 			logAndErr(w, "the path has a .. in it")
