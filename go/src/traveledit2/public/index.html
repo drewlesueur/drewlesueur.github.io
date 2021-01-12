@@ -218,7 +218,8 @@ ontouchstart=onStart(event)
     <div class=square onclick='runBashCommand("git log -10")'>log -10</div>
     <div class=square onclick='runBashCommand("git log -p -3")'>log -p -3</div>
 </div>
-<div class="toolbar xhidden" id=fileRow ontouchstart=selectFileRow(event)>
+<!--<div class="toolbar xhidden" id=fileRow ontouchstart=selectFileRow(event)>-->
+<div class="toolbar xhidden" id=fileRow onclick=selectFileRow(event)>
 </div>
 <div class=toolbar>
     <div id=findUpButton class=square onclick=findUp()>find up</div>
@@ -4609,12 +4610,12 @@ function renderFileDropdown() {
             return
         }
         // this is for the "grip handles" because we are experimenting with selecting files ontouchstart.
-        if (fileI % 5 == 0 && fileI != 0) {
-            var button = document.createElement("div")
-            button.className = "longButton handle"
-            button.innerText = ""
-            fileRow.appendChild(button)
-        }
+        // if (fileI % 5 == 0 && fileI != 0) {
+        //     var button = document.createElement("div")
+        //     button.className = "longButton handle"
+        //     button.innerText = ""
+        //     fileRow.appendChild(button)
+        // }
         var button = document.createElement("div")
         button.className = "longButton"
         // button.className = "square"

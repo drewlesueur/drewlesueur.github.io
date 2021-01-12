@@ -5,13 +5,28 @@ have 2 paste buffers -- a ring buffer
 nnn
 fix undo with scripting lines
 make it so you don't have to hit an extra tap affer pasting
-long swipe down - paste over (don't cut)
-short swipe down - paste
-short swipe up - delete
-long swipe up cut (delete and copy) 
+// long swipe down - paste over (don't cut)
+// short swipe down - paste
+// short swipe up - delete
+// long swipe up cut (delete and copy)
+arrow over 
+After talking with Kyle
+- short swipe up: cut (copy/delete)
+- long swipe up: keep it deleted, but undo the cut 
+  - short swipe down: copy
+- long swipe down: undo the copy (essentially unselect)  
 
-scroll down all the way left select?
-swipe left when all the way left - select line       
+- get rid of the "mini clipboard"
+- tap when something is selected (lines): paste over and keep selected
+  (we keep selected because then we can swipe left and right)
+- tap on word, instead of delete it (mini clipboard), select it 
+  I slightly worry about this because it has been nice to have the "ciw" vim functionality easy   
+  but there are benefits. Lets try it. if something is copied you can tap,tap to paste over word.
+  having a single clipboard is nice too
+- when selected (inline), a tap will paste and get rid of selecting
+- tap in left margin: paste lines
+----------
+scroll left when it is already all the way left select?
 
 autocomplete wholenline - autocomplete non-spaced chunk!
 script sub line
