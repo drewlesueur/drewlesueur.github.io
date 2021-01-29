@@ -1,3 +1,8 @@
+button to move the offset so selected line is at top or bottom
+
+maybe highlight the last line or lines that were edited?
+higlight an entire line lightly if it has a search term on there that matches
+
 let this thing work when all you have is an ssh connection to a server
 
 file server

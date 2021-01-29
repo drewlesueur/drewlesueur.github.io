@@ -1404,7 +1404,8 @@ function findDown(searchDir, wrap, startTop) {
         if (searchText.value == "") {
             navForward()
             return
-            searchText.value = "// mar"+"ker"
+            // searchText.value = "// mar"+"ker"
+            searchText.value = " mar"+"ker"
         }
     }
     for (var i=startY; i<fx.lines.length; i++) {
@@ -1485,7 +1486,8 @@ function findUp() {
         if (searchText.value == "") {
             navBack()
             return
-            searchText.value = "// mar"+"ker"
+            // searchText.value = "// mar"+"ker"
+            searchText.value = " mar"+"ker"
         }
     }
     for (var i=fx.cursorLineIndex; i>=0; i--) {
@@ -3347,11 +3349,12 @@ function renderInternal() {
                 textFillStyle = isDark ? "lime" : "green"
             } else if (theLine.startsWith("-")){
                 textFillStyle = "red"
-            } else if (theLine.trim().startsWith("// mar"+"ker ")) {
+            } else if (theLine.trim().startsWith("// mar"+"ker ") || theLine.trim().startsWith("# mar"+"ker ")) {
                 // do a fill rect of the color that comes after
                 // Not using save and restore because my mock canvas doesn't support it
                 var oldFillStyle = t.fillStyle
-                var theFillStyle = trimPrefix(theLine.trim(), "// mar"+"ker ").split(" ")[0]
+                // var theFillStyle = trimPrefix(theLine.trim(), "// mar"+"ker ").split(" ")[0]
+                var theFillStyle = trimPrefix(trimPrefix(theLine.trim(), "// mar"+"ker "), "# mar"+"ker ").split(" ")[0]
                 t.fillStyle = theFillStyle
                 // go twice as wide as you need, for server rendering purposes
                 t.fillRect(0, y * fontHeight, c.width*2, fontHeight)
@@ -3460,7 +3463,8 @@ function moveHomeEndAction() {
            // TODO: jump to markers once you add that feature?
            // make an implicit marker of where you last were?
            var oldSearchText = searchText.value
-           searchText.value = "// mar"+"ker "
+           // searchText.value = "// mar"+"ker "
+           searchText.value = " mar"+"ker "
            var found = findUp()
            searchText.value = oldSearchText
            if (!found) {
@@ -3470,7 +3474,8 @@ function moveHomeEndAction() {
        case "down":
            // TODO: jump to markers
            var oldSearchText = searchText.value
-           searchText.value = "// mar"+"ker "
+           // searchText.value = "// mar"+"ker "
+           searchText.value = " mar"+"ker "
            var found = findDown()
            searchText.value = oldSearchText
            if (!found) {
@@ -3804,6 +3809,8 @@ function onStart(e) {
     var lastTime = Date.now()
     var firstMove = true
     var moved = false
+    var movedLong = false
+    var prevCopyBufferForTouch = null
     var movedWithBuffer = false
     var selectedRegion = {}
 
