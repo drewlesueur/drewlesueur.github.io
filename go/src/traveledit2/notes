@@ -1,3 +1,7 @@
+bugs with alt-tab and closing
+
+select to run bash script one after the other
+
 button to move the offset so selected line is at top or bottom
 
 maybe highlight the last line or lines that were edited?
@@ -84,8 +88,13 @@ will be easier to path proxy that way.
 
 http://www.myersdaily.org/joseph/javascript/md5-text.html
 
+
+// marker teal terminal emulator stuff  
+https://www.xfree86.org/current/ctlseqs.html
+https://gist.github.com/justinmk/a5102f9a0c1810437885a04a07ef0a91
 https://github.com/creack/pty
 use example, try sending \r\n
+https://xtermjs.org/
 
 take a look at Mosh for ssh alternative
 
