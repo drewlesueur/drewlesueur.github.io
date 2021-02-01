@@ -10,6 +10,28 @@
 //   font-family: GoMono;
 //   src: url(tepublic/fonts/Go-Mono.ttf);
 // }
+// @import url('https://fonts.googleapis.com/css2?family=Inconsolata&family=JetBrains+Mono&family=Nanum+Gothic+Coding&family=Overpass+Mono&family=Oxygen+Mono&family=Roboto+Mono&family=Share+Tech+Mono&family=VT323&family=Xanh+Mono&display=swap');
+
+// @font-face {
+//   font-family: IosevkaLucida;
+//   src: url('tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf');
+// }
+
+
+// @font-face {
+//   font-family: IosevkaLucida;
+//   src: url('http://tel.drewles.com:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf');
+// }
+// @font-face {
+//   font-family: Iosevka;
+//   src: url('http://tel.drewles.com:8000/tepublic/iosevka/iosevka-fixed-regular.ttf');
+// }
+
+// @font-face {
+//   font-family: IosevkaSlab;
+//   src: url('http://tel.drewles.com:8000/tepublic/iosevka_slab/iosevka-fixed-slab-regular.ttf');
+// }
+
 * {
     margin: 0; padding: 0;
     box-sizing: border-box;
@@ -22,6 +44,10 @@
     background-color: white;
     color: black;
 }
+.light {
+    background-color: lightyellow;
+    color: black;
+}
 .text { border: none; color: cyan;
 }
 .toolbar {
@@ -31,6 +57,8 @@
     width: 375px;
     overflow: scroll;
     -webkit-overflow-scrolling: touch;
+    --font-family: 'IosevkaLucida';
+    --font-family: 'Courier';
 }
 .hidden {
    display: none;
@@ -74,6 +102,10 @@
     text-align: center;
 }
 
+#fileRow div {
+    font-size: 10px !important;
+}
+
 input[type="text"] {
     font-size: 16px;
     --border: 1px solid cyan;
@@ -103,7 +135,9 @@ opacity: 0.5;
 
 <form onsubmit=findDownForm(event)>
     <input class=dark id=searchTextBefore class=text type=text
-    style="font: 8px Courier;
+    style="
+    --font: 8px IosevkaLucida;
+    font: px Courier;
     width: 375px;
     height:1px; overflow: hidden;
     display: block;"
@@ -112,14 +146,19 @@ opacity: 0.5;
     >
     
     <input class=dark type=text id=searchText
-        style="display: none; font: 16px Courier; width: 300px"
+        style="display: none;
+        --font: 13px IosevkaLucida;
+        font: 16px Courier;
+        width: 300px"
         onfocus="focusSearchText()"
         oninput="inputSearchText()"
         onblur="blurSearchText()"
     >
     
     <input class=dark id=searchTextAfter class=text type=text
-    style="font: 8px Courier;
+    style="
+    --font: 8px IosevkaLucida;
+    font: 8px Courier;
     width: 375px;
     height:1px; overflow: hidden;
     display: block;
@@ -134,7 +173,9 @@ opacity: 0.5;
 <form onsubmit="newLine(event, true)">
 
 <input class=dark id=theTextBefore class=text type=text
-style="font: 8px Courier;
+style="
+--font: 8px IosevkaLucida;
+font: 8px Courier;
 width: 375px;
 /* display: none; see what it looks like without */
 height:1px; overflow: hidden;
@@ -143,7 +184,10 @@ onfocus=handleFocusBefore()
 onblur=handleBlur()
 >
 <input class=dark id=theText class=text type=text
-style="font: 16px Courier; color: brown;
+style="
+--font: 13px IosevkaLucida;
+font: 16px Courier;
+color: brown;
 width: 375px;
 --position:absolute; top: 100px;
 display: block;
@@ -154,7 +198,9 @@ oninput=saveLine()
 onkeydown=handleKeydown(event)
 >
 <input class=dark id=theTextAfter class=text type=text
-style="font: 8px Courier;
+style="
+--font: 8px IosevkaLucida;
+font: 8px Courier;
 width: 375px;
 /* display: none; see what it looks like without */
 height:1px; overflow: hidden;
@@ -335,6 +381,7 @@ style="width:100%; height:100px;"
     <input type=Submit value=Upload>
 </form>
 
+<!--not used-->
 <select onchange="selectFont(this.value)">
     <option>Courier</option>
     <option>GoMono</option>
@@ -365,18 +412,29 @@ var fontScale = 1.2
 fontScaleInput.value = fontScale
 //var fontScale = 1
 // some duplication here with fontScale, see updateFontScale
-var fontHeight=36 * fontScale
-var fontWidth=18 * fontScale
-var fontCSS = (30 * fontScale) + "px 'Courier'"
-// var fontCSS = (30 * fontScale) + "px 'GoMono'"
 
+var fontHeightPre = 36
+var fontWidthPre = 18
+var fontSize = 30
+var fontName = "Courier"
 
-// var fontCSS = (30 * fontScale) + "px 'Menlo'"// yes
-// var fontCSS = (30 * fontScale) + "px 'Monaco'"// no
-// var fontCSS = (30 * fontScale) + "px 'PT Mono'" //no
-// var fontCSS = (30 * fontScale) + "px 'Andale Mono'" //no
-// var fontCSS = (30 * fontScale) + "px 'Osaka-Mono'" //no
-// var fontCSS = (30 * fontScale) + "px 'Courier New'" //yes
+// var fontHeightPre = 36
+// var fontWidthPre = 16
+// var fontSize = 30
+// var fontName = "IosevkaLucida"
+// var fontHeightPre = 36
+// var fontWidthPre = 16
+// var fontSize = 30
+// var fontName = "IosevkaSlab"
+ 
+var fontHeight= fontHeightPre * fontScale
+var fontWidth=fontWidthPre * fontScale
+var fontCSS = (fontSize * fontScale) + "px '"+fontName+"'"
+
+// https://medium.com/@caulfieldOwen/programming-fonts-a-visual-guide-567fc210d2c6
+// https://vfoley.xyz/lesser-known-coding-fonts/
+// https://www.programmingfonts.org/#iosevka
+
 
 var lastFile = fx
 // not using indexes so we can move files around without worrying about the indexes
@@ -988,9 +1046,11 @@ function updateFontScale() {
     if (!fontScale) {
         fontScale = 1
     }
-    fontHeight=36 * fontScale
-    fontWidth=18 * fontScale
-    fontCSS = (30 * fontScale) + "px 'Courier'"
+    
+    fontHeight= fontHeightPre * fontScale
+    fontWidth=fontWidthPre * fontScale
+    fontCSS = (fontSize * fontScale) + "px '"+fontName+"'"
+    
     setCanvasHeightAccordingly()
     setCanvasWidth(canvasWidth)
     render()
