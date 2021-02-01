@@ -1,4 +1,12 @@
 
+
+JSON.stringify("some things are cool".match(/e/g))
+JSON.stringify(Object.keys("some things are cool".match(/e/g)))
+["e","e"]
+["e"]
+e
+
+
 http://192.168.0.21:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf
 
 bugs with alt-tab and closing

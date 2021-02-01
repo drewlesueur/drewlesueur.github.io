@@ -6,6 +6,10 @@
 <script src="/tepublic/diff.js"></script>
 <script src="/tepublic/md5.js"></script>
 <style>
+@font-face {
+  font-family: IosevkaLucida;
+  src: url('http://tel.drewles.com:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf');
+}
 /*
 @import url('https://fonts.googleapis.com/css2?family=Nova+Mono&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap');
@@ -48,6 +52,10 @@
 }
 .light {
     background-color: white;
+    color: black;
+}
+.light {
+    background-color: #ddddcc;
     color: black;
 }
 .light {
@@ -430,10 +438,10 @@ var fontName = "Courier"
 // var fontName = "Anonymous Pro"
 // var fontName = "Overpass Mono"
 
-// var fontHeightPre = 36
-// var fontWidthPre = 16
-// var fontSize = 30
-// var fontName = "IosevkaLucida"
+var fontHeightPre = 36
+var fontWidthPre = 16
+var fontSize = 30
+var fontName = "IosevkaLucida"
 // var fontHeightPre = 36
 // var fontWidthPre = 16
 // var fontSize = 30
@@ -487,6 +495,7 @@ var touchScale=2 // was 3 for a while
 
 var lastAction = "move" // move or type
 var lastSearchDirForSameTerm = "" // up or down or ""
+var lastSearchMatchLength = 0 
 var hasMovedSinceNewLine = false
 var inEdit = false
 var copyBuffer = []
@@ -522,7 +531,7 @@ var autoSave = false
 var lastPageYOffset = 0
 var originalCanvasHeightFull = canvasHeightFull
 var scrollTimeout
-
+var useRegexSearch = true
 // TODO: as you add or delete lines
 // go thru these locations and update them
 setInterval(function() {
@@ -1488,15 +1497,28 @@ function findDown(searchDir, wrap, startTop) {
         if (!startTop && i == fx.cursorLineIndex) {
             var startX = u(fx.cursorColIndex)
             if (!searchDir && lastSearchDirForSameTerm == "down") {
-                startX = u(fx.cursorColIndex + searchText.value.length)   
+                startX = u(fx.cursorColIndex + lastSearchMatchLength)   
             }
             lastSearchDirForSameTerm = "down" 
             lineToSearch = lineToSearch.substr(startX)
         }
-        if (document.activeElement == searchText) {
-            var pos = lineToSearch.toLowerCase().indexOf(searchText.value.toLowerCase())
+        var pos = -1
+        if (false && document.activeElement == searchText) {
+            pos = lineToSearch.toLowerCase().indexOf(searchText.value.toLowerCase())
+            lastSearchMatchLength = searchText.value.length 
         } else {
-            var pos = lineToSearch.indexOf(searchText.value)
+            if (useRegexSearch) {
+                var theMatch = lineToSearch.match(cachedSearchRegexp(searchText.value))
+                if (theMatch == null) {
+                    pos = -1
+                } else {
+                    pos = theMatch.index
+                    lastSearchMatchLength = theMatch[0].length 
+                }
+            } else {
+                pos = lineToSearch.indexOf(searchText.value)
+                lastSearchMatchLength = searchText.value.length
+            }
         }
         if (pos != -1) {
             if (!startTop && i == fx.cursorLineIndex) {
@@ -1569,18 +1591,41 @@ function findUp() {
         if (i == fx.cursorLineIndex) {
             lineToSearch = lineToSearch.substr(0, u(fx.cursorColIndex))
         }
-        if (document.activeElement == searchText) {
-            var pos = reverse(lineToSearch.toLowerCase()).indexOf(reverse(searchText.value.toLowerCase()))
+        var pos = -1
+        if (false && document.activeElement == searchText) {
+            pos = reverse(lineToSearch.toLowerCase()).indexOf(reverse(searchText.value.toLowerCase()))
+            lastSearchMatchLength = searchText.value 
         } else {
-            var pos = reverse(lineToSearch).indexOf(reverse(searchText.value))
+            if (useRegexSearch) {
+                var theMatches = lineToSearch.matchAll(cachedSearchRegexpGlobal(searchText.value))
+                var theMatch  = null
+                for (theMatch of theMatches) {
+                    // This lets theMatch var be the last one (or none)    
+                }
+                if (theMatch == null) {
+                    pos = -1
+                } else {
+                    pos = theMatch.index
+                    lastSearchMatchLength = theMatch[0].length 
+                }
+            } else {
+                pos = reverse(lineToSearch).indexOf(reverse(searchText.value))
+                lastSearchMatchLength = searchText.value 
+            }
         }
         if (pos != -1) {
-            if (i == fx.cursorLineIndex) {
+            if (i == fx.cursorLineIndex && !useRegexSearch) {
                 pos += (fx.lines[i].length - u(fx.cursorColIndex))
             }
             fx.cursorLineIndex = i
-            var colIndex = fx.lines[i].length - (pos + searchText.value.length)
-            fx.cursorColIndex = expandTabIndex(fx.lines[i], colIndex)
+            if (!useRegexSearch) {
+                var colIndex = fx.lines[i].length - (pos + searchText.value.length)
+                fx.cursorColIndex = expandTabIndex(fx.lines[i], colIndex)
+            } else {
+                // this pos is from the left
+                // in the future we could probably make the non regexp more consistent where it loops to the last one. (maybe better than reversing string?)
+                fx.cursorColIndex = expandTabIndex(lineToSearch, pos)
+            }
             updateCursorXY()
             ensureCursorInScreen()
             render()
@@ -3366,18 +3411,35 @@ function renderInternal() {
         // highlight search
         var theLine = fx.lines[y + fx.offsetY] || ""
         var highlightStartSearch = 0
+        var matchLength = 0
         if (theLine && searchText.value.length) {
             // max 20 highlights per line
             for (var _i=0; _i<20; _i++) {
                 if (fx.fileMode == "directory") {
                     var pos = theLine.toLowerCase().indexOf(searchText.value.toLowerCase(), highlightStartSearch)
+                    if (pos == -1) {
+                        break
+                    }
+                    matchLength = searchText.value.length
+                    highlightStartSearch = pos + matchLength
                 } else {
-                    var pos = theLine.indexOf(searchText.value, highlightStartSearch)
+                    if (useRegexSearch) {
+                        var theMatch = theLine.substr(highlightStartSearch).match(cachedSearchRegexp(searchText.value))
+                        if (theMatch == null) {
+                            break    
+                        }
+                        matchLength = theMatch[0].length
+                        pos = highlightStartSearch + theMatch.index  
+                        highlightStartSearch = pos + matchLength 
+                    } else {
+                        var pos = theLine.indexOf(searchText.value, highlightStartSearch)
+                        if (pos == -1) {
+                            break
+                        }
+                        matchLength = searchText.value.length
+                        highlightStartSearch = pos + matchLength
+                    }
                 }
-                if (pos == -1) {
-                    break
-                }
-                highlightStartSearch = pos + searchText.value.length
                 // lime
                 if (isDark) {
                     t.fillStyle = "blue"
@@ -3387,7 +3449,7 @@ function renderInternal() {
                 t.fillRect(
                     (expandTabIndex(theLine, pos) - fx.offsetX) * fontWidth,
                     y * fontHeight,
-                    searchText.value.length * fontWidth,
+                    matchLength * fontWidth,
                     fontHeight
                 )
             }
@@ -3513,6 +3575,30 @@ function renderInternal() {
     cursorLine = fx.lines[fx.cursorLineIndex] || ""
 }
 
+// simple cache for regexp so we don't need to recompile in render loop
+// also so I don't have to keep track of whenever searchText.value is set (although maybe consider doing it that way in another pass) 
+var lastSearchRegexpText = ""
+var lastSearchRegexp = null
+function cachedSearchRegexp(str) {
+    if (str == lastSearchRegexpText) {
+        return lastSearchRegexp
+    }
+    lastSearchRegexpText = str
+    lastSearchRegexp = new RegExp(lastSearchRegexpText)   
+    return lastSearchRegexp
+}
+
+// just like cachedSearchRegexp but a global regexp for searching backwards
+var lastSearchRegexpGlobalText = ""
+var lastSearchRegexpGlobal = null
+function cachedSearchRegexpGlobal(str) {
+    if (str == lastSearchRegexpGlobalText) {
+        return lastSearchRegexpGlobal
+    }
+    lastSearchRegexpGlobalText = str
+    lastSearchRegexpGlobal = new RegExp(lastSearchRegexpGlobalText, 'g')   
+    return lastSearchRegexpGlobal
+}
 
 function ensureSign(sign, v) {
     if (sign < 0 && v > 0) return -v
