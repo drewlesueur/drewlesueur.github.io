@@ -312,20 +312,20 @@ ontouchstart=onStart(event)
 <!-- Stuff after here is after the fold -->
 <div class=toolbar>
     <div class=longButton onclick="selectFont('Courier')">Courier</div>
+    <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
     <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
+    <div class=longButton onclick="selectFont('IosevkaThin')">Iosevka Thin</div>
+    <div class=longButton onclick="selectFont('Iosevka')">Iosevka</div>
+    <div class=longButton onclick="selectFont('IosevkaSlab')">Iosevka S</div>
     <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
-    <div class=longButton onclick="selectFont('Courier')">Courier</div>
-    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
-    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
-    <div class=longButton onclick="selectFont('Courier')">Courier</div>
-    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
-    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
-    <div class=longButton onclick="selectFont('Courier')">Courier</div>
-    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
-    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
-    <div class=longButton onclick="selectFont('Courier')">Courier</div>
-    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
-    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
+    <div class=longButton onclick="selectFont('XanhMono')">Xanh</div>
+    <div class=longButton onclick="selectFont('Inconsolata')">Inconsolata</div>
+    <div class=longButton onclick="selectFont('InconsolataThin')">Inconsolata Thin</div>
+    <div class=longButton onclick="selectFont('Courier New')">Courier New</div>
+    <div class=longButton onclick="selectFont('RobotoMono')">Roboto Mono</div>
+    <div class=longButton onclick="selectFont('NanumGothicCoding')">Nanum GC</div>
+    <div class=longButton onclick="selectFont('GillSans')">Gill Sans</div>
+    <div class=longButton onclick="selectFont('AmericanTypewriter')">American T</div>
 </div>
 <div class=toolbar>
     <div class=square onclick=debugView()>debug view</div>
@@ -452,11 +452,51 @@ var fonts = {
         fontSize: 30,
         fontName: "Courier",
     },
+    "Courier New": {
+        fontHeightPre: 36,
+        fontWidthPre: 18,
+        fontSize: 30,
+        fontName: "Courier New",
+    },
     "Menlo": {
         fontHeightPre: 36,
         fontWidthPre: 18,
         fontSize: 30,
         fontName: "Menlo",
+    },
+    "AmericanTypewriter": {
+        fontHeightPre: 36,
+        fontWidthPre: 18,
+        fontSize: 30,
+        fontName: "AmericanTypewriter",
+    },
+    "GillSans": {
+        fontHeightPre: 36,
+        fontWidthPre: 18,
+        fontSize: 30,
+        fontName: "GillSans",
+    },
+    "SFMono": {
+        // I think this actually only works because we default to ui-monospace
+        // SFMono seems to not be known
+        fontHeightPre: 36,
+        fontWidthPre: 18,
+        fontSize: 30,
+        fontName: "SFMono", //http
+    },
+    "RobotoMono": {
+        fontHeightPre: 36,
+        fontWidthPre: 18,
+        fontSize: 30,
+        fontName: "RobotoMono",
+        url: "https://fonts.gstatic.com/s/robotomono/v13/L0xuDF4xlVMF-BfR8bXMIhJHg45mwgGEFl0_3vq_ROW4AJ68SA.woff2"
+    },
+    "NanumGothicCoding": {
+        fontHeightPre: 36,
+        fontWidthPre: 16,
+        fontSize: 30,
+        fontName: "NanumGothicCoding",
+        url: "https://fonts.gstatic.com/s/nanumgothiccoding/v14/8QIVdjzHisX_8vv59_xMxtPFW4IXROwsy6ExUM1WtMRe4NStuSM4eXtk7e0M06IfTaI.119.woff2"
     },
     "IosevkaLucida": {
         fontHeightPre: 36,
@@ -466,6 +506,55 @@ var fonts = {
         // TODO: fix url/path etc
         // url: "http://tel.drewles.com:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf"
         url: "http://192.168.0.21:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf"
+    },
+    "IosevkaThin": {
+        fontHeightPre: 36,
+        fontWidthPre: 14,
+        fontSize: 30,
+        fontName: "IosevkaThin",
+        url: "http://192.168.0.21:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf"
+    },
+    "Iosevka": {
+        fontHeightPre: 36,
+        fontWidthPre: 16,
+        fontSize: 30,
+        fontName: "Iosevka",
+        url: "http://tel.drewles.com:8000/tepublic/iosevka/iosevka-fixed-regular.ttf"
+    },
+    "IosevkaSlab": {
+        fontHeightPre: 36,
+        fontWidthPre: 16,
+        fontSize: 30,
+        fontName: "IosevkaSlab",
+        url: "http://tel.drewles.com:8000/tepublic/iosevka_slab/iosevka-fixed-slab-regular.ttf"
+    },
+
+    "Inconsolata": {
+        fontHeightPre: 36,
+        fontWidthPre: 16,
+        fontSize: 30,
+        fontName: "Inconsolata",
+        url: "https://fonts.gstatic.com/s/inconsolata/v21/QlddNThLqRwH-OJ1UHjlKENVzlm-WkL3GZQmAwPyya15IDhunA.woff2"
+    },
+    // https://usefulangle.com/post/74/javascript-dynamic-font-loading
+    "InconsolataThin": {
+        fontHeightPre: 36,
+        fontWidthPre: 16,
+        fontSize: 30,
+        fontName: "InconsolataThin",
+        descriptors: {
+            // because inconsolata has this special property
+            // feature not working?
+            stretch: "70%",
+        },
+        url: "https://fonts.gstatic.com/s/inconsolata/v21/QlddNThLqRwH-OJ1UHjlKENVzlm-WkL3GZQmAwPyya15IDhunA.woff2"
+    },
+    "XanhMono": {
+        fontHeightPre: 36,
+        fontWidthPre: 16,
+        fontSize: 30,
+        fontName: "XanhMono",
+        url: "https://fonts.gstatic.com/s/xanhmono/v4/R70YjykVmvKCep-vWhSonwqRfTHxTw.woff2"
     },
     "Fake": {
         fontHeightPre: 36,
@@ -1094,7 +1183,12 @@ function backspace() {
 function selectFont(fontName) {
     currentFont = fonts[fontName] || fonts["Courier"]
     if (currentFont.url) {
-        var font = new FontFace(fontName, "url(" + currentFont.url + ")")    
+        var font
+        if (currentFont.descriptors) {
+            font = new FontFace(fontName, "url(" + currentFont.url + ")")    
+        } else {
+            font = new FontFace(fontName, "url(" + currentFont.url + ")", currentFont.descriptors)    
+        }
         font.load().then(function(loaded){
             document.fonts.add(loaded)
         }).catch(function(e){
@@ -1117,7 +1211,7 @@ function updateFontScale() {
 function setFontVars() {
     fontHeight= currentFont.fontHeightPre * fontScale
     fontWidth= currentFont.fontWidthPre * fontScale
-    fontCSS = (currentFont.fontSize * fontScale) + "px '"+currentFont.fontName+"'"
+    fontCSS = (currentFont.fontSize * fontScale) + "px '"+currentFont.fontName+"', ui-monospace"
 }
 
 
