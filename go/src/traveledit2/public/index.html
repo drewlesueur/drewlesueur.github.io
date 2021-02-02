@@ -311,7 +311,13 @@ ontouchstart=onStart(event)
 </div>
 <!-- Stuff after here is after the fold -->
 <div class=toolbar>
+    <div class=longButton onclick="fontScaleInput.value = 0.9; updateFontScale()">0.9</div>
+    <div class=longButton onclick="fontScaleInput.value = 1.0; updateFontScale()">1.0</div>
+    <div class=longButton onclick="fontScaleInput.value = 1.1; updateFontScale()">1.1</div>
+    <div class=longButton onclick="fontScaleInput.value = 1.2; updateFontScale()">1.2</div>
+    <div class=longButton onclick="fontScaleInput.value = 1.3; updateFontScale()">1.3</div>
     <div class=longButton onclick="selectFont('Courier')">Courier</div>
+    <div class=longButton onclick="selectFont('CourierThin')">Courier Thin</div>
     <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
     <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
     <div class=longButton onclick="selectFont('IosevkaThin')">Iosevka Thin</div>
@@ -452,6 +458,12 @@ var fonts = {
         fontSize: 30,
         fontName: "Courier",
     },
+    "CourierThin": {
+        fontHeightPre: 36,
+        fontWidthPre: 16,
+        fontSize: 30,
+        fontName: "Courier",
+    },
     "Courier New": {
         fontHeightPre: 36,
         fontWidthPre: 18,
@@ -509,6 +521,7 @@ var fonts = {
     },
     "IosevkaThin": {
         fontHeightPre: 36,
+        // fontWidthPre: 13.5,
         fontWidthPre: 14,
         fontSize: 30,
         fontName: "IosevkaThin",
