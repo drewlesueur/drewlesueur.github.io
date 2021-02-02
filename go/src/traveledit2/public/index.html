@@ -6,11 +6,11 @@
 <script src="/tepublic/diff.js"></script>
 <script src="/tepublic/md5.js"></script>
 <style>
+/*
 @font-face {
   font-family: IosevkaLucida;
   src: url('http://tel.drewles.com:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf');
 }
-/*
 @import url('https://fonts.googleapis.com/css2?family=Nova+Mono&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Anonymous+Pro&display=swap');
@@ -311,6 +311,23 @@ ontouchstart=onStart(event)
 </div>
 <!-- Stuff after here is after the fold -->
 <div class=toolbar>
+    <div class=longButton onclick="selectFont('Courier')">Courier</div>
+    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
+    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
+    <div class=longButton onclick="selectFont('Courier')">Courier</div>
+    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
+    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
+    <div class=longButton onclick="selectFont('Courier')">Courier</div>
+    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
+    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
+    <div class=longButton onclick="selectFont('Courier')">Courier</div>
+    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
+    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
+    <div class=longButton onclick="selectFont('Courier')">Courier</div>
+    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
+    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
+</div>
+<div class=toolbar>
     <div class=square onclick=debugView()>debug view</div>
     <div class=square onclick=openAtCursor()>open</div>
     <div class=square onclick=urlAtCursor()>visit</div>
@@ -371,6 +388,12 @@ ontouchstart=onStart(event)
         oninput="this.form.action=this.value"></div>
     <input class=dark type=submit value="Add Tab">
 </form>
+<select onchange="selectFont(this.value)">
+    <option>Courier</option>
+    <option>Menlo</option>
+    <option>IosevkaLucida</option>
+    <option>Fake</option>
+</select>
 <textarea class=dark id=pasteEl
 style="width:100%; height:100px;"
 onfocus="this.setSelectionRange(0, this.value.length)"
@@ -396,11 +419,6 @@ style="width:100%; height:100px;"
     <input type=Submit value=Upload>
 </form>
 
-<!--not used-->
-<select onchange="selectFont(this.value)">
-    <option>Courier</option>
-    <option>GoMono</option>
-</select>
 
 <div id=bottomPadding style="height: 100px;"></div>
 <div id=colorGetterEl style="width: 100px; height: 100px;"></div>
@@ -425,31 +443,44 @@ var lastWord = ""
 var lastCleared = ""
 var fontScale = 1.2
 fontScaleInput.value = fontScale
-//var fontScale = 1
-// some duplication here with fontScale, see updateFontScale
 
-var fontHeightPre = 36
-var fontWidthPre = 18
-var fontSize = 30
-var fontName = "Courier"
-// var fontName = "Courier Prime"
-// var fontName = "Inconsolata"
-// var fontName = "Nova Mono"
-// var fontName = "Anonymous Pro"
-// var fontName = "Overpass Mono"
 
-var fontHeightPre = 36
-var fontWidthPre = 16
-var fontSize = 30
-var fontName = "IosevkaLucida"
-// var fontHeightPre = 36
-// var fontWidthPre = 16
-// var fontSize = 30
-// var fontName = "IosevkaSlab"
- 
-var fontHeight= fontHeightPre * fontScale
-var fontWidth=fontWidthPre * fontScale
-var fontCSS = (fontSize * fontScale) + "px '"+fontName+"'"
+var fonts = {
+    "Courier": {
+        fontHeightPre: 36,
+        fontWidthPre: 18,
+        fontSize: 30,
+        fontName: "Courier",
+    },
+    "Menlo": {
+        fontHeightPre: 36,
+        fontWidthPre: 18,
+        fontSize: 30,
+        fontName: "Menlo",
+    },
+    "IosevkaLucida": {
+        fontHeightPre: 36,
+        fontWidthPre: 16,
+        fontSize: 30,
+        fontName: "IosevkaLucida",
+        // TODO: fix url/path etc
+        // url: "http://tel.drewles.com:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf"
+        url: "http://192.168.0.21:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf"
+    },
+    "Fake": {
+        fontHeightPre: 36,
+        fontWidthPre: 16,
+        fontSize: 30,
+        fontName: "IosevkaLucida",
+        // TODO: fix url/path etc
+        url: "http://192.168.0.21:8000/tepublic/notreal.ttf"
+    },
+}
+currentFont = fonts["Courier"]
+
+
+setFontVars() 
+
 // https://medium.com/@caulfieldOwen/programming-fonts-a-visual-guide-567fc210d2c6
 // https://vfoley.xyz/lesser-known-coding-fonts/
 // https://www.programmingfonts.org/#iosevka
@@ -1061,23 +1092,35 @@ function backspace() {
     render()   
 }
 function selectFont(fontName) {
-    new FontFace(fontName, url(proxyPath + "/tepublic/fonts/" + fontName + ".ttf"))    
-    fontCSS = (30 * fontScale) + "px '"+fontName+"'"
+    currentFont = fonts[fontName] || fonts["Courier"]
+    if (currentFont.url) {
+        var font = new FontFace(fontName, "url(" + currentFont.url + ")")    
+        font.load().then(function(loaded){
+            document.fonts.add(loaded)
+        }).catch(function(e){
+            alert(e)
+        })
+    }
+    updateFontScale()
 }
+
 function updateFontScale() {
     fontScale = fontScaleInput.value - 0
     if (!fontScale) {
         fontScale = 1
     }
-    
-    fontHeight= fontHeightPre * fontScale
-    fontWidth=fontWidthPre * fontScale
-    fontCSS = (fontSize * fontScale) + "px '"+fontName+"'"
-    
+    setFontVars()
     setCanvasHeightAccordingly()
     setCanvasWidth(canvasWidth)
     render()
 }
+function setFontVars() {
+    fontHeight= currentFont.fontHeightPre * fontScale
+    fontWidth= currentFont.fontWidthPre * fontScale
+    fontCSS = (currentFont.fontSize * fontScale) + "px '"+currentFont.fontName+"'"
+}
+
+
 docTitleEl.value = location.pathname
 function importPaste() {
     copyBuffer = pasteEl.value.split("\n")
@@ -3584,7 +3627,12 @@ function cachedSearchRegexp(str) {
         return lastSearchRegexp
     }
     lastSearchRegexpText = str
-    lastSearchRegexp = new RegExp(lastSearchRegexpText)   
+    try {
+        lastSearchRegexp = new RegExp(lastSearchRegexpText)   
+    } catch (e) {
+        lastSearchRegexpText = ""
+        lastSearchRegexp = null 
+    }
     return lastSearchRegexp
 }
 
@@ -3596,7 +3644,12 @@ function cachedSearchRegexpGlobal(str) {
         return lastSearchRegexpGlobal
     }
     lastSearchRegexpGlobalText = str
-    lastSearchRegexpGlobal = new RegExp(lastSearchRegexpGlobalText, 'g')   
+    try {
+        lastSearchRegexpGlobal = new RegExp(lastSearchRegexpGlobalText, 'g')   
+    } catch (e) {
+        lastSearchRegexpGlobalText = ""
+        lastSearchRegexpGlobal = null 
+    }
     return lastSearchRegexpGlobal
 }
 

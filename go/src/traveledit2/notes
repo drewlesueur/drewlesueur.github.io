@@ -1,3 +1,4 @@
+put a serverside limit on filesize
 
 
 JSON.stringify("some things are cool".match(/e/g))
