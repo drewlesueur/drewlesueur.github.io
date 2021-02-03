@@ -1312,6 +1312,15 @@ function closeFile() {
             files.splice(fileIndex, 1)
         }
         fx.lines = getLinesForFileList()
+    } else if (fx.fileMode == "terminal") {
+        var myFx = fx // in case it changes
+        closeTerminal().then(() => {
+            var indexToClose = files.indexOf(myFx)
+            if (indexToClose != -1) {
+                files.splice(indexToClose, 1)
+                selectFileIndex(indexToClose-1 < 0 ? 0: indexToClose-1)
+            }
+        }).catch(e => alert(e))
     } else {
         var indexToClose = files.indexOf(fx)
         if (indexToClose != -1) {
@@ -1386,6 +1395,7 @@ function addTerminalTab() {
     setCurrentFile(file)
     fx.cursorLineIndex = fx.lines.length - 1
     updateCursorXY()
+    openTerminal()
     //theText.focus()
 }
 function normalizeFullPath(fullPath) {
@@ -2746,6 +2756,8 @@ function runBashCommand(line) {
             // second to last item is cwd
             fx.bashCWD = copyBuffer[copyBuffer.length - 2]
             // let's restyle the pwd after we grab it
+            
+            // TODO: maybe come up with something more elegant than this paste dance
             copyBuffer[copyBuffer.length - 2] = fx.bashCWD
                 .split("/")
                 .reverse()
@@ -2767,6 +2779,93 @@ function runBashCommand(line) {
     }
     copyBuffer = oldCopyBuffer
 }
+
+var isPollingTerminal = false
+function pollTerminals() {
+    isPollingTerminal = true
+    log("Polling!")
+    fetch(proxyPath + "/mypollterminal", {
+        cache: "no-cache"
+    }).then(r => {
+        return r.json()
+    }).then(r => {
+        // map of terminals and their payload and maybe meta info
+        for (var id in r) {
+            var termInfo = r[id]
+            var file = files.find(f => f.ID == id)    
+            if (!file) {
+                continue
+            }
+            var oldCopyBuffer = copyBuffer
+            // btoa("hello")
+            // atob("aGVsbG8=")
+            // #todoterminal: add xterm parsing here!
+            var strToProcess = atob(termInfo.Base64)
+            // simple parsing for now
+            for (var i = 0; i < strToProcess.length; i++) {
+                // not calling docChanged because we don't care for terminals
+                // doing this very dumb now... more optimizations later
+                if (strToProcess[i] == "\n") {
+                    file.lines.push("")
+                } else if (strToProcess[i] == "\r") {
+                    file.lines.push("")
+                } else {
+                    file.lines[file.lines.length - 1] += strToProcess[i]
+                }    
+            }
+            // fx.cursorLineIndex
+            // updateCursorXY()
+            // ensureCursorInScreen()
+        }
+        render()
+        setTimeout(pollTerminals, 1000)
+    }).catch(e => {
+        alert("There was an error running the command: " + e)
+        setTimeout(pollTerminals, 1000)
+    })
+}
+function sendTerminal(payload) {
+    // big TODO (#todoterminal)...  serialize, consider debounce.
+    // make sure we only have one of these going at a time 
+    // also, binary payload?
+    fetch(proxyPath + "/myterminalsend&id=" + fx.ID + "&payload=" + encodeURIComponent(payload), {
+        cache: "no-cache"
+    }).then(r => {
+        return r.json()
+    }).then(r => {
+    }).catch(e => {
+        alert("There was an error sending terminal: " + e)
+    })
+}
+function openTerminal() {
+    if (fx.fileMode != "terminal") {
+        return
+    }
+    if (!isPollingTerminal) {
+        pollTerminals()    
+    }
+    var myFx = fx // in case the scope changes
+    fetch(proxyPath + "/myterminalopen?cwd="+encodeURIComponent(fx.bashCWD), {
+        cache: "no-cache"
+    }).then(r => {
+        return r.json()
+    }).then(r => {
+        myFx.ID = r.ID
+    }).catch(e => {
+        alert("There was an error running the command: " + e)
+    })
+}
+function closeTerminal() {
+    if (fx.fileMode != "terminal") {
+        return
+    }
+    return fetch(proxyPath + "/myterminalclose&id=" + fx.ID, {
+        cache: "no-cache"
+    }).then(r => {
+        return r.json()
+    })
+}
+
 
 function trimPrefix(str, prefix) {
     if (str.startsWith(prefix)) {
@@ -3044,6 +3143,13 @@ if (autoSave) {
 }
 function handleKeydown(e) {
     // TODO: this is where you could wrap or unwrap quotes, etc
+    if (fx.fileMode == "terminal") {
+        sendTerminal(e.key)
+        log(e.key)
+        e.stopPropagation()
+        e.preventDefault()
+        return false
+    }
     wasDelete = e.keyCode == 8
     // 8 means backspace
     if (e.keyCode == 8 && theText.selectionStart == 0 && fx.cursorLineIndex != 0) {
@@ -4025,6 +4131,11 @@ function onStart(e) {
             
             if (fx.fileMode == "terminal") {
                 // #todoterminal send a tab?
+                if (document.activeElement == theText) {
+                    sendTerminal("\t")
+                } else {
+                    theText.focus()
+                }
                 return
             }
 

@@ -13,10 +13,12 @@ import "io/ioutil"
 import "io"
 import "bufio"
 import "encoding/json"
+import "encoding/base64"
 import "sync"
 import "strconv"
 import "crypto/md5"
 import "github.com/NYTimes/gziphandler"
+import "github.com/creack/pty"
 // import "github.com/gorilla/websocket"
 
 type SaveResponse struct {
@@ -175,6 +177,25 @@ func parseFirstNumber(s string) int {
     return n
 }
 
+// Will these die when the server restarts?
+// I think not.
+type TerminalSession struct{
+    Cmd *exec.Cmd
+    Pty *os.File
+    ID int
+}
+type TerminalResponse struct{
+    Base64 string    
+    // CWD ?? so we can keep track of directory changes
+    Error string
+}
+var terminalID = 0
+var terminalMu sync.Mutex
+var terminalSessions = map[int]*TerminalSession{}
+
+
+
+// This is depredated
 // needs to be able to
 // ctrl+c
 // ctrl+d
@@ -477,6 +498,101 @@ func main() {
 		}
 	})
 	
+	mux.HandleFunc("/mypollterminal", func(w http.ResponseWriter, r *http.Request) {
+	    terminalMu.Lock()    
+	    defer terminalMu.Unlock()
+	    
+	    ret := map[int]TerminalResponse{}
+	    b := make([]byte, 4096)
+	    for ID, t := range terminalSessions {
+	        tResp := TerminalResponse{} 
+	        n, err := t.Pty.Read(b)
+	        if err != nil && err != io.EOF {
+	            log.Printf("error reading terminal: %v", err)
+	            // TODO: potentially close the terminal?
+	            tResp.Error = err.Error() 
+	            continue
+	        }
+	        if n == 0 {
+	            continue
+	        }
+	        tResp.Base64 = base64.StdEncoding.EncodeToString(b[0:n])
+	        ret[ID] = tResp
+	    }
+	    
+	    json.NewEncoder(w).Encode(ret)
+	})
+	mux.HandleFunc("/myterminalopen", func(w http.ResponseWriter, r *http.Request) {
+	    terminalID++
+	    // TODO: configurable shell, login shell (-l)?
+		cmd := exec.Command("bash")
+		cwd := r.FormValue("cwd")
+		cmd.Dir = cwd
+	    
+		f, err := pty.Start(cmd)
+	    if err != nil {
+			logAndErr(w, "starting pty: %s: %v", cwd, err) 
+			return
+	    }
+	    terminalSession := &TerminalSession{
+	        Cmd: cmd,
+	        ID: terminalID,
+	        Pty: f,       
+	    }
+	    terminalMu.Lock()
+	    terminalSessions[terminalID] = terminalSession
+	    terminalMu.Unlock()
+	    
+	    json.NewEncoder(w).Encode(map[string]interface{}{
+	        "ID": terminalID,
+	    })
+	})
+	mux.HandleFunc("/myterminalsend", func(w http.ResponseWriter, r *http.Request) {
+	    // TODO: do consider an rwlock
+	    // creak/pty example shows reading and writing in separate goroutines
+	    terminalMu.Lock()    
+	    defer terminalMu.Unlock()
+	    
+		ID, err := strconv.Atoi(r.FormValue("id"))
+		if err != nil {
+			logAndErr(w, "invalid id: %s: %v", r.FormValue("id"), err) 
+			return
+		}
+		
+	    if t, ok := terminalSessions[ID]; ok {
+	    	payloadBytes := []byte(r.FormValue("payload"))
+	    	n, err := t.Pty.Write(payloadBytes)
+	    	if err != nil {
+				logAndErr(w, "wriring pty: %d: %v", ID, err) 
+				return
+	    	}
+	    	if n != len(payloadBytes) {
+				logAndErr(w, "wriring pty: not enough bytes written") 
+				return
+	    	}
+	    }
+	})
+	mux.HandleFunc("/myterminalclose", func(w http.ResponseWriter, r *http.Request) {
+	    terminalMu.Lock()    
+	    defer terminalMu.Unlock()
+	    
+		ID, err := strconv.Atoi(r.FormValue("id"))
+		if err != nil {
+			logAndErr(w, "invalid id: %s: %v", r.FormValue("id"), err) 
+			return
+		}
+		
+	    if t, ok := terminalSessions[ID]; ok {
+	    	err := t.Pty.Close()
+	    	if err != nil {
+				logAndErr(w, "closing pty: %d: %v", ID, err) 
+				return
+	    	}
+	    	delete(terminalSessions, ID)
+	    }
+	})
+	
+	// deprecated, see mypollterminal
 	mux.HandleFunc("/mybashstream", func(w http.ResponseWriter, r *http.Request) {
 		cmdString := r.FormValue("cmd")
 		if cmdString == "" {
