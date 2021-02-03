@@ -250,6 +250,11 @@ display: block;"
 ontouchstart=onStart(event)
 ></canvas>
 
+<div class="toolbar hidden" id=terminalToolbar1 style="--display: none">
+</div>
+<div class="toolbar hidden" id=terminalToolbar2 style="--display: none">
+</div>
+
 <div class="toolbar hidden" id=bashToolbar1 style="--display: none">
     <div class=square onclick='runBashCommand("git branch")'>branch</div>
     <div class=square onclick='runBashCommand("git status")'>status</div>
@@ -339,7 +344,7 @@ ontouchstart=onStart(event)
     <div class=square onclick=urlAtCursor()>visit</div>
     <div class=square onclick=doEval()>eval</div>
     <div class=square onclick=runScript()>run script</div>
-    <div class=square onclick=doFormat()>format</div>
+    <div class=square onclick=addTerminalTab()>xterm</div>
     <div class=square onclick=reloadFile(fx)>reload</div>
 </div>
 <div class=toolbar>
@@ -363,6 +368,7 @@ ontouchstart=onStart(event)
     <div id=toggleTabStopButton class=square onclick="toggleTabStop()">tabs</div>
 </div>
 <div class=toolbar>
+    <div class=square onclick=doFormat()>format</div>
     <div class=square onclick="toggleSeeTabs()">see tabs</div>
     <div class=square onclick="diffFiles()">diff files</div>
     <div class=square onclick="moveFileAllTheWayLeft()">move home</div>
@@ -617,6 +623,7 @@ var canvasHeightFull=c.height
 // 34 button height plus 1px*2 margin
 // 2 rows of new buttons for bash
 var canvasHeightBash = canvasHeightFull - ((36*3) * 2)
+var canvasHeightTerminal = canvasHeightFull - ((36*3) * 2)
 var maxLines = 0
 var maxCols = 0
 var canvasHeight = 0
@@ -1146,7 +1153,7 @@ function openAtCursor() {
         var fileName = proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + path
     } else if (fx.fileMode == "terminal") {
         // TODO: how do we know what the cwd is? 
-        // isn't there a way to get the cwd of a running process
+        // isn't there a way to get the cwd of a running process?
     } else if (path.startsWith("/")) {
         var fileName = path
         // TODO, audit the double slash thing across the board
@@ -1342,10 +1349,8 @@ var bashHelpers = [
     "",
     "",
 ]
-function addCmdTab() {
-    var file = makeFile(proxyPath + "/cmd", 0, bashHelpers.join("\n"))
-    file.fileMode = "bash"
-    
+
+function useExisingWD(file) {
     if (fx.fileMode == "bash") {
         file.bashCWD = fx.bashCWD
         file.originatingFullPath = fx.originatingFullPath
@@ -1358,13 +1363,29 @@ function addCmdTab() {
         file.bashCWD = rootLocation + trimPrefix(fx.fullPath, proxyPath)
         file.originatingFullPath = fx.fullPath + "/cmd"
     }
+    
+}
+function addCmdTab() {
+    // I think this /cmd isn't hit on the server 
+    // I think we need a special endpoint for serving files and not just /
+    var file = makeFile(proxyPath + "/cmd", 0, bashHelpers.join("\n"))
+    file.fileMode = "bash"
+    useExisingWD(file) 
     addFileToList(file, false)
     setCurrentFile(file)
-
     fx.cursorLineIndex = fx.lines.length - 1
     updateCursorXY()
     runBashCommand("")
-    
+    //theText.focus()
+}
+function addTerminalTab() {
+    var file = makeFile(proxyPath + "/terminal", 0, "this is a terminal")
+    file.fileMode = "terminal"
+    useExisingWD(file) 
+    addFileToList(file, false)
+    setCurrentFile(file)
+    fx.cursorLineIndex = fx.lines.length - 1
+    updateCursorXY()
     //theText.focus()
 }
 function normalizeFullPath(fullPath) {
@@ -1393,7 +1414,7 @@ function renderURL() {
         return
     }
     // For now we don't get files with bash mode.
-    var filtered = files.filter(f => f.fileMode != "bash")
+    var filtered = files.filter(f => f.fileMode != "bash" && f.fileMode != "terminal")
     var theNewPath = "/" + filtered.map(function(f) {
         return f.fullPath.slice(1) + ":" + (f.cursorLineIndex + 1)
     }).join(",")
@@ -1552,8 +1573,10 @@ function isWordy(a) {
         (a >= 97 && a <= 122) || // a-z
         (a >= 48 && a <= 57) ||  // 0-9
         (a == 95)            ||    // _
-        (fx.fileMode == "bash" && a == 46) || // .
-        (fx.fileMode == "bash" && a == 45) // -
+        
+        // note: I kind of don't like how we depend on fx in this func, hmm
+        ((fx.fileMode == "bash" || fx.fileMode == "terminal") && a == 46) || // .
+        ((fx.fileMode == "bash" || fx.fileMode == "terminal") && a == 45) // -
     )
 }
 function isRegularWord(theLine) {
@@ -1822,6 +1845,8 @@ function comment(prefix) {
         if (
             fx.fullPath.endsWith(".sh") ||
             fx.fullPath.endsWith(".ini") ||
+            fx.fullPath.endsWith(".pm") ||
+            fx.fullPath.endsWith(".pl") ||
             fx.fullPath.endsWith(".env") 
         ) {
             prefix = "#"
@@ -2426,6 +2451,8 @@ function setCanvasHeightAccordingly() {
     } else {
        if (fx.fileMode == "bash") {
            setCanvasHeight(canvasHeightBash - heightReduction)   
+       } else if (fx.fileMode == "terminal") {
+           setCanvasHeight(canvasHeightTerminal - heightReduction)   
        } else {
            setCanvasHeight(canvasHeightFull - heightReduction)   
        }
@@ -2645,6 +2672,8 @@ function newLine(e, shouldFocus) {
     if (fx.fileMode == "bash") {
         runBashCommand(theLine)
         return false
+    } else if (fx.fileMode == "terminal") {
+        // #todoterminal Send the right command to the server
     }
     // insertLine(true)
     insertLine(true, true) // this one just makes a new line
@@ -2946,6 +2975,7 @@ function handleSearchFocusAfter() {
 // pressing the save button disables autosave
 function saveWrapper() {
     if (fx.fileMode == "bash") {
+        // the save button turns into run when it's a "bash" file
         if (fx.selectedRegions.length) {
             copy()
             runBashCommand(copyBuffer.join("\n"))
@@ -3410,6 +3440,7 @@ function render() {
             saveButton.innerText = "save"
         }
     } else if (fx.fileMode == "bash") {
+        // TODO: consider not setting this every render
         saveButton.innerText = "run"
     }
     // marker aquamarine setting text
@@ -3630,7 +3661,8 @@ function renderInternal() {
         // TODO: set variable for line.trim()
         var textFillStyle 
         // the actual text
-        if (true || fx.fileMode == "bash" || fx.fileMode == "file") {
+        if (true) {
+            // TODO: get rid of repeated calls to theLine.trim()
             if (theLine.startsWith("+")) {
                 textFillStyle = isDark ? "lime" : "green"
             } else if (theLine.startsWith("-")){
@@ -3665,7 +3697,7 @@ function renderInternal() {
                 }
                 t.fillStyle = oldFillStyle
                 
-            } else if (theLine.trim().startsWith("//")) {
+            } else if (theLine.trim().startsWith("//") || theLine.trim().startsWith("#")) {
                 // comments are gray
                 textFillStyle = lightFontColor
             } else {
@@ -3988,6 +4020,11 @@ function onStart(e) {
                 // also TODO: you could not overwrite the lastFile when showing the files view.
                 fx = lastFile || files[0]
                 addFile(file)
+                return
+            }
+            
+            if (fx.fileMode == "terminal") {
+                // #todoterminal send a tab?
                 return
             }
 
@@ -5008,6 +5045,9 @@ function treeToLines(theTree, path, indent, kPrefix) {
                 treeFiles.push("" + indent + kPrefix + k)
             } else if (theTree[k].fileMode == "bash") {
                 treeFiles.push("" + indent + kPrefix + k)
+            } else if (theTree[k].fileMode == "terminal") {
+                // same as others but a separate if statement so we can easily change it later
+                treeFiles.push("" + indent + kPrefix + k)
             } else {
                 treeFiles.push("" + indent + kPrefix + k)
             }
@@ -5037,6 +5077,9 @@ function getLinesForFileList() {
         if (f1.fileMode == "bash") {
             // TODO: should we set the fullPath for bash to be the CWD?  
             return (f1.originatingFullPath + f1.tmpIndex) > (f2.originatingFullPath + f2.tmpIndex)
+        } else if (f1.fileMode == "terminal") {
+            // #todoterminal: how get the cwd of the process (/proc/fd) ?
+            return (f1.originatingFullPath + f1.tmpIndex) > (f2.originatingFullPath + f2.tmpIndex)
         } else {
             return (f1.fullPath + f1.tmpIndex) > (f2.fullPath + f2.tmpIndex)
         }
@@ -5049,6 +5092,9 @@ function getLinesForFileList() {
         var parts = (f.fullPath + "(" + (f.tmpIndex) + ")").split("/")
         if (f.fileMode == "bash") {
             // parts = (f.originatingFullPath + ":" + (f.cursorLineIndex+1)).split("/")
+            parts = (f.originatingFullPath + " (" + (f.tmpIndex+1) + ")").split("/")
+        } else if (f.fileMode == "terminal") {
+            // #todoterminal: how get the cwd of the process (/proc/fd) ?
             parts = (f.originatingFullPath + " (" + (f.tmpIndex+1) + ")").split("/")
         }
         // var parts = (f.fullPath).split("/")
@@ -5113,9 +5159,14 @@ function setCurrentFile(file) {
     if (fx.fileMode == "bash") {
         bashToolbar1.classList.remove("hidden")
         bashToolbar2.classList.remove("hidden")
+    } else if (fx.fileMode == "terminal") {
+        terminalToolbar1.classList.remove("hidden")
+        terminalToolbar2.classList.remove("hidden")
     } else {
         bashToolbar1.classList.add("hidden")
         bashToolbar2.classList.add("hidden")
+        terminalToolbar1.classList.add("hidden")
+        terminalToolbar2.classList.add("hidden")
     }
     setCanvasHeightAccordingly()
     updateCursorXY()
