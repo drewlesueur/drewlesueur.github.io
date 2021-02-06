@@ -183,11 +183,14 @@ type TerminalSession struct{
     Cmd *exec.Cmd
     Pty *os.File
     ID int
+    ReadBuffer []byte
+    Closed bool
 }
 type TerminalResponse struct{
     Base64 string    
     // CWD ?? so we can keep track of directory changes
     Error string
+    Closed bool
 }
 var terminalID = 0
 var terminalMu sync.Mutex
@@ -498,31 +501,29 @@ func main() {
 		}
 	})
 	
-	mux.HandleFunc("/mypollterminal", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/myterminalload", func(w http.ResponseWriter, r *http.Request) {
+	    // my terminal load
+	    // load existing terminal sessions.
+	})
+	mux.HandleFunc("/myterminalpoll", func(w http.ResponseWriter, r *http.Request) {
 	    terminalMu.Lock()    
 	    defer terminalMu.Unlock()
 	    
 	    ret := map[int]TerminalResponse{}
-	    b := make([]byte, 4096)
-	    for ID, t := range terminalSessions {
-	        tResp := TerminalResponse{} 
-	        n, err := t.Pty.Read(b)
-	        if err != nil && err != io.EOF {
-	            log.Printf("error reading terminal: %v", err)
-	            // TODO: potentially close the terminal?
-	            tResp.Error = err.Error() 
-	            continue
-	        }
-	        if n == 0 {
-	            continue
-	        }
-	        tResp.Base64 = base64.StdEncoding.EncodeToString(b[0:n])
-	        ret[ID] = tResp
-	    }
-	    
+    	for ID, t := range terminalSessions {
+    	    tResp := TerminalResponse{} 
+    	    if len(t.ReadBuffer) == 0 {
+    	        continue
+    	    }
+    	    tResp.Base64 = base64.StdEncoding.EncodeToString(t.ReadBuffer)
+    	    tResp.Closed = t.Closed
+    	    t.ReadBuffer = []byte{}
+    	    ret[ID] = tResp
+    	}
 	    json.NewEncoder(w).Encode(ret)
 	})
 	mux.HandleFunc("/myterminalopen", func(w http.ResponseWriter, r *http.Request) {
+	    log.Println("my terminal open!")
 	    terminalID++
 	    // TODO: configurable shell, login shell (-l)?
 		cmd := exec.Command("bash")
@@ -534,6 +535,18 @@ func main() {
 			logAndErr(w, "starting pty: %s: %v", cwd, err) 
 			return
 	    }
+	    // append the pid to a file for debugging
+	    pidF, err := os.OpenFile("pid.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	    if err != nil {
+			logAndErr(w, "opening pid file for logging: %s: %v", cwd, err) 
+			f.Close()
+			return
+	    }
+	    if _, err := pidF.WriteString(strconv.Itoa(cmd.Process.Pid) + " " + time.Now().Format("2006-01-02 15:04:05") + "\n"); err != nil {
+			logAndErr(w, "writing pid: %s: %v", cwd, err) 
+			f.Close()
+			return
+	    }
 	    terminalSession := &TerminalSession{
 	        Cmd: cmd,
 	        ID: terminalID,
@@ -542,6 +555,27 @@ func main() {
 	    terminalMu.Lock()
 	    terminalSessions[terminalID] = terminalSession
 	    terminalMu.Unlock()
+	    
+	    // in a go func, continually read from the pty and write to buffer
+	    go func() {
+            for {
+                b := make([]byte, 1024)
+	    	    n, err := terminalSession.Pty.Read(b)
+	    	    if err != nil && err != io.EOF {
+	    	        terminalMu.Lock()
+	    	        log.Printf("error reading terminal: %v", err)
+	    	        f.Close()
+	    	        terminalSession.Closed = true
+	    	        terminalMu.Unlock()
+	    	    }
+	    	    if n == 0 {
+	    	        continue
+	    	    }
+    	        terminalMu.Lock()
+    	        terminalSession.ReadBuffer = append(terminalSession.ReadBuffer, b[0:n]...)
+    	        terminalMu.Unlock()
+	    	}
+	    }()
 	    
 	    json.NewEncoder(w).Encode(map[string]interface{}{
 	        "ID": terminalID,

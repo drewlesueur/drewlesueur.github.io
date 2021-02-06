@@ -1,3 +1,10 @@
+
+when the something is selected change what the
+buttons do! like all the script lines etc.
+
+when the file view is open, change one button to refresh all
+golang debugger
+
 put a serverside limit on filesize
 
 
@@ -107,6 +114,8 @@ https://gist.github.com/justinmk/a5102f9a0c1810437885a04a07ef0a91
 https://github.com/creack/pty
 use example, try sending \r\n
 https://xtermjs.org/
+https://unix.stackexchange.com/questions/244736/detecting-shift-keyup-down-in-the-terminal
+https://github.com/browsh-org/browsh
 
 take a look at Mosh for ssh alternative
 

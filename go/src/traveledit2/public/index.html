@@ -301,7 +301,7 @@ ontouchstart=onStart(event)
     <div class=square ontouchstart="setCurrentFile(lastFile); event.preventDefault()">alt tab</div>
     <div class=square onclick="duplicateFile(fx, -1)">dupl file</div>
     <div class=square onclick=addCmdTab()>cmd</div>
-    <div class=square onclick=clearLog()>clear log</div>
+    <div class=square onclick=addTerminalTab()>xterm</div>
     <div class=square onclick=undo()>undo</div>
     <div class=square onclick=redo()>redo</div>
     <div class=square onclick=comment()>//</div>
@@ -324,6 +324,7 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="selectFont('Courier')">Courier</div>
     <div class=longButton onclick="selectFont('CourierThin')">Courier Thin</div>
     <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
+    <div class=longButton onclick="selectFont('SFMonoThin')">SF Thin</div>
     <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
     <div class=longButton onclick="selectFont('IosevkaThin')">Iosevka Thin</div>
     <div class=longButton onclick="selectFont('Iosevka')">Iosevka</div>
@@ -342,9 +343,9 @@ ontouchstart=onStart(event)
     <div class=square onclick=debugView()>debug view</div>
     <div class=square onclick=openAtCursor()>open</div>
     <div class=square onclick=urlAtCursor()>visit</div>
+    <div class=square onclick=clearLog()>clear log</div>
     <div class=square onclick=doEval()>eval</div>
     <div class=square onclick=runScript()>run script</div>
-    <div class=square onclick=addTerminalTab()>xterm</div>
     <div class=square onclick=reloadFile(fx)>reload</div>
 </div>
 <div class=toolbar>
@@ -376,7 +377,8 @@ ontouchstart=onStart(event)
     <div class=square onclick="moveFileRight()">move right</div>
     <div class=square onclick="stopServer()">stop server</div>
 </div>
-
+<div class=toolbar>
+</div>
 <label for=serverViewCheckbox>
     <input onchange="serverViewFeature = serverViewCheckbox.checked" type=checkbox name=serverViewCheckbox id=serverViewCheckbox />
     Screen Share
@@ -460,6 +462,7 @@ fontScaleInput.value = fontScale
 var fonts = {
     "Courier": {
         fontHeightPre: 36,
+        // fontWidthPre: 18,
         fontWidthPre: 18,
         fontSize: 30,
         fontName: "Courier",
@@ -498,9 +501,17 @@ var fonts = {
         // I think this actually only works because we default to ui-monospace
         // SFMono seems to not be known
         fontHeightPre: 36,
-        fontWidthPre: 18,
+        fontWidthPre: 17,
         fontSize: 30,
-        fontName: "SFMono", //http
+        fontName: "SFMono",
+    },
+    "SFMonoThin": {
+        // I think this actually only works because we default to ui-monospace
+        // SFMono seems to not be known
+        fontHeightPre: 36,
+        fontWidthPre: 15,
+        fontSize: 30,
+        fontName: "SFMono",
     },
     "RobotoMono": {
         fontHeightPre: 36,
@@ -584,7 +595,8 @@ var fonts = {
         url: "http://192.168.0.21:8000/tepublic/notreal.ttf"
     },
 }
-currentFont = fonts["Courier"]
+// currentFont = fonts["Courier"]
+currentFont = fonts["SFMono"]
 
 
 setFontVars() 
@@ -2784,7 +2796,7 @@ var isPollingTerminal = false
 function pollTerminals() {
     isPollingTerminal = true
     log("Polling!")
-    fetch(proxyPath + "/mypollterminal", {
+    fetch(proxyPath + "/myterminalpoll", {
         cache: "no-cache"
     }).then(r => {
         return r.json()
@@ -2828,10 +2840,10 @@ function sendTerminal(payload) {
     // big TODO (#todoterminal)...  serialize, consider debounce.
     // make sure we only have one of these going at a time 
     // also, binary payload?
-    fetch(proxyPath + "/myterminalsend&id=" + fx.ID + "&payload=" + encodeURIComponent(payload), {
+    fetch(proxyPath + "/myterminalsend?id=" + fx.ID + "&payload=" + encodeURIComponent(payload), {
         cache: "no-cache"
-    }).then(r => {
-        return r.json()
+    // }).then(r => {
+    //     return r.json()
     }).then(r => {
     }).catch(e => {
         alert("There was an error sending terminal: " + e)
@@ -2859,13 +2871,12 @@ function closeTerminal() {
     if (fx.fileMode != "terminal") {
         return
     }
-    return fetch(proxyPath + "/myterminalclose&id=" + fx.ID, {
+    return fetch(proxyPath + "/myterminalclose?id=" + fx.ID, {
         cache: "no-cache"
     }).then(r => {
         return r.json()
     })
 }
-
 
 function trimPrefix(str, prefix) {
     if (str.startsWith(prefix)) {
