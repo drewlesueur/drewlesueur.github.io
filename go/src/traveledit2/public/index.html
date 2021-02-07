@@ -2795,6 +2795,10 @@ function runBashCommand(line) {
 var isPollingTerminal = false
 function pollTerminals() {
     isPollingTerminal = true
+    if (!files.some(f => f.fileMode == "terminal")) {
+        isPollingTerminal = false
+        return
+    }
     log("Polling!")
     fetch(proxyPath + "/myterminalpoll", {
         cache: "no-cache"
@@ -2873,8 +2877,8 @@ function closeTerminal() {
     }
     return fetch(proxyPath + "/myterminalclose?id=" + fx.ID, {
         cache: "no-cache"
-    }).then(r => {
-        return r.json()
+    // }).then(r => {
+    //     return r.json()
     })
 }
 
@@ -3152,11 +3156,23 @@ function save() {
 if (autoSave) {
     setTimeout(save, saveEveryMS)
 }
+
+var keyMaping = {
+    "Enter": "\n", // need to include \r too?
+    "Shift": "",
+}
 function handleKeydown(e) {
     // TODO: this is where you could wrap or unwrap quotes, etc
     if (fx.fileMode == "terminal") {
+        var mapped = keyMaping[e.key]
+        if (typeof mapped == "undefined") {
+            mapped = e.key        
+        }
+        if (mapped === "") {
+            return
+        }
         sendTerminal(e.key)
-        log(e.key)
+        log(e.key + "(" + mapped + ") (" + e.keyCode + ")" + "("+ JSON.stringify(mapped)+")")
         e.stopPropagation()
         e.preventDefault()
         return false

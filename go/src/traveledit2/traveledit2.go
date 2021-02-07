@@ -195,6 +195,8 @@ type TerminalResponse struct{
 var terminalID = 0
 var terminalMu sync.Mutex
 var terminalSessions = map[int]*TerminalSession{}
+var terminalCond *sync.Cond
+var terminalCounter = 0
 
 
 
@@ -269,6 +271,8 @@ func main() {
 	var viewMu sync.Mutex
 	viewCond := sync.NewCond(&viewMu)
 	
+	terminalCond = sync.NewCond(&terminalMu)
+	
 	// trying to use a single mutex for multiple shells? 
 	// TODO: serialize and de-serialize the state
 	
@@ -281,6 +285,7 @@ func main() {
 		for range time.NewTicker(1 * time.Second).C {
 			viewCond.Broadcast()
 			shellCond.Broadcast()
+			terminalCond.Broadcast()
 		}
 	}()
 
@@ -508,18 +513,33 @@ func main() {
 	mux.HandleFunc("/myterminalpoll", func(w http.ResponseWriter, r *http.Request) {
 	    terminalMu.Lock()    
 	    defer terminalMu.Unlock()
-	    
 	    ret := map[int]TerminalResponse{}
-    	for ID, t := range terminalSessions {
-    	    tResp := TerminalResponse{} 
-    	    if len(t.ReadBuffer) == 0 {
-    	        continue
-    	    }
-    	    tResp.Base64 = base64.StdEncoding.EncodeToString(t.ReadBuffer)
-    	    tResp.Closed = t.Closed
-    	    t.ReadBuffer = []byte{}
-    	    ret[ID] = tResp
-    	}
+	    timedOut := false
+	    startWait := time.Now()
+		for {
+			if time.Since(startWait) > (10 * time.Second) {
+				timedOut = true
+				break
+			}
+			if clientViewCounter != viewCounter {
+				break
+			}
+			terminalCond.Wait()
+		}
+		
+		if !timedOut {
+    		for ID, t := range terminalSessions {
+    		    tResp := TerminalResponse{} 
+    		    if len(t.ReadBuffer) == 0 {
+    		        continue
+    		    }
+    		    tResp.Base64 = base64.StdEncoding.EncodeToString(t.ReadBuffer)
+    		    tResp.Closed = t.Closed
+    		    t.ReadBuffer = []byte{}
+    		    ret[ID] = tResp
+    		}
+		}
+	    
 	    json.NewEncoder(w).Encode(ret)
 	})
 	mux.HandleFunc("/myterminalopen", func(w http.ResponseWriter, r *http.Request) {
