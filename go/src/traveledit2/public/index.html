@@ -3124,6 +3124,13 @@ function save() {
         if (saveDiffs) {
             var theDiff = simpleDiffOld3(fx.undo.lastSavedLines, fx.lines, false).join("\n")
             log(theDiff)
+            if (theDiff == "") {
+                fx.savedVersion = fx.savingVersion
+                fx.savingVersion = -1
+                render()
+                renderFileDropdown()
+                return
+            }
             fetchPromise = fetch(fx.fullPath, {
                 method: "POST",
                 cache: "no-cache",
