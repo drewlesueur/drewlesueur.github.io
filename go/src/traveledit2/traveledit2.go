@@ -86,6 +86,10 @@ func logAndErr(w http.ResponseWriter, message string, args ...interface{}) {
 // +}
 // +
 func applyDiff(oldContents, diff string) (string, error) {
+    // There is likely a much more optimized way of applying diff --
+    // Maybe dealing with the lines in-place and keeping track of index adjustments
+    
+    // Doesn't handle issues related to new line at end of file
     oldLines := strings.Split(oldContents, "\n")
     diffLines := strings.Split(diff, "\n")
     
@@ -97,32 +101,42 @@ func applyDiff(oldContents, diff string) (string, error) {
     for i := 0; i < 20000; i++ {
        if state == "want@" {
            diffI++ 
-           if diffI > len(diff) {
-               break
+           if diffI >= len(diffLines) {
+               state = "doneDiff"
+               continue
            }
            if !strings.HasPrefix(diffLines[diffI], "@@") {
                continue
            }
            nextDiffIndex = parseFirstNumber(diffLines[diffI]) - 1
+           // log.Printf("FIRST NUMBER IS %d", nextDiffIndex)
            state = "getToNextIndex"
        } else if state == "getToNextIndex" {
            lineI++       
            if lineI >= len(oldLines) {
                break   
            }
+           
+           // this case only happens on first pass? or of there are adjacent chinks?
+           if lineI == nextDiffIndex {
+               lineI -= 1
+               state = "in@"
+               continue    
+           } 
+           newContentsSlice = append(newContentsSlice, oldLines[lineI])   
            // -1 works because chunks can't be adjacent?
            if lineI == nextDiffIndex - 1 { 
                state = "in@"
-               if diffI >= len(diffLines) {
-                   break
-               }
-           } else {
-               newContentsSlice = append(newContentsSlice, oldLines[lineI])   
+               // if diffI >= len(diffLines) {
+               //     state = "doneDiff"
+               //     continue
+               // }
            }
        } else if state == "in@" {
            diffI++ 
-           if diffI > len(diff) {
-               break
+           if diffI >= len(diffLines) {
+               state = "doneDiff"
+               continue
            }
            if strings.HasPrefix(diffLines[diffI], "-") {
                lineI++       
@@ -145,6 +159,12 @@ func applyDiff(oldContents, diff string) (string, error) {
                // you could check that the lines match
                newContentsSlice = append(newContentsSlice, oldLines[lineI])   
            }
+       } else if state == "doneDiff" {
+           lineI++       
+           if lineI >= len(oldLines) {
+               break   
+           }
+           newContentsSlice = append(newContentsSlice, oldLines[lineI])   
        }
     }
     if state == "want@" {
@@ -516,12 +536,13 @@ func main() {
 	    ret := map[int]TerminalResponse{}
 	    timedOut := false
 	    startWait := time.Now()
+	    knownTerminalCounter := terminalCounter
 		for {
 			if time.Since(startWait) > (10 * time.Second) {
 				timedOut = true
 				break
 			}
-			if clientViewCounter != viewCounter {
+			if terminalCounter != knownTerminalCounter  {
 				break
 			}
 			terminalCond.Wait()
@@ -763,6 +784,7 @@ func main() {
 				logAndErr(w, "error determining file type")
 				return
 			}
+			md5String := ""
 			isDir := false
 			if fileInfo.IsDir() {
 				isDir = true
@@ -794,6 +816,16 @@ func main() {
 				}
 				c = c2
 
+
+			    m := md5.New()
+			    if _, err = m.Write(c); err != nil {
+					logAndErr(w, "couldn't md5 file: %v", err)
+			        return
+			    }
+			    md5String = fmt.Sprintf("%x", m.Sum(nil))
+				w.Header().Set("X-MD5", md5String)
+
+
 				if r.FormValue("raw") == "1" {
 					w.Write(c)
 					return
@@ -814,6 +846,8 @@ func main() {
 
 			if isDir {
 				htmlString = strings.Replace(htmlString, "// FILEMODE DIRECTORY GOES HERE", "fileMode = \"directory\"", 1)
+			} else {
+				htmlString = strings.Replace(htmlString, "// FIRSTFILEMD5 GOES HERE", `var firstFileMD5 = "`+md5String+`"`, 1)
 			}
 			htmlString = strings.Replace(htmlString, "// ROOTLOCATION GOES HERE", "var rootLocation = \""+*location+"\"", 1)
 			if *proxyPath != "" {
@@ -824,7 +858,7 @@ func main() {
 
 			// This content lines has to be the last one.
 			htmlString = strings.Replace(htmlString, "// LINES GO HERE", "var lines = "+contentLinesJSONString, 1)
-
+			
 			// TODO: when bash mode is disabled, don't do this part.
 			log.Printf("yea I set rootLocation to be: %s", *location)
 			if r.FormValue("src") != "1" {
@@ -851,7 +885,7 @@ func main() {
 			    }
 			    expectedOldMD5 := fmt.Sprintf("%x", oldH.Sum(nil))
 			    if expectedOldMD5 != oldmd5 {
-					logAndErr(w, "couldn't hex old bytes: %v", err)
+					logAndErr(w, "couldn't hex old bytes: %s != %s", expectedOldMD5, oldmd5)
 			    	return
 			    } 
 			    content, err = applyDiff(string(oldBytes), diff)
@@ -867,11 +901,9 @@ func main() {
 			    }
 			    expectedNewMD5 := fmt.Sprintf("%x", newH.Sum(nil))
 			    if expectedNewMD5 != newmd5 {
-					logAndErr(w, "couldn't hex new bytes: %v", err)
+					logAndErr(w, "hash doesn't match: %v", err)
 			    	return
 			    } 
-                // Not done
-			    
 			} else {
 				content = r.FormValue("content")
 				// added this because once when I was traveling and

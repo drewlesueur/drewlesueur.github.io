@@ -2,9 +2,10 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
 <meta charset='utf-8'>
-<!-- TODO: make this work with path proxy -->
+<!-- TODO: make this work with path proxy ok?3 -->
 <script src="/tepublic/diff.js"></script>
 <script src="/tepublic/md5.js"></script>
+<script src="/tepublic/md52.js"></script>
 <style>
 /*
 @font-face {
@@ -379,6 +380,11 @@ ontouchstart=onStart(event)
 </div>
 <div class=toolbar>
 </div>
+<label for=saveDiffsCheckbox>
+    <input onchange="saveDiffs = saveDiffsCheckbox.checked" type=checkbox name=saveDiffsCheckbox id=saveDiffsCheckbox checked />
+    save diffs
+</label>
+<br>
 <label for=serverViewCheckbox>
     <input onchange="serverViewFeature = serverViewCheckbox.checked" type=checkbox name=serverViewCheckbox id=serverViewCheckbox />
     Screen Share
@@ -449,7 +455,8 @@ window.onerror = function(message, url, lineNumber, columnNumber, error) {
 var t = c.getContext("2d")
 
 var preventRender = true
-var saveDiffs = false
+// var saveDiffs = false
+var saveDiffs = true
 var totalViewBytesSent = 0 
 var totalViewRequests = 0
 var saveEveryMS = 3000
@@ -3116,6 +3123,7 @@ function save() {
         var fetchPromise
         if (saveDiffs) {
             var theDiff = simpleDiffOld3(fx.undo.lastSavedLines, fx.lines, false).join("\n")
+            log(theDiff)
             fetchPromise = fetch(fx.fullPath, {
                 method: "POST",
                 cache: "no-cache",
@@ -3138,7 +3146,8 @@ function save() {
                 fx.undo.lastSavedLines = toSave.split("\n")
                 fx.undo.lastSavedHash = toSaveHash
             } else {
-                alert("issue saving")
+                alert("issue saving: " + v.error)
+                saveDiffs = false
             }
             render()
             renderFileDropdown()
@@ -5024,7 +5033,6 @@ var fileToken = {}
 
 function makeFile(fullPath, cursorLineIndex, contents) {
     var theLines = contents.split("\n")
-    
     return {
         // fullPath should have the leading slash
         fullPath: fullPath,
@@ -5113,6 +5121,18 @@ function addFile(fullPath, preventSelect) {
     }).catch(e => {
         alert("Error loading file " + e)
     })
+}
+
+function verifyLoadedMD5(f, md5String) {
+    if (!md5String) {
+        return
+    }
+    if (md5String != f.undo.lastSavedHash) {
+        log(`md5s don't match ${f.fullPath} ${md5String}; ${f.undo.lastSavedHash}`)
+    } else {
+        log(`md5s DO match ${f.fullPath} ${md5String}; ${f.undo.lastSavedHash}`)
+    }
+    
 }
 
 function renderFileDropdown() {
@@ -5334,6 +5354,7 @@ function duplicateFile(f, cursorLineIndex) {
 
 function fetchFile(fullPath, file) {
     var isDir = false
+    var md5String = ""
     fullPath = normalizeFullPath(fullPath)
     return fetch((fullPath) + "?raw=1", {
         cache: "no-cache"
@@ -5341,6 +5362,7 @@ function fetchFile(fullPath, file) {
         if (r.headers.get("X-Is-Dir") == "1") {
             isDir = true
         }
+        md5String = r.headers.get("X-MD5")
         return r.text()
     }).then(b => {
         file.lines = b.split("\n")
@@ -5359,6 +5381,7 @@ function fetchFile(fullPath, file) {
         } else {
             file.fileMode = "file"
         }
+        verifyLoadedMD5(file, md5String)
     }).catch(e => {
         alert("Error loading file " + e)
     })
@@ -5429,6 +5452,9 @@ var paths = location.pathname.split(",")
 var proxyPath = ""
 // PROXYPATH GOES HERE
 
+var firstFileMD5 = ""
+// FIRSTFILEMD5 GOES HERE
+
 // The first one get's "hydrated" by the server
 // ay, joining just to split again. Clean up.
 var cursorLineIndex = 0
@@ -5441,6 +5467,7 @@ var initialFile = makeFile(fullPath, cursorLineIndex, lines.join("\n"))
 initialFile.fileMode = fileMode
 initialFile.bashCWD = rootLocation
 initialFile.loadedFirstTime = true 
+verifyLoadedMD5(initialFile, firstFileMD5)
 var serverLoadFirstFile = true
 var ajaxLoadStartIndex
 if (serverLoadFirstFile) {
