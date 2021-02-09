@@ -206,6 +206,7 @@ type TerminalSession struct{
     ReadBuffer []byte
     Closed bool
 }
+
 type TerminalResponse struct{
     Base64 string    
     // CWD ?? so we can keep track of directory changes
@@ -216,7 +217,6 @@ var terminalID = 0
 var terminalMu sync.Mutex
 var terminalSessions = map[int]*TerminalSession{}
 var terminalCond *sync.Cond
-var terminalCounter = 0
 
 
 
@@ -536,23 +536,40 @@ func main() {
 	    ret := map[int]TerminalResponse{}
 	    timedOut := false
 	    startWait := time.Now()
-	    knownTerminalCounter := terminalCounter
+    WaitLoop:
 		for {
 			if time.Since(startWait) > (10 * time.Second) {
 				timedOut = true
 				break
 			}
-			if terminalCounter != knownTerminalCounter  {
-				break
-			}
+			
+			// If multiple clients were to need to connect to the terminals
+			// then we'd have to have a "stream-like" data structure for ReadBuffer
+			// and also would need the client to keep track of where it was
+    		for _, t := range terminalSessions {
+				if len(t.ReadBuffer) > 0 { 
+					break WaitLoop
+				}
+    		}
 			terminalCond.Wait()
+			log.Println("done waiting")
+    		// logJSON(terminalSessions)
 		}
 		
 		if !timedOut {
+            log.Println("stuff found on terminal!")
     		for ID, t := range terminalSessions {
     		    tResp := TerminalResponse{} 
-    		    if len(t.ReadBuffer) == 0 {
-    		        continue
+    		    if t.Closed {
+    		        // we only delete it after the client gets it
+    		        // maybe have a timeout and cleanup later?
+    		        // or actually maybe delete it right away when it's closed
+    		        // and then keepntrack of closed ids to send?
+    		        delete(terminalSessions, ID)    
+    		    } else {
+    		        if len(t.ReadBuffer) == 0 {
+    		            continue
+    		        }
     		    }
     		    tResp.Base64 = base64.StdEncoding.EncodeToString(t.ReadBuffer)
     		    tResp.Closed = t.Closed
@@ -560,7 +577,8 @@ func main() {
     		    ret[ID] = tResp
     		}
 		}
-	    
+	    log.Printf("going to respond")
+	    // logJSON(ret)
 	    json.NewEncoder(w).Encode(ret)
 	})
 	mux.HandleFunc("/myterminalopen", func(w http.ResponseWriter, r *http.Request) {
@@ -608,13 +626,19 @@ func main() {
 	    	        f.Close()
 	    	        terminalSession.Closed = true
 	    	        terminalMu.Unlock()
+	    	        terminalCond.Broadcast()
+    	        	log.Println("broadcasting on error!!")
+    	            // should we put this before the unlock?
 	    	    }
 	    	    if n == 0 {
 	    	        continue
 	    	    }
     	        terminalMu.Lock()
     	        terminalSession.ReadBuffer = append(terminalSession.ReadBuffer, b[0:n]...)
+    	        log.Println("broadcasting on read: " + string(terminalSession.ReadBuffer))
+    	        terminalCond.Broadcast()
     	        terminalMu.Unlock()
+    	        // should we put this before the unlock?
 	    	}
 	    }()
 	    
@@ -667,7 +691,7 @@ func main() {
 	    }
 	})
 	
-	// deprecated, see mypollterminal
+	// deprecated, see myterminalpoll
 	mux.HandleFunc("/mybashstream", func(w http.ResponseWriter, r *http.Request) {
 		cmdString := r.FormValue("cmd")
 		if cmdString == "" {
@@ -1000,4 +1024,12 @@ func main() {
 	log.Fatal(httpsServer.ListenAndServeTLS(certFile, keyFile))
 	return
 
+}
+
+func logJSON(v interface{}) {
+    b, err := json.MarshalIndent(v, "", "    ")    
+    if err != nil {
+        log.Printf("error logging json: %v", err)
+    }
+    log.Printf(string(b))
 }

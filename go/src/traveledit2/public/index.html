@@ -56,10 +56,6 @@
     color: black;
 }
 .light {
-    background-color: #ddddcc;
-    color: black;
-}
-.light {
     background-color: lightyellow;
     color: black;
 }
@@ -252,6 +248,8 @@ ontouchstart=onStart(event)
 ></canvas>
 
 <div class="toolbar hidden" id=terminalToolbar1 style="--display: none">
+    <div class=square onclick='sendTerminal("\x1b")'>esc</div>
+    <div class=square onclick='sendTerminal("\x1b")'>ctrl</div>
 </div>
 <div class="toolbar hidden" id=terminalToolbar2 style="--display: none">
 </div>
@@ -2813,6 +2811,7 @@ function pollTerminals() {
         return r.json()
     }).then(r => {
         // map of terminals and their payload and maybe meta info
+        log("result: " + JSON.stringify(r, "", "    "))
         for (var id in r) {
             var termInfo = r[id]
             var file = files.find(f => f.ID == id)    
@@ -2825,26 +2824,50 @@ function pollTerminals() {
             // #todoterminal: add xterm parsing here!
             var strToProcess = atob(termInfo.Base64)
             // simple parsing for now
+            log("term"+JSON.stringify(strToProcess))
+            var parseState = "literal"
             for (var i = 0; i < strToProcess.length; i++) {
                 // not calling docChanged because we don't care for terminals
                 // doing this very dumb now... more optimizations later
                 if (strToProcess[i] == "\n") {
                     file.lines.push("")
-                } else if (strToProcess[i] == "\r") {
-                    file.lines.push("")
+                // for  now commenting out \r, later do I need to code the difference between newline and carriage return?
+                // } else if (strToProcess[i] == "\r") {
+                //     file.lines.push("")
+                } else if (strToProcess[i] == "\b") {
+                    // copied from another part of this code // == 8    
+                    var theLine = fx.lines[fx.cursorLineIndex-1]
+                    if (theLine.length == 0) {
+                        fx.lines.splice(fx.cursorLineIndex, 1)
+                        fx.cursorLineIndex -= 1
+                        var prevLine = fx.lines[fx.cursorLineIndex]
+                        fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex] + theLine
+                        // TODO: process the index here!!!
+                        fx.cursorColIndex = prevLine.length
+                        setSelectionRangeForText(prevLine.length, prevLine.length)
+                    } else {
+                        fx.lines[fx.lines.length-1] = theLine.slice(0, -1)     
+                    } 
+                } else if (strToProcess[i] == "\x1b") { // escape
                 } else {
                     file.lines[file.lines.length - 1] += strToProcess[i]
                 }    
             }
-            // fx.cursorLineIndex
-            // updateCursorXY()
-            // ensureCursorInScreen()
+            fx.cursorLineIndex = fx.lines.length - 1
+            var theLine = fx.lines[fx.lines.length-1]
+            fx.cursorColIndex = expandTabIndex(theLine, theLine.length)
+            updateCursorXY()
+            ensureCursorInScreen()
         }
         render()
-        setTimeout(pollTerminals, 1000)
+        setTimeout(pollTerminals, 1)
     }).catch(e => {
+        // todo: does an error in the prev block also go here
+        // if so we need to make sure we don't double poll
+        // as a double check, in the polling code if there id a request
+        // in-flight, don't poll again.
         alert("There was an error running the command: " + e)
-        setTimeout(pollTerminals, 1000)
+        setTimeout(pollTerminals, 1)
     })
 }
 function sendTerminal(payload) {
@@ -3175,7 +3198,8 @@ if (autoSave) {
 
 var keyMaping = {
     "Enter": "\n", // need to include \r too?
-    "Shift": "",
+    "Shift": "", // we'd just send upercase letters
+    "Backspace": "\b",
 }
 function handleKeydown(e) {
     // TODO: this is where you could wrap or unwrap quotes, etc
@@ -3187,7 +3211,7 @@ function handleKeydown(e) {
         if (mapped === "") {
             return
         }
-        sendTerminal(e.key)
+        sendTerminal(mapped)
         log(e.key + "(" + mapped + ") (" + e.keyCode + ")" + "("+ JSON.stringify(mapped)+")")
         e.stopPropagation()
         e.preventDefault()
@@ -3203,6 +3227,7 @@ function handleKeydown(e) {
         fx.cursorLineIndex -= 1
         var prevLine = fx.lines[fx.cursorLineIndex]
         fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex] + theLine
+        // TODO: process the index here!!!
         fx.cursorColIndex = prevLine.length
         updateCursorXY()
         docChanged()

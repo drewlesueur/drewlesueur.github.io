@@ -1,4 +1,20 @@
+terminal todo:
+    * move cursor to end of document when we get data 
+    * refresh page and still see terminal.
+    * later on, all the escape codes
+    * add the arrows, tab, control, escape maybe option
+    
 
+JSON.stringify("\x1b")
+"\u001b"
+"\b"
+ascii table
+http://manpages.ubuntu.com/manpages/bionic/man7/ascii.7.html
+
+
+
+
+https://flaviocopes.com/javascript-unicode/
 a way to search what's selected
 auto higlight (in new color) words that your cursor is over
 when the something is selected change what the
