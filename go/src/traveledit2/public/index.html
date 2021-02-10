@@ -306,8 +306,8 @@ ontouchstart=onStart(event)
     <div class=square onclick="duplicateFile(fx, -1)">dupl file</div>
     <div class=square onclick=addCmdTab()>cmd</div>
     <div class=square onclick=addTerminalTab()>xterm</div>
+    <div class=square onclick=clearLog()>clear log</div>
     <div class=square onclick=undo()>undo</div>
-    <div class=square onclick=redo()>redo</div>
     <div class=square onclick=comment()>//</div>
 </div>
 <div class=toolbar>
@@ -319,6 +319,15 @@ ontouchstart=onStart(event)
     -->
 </div>
 <!-- Stuff after here is after the fold -->
+<div class=toolbar>
+    <div class=square onclick=debugView()>debug view</div>
+    <div class=square onclick=openAtCursor()>open</div>
+    <div class=square onclick=urlAtCursor()>visit</div>
+    <div class=square onclick=redo()>redo</div>
+    <div class=square onclick=doEval()>eval</div>
+    <div class=square onclick=runScript()>run script</div>
+    <div class=square onclick=reloadFile(fx)>reload</div>
+</div>
 <div class=toolbar>
     <div class=longButton onclick="fontScaleInput.value = 0.9; updateFontScale()">0.9</div>
     <div class=longButton onclick="fontScaleInput.value = 1.0; updateFontScale()">1.0</div>
@@ -342,15 +351,6 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="selectFont('NanumGothicCoding')">Nanum GC</div>
     <div class=longButton onclick="selectFont('GillSans')">Gill Sans</div>
     <div class=longButton onclick="selectFont('AmericanTypewriter')">American T</div>
-</div>
-<div class=toolbar>
-    <div class=square onclick=debugView()>debug view</div>
-    <div class=square onclick=openAtCursor()>open</div>
-    <div class=square onclick=urlAtCursor()>visit</div>
-    <div class=square onclick=clearLog()>clear log</div>
-    <div class=square onclick=doEval()>eval</div>
-    <div class=square onclick=runScript()>run script</div>
-    <div class=square onclick=reloadFile(fx)>reload</div>
 </div>
 <div class=toolbar>
     <div class=square onclick="copyBuffer = [location.href]">copy url</div>
@@ -640,13 +640,13 @@ canvasWidth=1125
 // I turned off "Predictive" to get more vertical space
 // TODO: make these configurable in UI
 var canvasHeightKeyboard=1050
-var canvasHeightKeyboardTerminal=950
+var canvasHeightKeyboardTerminal=925
 // var canvasHeightKeyboard=950
 var canvasHeightFull=c.height
 // 34 button height plus 1px*2 margin
 // 2 rows of new buttons for bash
 var canvasHeightBash = canvasHeightFull - ((36*3) * 2)
-var canvasHeightTerminal = canvasHeightFull - ((36*3) * 2)
+var canvasHeightTerminal = canvasHeightFull - ((36*3) * 1)
 var maxLines = 0
 var maxCols = 0
 var canvasHeight = 0
@@ -1587,7 +1587,17 @@ function redo() {
     repositionUndo(false)
 }
 function clearLog() {
-    runBashCommand("clear")
+    if (fx.fileMode == "bash") {
+        runBashCommand("clear")
+    } else if (fx.fileMode == "terminal") {
+        // TODO: should I be using setLines?
+        fx.lines = [""]
+        fx.cursorLineIndex = 0
+        fx.cursorColIndex = 0
+        updateCursorXY()
+        fx.offsetY = 0
+        ensureCursorInScreen()
+    }
     logEl.innerHTML = ""
     render()
 }
@@ -2826,6 +2836,10 @@ function pollTerminals() {
             var termInfo = r[id]
             var file = files.find(f => f.ID == id)    
             if (!file) {
+                // TODO: this can happen if we get the response for
+                // the poll before we even have the ID
+                // we could store these values temporarily?
+                // but for now we'll ignore them.
                 continue
             }
             var oldCopyBuffer = copyBuffer
@@ -3296,7 +3310,7 @@ if (autoSave) {
 
 var ctrlDown = false
 var keyMaping = {
-    "Enter": "\r\n", // need to include \r too?
+    "Enter": "\r", // need to include \n too?
     "Shift": "", // we'd just send upercase letters
     "Backspace": "\b",
 }
@@ -5461,7 +5475,11 @@ function setCurrentFile(file) {
     if (fx.fileMode == "bash") {
         bashToolbar1.classList.remove("hidden")
         bashToolbar2.classList.remove("hidden")
+        terminalToolbar1.classList.add("hidden")
+        terminalToolbar2.classList.add("hidden")
     } else if (fx.fileMode == "terminal") {
+        bashToolbar1.classList.add("hidden")
+        bashToolbar2.classList.add("hidden")
         terminalToolbar1.classList.remove("hidden")
         terminalToolbar2.classList.remove("hidden")
     } else {

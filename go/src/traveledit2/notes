@@ -1,8 +1,12 @@
+
+do a max file size!
+
 terminal todo:
     * move cursor to end of document when we get data 
     * refresh page and still see terminal.
     * later on, all the escape codes
     * add the arrows, tab, control, escape maybe option
+    * when you close it on file view it also has to close 
     
 
 JSON.stringify("\x1b")

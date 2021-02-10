@@ -577,8 +577,6 @@ func main() {
     		    ret[ID] = tResp
     		}
 		}
-	    log.Printf("going to respond")
-	    // logJSON(ret)
 	    json.NewEncoder(w).Encode(ret)
 	})
 	mux.HandleFunc("/myterminalopen", func(w http.ResponseWriter, r *http.Request) {
@@ -586,7 +584,6 @@ func main() {
 	    terminalID++
 	    // TODO: configurable shell, login shell (-l)?
 		cmd := exec.Command("bash")
-		// cmd := exec.Command("redis-cli")
 		cwd := r.FormValue("cwd")
 		cmd.Dir = cwd
 	    
@@ -619,24 +616,27 @@ func main() {
 	    // in a go func, continually read from the pty and write to buffer
 	    go func() {
             for {
+                log.Println("a loop!")
+                // TODO: reuse buffer?
                 b := make([]byte, 1024)
 	    	    n, err := terminalSession.Pty.Read(b)
-	    	    if err != nil && err != io.EOF {
+	    	    // if err != nil && err != io.EOF {
+	    	    if err != nil {
 	    	        terminalMu.Lock()
-	    	        log.Printf("error reading terminal: %v", err)
+	    	        log.Printf("error reading terminal: %v", err) // could be just EOF
 	    	        f.Close()
 	    	        terminalSession.Closed = true
-	    	        terminalMu.Unlock()
 	    	        terminalCond.Broadcast()
-    	        	log.Println("broadcasting on error!!")
-    	            // should we put this before the unlock?
+	    	        terminalMu.Unlock()
 	    	    }
 	    	    if n == 0 {
 	    	        continue
 	    	    }
     	        terminalMu.Lock()
     	        terminalSession.ReadBuffer = append(terminalSession.ReadBuffer, b[0:n]...)
-    	        log.Println("broadcasting on read: " + string(terminalSession.ReadBuffer))
+    	        log.Printf("<==========")
+    	        log.Printf("%s", string(terminalSession.ReadBuffer))
+    	        log.Printf("==========>")
     	        terminalCond.Broadcast()
     	        terminalMu.Unlock()
     	        // should we put this before the unlock?
