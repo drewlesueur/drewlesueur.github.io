@@ -586,6 +586,7 @@ func main() {
 	    terminalID++
 	    // TODO: configurable shell, login shell (-l)?
 		cmd := exec.Command("bash")
+		// cmd := exec.Command("redis-cli")
 		cwd := r.FormValue("cwd")
 		cmd.Dir = cwd
 	    

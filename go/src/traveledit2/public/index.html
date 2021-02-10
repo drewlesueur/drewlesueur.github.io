@@ -248,8 +248,13 @@ ontouchstart=onStart(event)
 ></canvas>
 
 <div class="toolbar hidden" id=terminalToolbar1 style="--display: none">
-    <div class=square onclick='sendTerminal("\x1b")'>esc</div>
-    <div class=square onclick='sendTerminal("\x1b")'>ctrl</div>
+    <div class=square ontouchstart='sendTerminal("\x1b"); event.preventDefault()'>esc</div>
+    <div class=square ontouchstart='ctrlDown = true; event.preventDefault()'>ctrl</div>
+    <div class=square ontouchstart='sendTerminal("\t"); event.preventDefault() '>tab</div>
+    <div class=square ontouchstart='sendTerminal("\x1b[D"); event.preventDefault()'>left</div>
+    <div class=square ontouchstart='sendTerminal("\x1b[B"); event.preventDefault()'>down</div>
+    <div class=square ontouchstart='sendTerminal("\x1b[A"); event.preventDefault()'>up</div>
+    <div class=square ontouchstart='sendTerminal("\x1b[C"); event.preventDefault()'>right</div>
 </div>
 <div class="toolbar hidden" id=terminalToolbar2 style="--display: none">
 </div>
@@ -635,6 +640,7 @@ canvasWidth=1125
 // I turned off "Predictive" to get more vertical space
 // TODO: make these configurable in UI
 var canvasHeightKeyboard=1050
+var canvasHeightKeyboardTerminal=950
 // var canvasHeightKeyboard=950
 var canvasHeightFull=c.height
 // 34 button height plus 1px*2 margin
@@ -2474,7 +2480,11 @@ function setCanvasHeightAccordingly() {
         heightReduction = statusElHeight * 3       
     }
     if (document.activeElement == theText || document.activeElement == searchText) {
-        setCanvasHeight(canvasHeightKeyboard - heightReduction)
+        if (fx.fileMode == "terminal") {
+            setCanvasHeight(canvasHeightKeyboardTerminal - heightReduction)
+        } else {
+            setCanvasHeight(canvasHeightKeyboard - heightReduction)
+        }
     } else {
        if (fx.fileMode == "bash") {
            setCanvasHeight(canvasHeightBash - heightReduction)   
@@ -2855,6 +2865,9 @@ function pollTerminals() {
                             } 
                         } else if (strToProcess[i] == "\x1b") { // escape
                             parseState = "ESC"
+                        } else if (strToProcess[i] == "\x07") { // bell
+                            // do nothing
+                        // } else if (strToProcess[i] == "\t") { // tab
                         } else {
                             file.lines[file.lines.length-1] += strToProcess[i]
                         }
@@ -2912,7 +2925,7 @@ function pollTerminals() {
                             default:
                                 // TODO: some action based the character here
                                 // add textual representation for debugging purposes
-                                file.lines[file.lines.length - 1] += "ESC[" + controlValues.join(";") + theChr
+                                file.lines[file.lines.length - 1] += " <ESC[" + controlValues.join(";") + theChr + "> "
                                 parseState = "literal" // for now
                             
                         }
@@ -3281,6 +3294,7 @@ if (autoSave) {
     setTimeout(save, saveEveryMS)
 }
 
+var ctrlDown = false
 var keyMaping = {
     "Enter": "\r\n", // need to include \r too?
     "Shift": "", // we'd just send upercase letters
@@ -3289,15 +3303,28 @@ var keyMaping = {
 function handleKeydown(e) {
     // TODO: this is where you could wrap or unwrap quotes, etc
     if (fx.fileMode == "terminal") {
-        var mapped = keyMaping[e.key]
-        if (typeof mapped == "undefined") {
-            mapped = e.key        
+        var mapped = e.key
+        if (ctrlDown) {
+            // todo add more conditions
+            var v = e.key.toUpperCase().charCodeAt(0)-64
+            if (v < 0) {
+                return
+            }
+            mapped = String.fromCharCode(v)
+        } else {
+            mapped = keyMaping[e.key]
+            if (typeof mapped == "undefined") {
+                mapped = e.key        
+            }
         }
+        
         if (mapped === "") {
             return
         }
         sendTerminal(mapped)
         log(e.key + "(" + mapped + ") (" + e.keyCode + ")" + "("+ JSON.stringify(mapped)+")")
+        
+        ctrlDown = false
         e.stopPropagation()
         e.preventDefault()
         return false
@@ -5620,3 +5647,4 @@ renderDarkMode()
 // add a threshold for move, like 5px or something.
 // todo: in select mode, swipe down is paste. even paste over
 </script>
+// I turned off "Predictive" to get more vertical spac
