@@ -1,7 +1,12 @@
 
+    ensureCursorInScreen() calls updateCursorXY so nonmeed to call updateCursorXY then ensureCursorInScreen
+autocomplete could use selection regions as well? maybe?
+
 do a max file size!
 
 terminal todo:
+    * only ensure cursor in screen, and set cursorxy? if current file is the one receiving data
+    * allow naming terminals
     * move cursor to end of document when we get data 
     * refresh page and still see terminal.
     * later on, all the escape codes

@@ -526,9 +526,18 @@ func main() {
 		}
 	})
 	
-	mux.HandleFunc("/myterminalload", func(w http.ResponseWriter, r *http.Request) {
-	    // my terminal load
+	mux.HandleFunc("/myterminals", func(w http.ResponseWriter, r *http.Request) {
 	    // load existing terminal sessions.
+	    terminalMu.Lock()    
+	    defer terminalMu.Unlock()
+	    
+	    ids := make([]int, len(terminalSessions))
+	    i := 0
+	    for id, _ := range terminalSessions {
+	        ids[i] = id
+	        i++ 
+	    }
+	    json.NewEncoder(w).Encode(ids)
 	})
 	mux.HandleFunc("/myterminalpoll", func(w http.ResponseWriter, r *http.Request) {
 	    terminalMu.Lock()    
@@ -583,7 +592,9 @@ func main() {
 	    log.Println("my terminal open!")
 	    terminalID++
 	    // TODO: configurable shell, login shell (-l)?
+		// cmd := exec.Command("bash", "-l")
 		cmd := exec.Command("bash")
+		// cmd := exec.Command("zsh", "-l")
 		cwd := r.FormValue("cwd")
 		cmd.Dir = cwd
 	    
@@ -628,6 +639,7 @@ func main() {
 	    	        terminalSession.Closed = true
 	    	        terminalCond.Broadcast()
 	    	        terminalMu.Unlock()
+	    	        break
 	    	    }
 	    	    if n == 0 {
 	    	        continue

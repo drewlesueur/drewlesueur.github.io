@@ -1402,7 +1402,7 @@ function addCmdTab() {
     // I think we need a special endpoint for serving files and not just /
     var file = makeFile(proxyPath + "/cmd", 0, bashHelpers.join("\n"))
     file.fileMode = "bash"
-    useExisingWD(file) 
+    useExisingWD(file) // terminals don't deal with cwd for now  
     addFileToList(file, false)
     setCurrentFile(file)
     fx.cursorLineIndex = fx.lines.length - 1
@@ -1411,14 +1411,27 @@ function addCmdTab() {
     //theText.focus()
 }
 function addTerminalTab() {
-    var file = makeFile(proxyPath + "/terminal", 0, "this is a terminal")
+    var file = makeFile(proxyPath + "/terminal", 0, "")
     file.fileMode = "terminal"
-    useExisingWD(file) 
+    // useExisingWD(file) // terminals don't deal with cwd for now  
     addFileToList(file, false)
     setCurrentFile(file)
     fx.cursorLineIndex = fx.lines.length - 1
     updateCursorXY()
     openTerminal()
+    //theText.focus()
+}
+function addExistingTerminalTab(id) {
+    var file = makeFile(proxyPath + "/terminal", 0, "")
+    file.fileMode = "terminal"
+    file.ID = id
+    addFileToList(file, false)
+    setCurrentFile(file)
+    fx.cursorLineIndex = fx.lines.length - 1
+    updateCursorXY()
+    if (!isPollingTerminal) {
+        pollTerminals()    
+    }
     //theText.focus()
 }
 function normalizeFullPath(fullPath) {
@@ -1759,25 +1772,28 @@ function findDown(searchDir, wrap, startTop) {
     return false
 }
 
-function ensureCursorInScreen() {
-    if (fx.cursorLineIndex < fx.offsetY) {
-        fx.offsetY = fx.cursorLineIndex
-    } else if (fx.cursorLineIndex >= fx.offsetY+maxLines) {
-        fx.offsetY = fx.cursorLineIndex-maxLines +1
+function ensureCursorInScreen(file) {
+    if (!file) {
+        file = fx
+    }
+    if (file.cursorLineIndex < file.offsetY) {
+        file.offsetY = file.cursorLineIndex
+    } else if (file.cursorLineIndex >= file.offsetY+maxLines) {
+        file.offsetY = file.cursorLineIndex-maxLines +1
     }
 
     // TODO: there is something more elegant
     // that you can do here
-    if (fx.cursorColIndex < fx.offsetX) {
-        //fx.offsetX = fx.cursorColIndex
-        fx.offsetX = fx.cursorColIndex - Math.floor(maxCols/2)
-    } else if (fx.cursorColIndex > fx.offsetX+maxCols) {
-        fx.offsetX = fx.cursorColIndex - Math.floor(maxCols/2)
+    if (file.cursorColIndex < file.offsetX) {
+        //file.offsetX = file.cursorColIndex
+        file.offsetX = file.cursorColIndex - Math.floor(maxCols/2)
+    } else if (file.cursorColIndex > file.offsetX+maxCols) {
+        file.offsetX = file.cursorColIndex - Math.floor(maxCols/2)
     }
-    if (fx.offsetX < -5) {
-        fx.offsetX = -5
+    if (file.offsetX < -5) {
+        file.offsetX = -5
     }
-    updateCursorXY()
+    updateCursorXY(file)
     render()
 }
 // Note this won't work for certain chars
@@ -1856,7 +1872,10 @@ function clearSearch() {
     render()
 }
 
-function updateCursorXY() {
+function updateCursorXY(file) {
+    if (file != fx) {
+        return    
+    }
     cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
     cursorY = (fx.cursorLineIndex - fx.offsetY) * fontHeight
 }
@@ -2939,18 +2958,19 @@ function pollTerminals() {
                             default:
                                 // TODO: some action based the character here
                                 // add textual representation for debugging purposes
-                                file.lines[file.lines.length - 1] += " <ESC[" + controlValues.join(";") + theChr + "> "
+                                // uncomment to debug
+                                // file.lines[file.lines.length - 1] += " <ESC[" + controlValues.join(";") + theChr + "> "
+                                
                                 parseState = "literal" // for now
                             
                         }
                         break;
                 }
             }
-            fx.cursorLineIndex = fx.lines.length - 1
-            var theLine = fx.lines[fx.lines.length-1]
+            file.cursorLineIndex = file.lines.length - 1
+            var theLine = file.lines[file.lines.length-1]
             fx.cursorColIndex = expandTabIndex(theLine, theLine.length)
-            updateCursorXY()
-            ensureCursorInScreen()
+            ensureCursorInScreen(file)
         }
         render()
         setTimeout(pollTerminals, 1)
@@ -3238,6 +3258,9 @@ function saveWrapper() {
         } else {
             runBashCommand(fx.lines[fx.cursorLineIndex] || "")
         }
+        return
+    } else if (fx.fileMode == "terminal") {
+        sendTerminal("\r")
         return
     }
     autoSave = false
@@ -3742,6 +3765,9 @@ function render() {
     } else if (fx.fileMode == "bash") {
         // TODO: consider not setting this every render
         saveButton.innerText = "run"
+    } else if (fx.fileMode == "terminal") {
+        // TODO: consider not setting this every render
+        saveButton.innerText = "run"
     }
     // marker aquamarine setting text
     if (!inEdit) {
@@ -3961,7 +3987,7 @@ function renderInternal() {
         // TODO: set variable for line.trim()
         var textFillStyle 
         // the actual text
-        if (true) {
+        if (fx.fileMode != "terminal") {
             // TODO: get rid of repeated calls to theLine.trim()
             if (theLine.startsWith("+")) {
                 textFillStyle = isDark ? "lime" : "green"
@@ -4323,6 +4349,18 @@ function onStart(e) {
                 return
             }
             
+
+            if (fx.cursorColIndex == -5) {
+                // since we are in the margin, let's force it
+                // to paste line-style.
+                if (fx.fileMode == "terminal") {
+                    sendTerminal(copyBuffer.join("\r"))
+                    return   
+                }
+                selectMode = "line"
+                paste()
+                return
+            }
             if (fx.fileMode == "terminal") {
                 // #todoterminal send a tab?
                 if (document.activeElement == theText) {
@@ -4330,14 +4368,6 @@ function onStart(e) {
                 } else {
                     theText.focus()
                 }
-                return
-            }
-
-            if (fx.cursorColIndex == -5) {
-                // since we are in the margin, let's force it
-                // to paste line-style.
-                selectMode = "line"
-                paste()
                 return
             }
             // if (fx.cursorColIndex >= -4 && fx.cursorColIndex <= -1) {
@@ -5640,6 +5670,19 @@ if (serverLoadFirstFile) {
    ajaxLoadStartIndex = 0
 }
 
+// add exising terminals
+fetch(proxyPath + "/myterminals", {
+    cache: "no-cache"
+}).then(r => {
+    return r.json()
+}).then(r => {
+    for (var i=0;i<r.length;i++) {
+        addExistingTerminalTab(r[i])
+    }
+}).catch(e => {
+    alert("error loading terminals: " + e)
+})
+
 
 // Subsequent ones will get added after the fact.
 // Starting at index 1 for this reason.
@@ -5665,4 +5708,4 @@ renderDarkMode()
 // add a threshold for move, like 5px or something.
 // todo: in select mode, swipe down is paste. even paste over
 </script>
-// I turned off "Predictive" to get more vertical spac
+// I turned off "Predictive" to get more vertical space
