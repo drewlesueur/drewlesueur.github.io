@@ -205,13 +205,14 @@ type TerminalSession struct{
     ID int
     ReadBuffer []byte
     Closed bool
+    Name string
 }
 
 type TerminalResponse struct{
     Base64 string    
     // CWD ?? so we can keep track of directory changes
-    Error string
-    Closed bool
+    Error string `json:",omitempty"`
+    Closed bool `json:",omitempty"`
 }
 var terminalID = 0
 var terminalMu sync.Mutex
@@ -526,18 +527,39 @@ func main() {
 		}
 	})
 	
+	mux.HandleFunc("/myterminalname", func(w http.ResponseWriter, r *http.Request) {
+	    // load existing terminal sessions.
+	    terminalMu.Lock()    
+	    defer terminalMu.Unlock()
+	    idStr := r.FormValue("id")
+	    name := r.FormValue("name")
+	    id, err := strconv.Atoi(idStr)
+	    if err != nil {
+	        logAndErr(w, "invalid terminal id")
+	        return
+	    }
+	    t, ok := terminalSessions[id];
+	    if !ok {
+	        logAndErr(w, "not found")
+	        return
+	    }
+	    t.Name = name
+	    json.NewEncoder(w).Encode(map[string]interface{}{
+	        "success": true,
+	    }) 
+	})
 	mux.HandleFunc("/myterminals", func(w http.ResponseWriter, r *http.Request) {
 	    // load existing terminal sessions.
 	    terminalMu.Lock()    
 	    defer terminalMu.Unlock()
-	    
-	    ids := make([]int, len(terminalSessions))
-	    i := 0
-	    for id, _ := range terminalSessions {
-	        ids[i] = id
-	        i++ 
+	    ret := map[int]map[string]interface{}{}
+	    for id, t := range terminalSessions {
+	        ret[id] = map[string]interface{}{
+	            "ID": id,
+	            "Name": t.Name,
+	        }
 	    }
-	    json.NewEncoder(w).Encode(ids)
+	    json.NewEncoder(w).Encode(ret)
 	})
 	mux.HandleFunc("/myterminalpoll", func(w http.ResponseWriter, r *http.Request) {
 	    terminalMu.Lock()    

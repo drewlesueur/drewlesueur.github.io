@@ -250,7 +250,10 @@ ontouchstart=onStart(event)
 <div class="toolbar hidden" id=terminalToolbar1 style="--display: none">
     <div class=square ontouchstart='sendTerminal("\x1b"); event.preventDefault()'>esc</div>
     <div class=square ontouchstart='ctrlDown = true; event.preventDefault()'>ctrl</div>
-    <div class=square ontouchstart='sendTerminal("\t"); event.preventDefault() '>tab</div>
+    <div class=square ontouchstart='sendTerminal("\x03"); event.preventDefault()'>^C</div>
+    <!-- don't really need tab because touching the screen gets you tab-->
+    <!--<div class=square ontouchstart='sendTerminal("\t"); event.preventDefault() '>tab</div>
+    -->
     <div class=square ontouchstart='sendTerminal("\x1b[D"); event.preventDefault()'>left</div>
     <div class=square ontouchstart='sendTerminal("\x1b[B"); event.preventDefault()'>down</div>
     <div class=square ontouchstart='sendTerminal("\x1b[A"); event.preventDefault()'>up</div>
@@ -382,6 +385,7 @@ ontouchstart=onStart(event)
     <div class=square onclick="stopServer()">stop server</div>
 </div>
 <div class=toolbar>
+    <div class=square onclick="window.open(location.href)">dup tab</div>
 </div>
 <label for=saveDiffsCheckbox>
     <input onchange="saveDiffs = saveDiffsCheckbox.checked" type=checkbox name=saveDiffsCheckbox id=saveDiffsCheckbox checked />
@@ -402,15 +406,12 @@ ontouchstart=onStart(event)
     <input onchange="reorderFiles = reorderFilesCheckbox.checked" type=checkbox name=reorderFilesCheckbox id=reorderFilesCheckbox />
     Auto-Reorder Files
 </label>
+<div>
+    Term name: <input id=fileNameInput onchange="saveTerminalName(this.value)">
+</div>
 <!--
 <iframe width="100%" height=400 src="/te/screenshare"></iframe>
 -->
-<form method=GET action="" target=_blank>
-    <input class=dark type=text id=docTitleEl
-        style="width: 275px;"
-        oninput="this.form.action=this.value"></div>
-    <input class=dark type=submit value="Add Tab">
-</form>
 <select onchange="selectFont(this.value)">
     <option>Courier</option>
     <option>Menlo</option>
@@ -1258,7 +1259,6 @@ function setFontVars() {
 }
 
 
-docTitleEl.value = location.pathname
 function importPaste() {
     copyBuffer = pasteEl.value.split("\n")
     selectMode = "line"
@@ -1411,6 +1411,7 @@ function addCmdTab() {
     //theText.focus()
 }
 function addTerminalTab() {
+    // TODO: follow up on the path variable, seems mostly useless for now.
     var file = makeFile(proxyPath + "/terminal", 0, "")
     file.fileMode = "terminal"
     // useExisingWD(file) // terminals don't deal with cwd for now  
@@ -1421,10 +1422,13 @@ function addTerminalTab() {
     openTerminal()
     //theText.focus()
 }
-function addExistingTerminalTab(id) {
+function addExistingTerminalTab(id, name) {
     var file = makeFile(proxyPath + "/terminal", 0, "")
     file.fileMode = "terminal"
     file.ID = id
+    if (name) {
+        file.name = name
+    }
     addFileToList(file, false)
     setCurrentFile(file)
     fx.cursorLineIndex = fx.lines.length - 1
@@ -1460,9 +1464,16 @@ function renderURL() {
         return
     }
     // For now we don't get files with bash mode.
-    var filtered = files.filter(f => f.fileMode != "bash" && f.fileMode != "terminal")
+    var filtered = files.filter(f => f.fileMode != "bash")
     var theNewPath = "/" + filtered.map(function(f) {
+        if (f.fileMode == "terminal") {
+            // TODO: ensure that the terminal is not the first one somewhere?
+            // or at least handle it
+            // TODO: encodeURIComponent? (or does it already do that?)
+            return "__TERMINAL__:" + f.ID
+        }
         return f.fullPath.slice(1) + ":" + (f.cursorLineIndex + 1)
+        
     }).join(",")
     theNewPath += "?dark=" + (isDark ? "1" : "0") 
     history.replaceState({}, "", theNewPath)
@@ -1712,7 +1723,11 @@ function findDown(searchDir, wrap, startTop) {
        startY = 0
     } 
     if (document.activeElement != searchText && searchText.value == "") {
-        searchText.value = getWordAtCursor().word
+        if (fx.selectedRegions.length) {
+            searchText.value = getSelectedLines(fx, false)[0]
+        } else {
+            searchText.value = getWordAtCursor().word
+        }
         if (searchText.value == "") {
             navForward()
             return
@@ -1810,7 +1825,11 @@ function findUp() {
         ensureCursorInScreen()
     }
     if (searchText.value == "") {
-        searchText.value = getWordAtCursor().word
+        if (fx.selectedRegions.length) {
+            searchText.value = getSelectedLines(fx, false)[0]
+        } else {
+            searchText.value = getWordAtCursor().word
+        }
         if (searchText.value == "") {
             navBack()
             return
@@ -1874,7 +1893,7 @@ function clearSearch() {
 
 function updateCursorXY(file) {
     if (file != fx) {
-        return    
+        file = fx    
     }
     cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
     cursorY = (fx.cursorLineIndex - fx.offsetY) * fontHeight
@@ -2835,7 +2854,18 @@ function runBashCommand(line) {
     }
     copyBuffer = oldCopyBuffer
 }
-
+function saveTerminalName(name) {
+    if (fx.fileMode != "terminal") {
+        return
+    }
+    fetch(proxyPath + "/myterminalname?id="+fx.ID+"&name=" + encodeURIComponent(name), {cache: "no-cache"})
+    .then(r => r.json())
+    .then(r => {})
+    .catch(r => {})
+    fx.name = name
+    renderURL()
+    renderFileDropdown()
+}
 var isPollingTerminal = false
 function pollTerminals() {
     isPollingTerminal = true
@@ -2969,7 +2999,7 @@ function pollTerminals() {
             }
             file.cursorLineIndex = file.lines.length - 1
             var theLine = file.lines[file.lines.length-1]
-            fx.cursorColIndex = expandTabIndex(theLine, theLine.length)
+            file.cursorColIndex = expandTabIndex(theLine, theLine.length)
             ensureCursorInScreen(file)
         }
         render()
@@ -3335,6 +3365,7 @@ var ctrlDown = false
 var keyMaping = {
     "Enter": "\r", // need to include \n too?
     "Shift": "", // we'd just send upercase letters
+    "CapsLock": "",   
     "Backspace": "\b",
 }
 function handleKeydown(e) {
@@ -5224,6 +5255,7 @@ function makeFile(fullPath, cursorLineIndex, contents) {
     return {
         // fullPath should have the leading slash
         fullPath: fullPath,
+        name: "", // for terminal at least
         undo: {
             index: 0,
             stack: [contents],   
@@ -5348,8 +5380,13 @@ function renderFileDropdown() {
         button.className = "longButton"
         // button.className = "square"
         button.setAttribute("data-index", fileI)
-        var parts = file.fullPath.split("/")
-        var theName = parts[parts.length - 1]
+        var theName = ""
+        if (file.fileMode == "terminal" && file.name) {
+            theName = file.name
+        } else {
+            var parts = file.fullPath.split("/")
+            theName = parts[parts.length - 1]
+        }
         button.innerText = theName.substr(0, 15)
         if (fx == file) {
             button.style.backgroundColor = "black"
@@ -5441,7 +5478,7 @@ function getLinesForFileList() {
             parts = (f.originatingFullPath + " (" + (f.tmpIndex+1) + ")").split("/")
         } else if (f.fileMode == "terminal") {
             // #todoterminal: how get the cwd of the process (/proc/fd) ?
-            parts = (f.originatingFullPath + " (" + (f.tmpIndex+1) + ")").split("/")
+            parts = ["terminal", f.ID + ": " + (f.name || "")]
         }
         // var parts = (f.fullPath).split("/")
         var curTree = fileTree 
@@ -5518,6 +5555,7 @@ function setCurrentFile(file) {
         terminalToolbar1.classList.add("hidden")
         terminalToolbar2.classList.add("hidden")
     }
+    fileNameInput.value = file.name || ""
     setCanvasHeightAccordingly()
     updateCursorXY()
     searchText.setAttribute("placeholder", fx.fullPath + " (search)")
@@ -5639,7 +5677,8 @@ var fileMode = "file"
 
 var rootLocation = "" // will be set server side
 // ROOTLOCATION GOES HERE
-var paths = location.pathname.split(",")
+// var paths = decodeURIComponent(location.pathname).split(",")
+var paths = (location.pathname).split(",")
 
 var proxyPath = ""
 // PROXYPATH GOES HERE
@@ -5670,27 +5709,42 @@ if (serverLoadFirstFile) {
    ajaxLoadStartIndex = 0
 }
 
+
+// Subsequent ones will get added after the fact.
+// Starting at index 1 for this reason.
+var initialFileAdding = true
+for (var i=ajaxLoadStartIndex; i<paths.length; i++) {
+    if (paths[i].startsWith("__TERMINAL__")) {
+        parts = paths[i].split(":")
+        var id = parts[1]
+        addExistingTerminalTab(id)
+    } else {
+        addFile(paths[i])
+    }
+}
+setCurrentFile(files[0])
+
 // add exising terminals
 fetch(proxyPath + "/myterminals", {
     cache: "no-cache"
 }).then(r => {
     return r.json()
 }).then(r => {
-    for (var i=0;i<r.length;i++) {
-        addExistingTerminalTab(r[i])
+    for (var id in r) {
+        var existingTerminal = files.find(f => f.ID == r[id].ID)
+        if (!existingTerminal) {
+            // if we didn't already add it     
+            addExistingTerminalTab(r[id].ID, r[id].Name)
+        } else {
+            existingTerminal.name = r[id].Name     
+            renderURL()
+            renderFileDropdown()
+        }
     }
 }).catch(e => {
     alert("error loading terminals: " + e)
 })
 
-
-// Subsequent ones will get added after the fact.
-// Starting at index 1 for this reason.
-var initialFileAdding = true
-for (var i=ajaxLoadStartIndex; i<paths.length; i++) {
-    addFile(paths[i])
-}
-setCurrentFile(files[0])
 initialFileAdding = false
 
 var ust = new URLSearchParams(window.location.search)

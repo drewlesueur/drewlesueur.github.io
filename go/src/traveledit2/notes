@@ -1,4 +1,4 @@
-
+find up over whotespace can gonto prev marker or home
     ensureCursorInScreen() calls updateCursorXY so nonmeed to call updateCursorXY then ensureCursorInScreen
 autocomplete could use selection regions as well? maybe?
 
