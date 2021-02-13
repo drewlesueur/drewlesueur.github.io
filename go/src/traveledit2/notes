@@ -1,3 +1,85 @@
+
+// plan a for unicode support.
+function UString(line) {
+    this.rawString = line
+    this.codePoints = [...line]
+    this.length = this.codePoints.length
+    // all these things need to be kept in sync.
+}
+
+UString.prototype.slice = function(a, b) {
+   // supports negative index meaning from end    
+}
+// start index and length
+UString.prototype.substr = function(a,b) {
+    
+}
+// start index and end index
+UString.prototype.substring = function(a, b) {
+  // switches order of arguments if b < a    
+}
+UString.prototype.indexOf = function(a, b) {
+}
+// matchAll might get tricky
+UString.prototype.matchAll = function(a, b) {
+}
+UString.prototype.trim = function(a, b) {
+}
+UString.prototype.startsWith = function(a, b) {
+}
+UString.prototype.charAt = function(a, b) {
+}
+UString.prototype.charCodeAt = function(a, b) {
+}
+UString.prototype.toLowerCase = function(a, b) {
+}
+
+// how to implement this?
+// function reverse(str) {
+//     return str.split("").reverse().join("")
+// }
+
+function linesFromString(str) {
+    return str.split("\n").map(line => {
+        return new UString()
+    })   
+}
+
+❤️x✌️x
+gray
+
+
+
+
+👨‍👩‍👦‍👦hivn vnx
+"😎👩‍👩‍👧‍👧👨‍👩‍👦‍👦👩‍👩‍👦‍👦🧶".match(/./gu)
+23
+😎,👩,‍,👩,‍,👧,‍,👧,👨,‍,👩,‍,👦,‍,👦,👩,‍,👩,‍,👦,‍,👦,🧶
+JSON.stringify([..."🐶"])
+["🐶"]
+JSON.stringify([..."👩‍❤️‍👩"])
+["👩","‍","❤","️","‍","👩"]
+JSON.stringify([..."🇨🇴"])
+["🇨","🇴"]
+["🇨","🇴"]
+JSON.stringify("\u0061\u030A")
+"å"
+JSON.stringify([..."\u0061\u030A"])
+["a","̊"]
+
+
+
+allowPolling = false
+false yoser
+unicode support
+    only call normalize when comparing.
+    maybe cache the normalized string?
+    or have a copy of the document in sync that has the normalized version
+    make a UString prototype that has the same methods that I use in string
+
+temporarily allow disable polling
+
+
 find up over whotespace can gonto prev marker or home
     ensureCursorInScreen() calls updateCursorXY so nonmeed to call updateCursorXY then ensureCursorInScreen
 autocomplete could use selection regions as well? maybe?

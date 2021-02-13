@@ -4,8 +4,8 @@
 <meta charset='utf-8'>
 <!-- TODO: make this work with path proxy ok?3 -->
 <script src="/tepublic/diff.js"></script>
-<script src="/tepublic/md5.js"></script>
 <script src="/tepublic/md52.js"></script>
+<script src="/tepublic/grapheme-splitter.js"></script>
 <style>
 /*
 @font-face {
@@ -198,9 +198,11 @@ onblur=handleBlur()
 style="
 --font: 13px IosevkaLucida;
 --font: 16px Courier;
-font: 12px Times;
+font: 16px Times;
+padding: 0;
 color: brown;
 width: 375px;
+height: 24px;
 --position:absolute; top: 100px;
 display: block;
 "
@@ -241,7 +243,7 @@ the with attribute, and same for height.
 See canvasHeightFull
 -->
 
-<canvas id=c width=1125 height=1497
+<canvas id=c width=1125 height=1470
 style="width: 375px; height:10px;
 display: block;"
 ontouchstart=onStart(event)
@@ -387,6 +389,14 @@ ontouchstart=onStart(event)
 <div class=toolbar>
     <div class=square onclick="window.open(location.href)">dup tab</div>
 </div>
+<label for=allowPollingCheckbox>
+    <input onchange="allowPolling = allowPollingCheckbox.checked" type=checkbox name=allowPollingCheckbox id=allowPollingCheckbox checked />
+    allow polling
+</label>
+<label for=useUnicodeCheckbox>
+    <input onchange="useUnicode = useUnicodeCheckbox.checked" type=checkbox name=useUnicodeCheckbox id=useUnicodeCheckbox checked />
+    use unicode
+</label>
 <label for=saveDiffsCheckbox>
     <input onchange="saveDiffs = saveDiffsCheckbox.checked" type=checkbox name=saveDiffsCheckbox id=saveDiffsCheckbox checked />
     save diffs
@@ -468,6 +478,7 @@ var lastWord = ""
 var lastCleared = ""
 var fontScale = 1.2
 fontScaleInput.value = fontScale
+var useUnicode = true
 
 
 var fonts = {
@@ -640,7 +651,7 @@ canvasWidth=1125
 //var canvasWidth=600
 // I turned off "Predictive" to get more vertical space
 // TODO: make these configurable in UI
-var canvasHeightKeyboard=1050
+var canvasHeightKeyboard=1020
 var canvasHeightKeyboardTerminal=925
 // var canvasHeightKeyboard=950
 var canvasHeightFull=c.height
@@ -1157,7 +1168,7 @@ function getAtCursor() {
     var strIndex = u(fx.cursorColIndex)
     for (var i=strIndex; i>=0; i--) {
         // if ((line.charAt(i).trim() == "")) {
-        log(line.charAt(i) + " " + line.charCodeAt(i))
+        // log(line.charAt(i) + " " + line.charCodeAt(i))
         if (line.charCodeAt(i) <= 32) {
             break
         }   
@@ -1256,6 +1267,7 @@ function setFontVars() {
     fontHeight= currentFont.fontHeightPre * fontScale
     fontWidth= currentFont.fontWidthPre * fontScale
     fontCSS = (currentFont.fontSize * fontScale) + "px '"+currentFont.fontName+"', ui-monospace"
+    fontCSSEmoji = (currentFont.fontSize * fontScale / 2) + "px '"+currentFont.fontName+"', ui-monospace"
 }
 
 
@@ -2866,8 +2878,14 @@ function saveTerminalName(name) {
     renderURL()
     renderFileDropdown()
 }
+
+var allowPolling = true
 var isPollingTerminal = false
 function pollTerminals() {
+    if (!allowPolling) {
+        // so we can manually disable polling
+        return false
+    }
     isPollingTerminal = true
     if (!files.some(f => f.fileMode == "terminal")) {
         isPollingTerminal = false
@@ -3869,7 +3887,8 @@ function render() {
         sendViewToServer()
     }
 }
-    
+ 
+var splitter = new GraphemeSplitter()   
 function renderInternal() {
     // the selected areas
     for (var i=0; i<fx.selectedRegions.length;i++) {
@@ -4088,6 +4107,15 @@ function renderInternal() {
             expandedLine += "\t".repeat(numberOfSpaces)
             afterLastTabPos = tabPos + 1
         }
+        
+        
+        // expandedLine = [...expandedLine]
+        if (useUnicode) {
+            expandedLine = splitter.splitGraphemes(expandedLine)
+        }
+        // one option is to draw the whole line in one go
+        // likely more optimal, wouln't have to do the unicode stuff
+        // but harder to know wrangle width of the font?
         for (var x=0; x < maxCols; x++) {
             var chr = expandedLine[x+fx.offsetX] || ""
             if (chr == "\t") {
@@ -4096,6 +4124,13 @@ function renderInternal() {
                     t.fillText("•", x*fontWidth, y*fontHeight)
                 }
             } else if (chr != "" && chr != " ") {
+                if (useUnicode) {
+                    if (chr.length > 1) {
+                        t.font = fontCSSEmoji
+                    } else {
+                        t.font = fontCSS
+                    }
+                }
                 t.fillStyle = textFillStyle
                 t.fillText(chr, x*fontWidth, y*fontHeight)
             }
@@ -5582,6 +5617,7 @@ function duplicateFile(f, cursorLineIndex) {
     // when text to one file is added.
 }
 
+// also see makeFile
 function fetchFile(fullPath, file) {
     var isDir = false
     var md5String = ""
