@@ -3,8 +3,12 @@ find up over whotespace can gonto prev marker or home
 autocomplete could use selection regions as well? maybe?
 
 do a max file size!
+you need a scratch file feature!
+make the edit search bar like a command bar!
 
 terminal todo:
+    * remember last little bit of terminal and show it on refresh 
+    * size limit of read buffer to prevent accidental high memory usage
     * only ensure cursor in screen, and set cursorxy? if current file is the one receiving data
     * allow naming terminals
     * move cursor to end of document when we get data 

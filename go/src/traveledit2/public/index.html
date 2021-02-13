@@ -1724,7 +1724,7 @@ function findDown(searchDir, wrap, startTop) {
     } 
     if (document.activeElement != searchText && searchText.value == "") {
         if (fx.selectedRegions.length) {
-            searchText.value = getSelectedLines(fx, false)[0]
+            searchText.value = getSelectedLines(fx, false).lines[0]
         } else {
             searchText.value = getWordAtCursor().word
         }
@@ -1826,7 +1826,7 @@ function findUp() {
     }
     if (searchText.value == "") {
         if (fx.selectedRegions.length) {
-            searchText.value = getSelectedLines(fx, false)[0]
+            searchText.value = getSelectedLines(fx, false).lines[0]
         } else {
             searchText.value = getWordAtCursor().word
         }
@@ -5478,7 +5478,7 @@ function getLinesForFileList() {
             parts = (f.originatingFullPath + " (" + (f.tmpIndex+1) + ")").split("/")
         } else if (f.fileMode == "terminal") {
             // #todoterminal: how get the cwd of the process (/proc/fd) ?
-            parts = ["terminal", f.ID + ": " + (f.name || "")]
+            parts = ["(terminal)", (f.tmpIndex+"").padStart(2, "0") + ": " + (f.name || "")]
         }
         // var parts = (f.fullPath).split("/")
         var curTree = fileTree 
