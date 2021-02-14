@@ -3160,16 +3160,108 @@ function toggleSeeTabs() {
     render()    
 }
 
+var eqCount = 0
+function eq(a, b, message) {
+    eqCount++    
+    if (a != b) {
+        alert("unequal at number " + eqCount + ".\ngot: " + b + "\nwant: " + a + "\nmessage: " + message )
+        window.close()
+    }
+}
+
+
+setTimeout(function() {
+    // useUnicode = false
+    eq(0, expandTabIndex("", 0))    
+    eq(0, expandTabIndex("", -1))    
+    eq(1, expandTabIndex("a", -1))    
+    eq(1, expandTabIndex("a", 1))
+    eq(4, expandTabIndex("abcd", -1))
+    eq(8,   expandTabIndex("abcd	", -1))
+    eq(8, expandTabIndex("abcd\t", -1))
+    eq(4, expandTabIndex("abc\t", -1))
+    eq(4, expandTabIndex("ab\t", -1))
+    eq(8, expandTabIndex("ab\t" + "ab\t", -1))
+    eq(12, expandTabIndex("ab\t" + "ab\t" + "ab\t", -1))
+    eq(12, expandTabIndex("abc\t" + "a\t" + "ab\t", -1))
+    eq(10, expandTabIndex("abc\t" + "a\t" + "ab", -1))
+    eq(10, expandTabIndex("abca" + "\t" + "ab", -1))
+    eq(10, expandTabIndex("abca"+"a\t" + "ab", -1))
+    eq(4, expandTabIndex("\t", -1))
+    
+    eq(0, unExpandTabIndex("", 0))
+    eq(0, unExpandTabIndex("\t", 0))
+    eq(0, unExpandTabIndex("\t", 1))
+    eq(0, unExpandTabIndex("\t", 2))
+    eq(0, unExpandTabIndex("\t", 3))
+    eq(1, unExpandTabIndex("\t", 4))
+    eq(2, unExpandTabIndex("\t"+"a", 5))
+    eq(3, unExpandTabIndex("a\t"+"a", 5))
+    eq(4, unExpandTabIndex("ab\t"+"a", 5))
+    eq(5, unExpandTabIndex("ab\t"+"a\t", 8))
+    eq(4, unExpandTabIndex("ab\t"+"a\t", 7))
+    eq(4, unExpandTabIndex("ab\t"+"a\t", 6))
+    eq(4, unExpandTabIndex("ab\t"+"a\t", 5))
+    eq(3, unExpandTabIndex("ab\t"+"a\t", 4))
+    
+    // abcda•••@
+    eq(6, unExpandTabIndex("abcd"+"a\t", 8))
+    
+    // abcda••@_
+    eq(5, unExpandTabIndex("abcd"+"a\t", 7))
+    
+    // abcda•@•_
+    eq(5, unExpandTabIndex("abcd"+"a\t", 6))
+    
+    // abcda@••_
+    eq(5, unExpandTabIndex("abcd"+"a\t", 5))
+    
+    // abcd@•••_
+    eq(4, unExpandTabIndex("abcd"+"a\t", 4))
+    // eq(999, -999)
+}, 1)
+
 // go from graphical index to string index, at graphical index
 function unExpandTabIndex(theLine, start) {
-    var expandedLineLength = 0
     var tabStop = globalTabStop
+    
+    if (useUnicode) {
+        var actualStringIndex = 0
+        var expandedIndex = 0
+        var newActualStringIndex = 0
+        var newExpandedIndex = 0
+        expandedLine = splitter.splitGraphemes(theLine)
+        var i = 0
+        while (true) {
+            if (i >= expandedLine.length) {
+                break
+            }
+            if (i === 5000) {
+                alert("loop err")
+                break
+            }
+            // ab••••••y
+            var grapheme = expandedLine[i]
+            if (grapheme == "\t") {
+                // newExpandedIndex = expandedIndex + (tabStop - ((expandedIndex) % tabStop)) + 1   
+                newExpandedIndex = expandedIndex + (tabStop - ((expandedIndex) % tabStop))   
+                newActualStringIndex = actualStringIndex + 1
+            } else {
+                newExpandedIndex = expandedIndex + 1
+                newActualStringIndex = actualStringIndex + grapheme.length
+            }
+            if (newExpandedIndex > start) {
+                return actualStringIndex    
+            }
+            expandedIndex = newExpandedIndex
+            actualStringIndex = newActualStringIndex
+            i++
+        }
+    }
+    
     var lastTabPos = -1
     var netSpacesAdded = 0
-    
-    // if (useUnicode) {
-    //     theLine = splitter.splitGraphemes(theLine)
-    // }
+    var expandedLineLength = 0
     while (true) {
         tabPos = theLine.indexOf("\t", lastTabPos + 1)
         if (tabPos == -1) {
@@ -3191,10 +3283,6 @@ function unExpandTabIndex(theLine, start) {
         lastTabPos = tabPos
     }
     var adjustedStart = start - netSpacesAdded
-    // if (useUnicode) {
-    //     var graphemes = splitter.splitGraphemes(theLine.substr(adjustedStart))
-    //     adjustedStart -= (theLine.length - graphemes.length)
-    // }
     return adjustedStart
 }
 function u(start) {
@@ -3211,9 +3299,48 @@ function expandTabIndex(theLine, start) {
         var err = new Error()
         log(err.stack)
     }
-    theLine = theLine.substring(0, start)
-    var expandedLineLength = 0
+    
+    if (start == -1) {
+        start = theLine.length
+    } else {
+        theLine = theLine.slice(0, start)
+    }
     var tabStop = globalTabStop
+    
+    if (useUnicode) {
+        var actualStringIndex = 0
+        var expandedIndex = 0
+        var newActualStringIndex = 0
+        var newExpandedIndex = 0
+        expandedLine = splitter.splitGraphemes(theLine)
+        var i = 0
+        while (true) {
+            if (i >= expandedLine.length) {
+                break
+            }
+            if (i === 5000) {
+                alert("loop err")
+                break
+            }
+            // ab••y
+            var grapheme = expandedLine[i]
+            if (grapheme == "\t") {
+                newExpandedIndex = expandedIndex + (tabStop - ((expandedIndex) % tabStop))   
+                newActualStringIndex = actualStringIndex + 1
+            } else {
+                newExpandedIndex = expandedIndex + 1
+                newActualStringIndex = actualStringIndex + grapheme.length
+            }
+            expandedIndex = newExpandedIndex
+            actualStringIndex = newActualStringIndex
+            i++
+        }
+        return expandedIndex
+    }
+    
+    
+    
+    var expandedLineLength = 0
     var lastTabPos = -1
     var netSpacesAdded = 0
     while (true) {
@@ -3233,11 +3360,6 @@ function expandTabIndex(theLine, start) {
     // log({start, adjustedStart, theLine})
     // var e = new Error()
     // log(e.stack)
-    if (useUnicode) {
-        var graphemes = splitter.splitGraphemes(theLine)
-        var tmp = adjustedStart - (theLine.length - graphemes.length)
-        adjustedStart = tmp
-    }
     return adjustedStart
 }
 function handleFocusAfter() {
@@ -3442,6 +3564,7 @@ function handleKeydown(e) {
         var theLine = fx.lines[fx.cursorLineIndex]
 
         fx.lines.splice(fx.cursorLineIndex, 1)
+        
         fx.cursorLineIndex -= 1
         var prevLine = fx.lines[fx.cursorLineIndex]
         fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex] + theLine
@@ -3510,7 +3633,6 @@ function saveLine() {
     var secondLastTyped = theText.value[theText.selectionStart - 2] || ""
     var nextChar = theText.value[theText.selectionStart] || ""
     // fx.cursorColIndex = theText.selectionStart
-    log(`selStart: ${theText.selectionStart}, ${JSON.stringify(theText.value)}`)
     fx.cursorColIndex = expandTabIndex(theText.value, theText.selectionStart)
     
     
@@ -3871,6 +3993,7 @@ function render() {
             // theText.setSelectionRange(selStart, selEnd)
             setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
         }
+        // log("expanded:" + expandTabIndex(cursorLine, cursorLine.length))
     }
     
     
@@ -4110,7 +4233,7 @@ function renderInternal() {
                         // googled this
                         return (0.3 * r) + (.59 * g) + (.11 * b)
                     })
-                    log("looking up color " + theFillStyle + " "+ grayed)
+                    // log("looking up color " + theFillStyle + " "+ grayed)
                     if (grayed < 128) {
                         textFillStyle = "white"    
                     } else {
@@ -4145,18 +4268,21 @@ function renderInternal() {
         
         // expandedLine = [...expandedLine]
         if (useUnicode) {
+            // you could render inline here
             expandedLine = splitter.splitGraphemes(theLine)
             var i = 0
             while (true) {
                 i++
                 if (i === 500) {
                     alert("loop err")
+                    break
                 }
                 var tabPos = expandedLine.indexOf("\t", afterLastTabPos)
                 if (tabPos == -1) {
                     break
                 }
-                var numberOfSpaces = tabStop - ((tabPos+1) % tabStop)
+                var numberOfSpaces = tabStop - ((tabPos) % tabStop) -1
+                // log("tab at position: " + tabPos + ", num: " + numberOfSpaces)
                 // TODO: you can used cached repeated \t array
                 expandedLine.splice(tabPos, 0, ...("\t".repeat(numberOfSpaces).split("")))
                 afterLastTabPos = tabPos + numberOfSpaces + 1

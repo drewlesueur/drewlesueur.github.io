@@ -44,16 +44,52 @@ function linesFromString(str) {
         return new UString()
     })   
 }
+
+👩‍❤️‍👩👩‍❤️‍👩
 "\t"
 abc❤️	abcdefg	
-abcd	abcdefg	
+      unExpandTabIndex("abcd	abcdefg	", 4)
+4
+4
+      unExpandTabIndex("abcd	abcdefg	", 5)
+4
+4
+      unExpandTabIndex("abcd	abcdef	a", 6)
+4
+4
+      unExpandTabIndex("abcd	abcdef	a", 7)
+4
+4
+      unExpandTabIndex("abcd	abcdef	a", 8)
+5
+5
+      unExpandTabIndex("abcd	abcdef	a", 16)
+12
+12
+12
+      
+      unExpandTabIndex("abc👩‍❤️‍👩	abcde👩‍❤️‍👩	a", 16)
+"👩‍❤️‍👩".length
+8
+      unExpandTabIndex("abc👩‍❤️‍👩	abcdef
+12
+        expandTabIndex("abcd	abcdef	a", 5
+        expandTabIndex("abcd	abcdef	a", 5)
+8
+        expandTabIndex("abcd	abcdef	a", 6)
+9
+        expandTabIndex("abcd	abcdef	a", 12)
+16
+        expandTabIndex("abc👩‍❤️‍👩	abcdef	a", 12)
+7
 abc👩‍❤️‍👩	abcdefg	
+abcd 
 "\t"
-	
-abcdefgh
-❤️
-❤️❤️
-❤❤️️
+
+
+❤️	
+abcdefghijk
+❤️❤️❤️❤️❤️
 expandTabIndex2("❤❤️️", 2)
 expandTabIndex("❤️", 2)
 ❤️x✌️x
