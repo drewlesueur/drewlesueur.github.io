@@ -3189,7 +3189,27 @@ setTimeout(function() {
     eq(10, expandTabIndex("abca"+"a\t" + "ab", -1))
     eq(4, expandTabIndex("\t", -1))
     
+    eq(8, "👩‍❤️‍👩".length)
+    eq(8, splitter.splitGraphemes("👩‍❤️‍👩")[0].length)
+    eq(1, expandTabIndex("👩‍❤️‍👩", -1))    
+    eq(1, expandTabIndex("👩‍❤️‍👩", 8))
+    eq(4, expandTabIndex("👩‍❤️‍👩👩‍❤️‍👩👩‍❤️‍👩👩‍❤️‍👩", -1))
+    eq(8,   expandTabIndex("❤️❤️❤️❤️	", -1))
+    eq(8, expandTabIndex("👩‍❤️‍👩❤️👩‍❤️‍👩❤️\t", -1))
+    eq(4, expandTabIndex("a👩‍❤️‍👩c\t", -1))
+    eq(4, expandTabIndex("😎👩‍❤️‍👩\t", -1))
+    eq(8, expandTabIndex("a❤️\t" + "👩‍❤️‍👩👩‍❤️‍👩\t", -1))
+    eq(12, expandTabIndex("ab\t" + "ab\t" + "ab\t", -1))
+    eq(12, expandTabIndex("abc\t" + "👩‍❤️‍👩\t" + "ab\t", -1))
+    eq(10, expandTabIndex("abc\t" + "a\t" + "ab", -1))
+    eq(10, expandTabIndex("abca" + "\t" + "👩‍❤️‍👩b", -1))
+    eq(10, expandTabIndex("👩‍❤️‍👩👩‍❤️‍👩❤️❤️"+"a\t" + "ab", -1))
+    eq(4, expandTabIndex("\t", -1))
+    
+    
     eq(0, unExpandTabIndex("", 0))
+    eq(1, unExpandTabIndex("a", 1))
+    eq(2, unExpandTabIndex("ab", 2))
     eq(0, unExpandTabIndex("\t", 0))
     eq(0, unExpandTabIndex("\t", 1))
     eq(0, unExpandTabIndex("\t", 2))
@@ -3218,7 +3238,36 @@ setTimeout(function() {
     
     // abcd@•••_
     eq(4, unExpandTabIndex("abcd"+"a\t", 4))
-    // eq(999, -999)
+    
+    // ❤️ has length of 2
+    // 👩‍❤️‍👩 has length of 8
+    // 🌈 has length of 2
+    eq(8, unExpandTabIndex("👩‍❤️‍👩", 1))
+    eq(16, unExpandTabIndex("👩‍❤️‍👩👩‍❤️‍👩", 2))
+    eq(3, unExpandTabIndex("\t"+"❤️", 5))
+    eq(17, unExpandTabIndex("👩‍❤️‍👩\t"+"👩‍❤️‍👩", 5))
+    eq(7, unExpandTabIndex("❤️❤️\t"+"❤️", 5))
+    eq(8, unExpandTabIndex("❤️❤️\t"+"❤️\t", 8))
+    eq(7, unExpandTabIndex("❤️❤️\t"+"❤️\t", 7))
+    eq(7, unExpandTabIndex("🌈🌈\t"+"🌈\t", 6))
+    eq(7, unExpandTabIndex("🌈🌈\t"+"🌈\t", 5))
+    eq(5, unExpandTabIndex("🌈🌈\t"+"🌈\t", 4))
+    
+    // abcda•••@
+    eq(11, unExpandTabIndex("❤️❤️❤️❤️"+"❤️\t", 8))
+    
+    // abcda••@_
+    eq(10, unExpandTabIndex("❤️❤️❤️❤️"+"❤️\t", 7))
+    
+    // abcda•@•_
+    eq(10, unExpandTabIndex("❤️❤️❤️❤️"+"❤️\t", 6))
+    
+    // abcda@••_
+    eq(10, unExpandTabIndex("❤️❤️❤️❤️"+"❤️\t", 5))
+    
+    // abcd@•••_
+    eq(8, unExpandTabIndex("❤️❤️❤️❤️"+"❤️\t", 4))
+    eq(999, -999)
 }, 1)
 
 // go from graphical index to string index, at graphical index
@@ -3257,6 +3306,8 @@ function unExpandTabIndex(theLine, start) {
             actualStringIndex = newActualStringIndex
             i++
         }
+        
+        return newActualStringIndex
     }
     
     var lastTabPos = -1
