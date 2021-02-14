@@ -339,6 +339,7 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="fontScaleInput.value = 1.1; updateFontScale()">1.1</div>
     <div class=longButton onclick="fontScaleInput.value = 1.2; updateFontScale()">1.2</div>
     <div class=longButton onclick="fontScaleInput.value = 1.3; updateFontScale()">1.3</div>
+    <div class=longButton onclick="fontScaleInput.value = 2; updateFontScale()">2</div>
     <div class=longButton onclick="selectFont('Courier')">Courier</div>
     <div class=longButton onclick="selectFont('CourierThin')">Courier Thin</div>
     <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
@@ -1267,7 +1268,8 @@ function setFontVars() {
     fontHeight= currentFont.fontHeightPre * fontScale
     fontWidth= currentFont.fontWidthPre * fontScale
     fontCSS = (currentFont.fontSize * fontScale) + "px '"+currentFont.fontName+"', ui-monospace"
-    fontCSSEmoji = (currentFont.fontSize * fontScale / 2) + "px '"+currentFont.fontName+"', ui-monospace"
+    fontCSSEmoji = (currentFont.fontSize * fontScale * .6) + "px '"+currentFont.fontName+"', ui-monospace"
+    extraYEmoji = (currentFont.fontSize * fontScale * .6) / 2
 }
 
 
@@ -3091,6 +3093,16 @@ function closeTerminal() {
     //     return r.json()
     })
 }
+function stopServer() {
+   fetch(proxyPath + "/stop", {
+        cache: "no-cache",
+        method: "POST",
+        headers: {},
+        body: "",
+   }).then(r => {
+   }).catch(e => {
+   })
+}
 
 function trimPrefix(str, prefix) {
     if (str.startsWith(prefix)) {
@@ -3173,16 +3185,6 @@ function unExpandTabIndex(theLine, start) {
         lastTabPos = tabPos
     }
     return start - netSpacesAdded
-}
-function stopServer() {
-   fetch(proxyPath + "/stop", {
-        cache: "no-cache",
-        method: "POST",
-        headers: {},
-        body: "",
-   }).then(r => {
-   }).catch(e => {
-   })
 }
 function u(start) {
     var theLine = fx.lines[fx.cursorLineIndex] || ""
@@ -4116,6 +4118,7 @@ function renderInternal() {
         // one option is to draw the whole line in one go
         // likely more optimal, wouln't have to do the unicode stuff
         // but harder to know wrangle width of the font?
+        var extraY = 0
         for (var x=0; x < maxCols; x++) {
             var chr = expandedLine[x+fx.offsetX] || ""
             if (chr == "\t") {
@@ -4124,15 +4127,20 @@ function renderInternal() {
                     t.fillText("•", x*fontWidth, y*fontHeight)
                 }
             } else if (chr != "" && chr != " ") {
+                t.fillStyle = textFillStyle
+                
                 if (useUnicode) {
                     if (chr.length > 1) {
                         t.font = fontCSSEmoji
+                        extraY = extraYEmoji
                     } else {
                         t.font = fontCSS
+                        extraY = 0
                     }
+                    t.fillText(chr, x*fontWidth, y*fontHeight + extraY)
+                } else {
+                    t.fillText(chr, x*fontWidth, y*fontHeight)
                 }
-                t.fillStyle = textFillStyle
-                t.fillText(chr, x*fontWidth, y*fontHeight)
             }
         }
     }
