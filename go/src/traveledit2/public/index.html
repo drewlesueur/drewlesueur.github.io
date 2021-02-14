@@ -3267,7 +3267,7 @@ setTimeout(function() {
     
     // abcd@•••_
     eq(8, unExpandTabIndex("❤️❤️❤️❤️"+"❤️\t", 4))
-    eq(999, -999)
+    // eq(999, -999)
 }, 1)
 
 // go from graphical index to string index, at graphical index
@@ -4162,8 +4162,7 @@ function renderInternal() {
             }
         }
     }
-
-
+    
     t.font = fontCSS
     t.textBaseline = "top"
     var r = fx.selectedRegions[0]
@@ -4224,10 +4223,15 @@ function renderInternal() {
                 } else {
                     t.fillStyle = "yellow"
                 }
+                
+                // TODO: expanding the same line, we could come up with optimization for that
+                var startHighlightPos = expandTabIndex(theLine, pos)
+                var startFillHighlight = (startHighlightPos - fx.offsetX) * fontWidth
+                var highlightLength = (expandTabIndex(theLine, pos+matchLength)-startHighlightPos) * fontWidth
                 t.fillRect(
-                    (expandTabIndex(theLine, pos) - fx.offsetX) * fontWidth,
+                    startFillHighlight,
                     y * fontHeight,
-                    matchLength * fontWidth,
+                    highlightLength,
                     fontHeight
                 )
             }
