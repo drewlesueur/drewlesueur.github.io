@@ -3159,11 +3159,17 @@ function toggleSeeTabs() {
     shouldSeeTabs = !shouldSeeTabs
     render()    
 }
+
+// go from graphical index to string index, at graphical index
 function unExpandTabIndex(theLine, start) {
     var expandedLineLength = 0
     var tabStop = globalTabStop
     var lastTabPos = -1
     var netSpacesAdded = 0
+    
+    // if (useUnicode) {
+    //     theLine = splitter.splitGraphemes(theLine)
+    // }
     while (true) {
         tabPos = theLine.indexOf("\t", lastTabPos + 1)
         if (tabPos == -1) {
@@ -3184,12 +3190,19 @@ function unExpandTabIndex(theLine, start) {
         netSpacesAdded += numberOfSpaces - 1 // subtract 1 because of the actual tab
         lastTabPos = tabPos
     }
-    return start - netSpacesAdded
+    var adjustedStart = start - netSpacesAdded
+    // if (useUnicode) {
+    //     var graphemes = splitter.splitGraphemes(theLine.substr(adjustedStart))
+    //     adjustedStart -= (theLine.length - graphemes.length)
+    // }
+    return adjustedStart
 }
 function u(start) {
     var theLine = fx.lines[fx.cursorLineIndex] || ""
     return unExpandTabIndex(theLine, start)
 }
+
+// go from string index to graphical index, at string index
 function expandTabIndex(theLine, start) {
     theLine = theLine || ""
     if (!theLine.substring) {
@@ -3220,6 +3233,11 @@ function expandTabIndex(theLine, start) {
     // log({start, adjustedStart, theLine})
     // var e = new Error()
     // log(e.stack)
+    if (useUnicode) {
+        var graphemes = splitter.splitGraphemes(theLine)
+        var tmp = adjustedStart - (theLine.length - graphemes.length)
+        adjustedStart = tmp
+    }
     return adjustedStart
 }
 function handleFocusAfter() {
@@ -3487,11 +3505,15 @@ function saveLine() {
     dirtyInput = true
     lastAction = "type"
     acWord = null
+    // useUnicode you could fix this part up?
     var lastTyped = theText.value[theText.selectionStart - 1]
     var secondLastTyped = theText.value[theText.selectionStart - 2] || ""
     var nextChar = theText.value[theText.selectionStart] || ""
     // fx.cursorColIndex = theText.selectionStart
+    log(`selStart: ${theText.selectionStart}, ${JSON.stringify(theText.value)}`)
     fx.cursorColIndex = expandTabIndex(theText.value, theText.selectionStart)
+    
+    
     // Note: handle newline portion too.
 
     // doing for to be able to break
@@ -3767,9 +3789,18 @@ function render() {
     if (timeSinceRender < maxFrameRate) {
         if (!waitingRender) {
             waitingRender = true
+            var localInEdit = inEdit
             setTimeout(function () {
                 waitingRender = false
+                // doing this inEdit dance was important at least for
+                // starting to implement emojis
+                // I think it prevents setting the selectionRange to an incorrect index
+                // when the unExpandTabIndex didn't fully support emojis
+                // resulting in typing 2 red hearts turning into a black heart and a red heart
+                var oldInEdit = inEdit
+                inEdit = localInEdit
                 render()
+                inEdit = oldInEdit
             }, maxFrameRate - timeSinceRender)
         }
         return
@@ -3821,7 +3852,12 @@ function render() {
         saveButton.innerText = "run"
     }
     // marker aquamarine setting text
+    
     if (!inEdit) {
+        // TODO: an idea is to not do this in the render step at all
+        // but do it whenever we change cursorLineIndex or cursorColIndex
+        // maybe use a setter for that to manage it better
+        // this may be more efficient too.
         theText.value = cursorLine
         theTextBefore.value = fx.lines[fx.cursorLineIndex - 1] || ""
         theTextAfter.value = fx.lines[fx.cursorLineIndex + 1] || ""
@@ -3837,20 +3873,29 @@ function render() {
         }
     }
     
-    var timeSinceServerRender = Date.now() - lastServerRender
-    if (timeSinceServerRender < maxServerFrameRate) {
-        if (!waitingServerRender) {
-            waitingServerRender = true
-            setTimeout(function () {
-                waitingServerRender = false
-                render()
-            }, maxServerFrameRate - timeSinceServerRender)
-        }
-        return
-    }
-    lastServerRender = Date.now()
+    
     
     if (serverViewFeature) {
+        // this render bock was recently moved into the serverViewFeature conditional
+        var timeSinceServerRender = Date.now() - lastServerRender
+        if (timeSinceServerRender < maxServerFrameRate) {
+            if (!waitingServerRender) {
+                waitingServerRender = true
+                var localInEdit = inEdit
+                setTimeout(function () {
+                    waitingServerRender = false
+                    // TODO: isolate this so it only async does the server part!
+                    // it is going to possibly update things on the main text box
+                    var oldInEdit = inEdit
+                    inEdit = localInEdit
+                    render()
+                    inEdit = oldInEdit
+                }, maxServerFrameRate - timeSinceServerRender)
+            }
+            return
+        }
+        lastServerRender = Date.now()
+        
         // server rendering
         var oldOffsetX = fx.offsetX
         var oldMaxCols = maxCols
@@ -4097,24 +4142,40 @@ function renderInternal() {
         var expandedLine = ""
         var tabStop = globalTabStop
         var afterLastTabPos = 0
-        while (true) {
-            tabPos = theLine.indexOf("\t", afterLastTabPos)
-            if (tabPos == -1) {
-                expandedLine += theLine.substr(afterLastTabPos, theLine.length)
-                break
-            }
-            expandedLine += theLine.substring(afterLastTabPos, tabPos)
-            // now add the correct number of spaces, taking into account the tabStop
-            var numberOfSpaces = tabStop - (expandedLine.length % tabStop)
-            expandedLine += "\t".repeat(numberOfSpaces)
-            afterLastTabPos = tabPos + 1
-        }
-        
         
         // expandedLine = [...expandedLine]
         if (useUnicode) {
-            expandedLine = splitter.splitGraphemes(expandedLine)
+            expandedLine = splitter.splitGraphemes(theLine)
+            var i = 0
+            while (true) {
+                i++
+                if (i === 500) {
+                    alert("loop err")
+                }
+                var tabPos = expandedLine.indexOf("\t", afterLastTabPos)
+                if (tabPos == -1) {
+                    break
+                }
+                var numberOfSpaces = tabStop - ((tabPos+1) % tabStop)
+                // TODO: you can used cached repeated \t array
+                expandedLine.splice(tabPos, 0, ...("\t".repeat(numberOfSpaces).split("")))
+                afterLastTabPos = tabPos + numberOfSpaces + 1
+            }
+        } else {
+            while (true) {
+                tabPos = theLine.indexOf("\t", afterLastTabPos)
+                if (tabPos == -1) {
+                    expandedLine += theLine.substr(afterLastTabPos, theLine.length)
+                    break
+                }
+                expandedLine += theLine.substring(afterLastTabPos, tabPos)
+                // now add the correct number of spaces, taking into account the tabStop
+                var numberOfSpaces = tabStop - (expandedLine.length % tabStop)
+                expandedLine += "\t".repeat(numberOfSpaces)
+                afterLastTabPos = tabPos + 1
+            }
         }
+        
         // one option is to draw the whole line in one go
         // likely more optimal, wouln't have to do the unicode stuff
         // but harder to know wrangle width of the font?
@@ -4141,6 +4202,10 @@ function renderInternal() {
                 } else {
                     t.fillText(chr, x*fontWidth, y*fontHeight)
                 }
+            }
+            if (useUnicode) {
+                // revert back
+                t.font = fontCSS
             }
         }
     }

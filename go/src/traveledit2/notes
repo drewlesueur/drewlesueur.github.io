@@ -1,4 +1,4 @@
-
+look into inEdit conditon and selection changing getting called twice (on for local and one for server render)
 // plan a for unicode support.
 function UString(line) {
     this.rawString = line
@@ -44,12 +44,23 @@ function linesFromString(str) {
         return new UString()
     })   
 }
-
+"\t"
+abc❤️	abcdefg	
+abcd	abcdefg	
+abc👩‍❤️‍👩	abcdefg	
+"\t"
+	
+abcdefgh
+❤️
+❤️❤️
+❤❤️️
+expandTabIndex2("❤❤️️", 2)
+expandTabIndex("❤️", 2)
 ❤️x✌️x
 gray
 Love❤️
-
-
+abc👩‍❤️‍👩
+hi👩‍❤️‍👩
 👨‍👩‍👦‍👦hivn vnx
 "😎👩‍👩‍👧‍👧👨‍👩‍👦‍👦👩‍👩‍👦‍👦🧶".match(/./gu)
 23
