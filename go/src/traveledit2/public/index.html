@@ -4111,6 +4111,7 @@ function render() {
  
 var splitter = new GraphemeSplitter()   
 function renderInternal() {
+    var startRenderTime = Date.now()
     // the selected areas
     for (var i=0; i<fx.selectedRegions.length;i++) {
         // todo: normalize region start and stop
@@ -4401,6 +4402,11 @@ function renderInternal() {
     var xPos = (fx.cursorColIndex - fx.offsetX) * fontWidth
     t.fillRect(xPos, yPos, 4, fontHeight)
     cursorLine = fx.lines[fx.cursorLineIndex] || ""
+    
+    var duration = Date.now() - startRenderTime
+    // TODO: audit render for performance
+    // also, we are calling it too much, cut down on number of times we call it
+    // log("render: " + duration)
 }
 
 // simple cache for regexp so we don't need to recompile in render loop
