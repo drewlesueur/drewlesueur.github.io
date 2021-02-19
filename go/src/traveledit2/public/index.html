@@ -52,15 +52,14 @@
     color: white;
 }
 .light {
-    background-color: white;
-    color: black;
-}
-.light {
     background-color: lightyellow;
+    --background-color: white;
     color: black;
 }
 .text { border: none; color: cyan;
 }
+
+
 .toolbar {
     display: flex;
     flex-flow: row nowrap;
@@ -74,12 +73,36 @@
 .hidden {
    display: none;
 }
+
+body.dark .toolbar div {
+    background-color: black;
+    /* see renderDarkMode */
+    color: rgba(255, 255, 200);
+    border: 1px solid rgba(255, 255, 200);
+    --text-decoration: underline;
+}
+body.dark .toolbar div.selected {
+    background-color: gray;
+    color: black;
+    border: 1px solid black;
+}
+body.light .toolbar div {
+    --background-color: #077;
+    --color: white;
+    background-color: lightyellow;
+    color: black;
+    border: 1px solid black;
+}
+body.light .toolbar div.selected {
+    background-color: black;
+    color: rgba(255, 255, 200);
+    border: 1px solid rgba(255, 255, 200);
+}
+
+.toolbar div {
+    --border-radius: 17px;
+}
 .toolbar .square {
-    --font-family: 'Courier';
-    background-color: #077;
-    --background-color: black;
-    border: 0px solid cyan;
-    color: white;
     padding: 0px;
     width: 40px;
     height: 34px;
@@ -91,13 +114,8 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    border-radius: 0px;
 }
 .toolbar .longButton {
-    --font-family: 'Courier';
-    background-color: #077;
-    border: 0px solid cyan;
-    color: white;
     padding: 0px;
     --width: 80px;
     width: 60px;
@@ -334,6 +352,7 @@ ontouchstart=onStart(event)
     <div class=square onclick=reloadFile(fx)>reload</div>
 </div>
 <div class=toolbar>
+    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
     <div class=longButton onclick="fontScaleInput.value = 0.9; updateFontScale()">0.9</div>
     <div class=longButton onclick="fontScaleInput.value = 1.0; updateFontScale()">1.0</div>
     <div class=longButton onclick="fontScaleInput.value = 1.1; updateFontScale()">1.1</div>
@@ -344,7 +363,6 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="selectFont('CourierThin')">Courier Thin</div>
     <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
     <div class=longButton onclick="selectFont('SFMonoThin')">SF Thin</div>
-    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
     <div class=longButton onclick="selectFont('IosevkaThin')">Iosevka Thin</div>
     <div class=longButton onclick="selectFont('Iosevka')">Iosevka</div>
     <div class=longButton onclick="selectFont('IosevkaSlab')">Iosevka S</div>
@@ -1301,7 +1319,7 @@ function renderDarkMode() {
     document.body.classList.add("dark")
     updateClassForSelector("input", "light", "dark")
     updateClassForSelector("textarea", "light", "dark")
-    fontColor = "white"
+    // fontColor = "white"
     // fontColor = "rgba(100, 255, 100)"
     fontColor = "rgba(255, 255, 200)"
     lightFontColor = "rgba(255, 255, 255, 0.5)"
@@ -4031,9 +4049,18 @@ function render() {
         // but do it whenever we change cursorLineIndex or cursorColIndex
         // maybe use a setter for that to manage it better
         // this may be more efficient too.
-        theText.value = cursorLine
-        theTextBefore.value = fx.lines[fx.cursorLineIndex - 1] || ""
-        theTextAfter.value = fx.lines[fx.cursorLineIndex + 1] || ""
+        
+        if (fx.selectedRegions.length) {
+            theText.value = (fx.selectedRegions[0].stopY - fx.selectedRegions[0].startY + 1) + " lines selected"    
+        } else {
+            theText.value = cursorLine
+        }
+        
+        // I don't think we need to do this part
+        // theTextBefore.value = fx.lines[fx.cursorLineIndex - 1] || ""
+        // theTextAfter.value = fx.lines[fx.cursorLineIndex + 1] || ""
+        
+        
         // set the selection range back to what it was
         // if it needs to be changed, some functions will change it
         // after the call to render.
@@ -5684,7 +5711,8 @@ function renderFileDropdown() {
         }
         button.innerText = theName.substr(0, 15)
         if (fx == file) {
-            button.style.backgroundColor = "black"
+            button.classList.add("selected")
+            
         }
         fileRow.appendChild(button)
         
@@ -5860,6 +5888,9 @@ function setCurrentFile(file) {
 }
 
 function duplicateFile(f, cursorLineIndex) {
+    if (f.fileMode == "terminal") {
+        return
+    }
     var fc = JSON.parse(JSON.stringify(f))
     fc.fileToken = fileToken
     fc.uniqueID = getUniqueID()

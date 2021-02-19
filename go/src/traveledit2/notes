@@ -1,4 +1,42 @@
 
+
+seems like it's still updating cursorxy when getting stream from other terminal window.
+somehow mark last line edited
+
+allow to duplicate contents of terminal, just in a scratch document
+
+mobile code/text editors, ssh clients
+* blink
+* ish, a-shell, libTerm?
+* Dcoder
+* Prompt2
+* coda
+
+var a = "yo"
+a.bar = "hi"
+a.bar
+
+var b = new String("yo")
+b.bar = "hi"
+b.bar
+
+option to use websockets for terminal polling
+    * i am thinking you could still do the polling model though.
+    * that way we don't send data when it's not wanted.
+    
+bug with unicode support and auto-completing quotes
+    for example try typing
+        var a = "yo"
+    it shows up like
+        var a = yo"" 
+
+terminal - make dupl file so that it just opens a terminal in same working directory
+
+when selecting text show how many lines selected
+show cursor column.
+
+compare perf of unicode vs non unicode
+maybe you can not do any special handling if there are no tabs or no non-ascii chars
 Add different sessions like tmux
     * have a dropdown of the session name
     * save 
@@ -10,7 +48,9 @@ unicode support --
     unicode/emojis are supported! 👏👏👏
     possibly call .normalize() when comparing 
     how to add emoji/utf-8 support in terminal mode
- 
+    fix performance - make a wall of text and it's noticably slower
+    maybe you can use the same loop to combine into grapheme's as you do to render
+    maybe have a helper for when you need to expand and unexpand the same string.
 
 temporarily allow disable polling
 

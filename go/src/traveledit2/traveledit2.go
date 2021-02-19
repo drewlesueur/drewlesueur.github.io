@@ -11,7 +11,6 @@ import "os/exec"
 import "crypto/subtle"
 import "io/ioutil"
 import "io"
-import "bufio"
 import "encoding/json"
 import "encoding/base64"
 import "sync"
@@ -219,40 +218,6 @@ var terminalMu sync.Mutex
 var terminalSessions = map[int]*TerminalSession{}
 var terminalCond *sync.Cond
 
-
-
-// This is depredated
-// needs to be able to
-// ctrl+c
-// ctrl+d
-type ShellCommand struct {
-    // not breaking it into command and args
-    // because we don't parse the command,
-    // we run i thru bash -c
-    Command string        
-    CWD string
-    
-    ClientID int
-    
-    // the line index of where the client has loaded
-    // it's meant for simple streaming of output like tail.
-    // Maybe in the future we do a full terminal emulator
-    // tty, pty, Raw Mode? vt100?
-    ClientOutIndex int
-    ClientErrIndex int
-    
-    // This does not (yet?) understand terminal escape codes 
-    OutLines []string
-    ErrLines []string
-    
-    PID int
-    
-    // not specifying environment because
-    // it's not yet an interactive shell
-    // env vars will be the default plus whatever
-    // is in the command itself 
-}
-
 func main() {
 	serverAddress := flag.String("addr", "localhost:8000", "serverAddress to listen on")
 	indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
@@ -297,15 +262,9 @@ func main() {
 	// trying to use a single mutex for multiple shells? 
 	// TODO: serialize and de-serialize the state
 	
-	shellIndex := -1
-	var shellMu sync.Mutex
-	shellCond := sync.NewCond(&shellMu) 
-	shellCommands := map[int]*ShellCommand{}
-	
 	go func() {
 		for range time.NewTicker(1 * time.Second).C {
 			viewCond.Broadcast()
-			shellCond.Broadcast()
 			terminalCond.Broadcast()
 		}
 	}()
@@ -353,7 +312,7 @@ func main() {
 	})
 	
 	// Not using the websockets anymore
-	// but still cool to see the code
+	// but still cool to see the code, and we might add it back
 	// upgrader := websocket.Upgrader{
 	// 	CheckOrigin: func(r *http.Request) bool {
 	// 		return true
@@ -725,74 +684,6 @@ func main() {
 	    	delete(terminalSessions, ID)
 	    }
 	})
-	
-	// deprecated, see myterminalpoll
-	mux.HandleFunc("/mybashstream", func(w http.ResponseWriter, r *http.Request) {
-		cmdString := r.FormValue("cmd")
-		if cmdString == "" {
-			cmdString = ":"
-		}
-		cwd := r.FormValue("cwd") // current working directory
-		cmdString = "cd " + cwd + ";\n" + cmdString + ";\necho ''; pwd"
-		shellCommand := &ShellCommand{
-		    CWD: cwd,
-		    Command: cmdString,
-		}
-		
-		cmd := exec.Command("bash", "-c", cmdString)
-		stderr, err := cmd.StderrPipe()
-		if err != nil {
-			logAndErr(w, "getting stderr: %s: %v", cmdString, err) 
-			return
-		}
-		stdout, err := cmd.StdoutPipe()
-		if err != nil {
-			logAndErr(w, "getting stdout: %s: %v", cmdString, err) 
-			return
-		}
-		
-		shellMu.Lock()
-		shellIndex += 1
-		shellCommands[shellIndex] = shellCommand
-		shellMu.Unlock()
-		
-		err = cmd.Start()
-		if err != nil {
-			logAndErr(w, "starting command: %s: %v", cmdString, err) 
-			return
-		}
-		
-		
-		// Docs say: It is thus incorrect to call Wait before all reads from the pipe have completed.
-		// so we will read and then call wait
-		
-		// could have used channel
-		var wg sync.WaitGroup
-		go func() {
-		    reader := bufio.NewReader(stdout)
-		    wg.Add(1)
-		    for {
-		        line, err := reader.ReadString('\n')   
-		        _ = line
-		        if err != nil {
-		            break
-		        } 
-		    }
-		}()
-		
-		go func() {
-		   _ = stderr   
-		}()
-		
-		wg.Wait()
-		
-		err = cmd.Wait()
-		if err != nil {
-			logAndErr(w, "waiting for command: %s: %v", cmdString, err) 
-			return
-		}
-	})
-	
 	
 	mux.HandleFunc("/mybash", func(w http.ResponseWriter, r *http.Request) {
 		cmdString := r.FormValue("cmd")
