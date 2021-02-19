@@ -322,7 +322,7 @@ ontouchstart=onStart(event)
     
     <div id=saveButton class=square onclick=saveWrapper()>save</div>
     <div class=square onclick=seeFiles()>files</div>
-    <div class=square onclick=closeFile(0)>close</div>
+    <div class=square onclick=closeFile()>close</div>
 </div>
 <div class=toolbar>
     <div class=square ontouchstart="setCurrentFile(lastFile); event.preventDefault()">alt tab</div>
@@ -1364,7 +1364,22 @@ function closeFile() {
     if (fx.fileMode == "fileList") {
         var fileIndex = files.indexOf(treeFilesShadow[fx.cursorLineIndex])
         if (fileIndex != -1) {
-            files.splice(fileIndex, 1)
+            var fileToClose = files[fileIndex]
+            if (fileToClose.fileMode == "terminal") {
+                closeTerminal(fileToClose).then(() => {
+                    // try to get index again because it could have changed
+                    var indexToClose = files.indexOf(fileToClose)
+                    if (indexToClose != -1) {
+                        files.splice(indexToClose, 1)
+                    }
+                    fx.lines = getLinesForFileList()
+                    render()
+                    renderFileDropdown()
+                    renderURL()
+                }).catch(e => alert(e))
+            } else {
+                files.splice(fileIndex, 1)
+            }  
         }
         fx.lines = getLinesForFileList()
     } else if (fx.fileMode == "terminal") {
@@ -1375,6 +1390,9 @@ function closeFile() {
                 files.splice(indexToClose, 1)
                 selectFileIndex(indexToClose-1 < 0 ? 0: indexToClose-1)
             }
+            render()
+            renderFileDropdown()
+            renderURL()
         }).catch(e => alert(e))
     } else {
         var indexToClose = files.indexOf(fx)
@@ -3101,11 +3119,14 @@ function openTerminal() {
         alert("There was an error running the command: " + e)
     })
 }
-function closeTerminal() {
-    if (fx.fileMode != "terminal") {
+function closeTerminal(theFile) {
+    if (!theFile) {
+        theFile = fx
+    }
+    if (theFile.fileMode != "terminal") {
         return
     }
-    return fetch(proxyPath + "/myterminalclose?id=" + fx.ID, {
+    return fetch(proxyPath + "/myterminalclose?id=" + theFile.ID, {
         cache: "no-cache"
     // }).then(r => {
     //     return r.json()

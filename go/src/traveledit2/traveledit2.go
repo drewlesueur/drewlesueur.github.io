@@ -627,6 +627,11 @@ func main() {
 	    	    }
     	        terminalMu.Lock()
     	        terminalSession.ReadBuffer = append(terminalSession.ReadBuffer, b[0:n]...)
+    	        
+    	        // little protection from runaway
+    	        if len(terminalSession.ReadBuffer) > 5000000 {
+    	            terminalSession.ReadBuffer = nil    
+    	        }
     	        log.Printf("<==========")
     	        log.Printf("%s", string(terminalSession.ReadBuffer))
     	        log.Printf("==========>")
