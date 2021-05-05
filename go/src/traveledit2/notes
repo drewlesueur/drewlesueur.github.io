@@ -1,4 +1,5 @@
 
+mixed tabs and spaces bugs out when indenting.
 
 seems like it's still updating cursorxy when getting stream from other terminal window.
 somehow mark last line edited
