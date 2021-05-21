@@ -413,8 +413,12 @@ ontouchstart=onStart(event)
     allow polling
 </label>
 <label for=useUnicodeCheckbox>
-    <input onchange="useUnicode = useUnicodeCheckbox.checked" type=checkbox name=useUnicodeCheckbox id=useUnicodeCheckbox checked />
+    <input onchange="useUnicode = useUnicodeCheckbox.checked" type=checkbox name=useUnicodeCheckbox id=useUnicodeCheckbox />
     use unicode
+</label>
+<label for=agressiveRenderCheckbox>
+    <input onchange="agressiveRender = agressiveRenderCheckbox.checked" type=checkbox name=agressiveRenderCheckbox id=agressiveRenderCheckbox />
+    agressive render
 </label>
 <label for=saveDiffsCheckbox>
     <input onchange="saveDiffs = saveDiffsCheckbox.checked" type=checkbox name=saveDiffsCheckbox id=saveDiffsCheckbox checked />
@@ -497,7 +501,8 @@ var lastWord = ""
 var lastCleared = ""
 var fontScale = 1.2
 fontScaleInput.value = fontScale
-var useUnicode = true
+var useUnicode = false
+var agressiveRender = false
 
 
 var fonts = {
@@ -1560,6 +1565,7 @@ function docChanged(preventUndo) {
         saveUndo(preventUndo)
         // log("u1: " + (Date.now() - start))
     }
+    renderSaves()
 }
 function saveUndo(preventUndo) {
     // 3 ways of doing undo
@@ -2783,8 +2789,8 @@ function insertLine(closeCurly, oMode) {
     updateCursorXY()
     ensureCursorInScreen()
     docChanged()
-
     render()
+    renderTheText(fx.lines[fx.cursorLineIndex])
 }
 function uploadFile(e) {
     e.preventDefault()
@@ -3210,6 +3216,7 @@ function eq(a, b, message) {
 
 
 setTimeout(function() {
+    return
     // useUnicode = false
     eq(0, expandTabIndex("", 0))    
     eq(0, expandTabIndex("", -1))    
@@ -3507,6 +3514,7 @@ function handleBlur() {
     setCanvasHeightAccordingly()
     render()
     window.scrollTo(0, lastPageYOffset)
+    renderTheText("")
 
 }
 function handleSearchFocusBefore() {
@@ -3567,6 +3575,7 @@ function save() {
                 fx.savingVersion = -1
                 render()
                 renderFileDropdown()
+                renderSaves()
                 return
             }
             fetchPromise = fetch(fx.fullPath, {
@@ -3596,6 +3605,7 @@ function save() {
             }
             render()
             renderFileDropdown()
+            renderSaves()
         })
         .catch(e => alert(e))
         render()
@@ -3606,6 +3616,7 @@ function save() {
     }
 
     renderFileDropdown()
+    renderSaves()
 }
 if (autoSave) {
     setTimeout(save, saveEveryMS)
@@ -3747,13 +3758,14 @@ function saveLine() {
             if (mainClosers.indexOf(lastTyped) != -1 && nextChar != "" && nextChar != " " && nextChar != "," && mainClosersEnd.indexOf(nextChar) == -1) {
                 break
             }
-            theText.value =
+            // theText.value =
+            renderTheText(
                 theText.value.slice(0, theText.selectionStart) +
                 closingMap[lastTyped] +
                 theText.value.slice(theText.selectionStart)
-                //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-                setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-            // closing line for formatter
+            )
+            //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+            setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
         }
     }
     updateLine(-1, theText.value)
@@ -3980,11 +3992,10 @@ var renderURLTimeout
 var waitingRender = false
 var lastRender = 0
 var maxFrameRate = 16
-
+var maxFrameRate = 0
 var waitingServerRender = false
 var lastServerRender = 0
 var maxServerFrameRate = 100
-
 function render() {
     if (preventRender) {
         return
@@ -4019,14 +4030,10 @@ function render() {
     }
     lastRender = Date.now()
     
-    c.width = c.width // one way to clear
 
-    var selStart = theText.selectionStart
-    var selEnd = theText.selectionEnd
     // var start = Date.now()
     renderInternal()
     // log("r1: " + (Date.now() - start))
-    
     if (inDebugView) {
         s.innerHTML =
             lastWord + " " +
@@ -4045,24 +4052,26 @@ function render() {
         // theStatus.acWord = acWord
         statusEl.innerText = JSON.stringify(theStatus, null, "    ")
     }
-    if (fx.fileMode == "file")   {
-        if (fx.savingVersion != -1) {
-            saveButton.style.backgroundColor = "gray"
-            saveButton.innerText = "saving"
-        } else if (fx.version == fx.savedVersion) {
-            saveButton.style.backgroundColor = ""
-            saveButton.innerText = "saved"
-        } else {
-            saveButton.style.backgroundColor = "red"
-            saveButton.innerText = "save"
-        }
-    } else if (fx.fileMode == "bash") {
-        // TODO: consider not setting this every render
-        saveButton.innerText = "run"
-    } else if (fx.fileMode == "terminal") {
-        // TODO: consider not setting this every render
-        saveButton.innerText = "run"
-    }
+    // this is commented out because of iphone 12 mini slowness
+    // see renderSaves()
+    // if (fx.fileMode == "file")   {
+    //     if (fx.savingVersion != -1) {
+    //         saveButton.style.backgroundColor = "gray"
+    //         saveButton.innerText = "saving"
+    //     } else if (fx.version == fx.savedVersion) {
+    //         saveButton.style.backgroundColor = ""
+    //         saveButton.innerText = "saved"
+    //     } else {
+    //         saveButton.style.backgroundColor = "red"
+    //         saveButton.innerText = "save"
+    //     }
+    // } else if (fx.fileMode == "bash") {
+    //     // TODO: consider not setting this every render
+    //     saveButton.innerText = "run"
+    // } else if (fx.fileMode == "terminal") {
+    //     // TODO: consider not setting this every render
+    //     saveButton.innerText = "run"
+    // }
     // marker aquamarine setting text
     
     if (!inEdit) {
@@ -4072,9 +4081,17 @@ function render() {
         // this may be more efficient too.
         
         if (fx.selectedRegions.length) {
-            theText.value = (fx.selectedRegions[0].stopY - fx.selectedRegions[0].startY + 1) + " lines selected"    
+            // theText.value = (fx.selectedRegions[0].stopY - fx.selectedRegions[0].startY + 1) + " lines selected"    
+            if (agressiveRender || (touchCount == 0)) {
+                renderTheText((fx.selectedRegions[0].stopY - fx.selectedRegions[0].startY + 1) + " lines selected")
+            }
         } else {
-            theText.value = cursorLine
+            // TODO: this if statement only needed on iphone 12 mini!!! ???
+            // TODO: check other iphone 12s
+            // theText.value = cursorLine
+	    	if (agressiveRender || (touchCount == 0 && document.activeElement == theText)) {
+                renderTheText(cursorLine)
+            }
         }
         
         // I don't think we need to do this part
@@ -4086,10 +4103,9 @@ function render() {
         // if it needs to be changed, some functions will change it
         // after the call to render.
         // TODO: have a state variable for what it should be.
+        // if this is not here then after tap to erase we loose cursor pos
+        // we can maybe come up with a way around it
         if (document.activeElement == theText) {
-            // this one we don't want to call setSelectionRangeForText
-            // because the arguments are not from cursorColIndex
-            // theText.setSelectionRange(selStart, selEnd)
             setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
         }
         // log("expanded:" + expandTabIndex(cursorLine, cursorLine.length))
@@ -4156,10 +4172,53 @@ function render() {
         sendViewToServer()
     }
 }
+
+// this is a workaround for iphone 12 mini issue where dom is slow
+// and we can't blindly update it in the render loop
+// TODO: you can make bash and terminal faster too. 
+var renderedSaveRed = false
+function renderSaves() {
+    if (fx.fileMode == "file")   {
+        if (fx.savingVersion != -1) {
+            saveButton.style.backgroundColor = "gray"
+            saveButton.innerText = "saving"
+            renpderedSaveRed = false
+        } else if (fx.version == fx.savedVersion) {
+            saveButton.style.backgroundColor = ""
+            saveButton.innerText = "saved"
+            renderedSaveRed = false
+        } else if (!renderedSaveRed) {
+            saveButton.style.backgroundColor = "red"
+            saveButton.innerText = "save"
+            renderedSaveRed = true
+        }
+    } else if (fx.fileMode == "bash") {
+        // TODO: consider not setting this every render
+        saveButton.innerText = "run"
+    } else if (fx.fileMode == "terminal") {
+        // TODO: consider not setting this every render
+        saveButton.innerText = "run"
+    }
+}
+
+var theTextValue = ""
+function renderTheText(v) {
+    // TODO: why when i uncomment the if
+    // and i type and hit enter it duplicates the line?
+    // if (v != theTextValue) {
+        theText.value = v
+        theTextValue = v
+    // }
+}
  
-var splitter = new GraphemeSplitter()   
+var splitter = new GraphemeSplitter()
+
+var renderDuration = 0
+var renderCount = 0   
+var rendersInLastSecond = 0
 function renderInternal() {
     var startRenderTime = Date.now()
+    c.width = c.width // one way to clear
     // the selected areas
     for (var i=0; i<fx.selectedRegions.length;i++) {
         // todo: normalize region start and stop
@@ -4445,7 +4504,11 @@ function renderInternal() {
     t.fillRect(cursorX, cursorY, 4, fontHeight)
 
     // cursor
-    t.fillStyle = "orange"
+    if (touchCount == 0) {
+        t.fillStyle = "orange"
+    } else {
+        t.fillStyle = "green"
+    }
     var yPos = (fx.cursorLineIndex - fx.offsetY) * fontHeight
     var xPos = (fx.cursorColIndex - fx.offsetX) * fontWidth
     t.fillRect(xPos, yPos, 4, fontHeight)
@@ -4454,8 +4517,23 @@ function renderInternal() {
     var duration = Date.now() - startRenderTime
     // TODO: audit render for performance
     // also, we are calling it too much, cut down on number of times we call it
-    // log("render: " + duration)
+    
+    renderCount += 1
+    renderDuration += duration
+    rendersInLastSecond += 1
+    if (renderCount == 50) {
+        log("render avg: " + Math.round(renderDuration/renderCount))
+        renderCount = 0
+        renderDuration = 0
+    }
 }
+
+setInterval(function() {
+    if (rendersInLastSecond > 0) {
+        log("rendersInLastSecond: " + rendersInLastSecond)
+    }
+    rendersInLastSecond = 0
+}, 1000)
 
 // simple cache for regexp so we don't need to recompile in render loop
 // also so I don't have to keep track of whenever searchText.value is set (although maybe consider doing it that way in another pass) 
@@ -4550,7 +4628,9 @@ function moveHomeEndAction() {
    render()
 }
 
+var touchCount = 0
 function onStart(e) {
+    touchCount += 1
     e.preventDefault()
     // this handles all the touch interactions
     // first define the closuure functions
@@ -4686,6 +4766,7 @@ function onStart(e) {
         return false
     }
     var onEnd = function(e) {
+        touchCount -= 1
         clearTimeout(selectTimeout)
         if (e.touches.length != 0) {
             return
@@ -4850,6 +4931,7 @@ function onStart(e) {
         moveListenerCount = max(moveListenerCount-1, 0)
     }
     var onEndWhileSelected = function(e) {
+        touchCount -= 1
         if (!moved && fx.selectedRegions.length) {
             fx.selectedRegions = []
         }
@@ -4861,6 +4943,7 @@ function onStart(e) {
     }
     
     var onEndForEdges = function(e) {
+        touchCount -= 1
         document.body.removeEventListener("touchend", onEndForEdges)
         clearTimeout(moveHomeEndTimeout)
         render()
