@@ -1,6 +1,11 @@
 <!doctype html>
+<html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
+<meta name="apple-mobile-web-app-title" content="Editor">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="hidden">
+
 <meta charset='utf-8'>
 <!-- TODO: make this work with path proxy ok?3 -->
 <script src="/tepublic/diff.js"></script>
@@ -261,7 +266,8 @@ the with attribute, and same for height.
 See canvasHeightFull
 -->
 
-<canvas id=c width=1125 height=1470
+<!-- <canvas id=c width=1125 height=1470 -->
+<canvas id=c width=1125 height=1520
 style="width: 375px; height:10px;
 display: block;"
 ontouchstart=onStart(event)
@@ -407,6 +413,7 @@ ontouchstart=onStart(event)
 </div>
 <div class=toolbar>
     <div class=square onclick="window.open(location.href)">dup tab</div>
+    <div class=square onclick="location.reload()">refresh</div>
 </div>
 <label for=allowPollingCheckbox>
     <input onchange="allowPolling = allowPollingCheckbox.checked" type=checkbox name=allowPollingCheckbox id=allowPollingCheckbox checked />
@@ -1515,6 +1522,11 @@ function normalizeFullPath(fullPath) {
 }
 
 function renderURL() {
+    return
+    renderURLForReal()
+}
+
+function renderURLForReal() {
     if (preventRender) {
         return
     }
@@ -2801,7 +2813,7 @@ function uploadFile(e) {
     fetch(proxyPath + '/myuploadfiles', {
         method: "POST", body: formData
     }).then(() => {
-        
+        alert("done uploading")
     }).catch(e => {
         alert("error uploading files:" + e)
     })
@@ -4528,7 +4540,7 @@ function renderInternal() {
     }
 }
 
-setInterval(function() {
+false && setInterval(function() {
     if (rendersInLastSecond > 0) {
         log("rendersInLastSecond: " + rendersInLastSecond)
     }
@@ -6194,3 +6206,5 @@ renderDarkMode()
 // todo: in select mode, swipe down is paste. even paste over
 </script>
 // I turned off "Predictive" to get more vertical space
+</body>
+</html>

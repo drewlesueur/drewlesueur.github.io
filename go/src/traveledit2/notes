@@ -133,7 +133,7 @@ arrow over
 After talking with Kyle
 - short swipe up: cut (copy/delete)
 - long swipe up: keep it deleted, but undo the cut 
-  - short swipe down: copy
+- short swipe down: copy
 - long swipe down: undo the copy (essentially unselect)  
 
 - get rid of the "mini clipboard"
