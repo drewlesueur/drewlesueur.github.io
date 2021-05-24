@@ -900,6 +900,7 @@ func main() {
 				}
 				if _, ok := allowedIPsMap[ipParts[0]]; !ok {
 					log.Printf("unalowed ip: %s", ipParts[0])
+					fmt.Fprintf(w, "%s", ipParts[0])
 					return
 				}
 			}
