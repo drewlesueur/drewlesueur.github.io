@@ -414,6 +414,7 @@ ontouchstart=onStart(event)
 <div class=toolbar>
     <div class=square onclick="window.open(location.href)">dup tab</div>
     <div class=square onclick="location.reload()">refresh</div>
+    <!--<div class=square onclick="location.href = urlForRefreash">refresh</div>-->
 </div>
 <label for=allowPollingCheckbox>
     <input onchange="allowPolling = allowPollingCheckbox.checked" type=checkbox name=allowPollingCheckbox id=allowPollingCheckbox checked />
@@ -1521,12 +1522,8 @@ function normalizeFullPath(fullPath) {
     return newFullPath
 }
 
+var urlForRefreash = location.href
 function renderURL() {
-    return
-    renderURLForReal()
-}
-
-function renderURLForReal() {
     if (preventRender) {
         return
     }
@@ -1544,6 +1541,7 @@ function renderURLForReal() {
     }).join(",")
     theNewPath += "?dark=" + (isDark ? "1" : "0") 
     history.replaceState({}, "", theNewPath)
+    // urlForRefreash = theNewPath
 }
 
 function doEval() {
