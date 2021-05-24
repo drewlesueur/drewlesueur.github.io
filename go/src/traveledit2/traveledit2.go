@@ -223,20 +223,20 @@ type Workspace struct {
     Name string
     DarkMode bool
 }
-func (w *Workspace) GetFile(id) (*File, bool) {
-    for _, f = range w.Files {
+func (w *Workspace) GetFile(id int) (*File, bool) {
+    for _, f := range w.Files {
         if id == f.ID {
             return f, true
         }     
     }
     return nil, false    
 }
-func (w *Workspace) RemoveFile(id) () {
-    for i, f = range w.Files {
+func (w *Workspace) RemoveFile(id int) () {
+    for i, f := range w.Files {
         if id == f.ID {
             // w.Files = append(w.Files[0:i], w.Files[i+1:]...)
             // https://github.com/golang/go/wiki/SliceTricks
-            w.Files = copy(w.Files[i:], w.Files[i+1:])
+            copy(w.Files[i:], w.Files[i+1:])
             w.Files[len(w.Files)-1] = nil
             w.Files = w.Files[0:len(w.Files)-1]
             // I think even with the copy it won't shrink the original array size
@@ -558,7 +558,7 @@ func main() {
 	    workspaceMu.Lock()    
 	    defer workspaceMu.Unlock()
 	    ret := []map[string]interface{}{}
-	    for id, f := range workspace.Files {
+	    for _, f := range workspace.Files {
 	        ret = append(ret, map[string]interface{}{
 	            "ID": f.ID,
 	            "Name": f.Name,
@@ -645,7 +645,7 @@ func main() {
 			f.Close()
 			return
 	    }
-	    f := &File{
+	    file := &File{
 	        Type: "terminal",
 	        // FullPath: "(terminal)/???",
 	        Cmd: cmd,
@@ -653,7 +653,7 @@ func main() {
 	        Pty: f,       
 	    }
 	    workspaceMu.Lock()
-	    workspace.Files = append(workspace.Files, f)
+	    workspace.Files = append(workspace.Files, file)
 	    workspaceMu.Unlock()
 	    
 	    // in a go func, continually read from the pty and write to buffer
@@ -662,13 +662,13 @@ func main() {
                 log.Println("a loop!")
                 // TODO: reuse buffer?
                 b := make([]byte, 1024)
-	    	    n, err := f.Pty.Read(b)
+	    	    n, err := file.Pty.Read(b)
 	    	    // if err != nil && err != io.EOF {
 	    	    if err != nil {
 	    	        workspaceMu.Lock()
 	    	        log.Printf("error reading terminal: %v", err) // could be just EOF
-	    	        f.Close()
-	    	        f.Closed = true
+	    	        file.Pty.Close()
+	    	        file.Closed = true
 	    	        workspaceCond.Broadcast()
 	    	        workspaceMu.Unlock()
 	    	        break
@@ -677,14 +677,14 @@ func main() {
 	    	        continue
 	    	    }
     	        workspaceMu.Lock()
-    	        f.ReadBuffer = append(f.ReadBuffer, b[0:n]...)
+    	        file.ReadBuffer = append(file.ReadBuffer, b[0:n]...)
     	        
     	        // little protection from runaway
-    	        if len(f.ReadBuffer) > 5000000 {
-    	            f.ReadBuffer = nil    
+    	        if len(file.ReadBuffer) > 5000000 {
+    	            file.ReadBuffer = nil    
     	        }
     	        log.Printf("<==========")
-    	        log.Printf("%s", string(f.ReadBuffer))
+    	        log.Printf("%s", string(file.ReadBuffer))
     	        log.Printf("==========>")
     	        workspaceCond.Broadcast()
     	        workspaceMu.Unlock()
@@ -741,7 +741,7 @@ func main() {
 	    	
 	    	if t.Type == "shell" {
 	    	    workspace.RemoveFile(ID)
-	    	    err := t.Cmd.Close()
+	    	    err := t.Cmd.Process.Kill()
 	    		if err != nil {
 					logAndErr(w, "closing pty: %d: %v", ID, err) 
 					return
@@ -749,7 +749,7 @@ func main() {
 	    	    return
 	    	}
 	    	
-	    	# TODO remotefile
+	    	// TODO remotefile
 	    	
 	    	workspace.RemoveFile(ID)
 	    	err := t.Pty.Close()
@@ -765,7 +765,7 @@ func main() {
 	mux.HandleFunc("/mybash", func(w http.ResponseWriter, r *http.Request) {
 		workspaceMu.Lock()
 		
-		id := r.FormValue("id")
+		ID, _ := strconv.Atoi(r.FormValue("id"))
 		cmdString := r.FormValue("cmd")
 		if cmdString == "" {
 			cmdString = ":"
@@ -777,20 +777,27 @@ func main() {
 
 		log.Printf("the command we want is: %s", cmdString)
 		cmd := exec.Command("bash", "-c", cmdString)
-		if id == "" {
+		var f *File
+		if ID == 0 {
 		    lastFileID++
 	    	f := &File{
 	    	    Type: "shell",
 	    	    // FullPath: "(shell)/???",
 	    	    ID: lastFileID,
-	    	    Pty: f,       
 	    	}
 	    	workspace.Files = append(workspace.Files, f)
+		} else if t, ok := workspace.GetFile(ID); ok {
+		    f = t   
+		} else {
+			workspaceMu.Unlock()
+			logAndErr(w, "no bash session found: %d", ID) 
+			return
 		}
 		
+		// curious this case?
 		if f.Cmd != nil && f.Cmd.Process != nil {
 		    // close the last process if there is one
-		    f.Cmd.Process.Close()
+		    f.Cmd.Process.Kill()
 		}
 		f.Cmd = cmd
 		workspaceMu.Unlock()
@@ -801,7 +808,7 @@ func main() {
 			return
 		}
 		
-		lines := strings.Split(string(r), "\n")
+		lines := strings.Split(string(ret), "\n")
 		if len(lines) >= 2 {
 			workspaceMu.Lock()
 			f.CWD = lines[len(lines)-2]
@@ -824,17 +831,18 @@ func main() {
 			return
 		}
 		htmlString := string(b)
-		contentString := string(c)
-		contentLines := strings.Split(contentString, "\n")
-		contentLinesJSON, err := json.MarshalIndent(contentLines, "", " ")
-		contentLinesJSONString := string(contentLinesJSON)
+		// contentString := string(c)
+		// contentLines := strings.Split(contentString, "\n")
+		// contentLinesJSON, err := json.MarshalIndent(contentLines, "", " ")
+		// contentLinesJSONString := string(contentLinesJSON)
 
-		if isDir {
-			htmlString = strings.Replace(htmlString, "// FILEMODE DIRECTORY GOES HERE", "fileMode = \"directory\"", 1)
-		} else {
-			htmlString = strings.Replace(htmlString, "// FIRSTFILEMD5 GOES HERE", `var firstFileMD5 = "`+md5String+`"`, 1)
-		}
-		htmlString = strings.Replace(htmlString, "// ROOTLOCATION GOES HERE", "var rootLocation = \""+*location+"\"", 1)
+		// if isDir {
+		// 	htmlString = strings.Replace(htmlString, "// FILEMODE DIRECTORY GOES HERE", "fileMode = \"directory\"", 1)
+		// } else {
+		// 	htmlString = strings.Replace(htmlString, "// FIRSTFILEMD5 GOES HERE", `var firstFileMD5 = "`+md5String+`"`, 1)
+		// }
+		// htmlString = strings.Replace(htmlString, "// ROOTLOCATION GOES HERE", "var rootLocation = \""+*location+"\"", 1)
+		
 		if *proxyPath != "" {
 			replaceProxyPath := "var proxyPath = \"" + *proxyPath + "\""
 			htmlString = strings.Replace(htmlString, "// PROXYPATH GOES HERE", replaceProxyPath, 1)
@@ -842,7 +850,7 @@ func main() {
 		}
 
 		// This content lines has to be the last one.
-		htmlString = strings.Replace(htmlString, "// LINES GO HERE", "var lines = "+contentLinesJSONString, 1)
+		// htmlString = strings.Replace(htmlString, "// LINES GO HERE", "var lines = "+contentLinesJSONString, 1)
 		
 		// TODO: when bash mode is disabled, don't do this part.
 		log.Printf("yea I set rootLocation to be: %s", *location)
@@ -851,7 +859,7 @@ func main() {
 		}
 		
 		// save the file to list of files
-		addFile(r, isDir, fullPath)
+		// addFile(r, isDir, fullPath)
 		ioutil.WriteFile("tmp", []byte(htmlString), 0777)
 		fmt.Fprintf(w, "%s", htmlString)
 	})
