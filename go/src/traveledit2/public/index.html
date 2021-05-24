@@ -449,6 +449,9 @@ ontouchstart=onStart(event)
 <div>
     Term name: <input id=fileNameInput onchange="saveTerminalName(this.value)">
 </div>
+<div>
+    Workspace name: <input id=fileNameInput onchange="saveTerminalName(this.value)">
+</div>
 <!--
 <iframe width="100%" height=400 src="/te/screenshare"></iframe>
 -->
@@ -3590,14 +3593,14 @@ function save() {
                 renderSaves()
                 return
             }
-            fetchPromise = fetch(fx.fullPath, {
+            fetchPromise = fetch(proxyPath + "/saveload?f=" + encodeURIComponent(fx.fullPath), {
                 method: "POST",
                 cache: "no-cache",
                 headers: { "Content-Type": "application/x-www-form-urlencoded"},
                 body: "oldmd5="+fx.undo.lastSavedHash+"&newmd5="+toSaveHash+"&diff=" + encodeURIComponent(theDiff)
             })
         } else {
-            fetchPromise = fetch(fx.fullPath, {
+            fetchPromise = fetch(proxyPath + "/saveload?f=" + encodeURIComponent(fx.fullPath), {
                 method: "POST",
                 cache: "no-cache",
                 headers: { "Content-Type": "application/x-www-form-urlencoded"},
@@ -5735,7 +5738,7 @@ function addFileToList(file) {
     }
     renderFileDropdown()
 }
-function addFile(fullPath, preventSelect) {
+function addFile(fullPath, preventSelect, id) {
     fullPath = normalizeFullPath(fullPath)
     if (fullPath == "") {
         return
@@ -6029,7 +6032,7 @@ function fetchFile(fullPath, file) {
     var isDir = false
     var md5String = ""
     fullPath = normalizeFullPath(fullPath)
-    return fetch((fullPath) + "?raw=1", {
+    return fetch(proxyPath + "/saveload?fullpath=" + encodeURIComponent(fullPath) + "&raw=1", {
         cache: "no-cache"
     }).then(r => {
         if (r.headers.get("X-Is-Dir") == "1") {
@@ -6168,36 +6171,33 @@ for (var i=ajaxLoadStartIndex; i<paths.length; i++) {
 setCurrentFile(files[0])
 
 // add exising terminals
-fetch(proxyPath + "/myterminals", {
+// TODO: you should hydrate this in the first pageload.
+// and maybe at least hydrate the first file.
+fetch(proxyPath + "/myfiles", {
     cache: "no-cache"
 }).then(r => {
     return r.json()
 }).then(r => {
-    for (var id in r) {
-        var existingTerminal = files.find(f => f.ID == r[id].ID)
-        if (!existingTerminal) {
+    for (var serverFile in r) {
+        addFile(serverFile.FullPath, false, serverFile.ID)
             // if we didn't already add it     
             addExistingTerminalTab(r[id].ID, r[id].Name)
-        } else {
-            existingTerminal.name = r[id].Name     
-            renderURL()
-            renderFileDropdown()
-        }
+    
+        initialFileAdding = false
+        preventRender = false
+        render()
+        renderDarkMode()
     }
 }).catch(e => {
     alert("error loading terminals: " + e)
 })
 
-initialFileAdding = false
 
 var ust = new URLSearchParams(window.location.search)
 if (ust.has("dark")) {
     isDark = ust.get("dark") == "1"
 }
 
-preventRender = false
-render()
-renderDarkMode()
 
 
 // make sure when selecting in the margin

@@ -198,25 +198,68 @@ func parseFirstNumber(s string) int {
 
 // Will these die when the server restarts?
 // I think not.
-type TerminalSession struct{
+type File struct{
+    ID int
+    Type string // terminal, file, directory, remotefile, shell(semi interactive)
+    FullPath string
+    
+    // fields for remotefile
+    LocalTmpPath string // temorary file
+    Remote string // like user@host
+    
+    // fields for shell
+    CWD string
+    
+    // fields for terminal
     Cmd *exec.Cmd
     Pty *os.File
-    ID int
     ReadBuffer []byte
     Closed bool
     Name string
 }
 
+type Workspace struct {
+    Files []*File
+    Name string
+    DarkMode bool
+}
+func (w *Workspace) GetFile(id) (*File, bool) {
+    for _, f = range w.Files {
+        if id == f.ID {
+            return f, true
+        }     
+    }
+    return nil, false    
+}
+func (w *Workspace) RemoveFile(id) () {
+    for i, f = range w.Files {
+        if id == f.ID {
+            // w.Files = append(w.Files[0:i], w.Files[i+1:]...)
+            // https://github.com/golang/go/wiki/SliceTricks
+            w.Files = copy(w.Files[i:], w.Files[i+1:])
+            w.Files[len(w.Files)-1] = nil
+            w.Files = w.Files[0:len(w.Files)-1]
+            // I think even with the copy it won't shrink the original array size
+            // I think we'd have to copy to a whole new slice for that
+            // why
+            break
+        }     
+    }
+}
+
+
+var workspaces []*Workspace
+var workspace *Workspace
 type TerminalResponse struct{
     Base64 string    
     // CWD ?? so we can keep track of directory changes
     Error string `json:",omitempty"`
     Closed bool `json:",omitempty"`
 }
-var terminalID = 0
-var terminalMu sync.Mutex
-var terminalSessions = map[int]*TerminalSession{}
-var terminalCond *sync.Cond
+var lastFileID = 0
+var workspaceMu sync.Mutex
+var workspaceCond *sync.Cond
+
 
 func main() {
 	serverAddress := flag.String("addr", "localhost:8000", "serverAddress to listen on")
@@ -257,7 +300,7 @@ func main() {
 	var viewMu sync.Mutex
 	viewCond := sync.NewCond(&viewMu)
 	
-	terminalCond = sync.NewCond(&terminalMu)
+	workspaceCond = sync.NewCond(&workspaceMu)
 	
 	// trying to use a single mutex for multiple shells? 
 	// TODO: serialize and de-serialize the state
@@ -265,7 +308,7 @@ func main() {
 	go func() {
 		for range time.NewTicker(1 * time.Second).C {
 			viewCond.Broadcast()
-			terminalCond.Broadcast()
+			workspaceCond.Broadcast()
 		}
 	}()
 
@@ -486,10 +529,11 @@ func main() {
 		}
 	})
 	
-	mux.HandleFunc("/myterminalname", func(w http.ResponseWriter, r *http.Request) {
+	// #wschange myterminalname
+	mux.HandleFunc("/myname", func(w http.ResponseWriter, r *http.Request) {
 	    // load existing terminal sessions.
-	    terminalMu.Lock()    
-	    defer terminalMu.Unlock()
+	    workspaceMu.Lock()    
+	    defer workspaceMu.Unlock()
 	    idStr := r.FormValue("id")
 	    name := r.FormValue("name")
 	    id, err := strconv.Atoi(idStr)
@@ -497,7 +541,7 @@ func main() {
 	        logAndErr(w, "invalid terminal id")
 	        return
 	    }
-	    t, ok := terminalSessions[id];
+	    t, ok := workspace.GetFile(id)
 	    if !ok {
 	        logAndErr(w, "not found")
 	        return
@@ -507,22 +551,28 @@ func main() {
 	        "success": true,
 	    }) 
 	})
-	mux.HandleFunc("/myterminals", func(w http.ResponseWriter, r *http.Request) {
+	
+	// #wschange this replaced myterminals, now is an array not map
+	mux.HandleFunc("/myfiles", func(w http.ResponseWriter, r *http.Request) {
 	    // load existing terminal sessions.
-	    terminalMu.Lock()    
-	    defer terminalMu.Unlock()
-	    ret := map[int]map[string]interface{}{}
-	    for id, t := range terminalSessions {
-	        ret[id] = map[string]interface{}{
-	            "ID": id,
-	            "Name": t.Name,
-	        }
+	    workspaceMu.Lock()    
+	    defer workspaceMu.Unlock()
+	    ret := []map[string]interface{}{}
+	    for id, f := range workspace.Files {
+	        ret = append(ret, map[string]interface{}{
+	            "ID": f.ID,
+	            "Name": f.Name,
+	            "Type": f.Type,
+            	"FullPath": f.FullPath,
+            	"LocalTmpPath": f.LocalTmpPath,
+            	"CWD": f.CWD,
+	        })
 	    }
 	    json.NewEncoder(w).Encode(ret)
 	})
 	mux.HandleFunc("/myterminalpoll", func(w http.ResponseWriter, r *http.Request) {
-	    terminalMu.Lock()    
-	    defer terminalMu.Unlock()
+	    workspaceMu.Lock()    
+	    defer workspaceMu.Unlock()
 	    ret := map[int]TerminalResponse{}
 	    timedOut := false
 	    startWait := time.Now()
@@ -536,26 +586,25 @@ func main() {
 			// If multiple clients were to need to connect to the terminals
 			// then we'd have to have a "stream-like" data structure for ReadBuffer
 			// and also would need the client to keep track of where it was
-    		for _, t := range terminalSessions {
+    		for _, t := range workspace.Files {
+    		    // only "terminal" files will have a ReadBuffer
 				if len(t.ReadBuffer) > 0 { 
 					break WaitLoop
 				}
     		}
-			terminalCond.Wait()
+			workspaceCond.Wait()
 			log.Println("done waiting")
-    		// logJSON(terminalSessions)
 		}
 		
 		if !timedOut {
-            log.Println("stuff found on terminal!")
-    		for ID, t := range terminalSessions {
+    		for ID, t := range workspace.Files {
     		    tResp := TerminalResponse{} 
     		    if t.Closed {
     		        // we only delete it after the client gets it
     		        // maybe have a timeout and cleanup later?
     		        // or actually maybe delete it right away when it's closed
     		        // and then keepntrack of closed ids to send?
-    		        delete(terminalSessions, ID)    
+    		        workspace.RemoveFile(ID)
     		    } else {
     		        if len(t.ReadBuffer) == 0 {
     		            continue
@@ -571,7 +620,7 @@ func main() {
 	})
 	mux.HandleFunc("/myterminalopen", func(w http.ResponseWriter, r *http.Request) {
 	    log.Println("my terminal open!")
-	    terminalID++
+	    lastFileID++
 	    // TODO: configurable shell, login shell (-l)?
 		// cmd := exec.Command("bash", "-l")
 		cmd := exec.Command("bash")
@@ -596,14 +645,16 @@ func main() {
 			f.Close()
 			return
 	    }
-	    terminalSession := &TerminalSession{
+	    f := &File{
+	        Type: "terminal",
+	        // FullPath: "(terminal)/???",
 	        Cmd: cmd,
-	        ID: terminalID,
+	        ID: lastFileID,
 	        Pty: f,       
 	    }
-	    terminalMu.Lock()
-	    terminalSessions[terminalID] = terminalSession
-	    terminalMu.Unlock()
+	    workspaceMu.Lock()
+	    workspace.Files = append(workspace.Files, f)
+	    workspaceMu.Unlock()
 	    
 	    // in a go func, continually read from the pty and write to buffer
 	    go func() {
@@ -611,45 +662,45 @@ func main() {
                 log.Println("a loop!")
                 // TODO: reuse buffer?
                 b := make([]byte, 1024)
-	    	    n, err := terminalSession.Pty.Read(b)
+	    	    n, err := f.Pty.Read(b)
 	    	    // if err != nil && err != io.EOF {
 	    	    if err != nil {
-	    	        terminalMu.Lock()
+	    	        workspaceMu.Lock()
 	    	        log.Printf("error reading terminal: %v", err) // could be just EOF
 	    	        f.Close()
-	    	        terminalSession.Closed = true
-	    	        terminalCond.Broadcast()
-	    	        terminalMu.Unlock()
+	    	        f.Closed = true
+	    	        workspaceCond.Broadcast()
+	    	        workspaceMu.Unlock()
 	    	        break
 	    	    }
 	    	    if n == 0 {
 	    	        continue
 	    	    }
-    	        terminalMu.Lock()
-    	        terminalSession.ReadBuffer = append(terminalSession.ReadBuffer, b[0:n]...)
+    	        workspaceMu.Lock()
+    	        f.ReadBuffer = append(f.ReadBuffer, b[0:n]...)
     	        
     	        // little protection from runaway
-    	        if len(terminalSession.ReadBuffer) > 5000000 {
-    	            terminalSession.ReadBuffer = nil    
+    	        if len(f.ReadBuffer) > 5000000 {
+    	            f.ReadBuffer = nil    
     	        }
     	        log.Printf("<==========")
-    	        log.Printf("%s", string(terminalSession.ReadBuffer))
+    	        log.Printf("%s", string(f.ReadBuffer))
     	        log.Printf("==========>")
-    	        terminalCond.Broadcast()
-    	        terminalMu.Unlock()
+    	        workspaceCond.Broadcast()
+    	        workspaceMu.Unlock()
     	        // should we put this before the unlock?
 	    	}
 	    }()
 	    
 	    json.NewEncoder(w).Encode(map[string]interface{}{
-	        "ID": terminalID,
+	        "ID": lastFileID,
 	    })
 	})
 	mux.HandleFunc("/myterminalsend", func(w http.ResponseWriter, r *http.Request) {
 	    // TODO: do consider an rwlock
 	    // creak/pty example shows reading and writing in separate goroutines
-	    terminalMu.Lock()    
-	    defer terminalMu.Unlock()
+	    workspaceMu.Lock()    
+	    defer workspaceMu.Unlock()
 	    
 		ID, err := strconv.Atoi(r.FormValue("id"))
 		if err != nil {
@@ -657,9 +708,9 @@ func main() {
 			return
 		}
 		
-	    if t, ok := terminalSessions[ID]; ok {
+	    if f, ok := workspace.GetFile(ID); ok {
 	    	payloadBytes := []byte(r.FormValue("payload"))
-	    	n, err := t.Pty.Write(payloadBytes)
+	    	n, err := f.Pty.Write(payloadBytes)
 	    	if err != nil {
 				logAndErr(w, "wriring pty: %d: %v", ID, err) 
 				return
@@ -670,9 +721,11 @@ func main() {
 	    	}
 	    }
 	})
-	mux.HandleFunc("/myterminalclose", func(w http.ResponseWriter, r *http.Request) {
-	    terminalMu.Lock()    
-	    defer terminalMu.Unlock()
+	
+	// #wschange myterminalclose
+	mux.HandleFunc("/myclose", func(w http.ResponseWriter, r *http.Request) {
+	    workspaceMu.Lock()    
+	    defer workspaceMu.Unlock()
 	    
 		ID, err := strconv.Atoi(r.FormValue("id"))
 		if err != nil {
@@ -680,17 +733,39 @@ func main() {
 			return
 		}
 		
-	    if t, ok := terminalSessions[ID]; ok {
+	    if t, ok := workspace.GetFile(ID); ok {
+	    	if t.Type == "file" || t.Type == "directory" {
+	    	    workspace.RemoveFile(ID)
+	    	    return
+	    	}
+	    	
+	    	if t.Type == "shell" {
+	    	    workspace.RemoveFile(ID)
+	    	    err := t.Cmd.Close()
+	    		if err != nil {
+					logAndErr(w, "closing pty: %d: %v", ID, err) 
+					return
+	    		}
+	    	    return
+	    	}
+	    	
+	    	# TODO remotefile
+	    	
+	    	workspace.RemoveFile(ID)
 	    	err := t.Pty.Close()
 	    	if err != nil {
 				logAndErr(w, "closing pty: %d: %v", ID, err) 
 				return
 	    	}
-	    	delete(terminalSessions, ID)
 	    }
 	})
 	
+	
+	// #wschange make a File and add the cmd, and the CWD
 	mux.HandleFunc("/mybash", func(w http.ResponseWriter, r *http.Request) {
+		workspaceMu.Lock()
+		
+		id := r.FormValue("id")
 		cmdString := r.FormValue("cmd")
 		if cmdString == "" {
 			cmdString = ":"
@@ -702,12 +777,36 @@ func main() {
 
 		log.Printf("the command we want is: %s", cmdString)
 		cmd := exec.Command("bash", "-c", cmdString)
+		if id == "" {
+		    lastFileID++
+	    	f := &File{
+	    	    Type: "shell",
+	    	    // FullPath: "(shell)/???",
+	    	    ID: lastFileID,
+	    	    Pty: f,       
+	    	}
+	    	workspace.Files = append(workspace.Files, f)
+		}
+		
+		if f.Cmd != nil && f.Cmd.Process != nil {
+		    // close the last process if there is one
+		    f.Cmd.Process.Close()
+		}
+		f.Cmd = cmd
+		workspaceMu.Unlock()
+		
 		ret, err := cmd.CombinedOutput()
 		if err != nil {
 			logAndErr(w, "error running command: %s: %v", cmdString, err) 
 			return
 		}
-		//lines := strings.Split(string(r), "\n")
+		
+		lines := strings.Split(string(r), "\n")
+		if len(lines) >= 2 {
+			workspaceMu.Lock()
+			f.CWD = lines[len(lines)-2]
+			workspaceMu.Unlock()
+		}
 
 		log.Printf("the combined output of the command is: %s", string(ret))
 		w.Write(ret)
@@ -715,7 +814,48 @@ func main() {
 	mux.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
 	    os.Exit(1)    
 	})
+	
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// TODO #wschange: you could hydrate the original files list.
+
+		b, err := ioutil.ReadFile(*indexFile)
+		if err != nil {
+			logAndErr(w, "error reading index file: %v", err)
+			return
+		}
+		htmlString := string(b)
+		contentString := string(c)
+		contentLines := strings.Split(contentString, "\n")
+		contentLinesJSON, err := json.MarshalIndent(contentLines, "", " ")
+		contentLinesJSONString := string(contentLinesJSON)
+
+		if isDir {
+			htmlString = strings.Replace(htmlString, "// FILEMODE DIRECTORY GOES HERE", "fileMode = \"directory\"", 1)
+		} else {
+			htmlString = strings.Replace(htmlString, "// FIRSTFILEMD5 GOES HERE", `var firstFileMD5 = "`+md5String+`"`, 1)
+		}
+		htmlString = strings.Replace(htmlString, "// ROOTLOCATION GOES HERE", "var rootLocation = \""+*location+"\"", 1)
+		if *proxyPath != "" {
+			replaceProxyPath := "var proxyPath = \"" + *proxyPath + "\""
+			htmlString = strings.Replace(htmlString, "// PROXYPATH GOES HERE", replaceProxyPath, 1)
+			log.Printf("replaceProxyPath: %s", replaceProxyPath)
+		}
+
+		// This content lines has to be the last one.
+		htmlString = strings.Replace(htmlString, "// LINES GO HERE", "var lines = "+contentLinesJSONString, 1)
+		
+		// TODO: when bash mode is disabled, don't do this part.
+		log.Printf("yea I set rootLocation to be: %s", *location)
+		if r.FormValue("src") != "1" {
+			w.Header().Set("Content-Type", "text/html")
+		}
+		
+		// save the file to list of files
+		addFile(r, isDir, fullPath)
+		ioutil.WriteFile("tmp", []byte(htmlString), 0777)
+		fmt.Fprintf(w, "%s", htmlString)
+	})
+	mux.HandleFunc("/saveload", func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains("..", r.URL.Path) {
 			logAndErr(w, "the path has a .. in it")
 			return
@@ -756,6 +896,7 @@ func main() {
 				w.Header().Set("X-Is-Dir", "1")
 
 				if r.FormValue("raw") == "1" {
+					addFile(r, isDir, fullPath)
 					w.Write([]byte(strings.Join(fileNames, "\n")))
 					return
 				}
@@ -782,45 +923,12 @@ func main() {
 
 
 				if r.FormValue("raw") == "1" {
+					addFile(r, isDir, fullPath)
 					w.Write(c)
 					return
 				}
 			}
-			log.Printf("is dir? %t", isDir)
-
-			b, err := ioutil.ReadFile(*indexFile)
-			if err != nil {
-				logAndErr(w, "error reading index file: %v", err)
-				return
-			}
-			htmlString := string(b)
-			contentString := string(c)
-			contentLines := strings.Split(contentString, "\n")
-			contentLinesJSON, err := json.MarshalIndent(contentLines, "", " ")
-			contentLinesJSONString := string(contentLinesJSON)
-
-			if isDir {
-				htmlString = strings.Replace(htmlString, "// FILEMODE DIRECTORY GOES HERE", "fileMode = \"directory\"", 1)
-			} else {
-				htmlString = strings.Replace(htmlString, "// FIRSTFILEMD5 GOES HERE", `var firstFileMD5 = "`+md5String+`"`, 1)
-			}
-			htmlString = strings.Replace(htmlString, "// ROOTLOCATION GOES HERE", "var rootLocation = \""+*location+"\"", 1)
-			if *proxyPath != "" {
-				replaceProxyPath := "var proxyPath = \"" + *proxyPath + "\""
-				htmlString = strings.Replace(htmlString, "// PROXYPATH GOES HERE", replaceProxyPath, 1)
-				log.Printf("replaceProxyPath: %s", replaceProxyPath)
-			}
-
-			// This content lines has to be the last one.
-			htmlString = strings.Replace(htmlString, "// LINES GO HERE", "var lines = "+contentLinesJSONString, 1)
 			
-			// TODO: when bash mode is disabled, don't do this part.
-			log.Printf("yea I set rootLocation to be: %s", *location)
-			if r.FormValue("src") != "1" {
-				w.Header().Set("Content-Type", "text/html")
-			}
-			ioutil.WriteFile("tmp", []byte(htmlString), 0777)
-			fmt.Fprintf(w, "%s", htmlString)
 		} else if r.Method == "POST" {
 			theFilePath := *location+"/"+r.URL.Path[1:]
 			content := ""
@@ -955,6 +1063,25 @@ func main() {
 	log.Fatal(httpsServer.ListenAndServeTLS(certFile, keyFile))
 	return
 
+}
+
+func addFile(r *http.Request, isDir bool, fullPath string) {
+	id := r.FormValue("id")
+	if id == "" {
+		workspaceMu.Lock()
+		lastFileID++
+    	f := &File{
+    		FullPath: fullPath,
+    	    ID: lastFileID,
+    	}
+    	if isDir {
+    	    f.Type = "directory"
+    	} else {
+    	    f.Type = "file"
+    	}
+		workspace.Files = append(workspace.Files, f) 
+		workspaceMu.Unlock()
+	} 
 }
 
 func logJSON(v interface{}) {
