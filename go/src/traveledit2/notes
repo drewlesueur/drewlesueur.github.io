@@ -1,4 +1,14 @@
-
+bug where results of cmd can show up in another file! 
+bug where when you first load save is red
+make closing not wait for server
+when you open a new tab the close, then open flow doesn't focus the new tab
+keep track of order, keep track of line numbers somehow
+This error:
+    issue saving: open /: is a directory
+    maybe hapens when you save and move tabs?
+touchCount = 0 issue
+cmd window makes a new one each time
+-----
 mixed tabs and spaces bugs out when indenting.
 
 seems like it's still updating cursorxy when getting stream from other terminal window.

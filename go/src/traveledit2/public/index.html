@@ -1382,16 +1382,16 @@ function closeFile() {
         if (fileIndex != -1) {
             var fileToClose = files[fileIndex]
             if (true) {
+                // try to get index again because it could have changed
+                var indexToClose = files.indexOf(fileToClose)
+                if (indexToClose != -1) {
+                    files.splice(indexToClose, 1)
+                }
+                fx.lines = getLinesForFileList()
+                render()
+                renderFileDropdown()
+                renderURL()
                 closeFileServer(fileToClose).then(() => {
-                    // try to get index again because it could have changed
-                    var indexToClose = files.indexOf(fileToClose)
-                    if (indexToClose != -1) {
-                        files.splice(indexToClose, 1)
-                    }
-                    fx.lines = getLinesForFileList()
-                    render()
-                    renderFileDropdown()
-                    renderURL()
                 }).catch(e => alert(e))
             } else {
                 files.splice(fileIndex, 1)
@@ -1400,15 +1400,16 @@ function closeFile() {
         fx.lines = getLinesForFileList()
     } else if (true) {
         var myFx = fx // in case it changes
-        closeFileServer().then(() => {
-            var indexToClose = files.indexOf(myFx)
-            if (indexToClose != -1) {
-                files.splice(indexToClose, 1)
-                selectFileIndex(indexToClose-1 < 0 ? 0: indexToClose-1)
-            }
-            render()
-            renderFileDropdown()
-            renderURL()
+        var indexToClose = files.indexOf(myFx)
+        if (indexToClose != -1) {
+            files.splice(indexToClose, 1)
+            // this changes fx
+            selectFileIndex(indexToClose-1 < 0 ? 0: indexToClose-1)
+        }
+        render()
+        renderFileDropdown()
+        renderURL()
+        closeFileServer(myFx).then(() => {
         }).catch(e => alert(e))
     } else {
         var indexToClose = files.indexOf(fx)
@@ -1538,6 +1539,7 @@ function normalizeFullPath(fullPath) {
 
 var urlForRefreash = location.href
 function renderURL() {
+    return // with workspaces we don't render url
     if (preventRender) {
         return
     }
@@ -2901,30 +2903,34 @@ function runBashCommand(line) {
             break
         }
 
+        var myFx = fx
         fetch(proxyPath + "/mybash?id="+fx.ID+"&cwd="+encodeURIComponent(fx.bashCWD)+"&cmd="+encodeURIComponent(line), {
             cache: "no-cache"
         }).then(r => {
+            if (r.headers.get("X-ID")) {
+                myFx.ID = r.headers.get("X-ID") - 0
+            }
             return r.text()
         }).then(r => {
             copyBuffer = r.split("\n")
             copyBuffer.unshift("") // leading newline
             // second to last item is cwd
-            fx.bashCWD = copyBuffer[copyBuffer.length - 2]
+            myFx.bashCWD = copyBuffer[copyBuffer.length - 2]
             // let's restyle the pwd after we grab it
             
             // TODO: maybe come up with something more elegant than this paste dance
-            copyBuffer[copyBuffer.length - 2] = fx.bashCWD
+            copyBuffer[copyBuffer.length - 2] = myFx.bashCWD
                 .split("/")
                 .reverse()
                 .join(" < ")
             copyBuffer.push(line) // add the line so it's easy to run again.
             copyBuffer.push("")
-            fx.cursorColIndex = 0
-            fx.cursorLineIndex += copyBuffer.length
-            fx.cursorLineIndex = fx.lines.length - 1
+            myFx.cursorColIndex = 0
+            myFx.cursorLineIndex += copyBuffer.length
+            myFx.cursorLineIndex = myFx.lines.length - 1
             selectMode = "line"
             paste(true)
-            fx.cursorLineIndex = fx.lines.length - 1
+            myFx.cursorLineIndex = myFx.lines.length - 1
             updateCursorXY()
             ensureCursorInScreen()
             copyBuffer = oldCopyBuffer

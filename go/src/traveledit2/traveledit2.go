@@ -822,6 +822,9 @@ func main() {
 		}
 
 		log.Printf("the combined output of the command is: %s", string(ret))
+    	if ID == 0 {
+    	    w.Header().Set("X-ID", strconv.Itoa(f.ID))
+    	}
 		w.Write(ret)
 	})
 	mux.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
