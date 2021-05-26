@@ -1380,8 +1380,8 @@ function closeFile() {
         var fileIndex = files.indexOf(treeFilesShadow[fx.cursorLineIndex])
         if (fileIndex != -1) {
             var fileToClose = files[fileIndex]
-            if (fileToClose.fileMode == "terminal") {
-                closeTerminal(fileToClose).then(() => {
+            if (true) {
+                closeFileServer(fileToClose).then(() => {
                     // try to get index again because it could have changed
                     var indexToClose = files.indexOf(fileToClose)
                     if (indexToClose != -1) {
@@ -1397,9 +1397,9 @@ function closeFile() {
             }  
         }
         fx.lines = getLinesForFileList()
-    } else if (fx.fileMode == "terminal") {
+    } else if (true) {
         var myFx = fx // in case it changes
-        closeTerminal().then(() => {
+        closeFileServer().then(() => {
             var indexToClose = files.indexOf(myFx)
             if (indexToClose != -1) {
                 files.splice(indexToClose, 1)
@@ -3140,14 +3140,11 @@ function openTerminal() {
         alert("There was an error running the command: " + e)
     })
 }
-function closeTerminal(theFile) {
+function closeFileServer(theFile) {
     if (!theFile) {
         theFile = fx
     }
-    if (theFile.fileMode != "terminal") {
-        return
-    }
-    return fetch(proxyPath + "/myterminalclose?id=" + theFile.ID, {
+    return fetch(proxyPath + "/myclose?id=" + theFile.ID, {
         cache: "no-cache"
     // }).then(r => {
     //     return r.json()
@@ -3593,7 +3590,7 @@ function save() {
                 renderSaves()
                 return
             }
-            fetchPromise = fetch(proxyPath + "/saveload?f=" + encodeURIComponent(fx.fullPath), {
+            fetchPromise = fetch(proxyPath + "/saveload?fullpath=" + encodeURIComponent(fx.fullPath), {
                 method: "POST",
                 cache: "no-cache",
                 headers: { "Content-Type": "application/x-www-form-urlencoded"},
@@ -5739,6 +5736,7 @@ function addFileToList(file) {
     renderFileDropdown()
 }
 function addFile(fullPath, preventSelect, id) {
+    
     fullPath = normalizeFullPath(fullPath)
     if (fullPath == "") {
         return
@@ -5756,12 +5754,13 @@ function addFile(fullPath, preventSelect, id) {
     // then let it have a reference to the existing lines, like vim does.
     for (var i=0; i<files.length; i++) {
         if (files[i].fullPath == fullPath) {
-            duplicateFile(files[i], cursorLineIndex)
+            duplicateFile(files[i], cursorLineIndex, id)
             return
         }
     }
     
     var file = makeFile(fullPath, cursorLineIndex, "")
+    file.ID = id
     addFileToList(file)
     if (!initialFileAdding) {
         if (!preventSelect) {
@@ -5769,7 +5768,7 @@ function addFile(fullPath, preventSelect, id) {
         }
         renderURL()
     }
-    fetchFile(fullPath, file).then(() => {
+    fetchFile(fullPath, file, id).then(() => {
         for (var i=0; i<files.length; i++) {
             if (files[i] != file && files[i].fullPath == file.fullPath) {
                 // TODO: is this needed, I think duplicateFile should get these?
@@ -5914,7 +5913,8 @@ function getLinesForFileList() {
     for (var fileI=0; fileI<sortedFiles.length; fileI++) {
         var f = sortedFiles[fileI]
         // var parts = (f.fullPath + ":" + (f.cursorLineIndex+1)).split("/")
-        var parts = (f.fullPath + "(" + (f.tmpIndex) + ")").split("/")
+        // var parts = (f.fullPath + "(" + (f.tmpIndex) + ")").split("/")
+        var parts = (f.fullPath + "(" + (f.ID) + ")").split("/")
         if (f.fileMode == "bash") {
             // parts = (f.originatingFullPath + ":" + (f.cursorLineIndex+1)).split("/")
             parts = (f.originatingFullPath + " (" + (f.tmpIndex+1) + ")").split("/")
@@ -6006,13 +6006,26 @@ function setCurrentFile(file) {
 
 }
 
-function duplicateFile(f, cursorLineIndex) {
+function duplicateFile(f, cursorLineIndex, id="") {
     if (f.fileMode == "terminal") {
         return
     }
     var fc = JSON.parse(JSON.stringify(f))
     fc.fileToken = fileToken
     fc.uniqueID = getUniqueID()
+    fc.ID = id
+    
+    if (id == "") {
+        fetch(proxyPath + "/duplfile?idtodup="+f.ID+"&id="+id, {
+            cache: "no-cache"
+        }).then(r => {
+            if (r.headers.get("X-ID")) {
+                fc.ID = r.headers.get("X-ID") - 0
+            }
+        }).catch(e => {
+            alert("Error duplicating file " + e)
+        })
+    }
     // copy everything but reference lines
     fc.lines = f.lines
     fc.undo = f.undo
@@ -6028,15 +6041,21 @@ function duplicateFile(f, cursorLineIndex) {
 }
 
 // also see makeFile
-function fetchFile(fullPath, file) {
+function fetchFile(fullPath, file, id="") {
     var isDir = false
+    var newID = 0
     var md5String = ""
     fullPath = normalizeFullPath(fullPath)
-    return fetch(proxyPath + "/saveload?fullpath=" + encodeURIComponent(fullPath) + "&raw=1", {
+    return fetch(proxyPath + "/saveload?fullpath=" + encodeURIComponent(fullPath) + "&raw=1&id="+id, {
         cache: "no-cache"
     }).then(r => {
         if (r.headers.get("X-Is-Dir") == "1") {
             isDir = true
+        }
+        
+        // only gets id if new file
+        if (r.headers.get("X-ID")) {
+            file.ID = r.headers.get("X-ID") - 0
         }
         md5String = r.headers.get("X-MD5")
         return r.text()
@@ -6079,7 +6098,7 @@ function reloadFile(theFile) {
         return
     }
     // Update all the other instances of this same file, no matter if it's the current file I guess
-    fetchFile(theFile.fullPath, theFile).then(() => {
+    fetchFile(theFile.fullPath, theFile, theFile.ID).then(() => {
         for (var i=0; i<files.length; i++) {
             if (files[i].fullPath == theFile.fullPath) {
                 files[i].lines = theFile.lines
@@ -6132,45 +6151,50 @@ var proxyPath = ""
 var firstFileMD5 = ""
 // FIRSTFILEMD5 GOES HERE
 
-// The first one get's "hydrated" by the server
-// ay, joining just to split again. Clean up.
-var cursorLineIndex = 0
-var parts = paths[0].split(":")
-var fullPath = parts[0]
-if (parts.length > 1) {
-    cursorLineIndex = (parts[1] - 1) || 0   
-} 
-var initialFile = makeFile(fullPath, cursorLineIndex, lines.join("\n"))
-initialFile.fileMode = fileMode
-initialFile.bashCWD = rootLocation
-initialFile.loadedFirstTime = true 
-verifyLoadedMD5(initialFile, firstFileMD5)
-var serverLoadFirstFile = true
-var ajaxLoadStartIndex
-if (serverLoadFirstFile) {
-    ajaxLoadStartIndex = 1
-    addFileToList(initialFile)
-    setCurrentFile(initialFile)
-} else {
-   ajaxLoadStartIndex = 0
-}
 
-
-// Subsequent ones will get added after the fact.
-// Starting at index 1 for this reason.
-var initialFileAdding = true
-for (var i=ajaxLoadStartIndex; i<paths.length; i++) {
-    if (paths[i].startsWith("__TERMINAL__")) {
-        parts = paths[i].split(":")
-        var id = parts[1]
-        addExistingTerminalTab(id)
+var initialFileAdding = false
+function oldStuff() {
+    // The first one get's "hydrated" by the server
+    // ay, joining just to split again. Clean up.
+    var cursorLineIndex = 0
+    var parts = paths[0].split(":")
+    var fullPath = parts[0]
+    if (parts.length > 1) {
+        cursorLineIndex = (parts[1] - 1) || 0   
+    } 
+    var initialFile = makeFile(fullPath, cursorLineIndex, lines.join("\n"))
+    initialFile.fileMode = fileMode
+    initialFile.bashCWD = rootLocation
+    initialFile.loadedFirstTime = true 
+    verifyLoadedMD5(initialFile, firstFileMD5)
+    var serverLoadFirstFile = true
+    var ajaxLoadStartIndex
+    if (serverLoadFirstFile) {
+        ajaxLoadStartIndex = 1
+        addFileToList(initialFile)
+        setCurrentFile(initialFile)
     } else {
-        addFile(paths[i])
+       ajaxLoadStartIndex = 0
     }
+    
+    
+    // Subsequent ones will get added after the fact.
+    // Starting at index 1 for this reason.
+    // TODO: remove this? #wschange
+    var initialFileAdding = true
+    for (var i=ajaxLoadStartIndex; i<paths.length; i++) {
+        if (paths[i].startsWith("__TERMINAL__")) {
+            parts = paths[i].split(":")
+            var id = parts[1]
+            addExistingTerminalTab(id)
+        } else {
+            addFile(paths[i])
+        }
+    }
+    setCurrentFile(files[0])
 }
-setCurrentFile(files[0])
 
-// add exising terminals
+// add exising files
 // TODO: you should hydrate this in the first pageload.
 // and maybe at least hydrate the first file.
 fetch(proxyPath + "/myfiles", {
@@ -6178,18 +6202,19 @@ fetch(proxyPath + "/myfiles", {
 }).then(r => {
     return r.json()
 }).then(r => {
-    for (var serverFile in r) {
-        addFile(serverFile.FullPath, false, serverFile.ID)
-            // if we didn't already add it     
+    for (var serverFile of r) {
+        if (serverFile == "terminal") {
             addExistingTerminalTab(r[id].ID, r[id].Name)
-    
-        initialFileAdding = false
-        preventRender = false
-        render()
-        renderDarkMode()
+        } else {
+            addFile(serverFile.FullPath, false, serverFile.ID)
+        }
     }
+    initialFileAdding = false
+    preventRender = false
+    render()
+    renderDarkMode()
 }).catch(e => {
-    alert("error loading terminals: " + e)
+    alert("error loading files: " + e)
 })
 
 

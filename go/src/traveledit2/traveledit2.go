@@ -262,6 +262,12 @@ var workspaceCond *sync.Cond
 
 
 func main() {
+    // TODO: #wschange save workspace to file so ot persists
+    // TODO: secial path prefix for saving/loading files not just /
+    workspace = &Workspace{}
+    workspaces = []*Workspace{workspace}
+    
+    addFile("", true, "/")
 	serverAddress := flag.String("addr", "localhost:8000", "serverAddress to listen on")
 	indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
 	screenshareFile := flag.String("screensharefile", "./public/view.html", "path to view html file")
@@ -863,24 +869,40 @@ func main() {
 		ioutil.WriteFile("tmp", []byte(htmlString), 0777)
 		fmt.Fprintf(w, "%s", htmlString)
 	})
+	mux.HandleFunc("/duplfile", func(w http.ResponseWriter, r *http.Request) {
+		ID, _ := strconv.Atoi(r.FormValue("id"))
+		IDToDup, _ := strconv.Atoi(r.FormValue("idtodup"))
+		workspaceMu.Lock()
+		defer workspaceMu.Unlock()
+		f, _ := workspace.GetFile(IDToDup)
+		if f == nil {
+		    return
+		}
+		f2 := *f // copy
+	    
+	    if ID == 0 {
+            lastFileID++
+            f2.ID = lastFileID
+		    w.Header().Set("X-ID", strconv.Itoa(f2.ID))
+			workspace.Files = append(workspace.Files, &f2)
+	    } else {
+	    }
+		// add to end for now
+	})
 	mux.HandleFunc("/saveload", func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains("..", r.URL.Path) {
 			logAndErr(w, "the path has a .. in it")
 			return
 		}
 		if r.Method == "GET" {
+			log.Printf("===id is %s", r.FormValue("id"))
 			var c []byte
 
-			// splitting on comma and only loading the first one
-			parts := strings.Split(r.URL.Path, ",")
-			filePath := parts[0][1:]
-			if filePath == "" {
-				filePath = "."
-			}
+			thePath := r.FormValue("fullpath")
 			// trimming off the :line suffix
-			parts = strings.Split(filePath, ":")
-			filePath = parts[0]
-			fullPath := *location + "/" + filePath
+			parts := strings.Split(thePath, ":")
+			thePath = parts[0]
+			fullPath := combinePath(*location, thePath)
 			log.Printf("the full path is: %s", fullPath)
 			fileInfo, err := os.Stat(fullPath)
 			if err != nil {
@@ -904,7 +926,10 @@ func main() {
 				w.Header().Set("X-Is-Dir", "1")
 
 				if r.FormValue("raw") == "1" {
-					addFile(r, isDir, fullPath)
+					newID := addFile(r.FormValue("id"), isDir, fullPath)
+					if (newID != 0) {
+						w.Header().Set("X-ID", strconv.Itoa(newID))
+					}
 					w.Write([]byte(strings.Join(fileNames, "\n")))
 					return
 				}
@@ -931,14 +956,18 @@ func main() {
 
 
 				if r.FormValue("raw") == "1" {
-					addFile(r, isDir, fullPath)
+					newID := addFile(r.FormValue("id"), isDir, fullPath)
+					if (newID != 0) {
+						w.Header().Set("X-ID", strconv.Itoa(newID))
+					}
 					w.Write(c)
 					return
 				}
 			}
 			
 		} else if r.Method == "POST" {
-			theFilePath := *location+"/"+r.URL.Path[1:]
+			thePath := r.FormValue("fullpath")
+			theFilePath := combinePath(*location, thePath)
 			content := ""
 			diff := r.FormValue("diff")
 			oldmd5 := r.FormValue("oldmd5")
@@ -1073,8 +1102,7 @@ func main() {
 
 }
 
-func addFile(r *http.Request, isDir bool, fullPath string) {
-	id := r.FormValue("id")
+func addFile(id string, isDir bool, fullPath string) int {
 	if id == "" {
 		workspaceMu.Lock()
 		lastFileID++
@@ -1089,7 +1117,9 @@ func addFile(r *http.Request, isDir bool, fullPath string) {
     	}
 		workspace.Files = append(workspace.Files, f) 
 		workspaceMu.Unlock()
-	} 
+		return f.ID
+	}
+	return 0 
 }
 
 func logJSON(v interface{}) {
@@ -1098,4 +1128,15 @@ func logJSON(v interface{}) {
         log.Printf("error logging json: %v", err)
     }
     log.Printf(string(b))
+}
+
+func combinePath(a, b string) string {
+    if (!strings.HasSuffix(a, "/")){
+        a = a + "/"
+    }
+    if (strings.HasPrefix(b, "/")) {
+        b = b[1:]
+    }
+    
+    return a + b
 }
