@@ -603,14 +603,14 @@ func main() {
 		}
 		
 		if !timedOut {
-    		for ID, t := range workspace.Files {
+    		for _, t := range workspace.Files {
     		    tResp := TerminalResponse{} 
     		    if t.Closed {
     		        // we only delete it after the client gets it
     		        // maybe have a timeout and cleanup later?
     		        // or actually maybe delete it right away when it's closed
     		        // and then keepntrack of closed ids to send?
-    		        workspace.RemoveFile(ID)
+    		        workspace.RemoveFile(t.ID)
     		    } else {
     		        if len(t.ReadBuffer) == 0 {
     		            continue
@@ -619,7 +619,7 @@ func main() {
     		    tResp.Base64 = base64.StdEncoding.EncodeToString(t.ReadBuffer)
     		    tResp.Closed = t.Closed
     		    t.ReadBuffer = []byte{}
-    		    ret[ID] = tResp
+    		    ret[t.ID] = tResp
     		}
 		}
 	    json.NewEncoder(w).Encode(ret)
@@ -786,7 +786,7 @@ func main() {
 		var f *File
 		if ID == 0 {
 		    lastFileID++
-	    	f := &File{
+	    	f = &File{
 	    	    Type: "shell",
 	    	    // FullPath: "(shell)/???",
 	    	    ID: lastFileID,
@@ -799,7 +799,7 @@ func main() {
 			logAndErr(w, "no bash session found: %d", ID) 
 			return
 		}
-		
+		// log.Printf("the file is %+v", f)
 		// curious this case?
 		if f.Cmd != nil && f.Cmd.Process != nil {
 		    // close the last process if there is one

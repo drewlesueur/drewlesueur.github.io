@@ -1462,12 +1462,20 @@ function useExisingWD(file) {
     }
     
 }
-function addCmdTab() {
+function addCmdTab(id=0, cwd="") {
     // I think this /cmd isn't hit on the server 
     // I think we need a special endpoint for serving files and not just /
     var file = makeFile(proxyPath + "/cmd", 0, bashHelpers.join("\n"))
     file.fileMode = "bash"
-    useExisingWD(file) // terminals don't deal with cwd for now  
+    if (id) {
+        file.ID = id
+    }
+    if (!cwd) {
+        useExisingWD(file)
+    } else {
+        file.bashCWD = cwd
+        file.originatingFullPath = cwd
+    }
     addFileToList(file, false)
     setCurrentFile(file)
     fx.cursorLineIndex = fx.lines.length - 1
@@ -1475,6 +1483,9 @@ function addCmdTab() {
     runBashCommand("")
     //theText.focus()
 }
+
+// TODO: addTerminalTab and addExistingTerminalTab can probably be consolidated,
+// like addCmdTab
 function addTerminalTab() {
     // TODO: follow up on the path variable, seems mostly useless for now.
     var file = makeFile(proxyPath + "/terminal", 0, "")
@@ -2892,7 +2903,7 @@ function runBashCommand(line) {
             break
         }
 
-        fetch(proxyPath + "/mybash?cwd="+encodeURIComponent(fx.bashCWD)+"&cmd="+encodeURIComponent(line), {
+        fetch(proxyPath + "/mybash?id="+fx.ID+"&cwd="+encodeURIComponent(fx.bashCWD)+"&cmd="+encodeURIComponent(line), {
             cache: "no-cache"
         }).then(r => {
             return r.text()
@@ -6203,8 +6214,10 @@ fetch(proxyPath + "/myfiles", {
     return r.json()
 }).then(r => {
     for (var serverFile of r) {
-        if (serverFile == "terminal") {
-            addExistingTerminalTab(r[id].ID, r[id].Name)
+        if (serverFile.Type == "terminal") {
+            addExistingTerminalTab(serverFile.ID)
+        } else if (serverFile.Type == "shell") {
+           addCmdTab(serverFile.ID, serverFile.CWD)
         } else {
             addFile(serverFile.FullPath, false, serverFile.ID)
         }
