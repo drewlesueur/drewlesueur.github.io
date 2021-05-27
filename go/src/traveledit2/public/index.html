@@ -3622,13 +3622,14 @@ function save() {
                 body: "content=" + encodeURIComponent(toSave)
             })
         }
+        var myFx = fx
         fetchPromise.then(r => r.json())
         .then(v => {
             if (v.saved) {
-                fx.savedVersion = fx.savingVersion
-                fx.savingVersion = -1
-                fx.undo.lastSavedLines = toSave.split("\n")
-                fx.undo.lastSavedHash = toSaveHash
+                myFx.savedVersion = myFx.savingVersion
+                myFx.savingVersion = -1
+                myFx.undo.lastSavedLines = toSave.split("\n")
+                myFx.undo.lastSavedHash = toSaveHash
             } else {
                 alert("issue saving: " + v.error)
                 saveDiffs = false
@@ -4660,7 +4661,7 @@ function moveHomeEndAction() {
 
 var touchCount = 0
 function onStart(e) {
-    touchCount += 1
+    touchCount = e.touches.length
     e.preventDefault()
     // this handles all the touch interactions
     // first define the closuure functions
@@ -4796,7 +4797,7 @@ function onStart(e) {
         return false
     }
     var onEnd = function(e) {
-        touchCount -= 1
+        touchCount = e.touches.length
         clearTimeout(selectTimeout)
         if (e.touches.length != 0) {
             return
@@ -4961,7 +4962,7 @@ function onStart(e) {
         moveListenerCount = max(moveListenerCount-1, 0)
     }
     var onEndWhileSelected = function(e) {
-        touchCount -= 1
+        touchCount = e.touches.length
         if (!moved && fx.selectedRegions.length) {
             fx.selectedRegions = []
         }
@@ -4973,7 +4974,7 @@ function onStart(e) {
     }
     
     var onEndForEdges = function(e) {
-        touchCount -= 1
+        touchCount = e.touches.length
         document.body.removeEventListener("touchend", onEndForEdges)
         clearTimeout(moveHomeEndTimeout)
         render()
