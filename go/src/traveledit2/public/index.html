@@ -2903,7 +2903,7 @@ function runBashCommand(line) {
             break
         }
 
-        var myFx = fx
+        let myFx = fx
         fetch(proxyPath + "/mybash?id="+fx.ID+"&cwd="+encodeURIComponent(fx.bashCWD)+"&cmd="+encodeURIComponent(line), {
             cache: "no-cache"
         }).then(r => {
@@ -2912,6 +2912,8 @@ function runBashCommand(line) {
             }
             return r.text()
         }).then(r => {
+            var oldFx = fx
+            fx = myFx
             copyBuffer = r.split("\n")
             copyBuffer.unshift("") // leading newline
             // second to last item is cwd
@@ -2934,6 +2936,7 @@ function runBashCommand(line) {
             updateCursorXY()
             ensureCursorInScreen()
             copyBuffer = oldCopyBuffer
+            fx = oldFx
         }).catch(e => {
             alert("There was an error running the command: " + e)
         })
