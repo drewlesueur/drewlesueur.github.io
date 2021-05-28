@@ -1,6 +1,10 @@
 <!doctype html>
 <html>
 <head>
+<script>
+var proxyPath = ""
+// PROXYPATH GOES HERE
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
 <meta name="apple-mobile-web-app-title" content="Editor">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -8,9 +12,13 @@
 
 <meta charset='utf-8'>
 <!-- TODO: make this work with path proxy ok?3 -->
-<script src="/tepublic/diff.js"></script>
-<script src="/tepublic/md52.js"></script>
-<script src="/tepublic/grapheme-splitter.js"></script>
+<script>
+document.write(`
+<script src="`+proxyPath+`/tepublic/diff.js"></scr`+`ipt>
+<script src="`+proxyPath+`/tepublic/md52.js"></scr`+`ipt>
+<script src="`+proxyPath+`/tepublic/grapheme-splitter.js"></scr`+`ipt>
+`)
+</script>
 <style>
 /*
 @font-face {
@@ -6163,9 +6171,6 @@ var rootLocation = "" // will be set server side
 // ROOTLOCATION GOES HERE
 // var paths = decodeURIComponent(location.pathname).split(",")
 var paths = (location.pathname).split(",")
-
-var proxyPath = ""
-// PROXYPATH GOES HERE
 
 var firstFileMD5 = ""
 // FIRSTFILEMD5 GOES HERE
