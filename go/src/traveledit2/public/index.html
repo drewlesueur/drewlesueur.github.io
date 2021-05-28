@@ -1228,16 +1228,12 @@ function getAtCursor() {
 function openAtCursor() {
     var path = getAtCursor()
     if (fx.fileMode == "bash") {
-        var fileName = proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + path
+        var fileName = trimPrefix(fx.bashCWD, rootLocation) + "/" + path
     } else if (fx.fileMode == "terminal") {
         // TODO: how do we know what the cwd is? 
         // isn't there a way to get the cwd of a running process?
     } else if (path.startsWith("/")) {
         var fileName = path
-        // TODO, audit the double slash thing across the board
-        if (proxyPath != "/") {
-            fileName = proxyPath + fileName
-        }
     } else {
         var parts = fx.fullPath.split("/")
         var basePath = parts.slice(0, -1).join("/")
