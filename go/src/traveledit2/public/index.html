@@ -2889,7 +2889,7 @@ function runBashCommand(line) {
             fx.cursorLineIndex += 1
             fx.cursorColIndex = 0
             ensureCursorInScreen()
-            addFile(proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad)
+            addFile(trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad)
             break
         }
 
