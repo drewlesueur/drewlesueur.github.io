@@ -1228,16 +1228,12 @@ function getAtCursor() {
 function openAtCursor() {
     var path = getAtCursor()
     if (fx.fileMode == "bash") {
-        var fileName = proxyPath + trimPrefix(fx.bashCWD, rootLocation) + "/" + path
+        var fileName = trimPrefix(fx.bashCWD, rootLocation) + "/" + path
     } else if (fx.fileMode == "terminal") {
         // TODO: how do we know what the cwd is? 
         // isn't there a way to get the cwd of a running process?
     } else if (path.startsWith("/")) {
         var fileName = path
-        // TODO, audit the double slash thing across the board
-        if (proxyPath != "/") {
-            fileName = proxyPath + fileName
-        }
     } else {
         var parts = fx.fullPath.split("/")
         var basePath = parts.slice(0, -1).join("/")
@@ -1389,24 +1385,20 @@ function closeFile() {
         var fileIndex = files.indexOf(treeFilesShadow[fx.cursorLineIndex])
         if (fileIndex != -1) {
             var fileToClose = files[fileIndex]
-            if (true) {
-                // try to get index again because it could have changed
-                var indexToClose = files.indexOf(fileToClose)
-                if (indexToClose != -1) {
-                    files.splice(indexToClose, 1)
-                }
-                fx.lines = getLinesForFileList()
-                render()
-                renderFileDropdown()
-                renderURL()
-                closeFileServer(fileToClose).then(() => {
-                }).catch(e => alert(e))
-            } else {
-                files.splice(fileIndex, 1)
-            }  
+            // try to get index again because it could have changed
+            var indexToClose = files.indexOf(fileToClose)
+            if (indexToClose != -1) {
+                files.splice(indexToClose, 1)
+            }
+            fx.lines = getLinesForFileList()
+            render()
+            renderFileDropdown()
+            renderURL()
+            closeFileServer(fileToClose).then(() => {
+            }).catch(e => alert(e))
         }
         fx.lines = getLinesForFileList()
-    } else if (true) {
+    } else {
         var myFx = fx // in case it changes
         var indexToClose = files.indexOf(myFx)
         if (indexToClose != -1) {
@@ -1419,17 +1411,9 @@ function closeFile() {
         renderURL()
         closeFileServer(myFx).then(() => {
         }).catch(e => alert(e))
-    } else {
-        var indexToClose = files.indexOf(fx)
-        if (indexToClose != -1) {
-            files.splice(indexToClose, 1)
-            selectFileIndex(indexToClose-1 < 0 ? 0: indexToClose-1)
-        }
     }
-    render()
-    renderFileDropdown()
-    renderURL()
 }
+
 
 var bashHelpers = [
     // some common commands to use quickly
