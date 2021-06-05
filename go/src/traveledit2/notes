@@ -1,3 +1,10 @@
+get working directory of terminal working
+
+remember the order and line number of files again
+----
+would be interesting to autocomplete variations of variable names
+like underscores to camel case
+
 keep track of order, keep track of line numbers somehow
 -----
 mixed tabs and spaces bugs out when indenting.
