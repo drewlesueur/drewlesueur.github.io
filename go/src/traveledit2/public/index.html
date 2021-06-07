@@ -4495,18 +4495,27 @@ function renderInternal() {
         // TODO: set variable for line.trim()
         var textFillStyle 
         // the actual text
+        
+        // TODO: maybe pull some of this out of the loop
+        var cachedTrim
+        var trim = function() {
+            if (typeof cachedTrim != "undefined") {
+                return cachedTrim
+            }
+            cachedTrim = theLine.trim()
+            return cachedTrim    
+        }
         if (fx.fileMode != "terminal") {
-            // TODO: get rid of repeated calls to theLine.trim()
             if (theLine.startsWith("+")) {
                 textFillStyle = isDark ? "lime" : "green"
             } else if (theLine.startsWith("-")){
                 textFillStyle = "red"
-            } else if (theLine.trim().startsWith("// mar"+"ker ") || theLine.trim().startsWith("# mar"+"ker ")) {
+            } else if (trim().startsWith("// mar"+"ker ") || trim().startsWith("# mar"+"ker ")) {
                 // do a fill rect of the color that comes after
                 // Not using save and restore because my mock canvas doesn't support it
                 var oldFillStyle = t.fillStyle
                 // var theFillStyle = trimPrefix(theLine.trim(), "// mar"+"ker ").split(" ")[0]
-                var theFillStyle = trimPrefix(trimPrefix(theLine.trim(), "// mar"+"ker "), "# mar"+"ker ").split(" ")[0]
+                var theFillStyle = trimPrefix(trimPrefix(trim(), "// mar"+"ker "), "# mar"+"ker ").split(" ")[0]
                 t.fillStyle = theFillStyle
                 // go twice as wide as you need, for server rendering purposes
                 t.fillRect(0, y * fontHeight, c.width*2, fontHeight)
@@ -4531,7 +4540,7 @@ function renderInternal() {
                 }
                 t.fillStyle = oldFillStyle
                 
-            } else if (theLine.trim().startsWith("//") || theLine.trim().startsWith("#")) {
+            } else if (trim().startsWith("//") || trim().startsWith("#")) {
                 // comments are gray
                 textFillStyle = lightFontColor
             } else {
@@ -4612,7 +4621,9 @@ function renderInternal() {
         // but harder to know wrangle width of the font?
         var extraY = 0
         for (var x=0; x < maxCols; x++) {
-            //TODO: break early if the line isn't that big
+            if ((x+fx.offsetX) >= expandedLine.length) {
+                break    
+            }
             var chr = expandedLine[x+fx.offsetX] || ""
             if (chr == "\t") {
                 if (shouldSeeTabs) {
