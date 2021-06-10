@@ -1,3 +1,11 @@
+
+really long lines cause big problem.
+
+useUnicode when pasting screenfull or so of long lines of text, its slow for a while
+    even when it seems it should have it in cache.
+    (like when a terminal window running go panics and prints trace)
+
+
 get working directory of terminal working
 
 remember the order and line number of files again

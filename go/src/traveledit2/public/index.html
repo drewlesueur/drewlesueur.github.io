@@ -92,6 +92,7 @@ body.dark .toolbar div {
     /* see renderDarkMode */
     color: rgba(255, 255, 200);
     border: 1px solid rgba(255, 255, 200);
+    opacity: 0.7;
     --text-decoration: underline;
 }
 body.dark .toolbar div.selected {
@@ -421,6 +422,7 @@ ontouchstart=onStart(event)
 </div>
 <div class=toolbar>
     <div class=square onclick="window.open(location.href)">dup tab</div>
+    <div class=square onclick="saveOrder()">save order</div>
     <div class=square onclick="location.reload()">refresh</div>
     <!--<div class=square onclick="location.href = urlForRefreash">refresh</div>-->
 </div>
@@ -3170,7 +3172,7 @@ function pollTerminals() {
         // if so we need to make sure we don't double poll
         // as a double check, in the polling code if there id a request
         // in-flight, don't poll again.
-        alert("There was an error running the command: " + e)
+        // alert("polling error: " + e)
         setTimeout(pollTerminals, 1)
     })
 }
@@ -3629,11 +3631,18 @@ function handleBlur() {
     if (dirtyInput) {
         saveUndo()
         dirtyInput = false
+        // auto saving...
+        // different that the timed autosave feature
+        if (fx.fileMode == "file") {
+            save()
+        }
     }
     setCanvasHeightAccordingly()
     render()
     window.scrollTo(0, lastPageYOffset)
     renderTheText("")
+    
+    
 
 }
 function handleSearchFocusBefore() {
@@ -4303,6 +4312,9 @@ function render() {
 // TODO: you can make bash and terminal faster too. 
 var renderedSaveRed = false
 function renderSaves() {
+    if (!fx) {
+        return
+    }
     if (fx.fileMode == "file")   {
         if (fx.savingVersion != -1) {
             saveButton.style.backgroundColor = "gray"
@@ -4497,7 +4509,7 @@ function renderInternal() {
         // the actual text
         
         // TODO: maybe pull some of this out of the loop
-        var cachedTrim
+        let cachedTrim
         var trim = function() {
             if (typeof cachedTrim != "undefined") {
                 return cachedTrim
@@ -5979,6 +5991,7 @@ function renderFileDropdown() {
         fileRow.appendChild(button)
         
     }
+    renderSaves()
 
 }
 var treeFiles = []
@@ -6344,12 +6357,13 @@ fetch(proxyPath + "/myfiles", {
     return r.json()
 }).then(r => {
     for (var serverFile of r) {
+        // TODO: fix inconsistent file naming #inconsistentFileNaming
         if (serverFile.Type == "terminal") {
             addExistingTerminalTab(serverFile.ID)
         } else if (serverFile.Type == "shell") {
            addCmdTab(serverFile.ID, serverFile.CWD)
         } else {
-            addFile(serverFile.FullPath, false, serverFile.ID)
+            addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), false, serverFile.ID)
         }
     }
     initialFileAdding = false
@@ -6359,6 +6373,32 @@ fetch(proxyPath + "/myfiles", {
 }).catch(e => {
     alert("error loading files: " + e)
 })
+
+function saveOrder() {
+   var serverFiles = []
+    for (var i = 0; i < files.length; i++) {
+        var f = files[i]
+        // TODO: fix inconsistent file naming #inconsistentFileNaming
+        serverFiles.push({
+            "ID": f.ID,
+            "Name": f.name,
+            "Type": f.fileMode == "bash" ? "shell" : f.fileMode,
+            "FullPath": f.fullPath,
+            "LineNumber": f.cursorLineIndex + 1,
+            "CWD": f.bashCWD,
+        })
+    }
+    fetch(proxyPath + "/mysaveorder", {    
+        cache: "no-cache",
+        method: "POST",
+        body: JSON.stringify(serverFiles),
+    // }).then(r => {
+    //     return r.json()
+    // }).then(r => {
+    }).catch(e => {
+        alert("error saving order: " + e)
+    })
+}
 
 
 var ust = new URLSearchParams(window.location.search)

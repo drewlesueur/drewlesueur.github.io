@@ -202,6 +202,7 @@ type File struct{
     ID int
     Type string // terminal, file, directory, remotefile, shell(semi interactive)
     FullPath string
+    LineNumber int
     
     // fields for remotefile
     LocalTmpPath string // temorary file
@@ -570,11 +571,42 @@ func main() {
 	            "Name": f.Name,
 	            "Type": f.Type,
             	"FullPath": f.FullPath,
-            	"LocalTmpPath": f.LocalTmpPath,
+            	"LineNumber": f.LineNumber,
             	"CWD": f.CWD,
 	        })
 	    }
 	    json.NewEncoder(w).Encode(ret)
+	})
+	// #wschange this replaced myterminals, now is an array not map
+	mux.HandleFunc("/mysaveorder", func(w http.ResponseWriter, r *http.Request) {
+	    // load existing terminal sessions.
+	    workspaceMu.Lock()    
+	    defer workspaceMu.Unlock()
+	    
+	    filesFromClient := []*File{}
+	    err := json.NewDecoder(r.Body).Decode(&filesFromClient)
+	    if err != nil {
+	        logAndErr(w, "parsing for mysaveorder: %v", err)    
+	        return
+	    }
+	    filesByID := map[int]*File{}
+	    for _, f := range workspace.Files {
+	        filesByID[f.ID] = f
+	    }
+	    
+	    newFiles := []*File{}
+	    for _, fc := range filesFromClient {
+	         if f, ok := filesByID[fc.ID]; ok {
+	             delete(filesByID, fc.ID)
+	             f.LineNumber = fc.LineNumber
+	             newFiles = append(newFiles, f)
+	         }
+	    }
+	    // if we missed any add them at the end
+	    for _, f := range filesByID {
+             newFiles = append(newFiles, f)
+	    }
+	    workspace.Files = newFiles
 	})
 	mux.HandleFunc("/myterminalpoll", func(w http.ResponseWriter, r *http.Request) {
 	    workspaceMu.Lock()    
