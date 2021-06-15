@@ -1,3 +1,7 @@
+There is a big with long pressing a word to highlight it if there are tabs
+(probably just not using expandTabIndex/unExpandTabIndex)
+
+----
 
 really long lines cause big problem.
 
