@@ -367,6 +367,7 @@ ontouchstart=onStart(event)
     <div class=square onclick=reloadFile(fx)>reload</div>
 </div>
 <div class=toolbar>
+    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
     <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
     <div class=longButton onclick="fontScaleInput.value = 0.9; updateFontScale()">0.9</div>
     <div class=longButton onclick="fontScaleInput.value = 1.0; updateFontScale()">1.0</div>
@@ -381,7 +382,6 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="selectFont('IosevkaThin')">Iosevka Thin</div>
     <div class=longButton onclick="selectFont('Iosevka')">Iosevka</div>
     <div class=longButton onclick="selectFont('IosevkaSlab')">Iosevka S</div>
-    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
     <div class=longButton onclick="selectFont('XanhMono')">Xanh</div>
     <div class=longButton onclick="selectFont('Inconsolata')">Inconsolata</div>
     <div class=longButton onclick="selectFont('InconsolataThin')">Inconsolata Thin</div>
@@ -4126,7 +4126,7 @@ var renderURLTimeout
 var waitingRender = false
 var lastRender = 0
 var maxFrameRate = 16
-var maxFrameRate = 0
+// var maxFrameRate = 0
 var waitingServerRender = false
 var lastServerRender = 0
 var maxServerFrameRate = 100
@@ -4166,6 +4166,7 @@ function render() {
     
 
     // var start = Date.now()
+    c.width = c.width // one way to clear
     renderInternal()
     // log("r1: " + (Date.now() - start))
     if (inDebugView) {
@@ -4355,7 +4356,6 @@ var renderCount = 0
 var rendersInLastSecond = 0
 function renderInternal() {
     var startRenderTime = Date.now()
-    c.width = c.width // one way to clear
     // the selected areas
     for (var i=0; i<fx.selectedRegions.length;i++) {
         // todo: normalize region start and stop
