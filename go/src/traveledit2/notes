@@ -1,4 +1,12 @@
-There is a big with long pressing a word to highlight it if there are tabs
+a version that can connect to another server via ssh and
+doesn't need any server program running. uses exiting
+programs like patch, md5sum, ls, cat, etc.
+
+make alternate backends, python, node.js to be able to run in more environments.
+
+cmd files don't get placed in the right spot after refresh
+
+There is a bug with long pressing a word to highlight it if there are tabs
 (probably just not using expandTabIndex/unExpandTabIndex)
 
 ----

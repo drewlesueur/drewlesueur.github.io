@@ -598,7 +598,9 @@ func main() {
 	    for _, fc := range filesFromClient {
 	         if f, ok := filesByID[fc.ID]; ok {
 	             delete(filesByID, fc.ID)
+        	 	 // Let's update the name and line number while we are at it.
 	             f.LineNumber = fc.LineNumber
+        		 f.Name = fc.Name
 	             newFiles = append(newFiles, f)
 	         }
 	    }

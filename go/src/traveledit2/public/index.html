@@ -423,6 +423,7 @@ ontouchstart=onStart(event)
 <div class=toolbar>
     <div class=square onclick="window.open(location.href)">dup tab</div>
     <div class=square onclick="saveOrder()">save order</div>
+    <div class=square onclick="updateName()">update name</div>
     <div class=square onclick="location.reload()">refresh</div>
     <!--<div class=square onclick="location.href = urlForRefreash">refresh</div>-->
 </div>
@@ -1460,9 +1461,9 @@ function useExisingWD(file) {
         file.bashCWD = rootLocation + trimPrefix(fx.fullPath, proxyPath)
         file.originatingFullPath = fx.fullPath + "/cmd"
     }
-    
 }
-function addCmdTab(id=0, cwd="") {
+
+function addCmdTab(id=0, cwd="", name="") {
     // I think this /cmd isn't hit on the server 
     // I think we need a special endpoint for serving files and not just /
     var file = makeFile(proxyPath + "/cmd", 0, bashHelpers.join("\n"))
@@ -1470,6 +1471,7 @@ function addCmdTab(id=0, cwd="") {
     if (id) {
         file.ID = id
     }
+    file.name = name
     if (!cwd) {
         useExisingWD(file)
     } else {
@@ -1490,7 +1492,7 @@ function addTerminalTab() {
     // TODO: follow up on the path variable, seems mostly useless for now.
     var file = makeFile(proxyPath + "/terminal", 0, "")
     file.fileMode = "terminal"
-    // useExisingWD(file) // terminals don't deal with cwd for now  
+    useExisingWD(file)
     addFileToList(file, false)
     setCurrentFile(file)
     fx.cursorLineIndex = fx.lines.length - 1
@@ -5849,7 +5851,7 @@ function makeFile(fullPath, cursorLineIndex, contents) {
     return {
         // fullPath should have the leading slash
         fullPath: fullPath,
-        name: "", // for terminal at least
+        name: "",
         undo: {
             index: 0,
             stack: [contents],   
@@ -5864,7 +5866,8 @@ function makeFile(fullPath, cursorLineIndex, contents) {
         offsetY: cursorLineIndex, // you could get smarter about this
         offsetX: 0,
         fileMode: "file",
-        bashCWD: (fx ? fx.bashCWD : "."),
+        bashCWD: "",
+        originatingFullPath: "",
         version: 0,
         savedVersion: 0,
         savingVersion: -1,
@@ -6074,7 +6077,8 @@ function getLinesForFileList() {
         var parts = (f.fullPath + "(" + (f.ID) + ")").split("/")
         if (f.fileMode == "bash") {
             // parts = (f.originatingFullPath + ":" + (f.cursorLineIndex+1)).split("/")
-            parts = (f.originatingFullPath + " (" + (f.tmpIndex+1) + ")").split("/")
+            // parts = (f.originatingFullPath + " (" + (f.tmpIndex+1) + ")").split("/")
+            parts = ["(cmd)", (f.tmpIndex+"").padStart(2, "0") + ": " + (f.name || "")]
         } else if (f.fileMode == "terminal") {
             // #todoterminal: how get the cwd of the process (/proc/fd) ?
             parts = ["(terminal)", (f.tmpIndex+"").padStart(2, "0") + ": " + (f.name || "")]
@@ -6359,9 +6363,9 @@ fetch(proxyPath + "/myfiles", {
     for (var serverFile of r) {
         // TODO: fix inconsistent file naming #inconsistentFileNaming
         if (serverFile.Type == "terminal") {
-            addExistingTerminalTab(serverFile.ID)
+            addExistingTerminalTab(serverFile.ID, serverFile.Name)
         } else if (serverFile.Type == "shell") {
-           addCmdTab(serverFile.ID, serverFile.CWD)
+           addCmdTab(serverFile.ID, serverFile.CWD, serverFile.Name)
         } else {
             addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), false, serverFile.ID)
         }
@@ -6374,6 +6378,15 @@ fetch(proxyPath + "/myfiles", {
     alert("error loading files: " + e)
 })
 
+
+function updateName() {
+    var name = prompt("Name:")
+    if (!name) {
+        return
+    }
+    fx.name = name
+    saveOrder()
+}
 function saveOrder() {
    var serverFiles = []
     for (var i = 0; i < files.length; i++) {
