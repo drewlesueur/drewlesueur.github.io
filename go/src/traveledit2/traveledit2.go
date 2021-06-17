@@ -662,8 +662,8 @@ func main() {
 	    log.Println("my terminal open!")
 	    lastFileID++
 	    // TODO: configurable shell, login shell (-l)?
-		// cmd := exec.Command("bash", "-l")
-		cmd := exec.Command("bash")
+		cmd := exec.Command("bash", "-l")
+		// cmd := exec.Command("bash")
 		// cmd := exec.Command("zsh", "-l")
 		cwd := r.FormValue("cwd")
 		cmd.Dir = cwd
