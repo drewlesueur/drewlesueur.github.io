@@ -77,7 +77,6 @@ document.write(`
     display: flex;
     flex-flow: row nowrap;
     --flex-flow: row wrap;
-    width: 375px;
     overflow: scroll;
     -webkit-overflow-scrolling: touch;
     --font-family: 'IosevkaLucida';
@@ -176,38 +175,39 @@ color: magenta;
 opacity: 0.5;
 "></div>
 
-<form onsubmit=findDownForm(event)>
+<form onsubmit="findDownForm(event)">
     <input class=dark id=searchTextBefore class=text type=text
     style="
     --font: 8px IosevkaLucida;
     font: px Courier;
-    width: 375px;
     height:1px; overflow: hidden;
     display: block;"
     onfocus=handleSearchFocusBefore()
     xonblur=handleBlur()
+    class=fullWidth
     >
     
     <input class=dark type=text id=searchText
         style="display: none;
         --font: 13px IosevkaLucida;
         font: 16px Courier;
-        width: 300px"
+        "
         onfocus="focusSearchText()"
         oninput="inputSearchText()"
         onblur="blurSearchText()"
+        class=fullWidth
     >
     
     <input class=dark id=searchTextAfter class=text type=text
     style="
     --font: 8px IosevkaLucida;
     font: 8px Courier;
-    width: 375px;
     height:1px; overflow: hidden;
     display: block;
     "
     onfocus=handleSearchFocusAfter()
     xonblur=handleBlur()
+    class=fullWidth
     >
     
     <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
@@ -215,16 +215,16 @@ opacity: 0.5;
 
 <form onsubmit="newLine(event, true)">
 
-<input class=dark id=theTextBefore class=text type=text
+<input type=hidden class=dark id=theTextBefore class=text type=text
 style="
 --font: 8px IosevkaLucida;
 font: 8px Courier;
-width: 375px;
 /* display: none; see what it looks like without */
 height:1px; overflow: hidden;
 display: block;"
 onfocus=handleFocusBefore()
 onblur=handleBlur()
+class=fullWidth
 >
 <input class=dark id=theText class=text type=text
 style="
@@ -233,7 +233,6 @@ style="
 font: 16px Times;
 padding: 0;
 color: brown;
-width: 375px;
 height: 24px;
 --position:absolute; top: 100px;
 display: block;
@@ -242,18 +241,19 @@ onfocus=handleFocusIn()
 onblur=handleBlur()
 oninput=saveLine()
 onkeydown=handleKeydown(event)
+class=fullWidth
 >
-<input class=dark id=theTextAfter class=text type=text
+<input type=hidden class=dark id=theTextAfter class=text type=text
 style="
 --font: 8px IosevkaLucida;
 font: 8px Courier;
-width: 375px;
 /* display: none; see what it looks like without */
 height:1px; overflow: hidden;
 display: block;
 "
 onfocus=handleFocusAfter()
 onblur=handleBlur()
+class=fullWidth
 >
 <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
@@ -368,6 +368,7 @@ ontouchstart=onStart(event)
 </div>
 <div class=toolbar>
     <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
+    <div class=longButton onclick="selectFont('RobotoMono')">Roboto Mono</div>
     <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
     <div class=longButton onclick="fontScaleInput.value = 0.9; updateFontScale()">0.9</div>
     <div class=longButton onclick="fontScaleInput.value = 1.0; updateFontScale()">1.0</div>
@@ -386,7 +387,6 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="selectFont('Inconsolata')">Inconsolata</div>
     <div class=longButton onclick="selectFont('InconsolataThin')">Inconsolata Thin</div>
     <div class=longButton onclick="selectFont('Courier New')">Courier New</div>
-    <div class=longButton onclick="selectFont('RobotoMono')">Roboto Mono</div>
     <div class=longButton onclick="selectFont('NanumGothicCoding')">Nanum GC</div>
     <div class=longButton onclick="selectFont('GillSans')">Gill Sans</div>
     <div class=longButton onclick="selectFont('AmericanTypewriter')">American T</div>
@@ -498,6 +498,8 @@ style="width:100%; height:100px;"
     <input type=Submit value=Upload>
 </form>
 
+<textarea id=s1 placeholder=s1 style="width:100%; height:100px;"></textarea>
+<textarea id=s2 placeholder=s2 style="width:100%; height:100px;"></textarea>
 
 <div id=bottomPadding style="height: 100px;"></div>
 <div id=colorGetterEl style="width: 100px; height: 100px;"></div>
@@ -523,8 +525,18 @@ var lastWord = ""
 var lastCleared = ""
 var fontScale = 1.2
 fontScaleInput.value = fontScale
-var useUnicode = true
+var useUnicode = false
 var agressiveRender = false
+
+var toolbars = document.querySelectorAll(".fullWidth")
+for (var i=0; i<toolbars.length; i++) {        
+    var toolbar = toolbars[i]
+    toolbar.style.width = innerWidth + "px"
+}
+c.style.width = innerWidth + "px"
+c.width = innerWidth * 3    
+
+
 
 
 var fonts = {
@@ -663,12 +675,13 @@ var fonts = {
         url: "http://192.168.0.21:8000/tepublic/notreal.ttf"
     },
 }
-// currentFont = fonts["Courier"]
-currentFont = fonts["SFMono"]
 
+// this gets changes later down.
+// Just need to set some variables I guess
+currentFont = fonts["Courier"]
+setFontVars()
 
-setFontVars() 
-
+// currentFont = fonts["SFMono"]
 // https://medium.com/@caulfieldOwen/programming-fonts-a-visual-guide-567fc210d2c6
 // https://vfoley.xyz/lesser-known-coding-fonts/
 // https://www.programmingfonts.org/#iosevka
@@ -693,7 +706,7 @@ var cursorY=0
 var marginLeft = 5
 // Note that the width and height need to match
 // the width and height of the canvas tag attribute.
-canvasWidth=1125
+canvasWidth=innerWidth * 3
 //var canvasWidth=600
 // I turned off "Predictive" to get more vertical space
 // TODO: make these configurable in UI
@@ -756,6 +769,7 @@ var scrollTimeout
 var useRegexSearch = true
 // TODO: as you add or delete lines
 // go thru these locations and update them
+selectFont("RobotoMono")
 setInterval(function() {
     if (!fx) {
         return
@@ -1308,8 +1322,8 @@ function updateFontScale() {
     render()
 }
 function setFontVars() {
-    fontHeight= currentFont.fontHeightPre * fontScale
-    fontWidth= currentFont.fontWidthPre * fontScale
+    fontHeight = currentFont.fontHeightPre * fontScale
+    fontWidth = currentFont.fontWidthPre * fontScale
     fontCSS = (currentFont.fontSize * fontScale) + "px '"+currentFont.fontName+"', ui-monospace"
     fontCSSEmoji = (currentFont.fontSize * fontScale * .6) + "px '"+currentFont.fontName+"', ui-monospace"
     extraYEmoji = (currentFont.fontSize * fontScale * .6) / 2
@@ -1592,6 +1606,7 @@ function docChanged(preventUndo) {
         // log("u1: " + (Date.now() - start))
     }
     renderSaves()
+    lastRenderFullScreenForSet = false
 }
 function saveUndo(preventUndo) {
     // 3 ways of doing undo
@@ -2668,9 +2683,9 @@ function setCanvasHeightAccordingly() {
             setCanvasHeight(canvasHeightKeyboard - heightReduction)
         }
     } else {
-       if (fx.fileMode == "bash") {
+       if (fx && fx.fileMode == "bash") {
            setCanvasHeight(canvasHeightBash - heightReduction)   
-       } else if (fx.fileMode == "terminal") {
+       } else if (fx && fx.fileMode == "terminal") {
            setCanvasHeight(canvasHeightTerminal - heightReduction)   
        } else {
            setCanvasHeight(canvasHeightFull - heightReduction)   
@@ -4127,11 +4142,19 @@ function sendViewToServer() {
 var renderURLTimeout
 var waitingRender = false
 var lastRender = 0
-var maxFrameRate = 16
-// var maxFrameRate = 0
+// var maxFrameRate = 16
+var maxFrameRate = 0
 var waitingServerRender = false
 var lastServerRender = 0
 var maxServerFrameRate = 100
+var lastRenderFx = null
+var lastRenderOffsetX = -9999
+var lastRenderOffsetY = -9999
+var lastRenderCursorLineIndex = -9999
+
+// TODO: potentially deprecate this
+var lastRenderFullScreenForSet = false
+
 function render() {
     if (preventRender) {
         return
@@ -4167,9 +4190,25 @@ function render() {
     lastRender = Date.now()
     
 
-    // var start = Date.now()
-    c.width = c.width // one way to clear
+    var start = Date.now()
+    var shouldSetIt = false
+    if (fx == lastRenderFx && lastRenderOffsetY == fx.offsetY && lastRenderOffsetX == fx.offsetX) {
+        if (lastRenderFullScreenForSet) {
+            minY = min(fx.cursorLineIndex, lastRenderCursorLineIndex) - fx.offsetY - 1   
+            maxY = max(fx.cursorLineIndex, lastRenderCursorLineIndex) - fx.offsetY + 2    
+            t.clearRect(0, minY * fontHeight, c.width, (maxY - minY) * fontHeight)
+        } else {
+            c.width = c.width // one way to clear
+            shouldSetIt = true
+        }
+    } else {
+        c.width = c.width // one way to clear
+        lastRenderFullScreenForSet = false
+    }
     renderInternal()
+    if (shouldSetIt) {
+        // lastRenderFullScreenForSet = true
+    }
     // log("r1: " + (Date.now() - start))
     if (inDebugView) {
         s.innerHTML =
@@ -4242,8 +4281,12 @@ function render() {
         // TODO: have a state variable for what it should be.
         // if this is not here then after tap to erase we loose cursor pos
         // we can maybe come up with a way around it
-        if (document.activeElement == theText) {
-            setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+        // Note this also happens somewhere in onMove
+        // TODO: does it need to happen in both places?
+    	if (agressiveRender || (touchCount == 0 && document.activeElement == theText)) {
+            if (document.activeElement == theText) {
+                setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+            }
         }
         // log("expanded:" + expandTabIndex(cursorLine, cursorLine.length))
     }
@@ -4308,6 +4351,11 @@ function render() {
         t = oldT
         sendViewToServer()
     }
+    
+    lastRenderFx = fx
+    lastRenderOffsetY = fx.offsetY
+    lastRenderOffsetX = fx.offsetX
+    lastRenderCursorLineIndex = fx.cursorLineIndex
 }
 
 // this is a workaround for iphone 12 mini issue where dom is slow
@@ -4424,8 +4472,13 @@ function renderInternal() {
 
     // Note, we tried doing an extra loop for line numbers first so we change colors less
     //but didn't seem like it improved things
-
-    for (var y=0; y < maxLines; y++) {
+    var minY = 0 
+    var maxY = maxLines 
+    if (lastRenderFullScreenForSet && fx == lastRenderFx && lastRenderOffsetY == fx.offsetY && lastRenderOffsetX == fx.offsetX) {
+        minY = min(fx.cursorLineIndex, lastRenderCursorLineIndex) - fx.offsetY - 1   
+        maxY = max(fx.cursorLineIndex, lastRenderCursorLineIndex) - fx.offsetY + 2    
+    }
+    for (var y=minY; y < maxY; y++) {
         // show the end of the document
         // if (y + fx.offsetY >= fx.lines.length) {
         //   t.fillStyle = "#222"
@@ -4927,9 +4980,12 @@ function onStart(e) {
 
         }
         render()
-        if (document.activeElement==theText) {
-            //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-            setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+        // See comment in render asking if we need to do this here too
+        // this optimization was for Nokia 1.4, 
+    	if (agressiveRender || (touchCount == 0 && document.activeElement == theText)) {
+            if (document.activeElement == theText) {
+                setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+            }
         }
         return false
     }
