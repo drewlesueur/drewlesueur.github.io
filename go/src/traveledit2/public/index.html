@@ -614,7 +614,8 @@ var fonts = {
         fontName: "IosevkaLucida",
         // TODO: fix url/path etc
         // url: "http://tel.drewles.com:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf"
-        url: "http://192.168.0.21:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf"
+        //url: "http://192.168.0.21:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf"
+        url: proxyPath + "/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf"
     },
     "IosevkaThin": {
         fontHeightPre: 36,
@@ -769,7 +770,7 @@ var scrollTimeout
 var useRegexSearch = true
 // TODO: as you add or delete lines
 // go thru these locations and update them
-selectFont("RobotoMono")
+selectFont("IosevkaLucida")
 setInterval(function() {
     if (!fx) {
         return
