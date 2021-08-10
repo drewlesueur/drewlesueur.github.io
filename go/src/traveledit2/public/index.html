@@ -6163,6 +6163,17 @@ function getLinesForFileList() {
     // marker lime
     treeFiles = []
     treeFilesShadow = []
+    
+    
+    for (let i = 0; i < files.length; i++) {
+        // treeFiles.push(files[i].fullPath.split("/").reverse().join(" < "))
+        treeFiles.push(files[i].fullPath.split("/").slice(-1)[0])
+        // treeFilesShadow.push(files[i].fullPath)
+        treeFilesShadow.push(files[i])
+    }
+    treeFiles.push("-")
+    treeFilesShadow.push(null)
+    
     treeToLines(fileTree, "", "", "")
     return treeFiles
 }

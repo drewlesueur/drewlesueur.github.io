@@ -1,3 +1,11 @@
+keep the current file button in view
+
+refreshing doesn't preserve bashcwd for terminals
+    or from terminal to terminal?
+does cmd bashcwd get preserved as it changes
+
+-----
+
 a version that can connect to another server via ssh and
 doesn't need any server program running. uses exiting
 programs like patch, md5sum, ls, cat, etc.
