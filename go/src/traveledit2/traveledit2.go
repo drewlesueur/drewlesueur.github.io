@@ -1064,7 +1064,10 @@ func main() {
 		}
 	})
 
-	mainMux := gziphandler.GzipHandler(mux)
+    var mainMux http.Handler = mux
+    if os.Getenv("NOGZIP") != "1" {
+        mainMux = gziphandler.GzipHandler(mux)
+    }
 	if os.Getenv("NOBASICAUTH") == "" {
 		mainMux = BasicAuth(mainMux)
 	}
