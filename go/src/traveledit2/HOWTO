@@ -2,3 +2,99 @@ If you have an existing apache, start up this server and add this line to proxy
 
 ProxyPass        "/te" "http://localhost:3000"
 ProxyPass        "/myws" "ws://localhost:3000"
+
+
+If php setup, but can't proxy at apache level, you
+can proxy with php file:
+
+<?php
+
+$logged_in = checkLoggedIn() // however you need to check.
+if (!$logged_in) {
+    print "Must be logged in as as admin";
+    print '<button onclick="window.open(\'/sales\')">Open Sales</button>';
+    print '<button onclick="window.reload()">refresh</button>';
+    exit();
+}
+
+$fp = fsockopen("127.0.0.1", 8080, $errno, $errstr, 10);
+if (!$fp) {
+    echo "proxy error: $errstr ($errno)";
+    exit();
+}   
+
+$out = $_SERVER['REQUEST_METHOD'] . " " . $_SERVER['REQUEST_URI'] . " HTTP/1.1\r\n";
+$out .= "Host: 127.0.0.1\r\n";
+$out .= "Connection: close\r\n";
+$headers = getallheaders();
+
+$body = file_get_contents('php://input');
+
+foreach ($headers as $key => $value) {
+	if ($key == "Host") {
+		continue;
+	}
+	$out .= "$key: $value\r\n";
+}
+$out .= "\r\n";
+$out .= $body;
+fwrite($fp, $out);
+
+$response = "";
+while (!feof($fp)) {
+	//echo fgets($fp, 128);
+	//fwrite(STDOUT, fgets($fp, 128));
+	//header(fgets($fp, 128));
+	$response .= fgets($fp, 128);
+}
+fclose($fp);
+
+
+//echo json_encode($response);
+//exit();
+
+
+// Note: you could parse this on the fly instead of buffering the whole thing up, then parsing.
+$crlf = "\r\n";
+$last_end = 0;
+$is_chunked = false;
+$actual_body = "";
+for ($i = 0; $i < 100; $i++) {	 // max 100 headers
+	$p = strpos($response, $crlf, $last_end);
+	if ($p === $last_end) {
+		if (!$is_chunked) {
+			echo substr($response, $p+2);
+			//echo "not chunked";
+		} else {
+			$last_chunk_size_pos = $p+2;
+			for ($j = 0; $j < 10000; $j++) { // max 10k chunks
+				$chunk_size_pos = strpos($response, $crlf, $last_chunk_size_pos);
+				$chunk_size_hex = substr($response, $last_chunk_size_pos, ($chunk_size_pos - $last_chunk_size_pos));
+				//echo "hex: " . json_encode($chunk_size_hex) . "\n";
+				$chunk_size = hexdec($chunk_size_hex);
+				if ($chunk_size == 0) {
+					break;	
+				}
+				//echo "chunk size: " . $chunk_size . "\n";
+				$last_chunk_size_pos = $chunk_size_pos+2+$chunk_size+2;
+				$actual_body .= substr($response, $chunk_size_pos+2, $chunk_size); 
+
+			}	
+			header("Content-Length: " . strlen($actual_body));
+			//echo("Content-Length: " . strlen($actual_body) . "\n");
+			echo $actual_body;
+		}
+		//echo "the body!! " . (strlen($response) - ($p+2)) . "\n" ;
+		break;
+	} else {
+		$header_line = substr($response, $last_end, $p - $last_end);
+		if (strpos($header_line, "Transfer-Encoding: chunked") === 0) {
+			$is_chunked = true;
+			$last_end = $p + 2;	
+			continue;
+		}
+		//echo "Header:" . json_encode($header_line) . "\n";
+		header($header_line);
+	}
+	$last_end = $p + 2;	
+}
