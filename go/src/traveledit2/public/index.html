@@ -6167,7 +6167,7 @@ function getLinesForFileList() {
     
     for (let i = 0; i < files.length; i++) {
         // treeFiles.push(files[i].fullPath.split("/").reverse().join(" < "))
-        treeFiles.push(files[i].fullPath.split("/").slice(-1)[0])
+        treeFiles.push(files[i].name || files[i].fullPath.split("/").slice(-1)[0])
         // treeFilesShadow.push(files[i].fullPath)
         treeFilesShadow.push(files[i])
     }

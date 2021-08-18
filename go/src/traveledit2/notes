@@ -1,3 +1,21 @@
+autocomplete should still remember last word (do we keep remember last word?)
+
+new idea, edit mode tap to select word
+when selected tap will toggle through paste over, delete, unselect  
+
+another idea, last deleted and copied are always 2 paste biffers?
+
+lastTypedWord deletedWord copiedWord
+
+yo: smthng.yo,
+hiya: smthng.hiya,
+biz is biz so rhe biz
+the  find next (next form el arrow), tap, tap feature is gone?
+(simple makeshift find and replace)
+
+in edit mode the next line and prev line (next/prev form arrows are gone) 
+------
+
 keep the current file button in view
 
 refreshing doesn't preserve bashcwd for terminals
