@@ -5123,7 +5123,9 @@ function onStart(e) {
                 return
             }
 
-            if (document.activeElement == theText) {
+            // if (document.activeElement == theText) {
+            // the !hasMovedSinceCut is so we can paste inline without going in to insert mode
+            if (document.activeElement == theText || !hasMovedSinceCut) {
                 // #alternateTap
                 var w = getWordBeforeCursor()
                 if (lastAction == "move" || w.word == "") {
@@ -5133,19 +5135,20 @@ function onStart(e) {
                         paste(false)
                     } else if (w.word != "") {
                         var sr = {}
+                        var theLine = fx.lines[fx.cursorLineIndex] || ""
                         sr.startY = fx.cursorLineIndex
-                        sr.startX = w.start
+                        sr.startX = expandTabIndex(theLine, w.start)
                         sr.stopY = fx.cursorLineIndex
-                        sr.stopX = w.end
+                        sr.stopX = expandTabIndex(theLine, w.end)
                         fx.selectedRegions = [sr]
                         render()
                     }
                 } else {
+                    // this condition used to not be there
+                    // and we'd acWordToggle every time (alternate paste flow)
                     acWordToggle()
                 }
-            }
-
-            if (document.activeElement != theText) {
+            } else {
                 if (fx.cursorLineIndex >= fx.lines.length) {
                     fx.cursorLineIndex = fx.lines.length - 1
                     updateCursorXY()
