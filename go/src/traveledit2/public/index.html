@@ -2719,6 +2719,9 @@ function paste(unselect, pasteBefore) {
     pasteLines(copyBuffer, unselect, pasteBefore)
 }
 function pasteLines(copyBuffer, unselect, pasteBefore) {
+    if (!hasMovedSinceCut && globalOldCopyBuffer.length) {
+        copyBuffer = globalOldCopyBuffer
+    }
     if (copyBuffer.length == 0) {
         return
     }
@@ -2750,6 +2753,18 @@ function pasteLines(copyBuffer, unselect, pasteBefore) {
                 copyBuffer[0] +
                 fx.lines[fx.cursorLineIndex].slice(u(fx.cursorColIndex))
             )
+            
+            // #alternateTap
+            if (!unselect) {
+                var theLine = fx.lines[fx.cursorLineIndex] || ""
+                var sr = {
+                    startY: fx.cursorLineIndex,
+                    startX: fx.cursorColIndex,
+                    stopX: expandTabIndex(theLine, u(fx.cursorColIndex) + copyBuffer[0].length),
+                    stopY: fx.cursorLineIndex,
+                }
+                fx.selectedRegions = [sr]
+            }
         } else {
             var line = fx.lines[fx.cursorLineIndex]
             // fx.lines[fx.cursorLineIndex] = line.slice(0, u(fx.cursorColIndex)) +
@@ -2761,13 +2776,30 @@ function pasteLines(copyBuffer, unselect, pasteBefore) {
             // fx.lines.splice(fx.cursorLineIndex+1, 0, ...copyBuffer.slice(1))
             lastLine = copyBuffer[copyBuffer.length-1] + line.slice(u(fx.cursorColIndex))
             fx.lines.splice(fx.cursorLineIndex+1, 0, ...copyBuffer.slice(1, -1), lastLine)
+            
+            // #alternateTap
+            if (!unselect) {
+                var lastCopyBufferLine = copyBuffer[copyBuffer.length - 1]
+                var sr = {
+                    startY: fx.cursorLineIndex,
+                    startX: fx.cursorColIndex,
+                    stopX: expandTabIndex(lastCopyBufferLine, lastCopyBufferLine.length, null, null, "nocache"),
+                    stopY: fx.cursorLineIndex + copyBuffer.length - 1,
+                }
+                fx.selectedRegions = [sr]
+            }
         }
     }
     docChanged()
     render()
 }
 
+var globalOldCopyBuffer = []
+var hasMovedSinceCut = true
 function del(preventCopy, preventDeleteWholeLine) {
+    globalOldCopyBuffer = copyBuffer
+    hasMovedSinceCut = false
+    
     if (fx.selectedRegions.length>0) {
         var r = fx.selectedRegions[0]
         if (r.startY == r.stopY) {
@@ -2779,6 +2811,11 @@ function del(preventCopy, preventDeleteWholeLine) {
                 }
                 fx.lines.splice(r.startY, 1)
                 fx.selectedRegions = []
+                if (r.startY > 0) {
+                    // subtract 1 so we can paste right afer
+                    fx.cursorLineIndex = r.startY - 1
+                    updateCursorXY()
+                }
                 docChanged()
                 render()
                 return
@@ -2808,6 +2845,7 @@ function del(preventCopy, preventDeleteWholeLine) {
                 return
             }
         }
+        var fullLines = r.startX == 0 && unExpandTabIndex(fx.lines[r.stopY], r.stopX, r.stopY) == fx.lines[r.stopY].length
         if (!preventCopy) {
             // cutBuffer = [
             copyBuffer = [
@@ -2829,6 +2867,14 @@ function del(preventCopy, preventDeleteWholeLine) {
         }
         fx.cursorLineIndex = r.startY
         fx.cursorColIndex = r.startX
+        
+        // if full lines then move cursor up once to paste
+        if (fullLines) {
+            fx.cursorColIndex = -5
+            if (fx.cursorLineIndex > 0) {
+                fx.cursorLineIndex -= 1
+            }
+        }
         updateCursorXY()
         fx.selectedRegions = []
         docChanged()
@@ -4891,6 +4937,7 @@ function onStart(e) {
         lastSearchDirForSameTerm = ""
         shouldAutocompleteLine = false
         hasMovedSinceNewLine = true
+        hasMovedSinceCut = true
         acWord = null
         clearTimeout(selectTimeout)
         if (e.touches.length > 1) {
@@ -5077,7 +5124,25 @@ function onStart(e) {
             }
 
             if (document.activeElement == theText) {
-                acWordToggle()
+                // #alternateTap
+                var w = getWordBeforeCursor()
+                if (lastAction == "move" || w.word == "") {
+                    var w = getWordAtCursor()
+                    if (w.word == "" || w.start == fx.cursorColIndex) {
+                        selectMode = "char"
+                        paste(false)
+                    } else if (w.word != "") {
+                        var sr = {}
+                        sr.startY = fx.cursorLineIndex
+                        sr.startX = w.start
+                        sr.stopY = fx.cursorLineIndex
+                        sr.stopX = w.end
+                        fx.selectedRegions = [sr]
+                        render()
+                    }
+                } else {
+                    acWordToggle()
+                }
             }
 
             if (document.activeElement != theText) {
@@ -5113,9 +5178,13 @@ function onStart(e) {
         }
 
         cursorType = "move"
-        if (!selectedRegion.stopped) {// this only matters if it is selected I think
+        // #alternateTap
+        if (false && !selectedRegion.stopped) {// this only matters if it is selected I think
             // TODO: what is this feature?
             // for selecting a word?
+            // selectWord Fearure
+            // this happens when you hold down for a while and then let go
+            // we should deprecate this?
             var w = getWordAtCursor()
             if (w.word != "") {
                 selectedRegion.startY = fx.cursorLineIndex
@@ -5465,14 +5534,9 @@ function acWordToggle(recursive) {
             shouldAutocompleteLine = false 
         } else {
             acWord.startX = expandTabIndex(theLine, w.start)
-            log("yoyo the startX is " + acWord.startX)
             acWord.stopX = expandTabIndex(theLine, w.end)
             acWord.word = w.word
         }
-        // because we move the current file to the front
-        // this will be true.
-        // update: not true anymore
-        // acWord.fileIndex = 0
         acWord.fileIndex = files.indexOf(fx)
         if (acWord.fileIndex == -1) {
             acWord.fileIndex = 0

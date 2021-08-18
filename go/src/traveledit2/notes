@@ -1,3 +1,8 @@
+if you cut then paste right away then it will
+know you meant to paste the previous paste buffer
+
+-----
+
 autocomplete should still remember last word (do we keep remember last word?)
 
 new idea, edit mode tap to select word
