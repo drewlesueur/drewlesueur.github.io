@@ -2356,7 +2356,10 @@ function scriptLinesInline() {
         setLines(retLines) 
         docChanged()
     } else {
-        pasteLines(retLines,false, true)
+        hasMovedSinceCut = true
+        log("====retLines")
+        log(retLines)
+        pasteLines(retLines, false, false)
     }
     
     preventRender = oldPreventRender
@@ -2408,7 +2411,8 @@ function scriptLines() {
         setLines(retLines) 
         docChanged()
     } else {
-        pasteLines(retLines,false, true)
+        hasMovedSinceCut = true
+        pasteLines(retLines, false, false)
     }
     
     preventRender = oldPreventRender
@@ -2720,6 +2724,7 @@ function paste(unselect, pasteBefore) {
 }
 function pasteLines(copyBuffer, unselect, pasteBefore) {
     if (!hasMovedSinceCut && globalOldCopyBuffer.length) {
+        log("=====used globalOldCopyBuffer")
         copyBuffer = globalOldCopyBuffer
     }
     if (copyBuffer.length == 0) {
@@ -5123,9 +5128,9 @@ function onStart(e) {
                 return
             }
 
-            // if (document.activeElement == theText) {
             // the !hasMovedSinceCut is so we can paste inline without going in to insert mode
-            if (document.activeElement == theText || !hasMovedSinceCut) {
+            // if (document.activeElement == theText || !hasMovedSinceCut) {
+            if (document.activeElement == theText) {
                 // #alternateTap
                 var w = getWordBeforeCursor()
                 if (lastAction == "move" || w.word == "") {
@@ -6231,15 +6236,17 @@ function getLinesForFileList() {
     treeFiles = []
     treeFilesShadow = []
     
-    
-    for (let i = 0; i < files.length; i++) {
-        // treeFiles.push(files[i].fullPath.split("/").reverse().join(" < "))
-        treeFiles.push(files[i].name || files[i].fullPath.split("/").slice(-1)[0])
-        // treeFilesShadow.push(files[i].fullPath)
-        treeFilesShadow.push(files[i])
+    var showFilesFlatFirst = false
+    if (showFilesFlatFirst) {
+        for (let i = 0; i < files.length; i++) {
+            // treeFiles.push(files[i].fullPath.split("/").reverse().join(" < "))
+            treeFiles.push(files[i].name || files[i].fullPath.split("/").slice(-1)[0])
+            // treeFilesShadow.push(files[i].fullPath)
+            treeFilesShadow.push(files[i])
+        }
+        treeFiles.push("-")
+        treeFilesShadow.push(null)
     }
-    treeFiles.push("-")
-    treeFilesShadow.push(null)
     
     treeToLines(fileTree, "", "", "")
     return treeFiles
