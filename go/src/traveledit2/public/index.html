@@ -130,8 +130,8 @@ body.light .toolbar div.selected {
 }
 .toolbar .longButton {
     padding: 0px;
-    --width: 80px;
-    width: 60px;
+    width: 80px;
+    -- width: 60px;
     --height: 28px;
     height: 34px;
     margin: 1px;
@@ -759,7 +759,8 @@ var moveHomeEndTimeout
 var moveHomeEndTimeoutMillis = 100
 var moveHomeEndDirection
 var selectTimeout
-var selectTimeoutMillis = 750
+// var selectTimeoutMillis = 750
+var selectTimeoutMillis = 300
 var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
@@ -917,7 +918,6 @@ function simpleDiffOld(aLines, bLines, showSame) {
         var aLine = aLines[ai]    
         for (var b=bLastMatched+1; b<=bi; b++) {
             var bLine = bLines[b]    
-            // log("a comparing " + aLine + " " + bLine)
             if (aLine == bLine) {
                 if (!showSame && (aLastMatched+1<ai || bLastMatched+1<b)) {
                     ret.push("@@ -" + (aLastMatched+2) + " @@")
@@ -941,7 +941,6 @@ function simpleDiffOld(aLines, bLines, showSame) {
         var bLine = bLines[bi]    
         for (var a=aLastMatched+1; a<=ai-1; a++) {
             var aLine = aLines[a]    
-            // log("b comparing " + bLine + " " + aLine)
             if (aLine == bLine) {
                 if (!showSame && (aLastMatched+1<a || bLastMatched+1<bi)) {
                     ret.push("@@ -" + (aLastMatched+2) + " @@")
@@ -1008,7 +1007,6 @@ function simpleDiffOld2(aLines, bLines, showSame) {
         var aLine = aLines[ai]    
         for (var b=bLastMatched+1; b<=bi; b++) {
             var bLine = bLines[b]    
-            // log("a comparing " + aLine + " " + bLine)
             if (aLine == bLine && (lastMatched || (!aLine || (aLine.trim() != "" && aLine.trim() != "}" && !aLine.trim().startsWith("</"))))) {
                 lastMatched = true
                 if (!showSame && (aLastMatched+1<ai || bLastMatched+1<b)) {
@@ -1033,7 +1031,6 @@ function simpleDiffOld2(aLines, bLines, showSame) {
         var bLine = bLines[bi]    
         for (var a=aLastMatched+1; a<=ai-1; a++) {
             var aLine = aLines[a]    
-            // log("b comparing " + bLine + " " + aLine)
             // if (aLine == bLine) {
             if (aLine == bLine && (lastMatched || (!aLine || (aLine.trim() != "" && aLine.trim() != "}" && !aLine.trim().startsWith("</"))))) {
                 lastMatched = true
@@ -1105,7 +1102,6 @@ function simpleDiffOld3(aLines, bLines, showSame) {
         var aLine = aLines[ai]    
         for (var b=bLastMatched+1; b<=bi; b++) {
             var bLine = bLines[b]    
-            // log("a comparing " + aLine + " " + bLine)
             if (aLine != bLine) {
                 continue
             }
@@ -1153,7 +1149,6 @@ function simpleDiffOld3(aLines, bLines, showSame) {
         var bLine = bLines[bi]    
         for (var a=aLastMatched+1; a<=ai-1; a++) {
             var aLine = aLines[a]    
-            // log("b comparing " + bLine + " " + aLine)
             // if (aLine == bLine) {
             if (aLine != bLine) {
                 continue
@@ -1381,7 +1376,6 @@ function editSearch() {
     searchText.focus()
 }
 function focusSearchText() {
-    log("focus search text")
     window.scrollTo(0, 0)
     searchText.setSelectionRange(0, searchText.value.length)
     searchText.style.display = "block"
@@ -1395,7 +1389,6 @@ function inputSearchText() {
     render()
 }
 function blurSearchText() {
-    log("blurSearchText")
     theText.style.display = "block"
     searchText.style.display = "none"
     setCanvasHeightAccordingly()
@@ -1669,7 +1662,6 @@ function updateLineFile(file, index, value) {
     if (useUnicode) {
         theLine = new String(value)
         theLine.cachedGraphemes = splitter.splitGraphemes(value)
-        // log("splitGraphemes2! " + Date.now())
         file.lines[index] = theLine
     } else {
         file.lines[index] = value
@@ -1688,7 +1680,6 @@ function getCachedGraphemes(theLine, index, file, nocache) {
         return theLine.cachedGraphemes
     }
     var graphemes = splitter.splitGraphemes(theLine)
-    // log("splitGraphemes! " + Date.now())
     if (nocache == "nocache") {
         return graphemes
     }
@@ -2331,7 +2322,6 @@ function scriptLinesInline() {
             }            
         }
         var funcBody = theScriptLines.join("\n")
-        log("funcBody: " + funcBody)
         var f = function(x) {
             return x
         }
@@ -2356,9 +2346,6 @@ function scriptLinesInline() {
         setLines(retLines) 
         docChanged()
     } else {
-        hasMovedSinceCut = true
-        log("====retLines")
-        log(retLines)
         pasteLines(retLines, false, false)
     }
     
@@ -2385,7 +2372,6 @@ function scriptLines() {
             }            
         }
         var funcBody = theScriptLines.join("\n")
-        log("funcBody: " + funcBody)
         var f = function(x) {
             return x
         }
@@ -2411,7 +2397,6 @@ function scriptLines() {
         setLines(retLines) 
         docChanged()
     } else {
-        hasMovedSinceCut = true
         pasteLines(retLines, false, false)
     }
     
@@ -2719,12 +2704,11 @@ function insertText(theLines, yOffset, xOffset) {
     render()
     copyBuffer = oldCopyBuffer
 }
-function paste(unselect, pasteBefore) {
-    pasteLines(copyBuffer, unselect, pasteBefore)
+function paste(unselect, pasteBefore, fromTap) {
+    pasteLines(copyBuffer, unselect, pasteBefore, fromTap)
 }
-function pasteLines(copyBuffer, unselect, pasteBefore) {
-    if (!hasMovedSinceCut && globalOldCopyBuffer.length) {
-        log("=====used globalOldCopyBuffer")
+function pasteLines(copyBuffer, unselect, pasteBefore, fromTap) {
+    if (fromTap && !hasMovedSinceCut && globalOldCopyBuffer.length) {
         copyBuffer = globalOldCopyBuffer
     }
     if (copyBuffer.length == 0) {
@@ -2924,7 +2908,6 @@ function insertLine(closeCurly, oMode) {
     var prevChar = theLine[u(fx.cursorColIndex - 1)]
     var nextChar = theLine[u(fx.cursorColIndex)]
     var strIndex = theText.selectionStart
-    log([prevChar, nextChar])
     
     // if they are at the beginning, or there is an auto-closer before us
     // then we don't want oMode
@@ -3152,7 +3135,6 @@ function pollTerminals() {
                                 file.cursorColIndex = prevLine.length
                                 setSelectionRangeForText(prevLine.length, prevLine.length)
                             } else {
-                                log("normal!!")
                                 // file.lines[file.lines.length-1] = theLine.slice(0, -1)
                                 updateLineFile(file, file.lines.length-1, theLine.slice(0, -1))
                             } 
@@ -3667,7 +3649,6 @@ function handleFocusAfter() {
 
 function handleFocusBefore() {
     // if you have something to search, make it search.
-    log("here in before land")
     if (searchText.value) {
         findUp()
     } else {
@@ -3721,7 +3702,6 @@ function handleSearchFocusBefore() {
     setCanvasHeightAccordingly()
     findUp()
     searchText.setSelectionRange(searchText.value.length, searchText.value.length)
-    log("searchUppy")
 }
 function handleSearchFocusAfter() {
     theText.style.display = "none"
@@ -3730,7 +3710,6 @@ function handleSearchFocusAfter() {
     setCanvasHeightAccordingly()
     findDown()
     searchText.setSelectionRange(searchText.value.length, searchText.value.length)
-    log("searchDowny")
 }
 
 // pressing the save button disables autosave
@@ -3766,7 +3745,6 @@ function save() {
         var fetchPromise
         if (saveDiffs) {
             var theDiff = simpleDiffOld3(fx.undo.lastSavedLines, fx.lines, false).join("\n")
-            log(theDiff)
             if (theDiff == "") {
                 fx.savedVersion = fx.savingVersion
                 fx.savingVersion = -1
@@ -3849,7 +3827,6 @@ function handleKeydown(e) {
             return
         }
         sendTerminal(mapped)
-        log(e.key + "(" + mapped + ") (" + e.keyCode + ")" + "("+ JSON.stringify(mapped)+")")
         
         ctrlDown = false
         e.stopPropagation()
@@ -4261,7 +4238,6 @@ function render() {
     if (shouldSetIt) {
         // lastRenderFullScreenForSet = true
     }
-    // log("r1: " + (Date.now() - start))
     if (inDebugView) {
         s.innerHTML =
             lastWord + " " +
@@ -4340,7 +4316,6 @@ function render() {
                 setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
             }
         }
-        // log("expanded:" + expandTabIndex(cursorLine, cursorLine.length))
     }
     
     
@@ -4382,7 +4357,6 @@ function render() {
         // 5 for the line number margin
         var section = Math.floor((fx.cursorColIndex + 5) / maxCols)
         fx.offsetX = (section * maxCols) - 5
-        // log(section)
         
         t = mockCanvasContext
         mockCanvasContext.lastFillStyle = "black",
@@ -4395,7 +4369,6 @@ function render() {
         
         // var start = Date.now()
         renderInternal()
-        // log("r2: " + (Date.now() - start))
         
         fx.offsetX = oldOffsetX
         maxCols = oldMaxCols
@@ -4649,7 +4622,6 @@ function renderInternal() {
                         // googled this
                         return (0.3 * r) + (.59 * g) + (.11 * b)
                     })
-                    // log("looking up color " + theFillStyle + " "+ grayed)
                     if (grayed < 128) {
                         textFillStyle = "white"    
                     } else {
@@ -4707,7 +4679,6 @@ function renderInternal() {
                         break
                     }
                     var numberOfSpaces = tabStop - ((tabPos) % tabStop) -1
-                    // log("tab at position: " + tabPos + ", num: " + numberOfSpaces)
                     // TODO: you can used cached repeated \t array
                     
                     expandedLine.splice(tabPos, 0, ...("\t".repeat(numberOfSpaces).split("")))
@@ -4715,7 +4686,6 @@ function renderInternal() {
                 }
                 if ((y + fx.offsetY) < fx.lines.length) {
                     fx.lines[y + fx.offsetY].tabCache = expandedLine
-                    // log("saving tab cache " + (theLine instanceof String) + " " + theLine)
                 }
                 
             }
@@ -4777,7 +4747,9 @@ function renderInternal() {
     t.fillRect(cursorX, cursorY, 4, fontHeight)
 
     // cursor
-    if (touchCount == 0) {
+    if (fx.selectedRegions.length) {
+        t.fillStyle = "olive"
+    } else if (touchCount == 0) {
         t.fillStyle = "orange"
     } else {
         t.fillStyle = "pink"
@@ -4859,7 +4831,6 @@ function max(a, b) {
 }
 
 function moveHomeEndAction() {
-    log("moveHomeEndAction")
     var theLine = fx.lines[fx.cursorLineIndex] || ""
     switch (moveHomeEndDirection) {
        case "up":
@@ -4937,7 +4908,12 @@ function onStart(e) {
             render()
         }
     }
+    
+    var hasSwitchedFile = false
+    var startCursorColIndex = fx.cursorColIndex
+    
     var onMove = function(e) {
+        log("startcci: " + startCursorColIndex)
         lastAction = "move"
         lastSearchDirForSameTerm = ""
         shouldAutocompleteLine = false
@@ -5001,13 +4977,20 @@ function onStart(e) {
             cursorX = 0
             // if (!changedY) fx.offsetX += Math.round(extendX/fontWidth)
             if (!changedY) fx.offsetX += Math.floor(extendX/fontWidth)
+
+            var prevOffsetX = fx.offsetX
             if (fx.offsetX < -marginLeft) fx.offsetX = -marginLeft
+            // if (!hasSwitchedFile && prevOffsetX < -50) {
+            // log("theoffsetx: " + fx.offsetX)
+            if (!hasSwitchedFile && !changedY && startCursorColIndex == -marginLeft && prevOffsetX < -20) {
+                hasSwitchedFile = true
+                seeFiles()
+            }
         }
         var oldCursorLineIndex = fx.cursorLineIndex
         // maybe have a setter for this?
         fx.cursorLineIndex = Math.round(cursorY/fontHeight) + fx.offsetY
         if (oldCursorLineIndex != fx.cursorLineIndex && dirtyInput) {
-            log("saving undo")
             saveUndo()
             dirtyInput = false
         }
@@ -5030,7 +5013,6 @@ function onStart(e) {
                 var _line = fx.lines[fx.cursorLineIndex] || ""
                 selectedRegion.stopX = expandTabIndex(_line, _line.length)
             }
-
         }
         render()
         // See comment in render asking if we need to do this here too
@@ -5048,6 +5030,16 @@ function onStart(e) {
         if (e.touches.length != 0) {
             return
         }
+        
+        // unselect if 0 length item is selected
+        var sr = fx.selectedRegions[0]
+        if (sr) {
+            if (sr.startX == sr.stopX && sr.startY == sr.stopY && fx.lines[sr.startY] != "") {
+                fx.selectedRegions = []
+                // should we return early here?
+            }
+        }
+        
         document.body.removeEventListener("touchmove", onMove)
         moveListenerCount = max(moveListenerCount-1, 0)
         document.body.removeEventListener("touchend", onEnd)
@@ -5137,7 +5129,7 @@ function onStart(e) {
                     var w = getWordAtCursor()
                     if (w.word == "" || w.start == fx.cursorColIndex) {
                         selectMode = "char"
-                        paste(false)
+                        paste(false, false, false, true)
                     } else if (w.word != "") {
                         var sr = {}
                         var theLine = fx.lines[fx.cursorLineIndex] || ""
@@ -5166,14 +5158,12 @@ function onStart(e) {
                     var bbox = c.getBoundingClientRect()
                     var pointX = startTouchX - bbox.left
                     var pointY = startTouchY - bbox.top
-                    log([pointX, pointY])
                     fx.cursorColIndex = Math.round(
                         ((pointX * 3)/fontWidth) + fx.offsetX
                     )  
                     fx.cursorLineIndex = Math.round(
                         ((pointY * 3)/fontHeight) + fx.offsetY
                     )
-                    log([startTouchX, startTouchY, fx.cursorColIndex, fx.cursorLineIndex])
                     updateCursorXY()  
                 }
                 
@@ -5592,12 +5582,10 @@ function acWordToggle(recursive) {
                     } 
                     if (acWord.autocompleteLine && !acWord.hasPlopped && !recursive) {
                         acWord = null
-                        log("all done")
                         acWordToggle(true)
                         return
                     }
                     acWord = null
-                    log("all done")
                     return
                 }
                 if (acWord.findUpDone && acWord.findDownDone) {
@@ -5643,7 +5631,6 @@ function acWordToggle(recursive) {
             }
 
             // here we have found a word
-            log({okfound: found})
             acPlop([trimPrefix(found, acWord.prefix)])
             break loopBlock
         }
@@ -6077,8 +6064,6 @@ function verifyLoadedMD5(f, md5String) {
     }
     if (md5String != f.undo.lastSavedHash) {
         log(`md5s don't match ${f.fullPath} ${md5String}; ${f.undo.lastSavedHash}`)
-    } else {
-        log(`md5s DO match ${f.fullPath} ${md5String}; ${f.undo.lastSavedHash}`)
     }
     
 }

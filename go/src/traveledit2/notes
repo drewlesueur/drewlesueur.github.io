@@ -1,6 +1,13 @@
+Script inline on the first line is bugged (off by one)
+----
+There are places where you need to set hasMovedSinceCut to false
+before pasting. Like before pasting in cmd. (maybe xterm too)
+or maybe there is a better way
+Same thing happens in command mode when you autocomplete and hit enter!
+
 if you cut then paste right away then it will
 know you meant to paste the previous paste buffer
-
+I think I fixed it
 -----
 
 autocomplete should still remember last word (do we keep remember last word?)
