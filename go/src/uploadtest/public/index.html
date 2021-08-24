@@ -1,0 +1,39 @@
+<!doctype html>
+
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
+</head>
+<body>
+<h1>Upload Test</h1>
+<form onsubmit="snagTime()" action="/upload" method=POST enctype="multipart/form-data">
+    <input type=file name=myfile />
+    <br />
+    <input type=submit value=Submit>
+</form>
+
+
+<script>
+// it's important that this go in it's own script tag
+window.onerror = function(message, url, lineNumber, columnNumber, error) {
+    alert(lineNumber + ": " + message)
+}
+</script>
+<script>
+function snagTime() {
+    localStorage.setItem('uploadStartTime', Date.now())
+}
+
+var uploadStartTime = localStorage.getItem("uploadStartTime") - 0
+if (uploadStartTime) {
+    var div = document.createElement("div")
+    var uploadDuration = (Date.now() - uploadStartTime) / 1000
+    div.innerHTML = "upload duration: " + uploadDuration.toFixed(2)
+    localStorage.removeItem("uploadStartTime")
+    document.body.appendChild(div)
+}
+
+var usp = new URLSearchParams()
+</script>
+</body>
+</html>
