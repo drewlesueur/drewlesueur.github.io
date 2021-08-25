@@ -65,8 +65,8 @@ document.write(`
     color: white;
 }
 .light {
-    background-color: lightyellow;
-    --background-color: white;
+    -- background-color: lightyellow;
+    background-color: white;
     color: black;
 }
 .text { border: none; color: cyan;
@@ -728,6 +728,7 @@ var pointWidth=325
 var pointHeight=500
 var touchScaleY = 2 // was 3 for a while, then 2 for a while
 var touchScaleX = 2 // was 3 for a while, then 2 for a while
+var touchScaleX = 1 // 1 now because of snapping
 
 var lastAction = "move" // move or type
 var lastSearchDirForSameTerm = "" // up or down or ""
@@ -754,13 +755,14 @@ var theStatus = {}
 // * terminal
 var knownContrastingColors = {}
 // if last keyDown is a backspace
+var wasWasDelete = false
 var wasDelete = false
 var moveHomeEndTimeout
 var moveHomeEndTimeoutMillis = 100
 var moveHomeEndDirection
 var selectTimeout
 // var selectTimeoutMillis = 750
-var selectTimeoutMillis = 300
+var selectTimeoutMillis = 1750
 var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
@@ -1763,6 +1765,47 @@ function isNumeric(s) {
     return (c >= 48 && c <= 57)
 }
 
+function getCharClass(a) {
+    if (a >= 65 && a <= 90) {
+        return "cap"
+    }
+    if (a >= 97 && a <= 122) {
+        return "low"
+    }
+    if (a >= 48 && a <= 57) {
+        return "num"
+    }
+    return a 
+}
+function findNextCharClass(theLine, index) {
+    var currClass = getCharClass(theLine.charCodeAt(index))
+    for (var i=index+1; i<theLine.length; i++) {
+        var nextClass = getCharClass(theLine.charCodeAt(i))
+        if (nextClass != currClass) {
+            if ((i == index+1) && currClass == "cap") {
+                currClass = nextClass
+                continue
+            }
+            return i
+        }
+    }  
+    return theLine.length 
+}
+function findPrevCharClass(theLine, index) {
+    var currClass = getCharClass(theLine.charCodeAt(index))
+    for (var i=index-1; i>=0; i--) {
+        var prevClass = getCharClass(theLine.charCodeAt(i))
+        if (prevClass != currClass) {
+            if ((i == index-1) && currClass == "cap") {
+                currClass = prevClass
+                continue
+            }
+            return i+1
+            continue
+        }
+    }
+    return 0
+}
 function isWordyChar(c) {
     return isWordy(c.charCodeAt(0))    
 }
@@ -2913,7 +2956,10 @@ function insertLine(closeCurly, oMode) {
     // then we don't want oMode
     // otherwise oMode is like typing o in vim
     // if (oMode && strIndex != 0 && !(prevChar in closingMap)) {
-    if (oMode && strIndex != 0 && (!prevChar || isWordy(prevChar.charCodeAt(0))) && (!nextChar || isWordy(nextChar.charCodeAt(0)))) {
+    if (oMode && !wasWasDelete && strIndex != 0 && (!prevChar || isWordy(prevChar.charCodeAt(0))) && (!nextChar || isWordy(nextChar.charCodeAt(0)))) {
+        // this is where we don't split the line at the cursor, but just insert a new line
+        // setting strIndex to theLine.length does that
+        // the wasWasDelete is so you can hit backspace and then return
         strIndex = theLine.length
         // get the smaller indent
         var theNextIndent = getIndent(fx.lines[fx.cursorLineIndex + 1] || "")
@@ -3833,7 +3879,10 @@ function handleKeydown(e) {
         e.preventDefault()
         return false
     }
+    
+    wasWasDelete = wasDelete
     wasDelete = e.keyCode == 8
+    log("wasWasDelete: " + wasWasDelete)
     // 8 means backspace
     if (e.keyCode == 8 && theText.selectionStart == 0 && fx.cursorLineIndex != 0) {
         e.preventDefault()
@@ -4913,7 +4962,6 @@ function onStart(e) {
     var startCursorColIndex = fx.cursorColIndex
     
     var onMove = function(e) {
-        log("startcci: " + startCursorColIndex)
         lastAction = "move"
         lastSearchDirForSameTerm = ""
         shouldAutocompleteLine = false
@@ -4941,9 +4989,24 @@ function onStart(e) {
         var signX = diffLastTouchX < 0 ? -1: 1
         var signY = diffLastTouchY < 0 ? -1 : 1
         thePow = firstMove ? 1 : 2
+        
+        // other attempt at #snappingCursor
+        // var charBefore = fx.lines[fx.cursorLineIndex][u(fx.cursorColIndex)-1] || "" 
+        // var charAfter = fx.lines[fx.cursorLineIndex][u(fx.cursorColIndex)]  || ""
+        // var oldTouchScaleX = touchScaleX
+        // // if (((charBefore != charAfter) && (!isWordy(charBefore.charAt(0))) || !isWordy(charAfter.charAt(0))) || fx.cursorColIndex == 0 || fx.cursorColIndex == expandTabIndex(fx.lines[fx.cursorLineIndex], -1)) {
+        // if ((charBefore != charAfter) && (!isWordy(charBefore.charCodeAt(0)) || !isWordy(charAfter.charCodeAt(0))) ) {
+        //     // log([charBefore, charAfter, isWordy(charBefore.charCodeAt(0))])
+        //     log("yay")
+        //     touchScaleX = touchScaleX / 10
+        // }
         if (!lockX) {
             cursorX = cursorX + ensureSign(signX, Math.round(Math.pow(diffLastTouchX, thePow)*touchScaleX))
         }
+        // touchScaleX = oldTouchScaleX
+        
+        
+        
         cursorY = cursorY + ensureSign(signY, Math.round(Math.pow(diffLastTouchY, thePow)*touchScaleY))
         lastTouchX = e.touches[0].pageX
         lastTouchY = e.touches[0].pageY
@@ -5001,8 +5064,24 @@ function onStart(e) {
         var _line = fx.lines[fx.cursorLineIndex] || ""
         if (_line.trim() == "") {
             hasMovedSinceNewLine = false
-        }   
+        }
+        var oldCursorColIndex = fx.cursorColIndex   
         fx.cursorColIndex = Math.round(cursorX/fontWidth) + fx.offsetX
+        
+        // #snappingCursor try 3
+        if (oldCursorColIndex != fx.cursorColIndex) {
+            var theIndex =  u(oldCursorColIndex)
+            var theLine = fx.lines[fx.cursorLineIndex] || ""
+            // var theChar = theLine.charCodeAt(theIndex)  
+            if (signX == -1 && theIndex > 0) {
+                fx.cursorColIndex = expandTabIndex(theLine, findPrevCharClass(theLine, theIndex-1))
+                updateCursorXY()
+            } else if (signX == 1 && theIndex > 0 && theIndex < theLine.length) {
+                fx.cursorColIndex = expandTabIndex(theLine, findNextCharClass(theLine, theIndex))
+                updateCursorXY()
+            }
+        }
+        
         firstMove = false
         if (cursorType == "select") {
             var line = fx.lines[fx.cursorLineIndex] || ""
@@ -5014,6 +5093,25 @@ function onStart(e) {
                 selectedRegion.stopX = expandTabIndex(_line, _line.length)
             }
         }
+        // attempt at #snappingCursor
+        // TODO: also look at snapping away whitespace
+        // var w = getWordAtCursor()
+        // if (w.word != "") {
+        //     var theLine = fx.lines[fx.cursorLineIndex] || ""
+        //     var wordStartX = expandTabIndex(theLine, w.start)
+        //     var wordEndX = expandTabIndex(theLine, w.end)
+        //     var percentInWord = (fx.cursorColIndex - wordStartX) / (wordEndX - wordStartX)    
+        //     log([signX, percentInWord.toFixed(2)])
+        //     if (signX == 1 && percentInWord >= .5 && fx.cursorColIndex != wordEndX) { // movedRight
+        //         fx.cursorColIndex = wordEndX
+        //         updateCursorXY()
+        //     } else if (signX == -1 && percentInWord <= .5 && fx.cursorColIndex != wordStartX) { // movedLeft
+        //         fx.cursorColIndex = wordStartX
+        //         updateCursorXY()
+        //     }
+        // }
+        
+        
         render()
         // See comment in render asking if we need to do this here too
         // this optimization was for Nokia 1.4, 
@@ -5022,6 +5120,7 @@ function onStart(e) {
                 setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
             }
         }
+        
         return false
     }
     var onEnd = function(e) {
@@ -5031,7 +5130,7 @@ function onStart(e) {
             return
         }
         
-        // unselect if 0 length item is selected
+         //         fx.cursorColIndex = wordEndX
         var sr = fx.selectedRegions[0]
         if (sr) {
             if (sr.startX == sr.stopX && sr.startY == sr.stopY && fx.lines[sr.startY] != "") {
@@ -5082,7 +5181,7 @@ function onStart(e) {
                     return   
                 }
                 selectMode = "line"
-                paste()
+                paste(false, false, true)
                 return
             }
             if (fx.fileMode == "terminal") {
@@ -5129,7 +5228,7 @@ function onStart(e) {
                     var w = getWordAtCursor()
                     if (w.word == "" || w.start == fx.cursorColIndex) {
                         selectMode = "char"
-                        paste(false, false, false, true)
+                        paste(false, false, true)
                     } else if (w.word != "") {
                         var sr = {}
                         var theLine = fx.lines[fx.cursorLineIndex] || ""
