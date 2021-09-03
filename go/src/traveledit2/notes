@@ -1,3 +1,5 @@
+
+---
 Script inline on the first line is bugged (off by one)
 ----
 There are places where you need to set hasMovedSinceCut to false

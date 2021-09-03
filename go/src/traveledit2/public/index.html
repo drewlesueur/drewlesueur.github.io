@@ -32,7 +32,7 @@ document.write(`
 // @font-face {
 //   font-family: GoMono;
 //   src: url(tepublic/fonts/Go-Mono.ttf);
-// }
+    // }
 
 // @import url('https://fonts.googleapis.com/css2?family=Courier+Prime&family=Inconsolata&family=JetBrains+Mono&family=Nanum+Gothic+Coding&family=Overpass+Mono&family=Oxygen+Mono&family=Roboto+Mono&family=Share+Tech+Mono&family=VT323&family=Xanh+Mono&display=swap');
 
@@ -65,8 +65,8 @@ document.write(`
     color: white;
 }
 .light {
-    -- background-color: lightyellow;
-    background-color: white;
+    background-color: lightyellow;
+    -- background-color: white;
     color: black;
 }
 .text { border: none; color: cyan;
@@ -728,7 +728,8 @@ var pointWidth=325
 var pointHeight=500
 var touchScaleY = 2 // was 3 for a while, then 2 for a while
 var touchScaleX = 2 // was 3 for a while, then 2 for a while
-var touchScaleX = 1 // 1 now because of snapping
+// #snappingCursor 3
+// var touchScaleX = 1 // 1 now because of snapping
 
 var lastAction = "move" // move or type
 var lastSearchDirForSameTerm = "" // up or down or ""
@@ -4593,9 +4594,11 @@ function renderInternal() {
                 }
                 // lime
                 if (isDark) {
-                    t.fillStyle = "blue"
+                    // t.fillStyle = "blue"
+                    t.fillStyle = "rgba(0,0,255,0.7)"
                 } else {
-                    t.fillStyle = "yellow"
+                    // t.fillStyle = "yellow"
+                    t.fillStyle = "rgba(255,255,0,0.7)"
                 }
                 
                 // TODO: expanding the same line, we could come up with optimization for that
@@ -5069,11 +5072,12 @@ function onStart(e) {
         fx.cursorColIndex = Math.round(cursorX/fontWidth) + fx.offsetX
         
         // #snappingCursor try 3
-        if (oldCursorColIndex != fx.cursorColIndex) {
+        // this was the best of the 3
+        if (false && oldCursorColIndex != fx.cursorColIndex) {
             var theIndex =  u(oldCursorColIndex)
             var theLine = fx.lines[fx.cursorLineIndex] || ""
             // var theChar = theLine.charCodeAt(theIndex)  
-            if (signX == -1 && theIndex > 0) {
+            if (signX == -1 && theIndex > 0 && theIndex < theLine.length) {
                 fx.cursorColIndex = expandTabIndex(theLine, findPrevCharClass(theLine, theIndex-1))
                 updateCursorXY()
             } else if (signX == 1 && theIndex > 0 && theIndex < theLine.length) {
