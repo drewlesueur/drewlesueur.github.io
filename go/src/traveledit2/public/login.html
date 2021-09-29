@@ -1,0 +1,28 @@
+<!doctype html>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
+<meta name="apple-mobile-web-app-title" content="Editor">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+
+input {
+    font-size:30px;
+}
+</style>
+
+<form onsubmit="return saveCookie()">
+<input id=usernameEl name=username>
+<input id=passwordEl name=password type=password>
+<input value=submit type=submit>
+</form>
+
+<script>
+function saveCookie() {
+    document.cookie = "pretendba=" + encodeURIComponent(btoa(usernameEl.value + ":" + passwordEl.value)) + "; Secure; SameSite=Strict"    
+    var theNew = window.location.href.split("/").slice(0, -1).join("/")
+    window.location = theNew
+    //alert(document.cookie)
+    document.body.style.backgroundColor = "blue"
+    return false
+}
+</script>
