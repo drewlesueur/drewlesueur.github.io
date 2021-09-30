@@ -323,6 +323,12 @@ func main() {
 	fs := http.FileServer(http.Dir("./public"))
 	mux.Handle("/tepublic/", http.StripPrefix("/tepublic/", fs))
 
+    publicPath2 := os.Getenv("PUBLICPATH")
+    if publicPath2 != "" {
+        fs2 := http.FileServer(http.Dir(publicPath2))
+        mux.Handle("/tepublic2/", http.StripPrefix("/tepublic2/", fs2))
+    }
+
 	mux.HandleFunc("/yo", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./public/yo.html")
 	})
