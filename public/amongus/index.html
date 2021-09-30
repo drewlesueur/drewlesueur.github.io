@@ -1,0 +1,34 @@
+
+<button id=b onclick="press()" style="touch-action: manipulation; font-size: 100px;">Press</button>
+
+<script>
+var state = "pressed"
+var players = 5
+var imposterIndex = Math.floor(Math.random() * players)
+// alert(imposterIndex)
+var pressIndex = 0
+
+function press() {
+    if (state == "wait") {
+        b.innerText = "Press"
+        b.style.color = "black"
+        state = "pressed"
+        return
+    }
+    
+    if (state == "pressed") {
+        state = "wait"
+        if (pressIndex >= players) {
+            b.innerText = "Play!"
+            b.style.color = "green"
+        } else if (imposterIndex == pressIndex) {
+            b.innerText = "Imposter"
+            b.style.color = "red"
+        } else {
+            b.innerText = "Crewmate"
+            b.style.color = "blue"
+        }
+        pressIndex++
+    }    
+}
+</script>

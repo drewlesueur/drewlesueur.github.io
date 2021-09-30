@@ -1,0 +1,82 @@
+<!doctype html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
+<meta name="apple-mobile-web-app-title" content="">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="translucent-black">
+<style>
+* {
+    box-sizing: border-box;
+}
+#origEl, #newEl {
+    font-size: 20px;
+    width: 100%;
+    height: 240px;
+}
+#missingEl, #extraEl {
+    font-size: 20px;
+    width: 100%;
+    height: 120px;
+}
+</style>
+</head>
+<script>
+// it's important that this go in it's own script tag
+window.onerror = function(message, url, lineNumber, columnNumber, error) {
+    alert(lineNumber + ": " + message)
+}
+</script>
+
+<textarea id=origEl oninput="handleInput()"></textarea>
+<br>
+<textarea id=newEl oninput="handleInput()"></textarea>
+<br>
+<table>
+    <tr>
+        <td>
+            <textarea id=missingEl></textarea>
+        </td>
+        <td>
+            <textarea id=extraEl></textarea>
+        </td>
+    </tr>
+</table>
+<pre id=debugEl></pre>
+<script>
+
+function makeLetterMap(text) {
+    var theMap = {}
+    var letters = text.toLowerCase().replace(/\W/g, "").split("")   
+    for (letter of letters) {
+        if (!theMap[letter]) {
+            theMap[letter] = 0
+        }
+        theMap[letter]+=1
+    }
+    return theMap
+}
+function handleInput() {
+    var origMap = makeLetterMap(origEl.value)
+    var newMap = makeLetterMap(newEl.value)
+    for (k in newMap) {
+        if (!origMap[k]) {
+            origMap[k] = 0
+        }
+        origMap[k] -= newMap[k]
+    }
+    debugEl.innerText = JSON.stringify(origMap, "", "    ")
+    
+    var missing = [] 
+    var extra = [] 
+    for (k in origMap) {
+        if (origMap[k] < 0) {
+            extra = extra.concat(...k.repeat(-origMap[k]).split(""))
+        } else if (origMap[k] > 0) {
+            missing = missing.concat(...k.repeat(origMap[k]).split(""))
+        }
+    }
+    
+    missingEl.value=missing.join("")
+    extraEl.value=extra.join("")
+}
+</script>
