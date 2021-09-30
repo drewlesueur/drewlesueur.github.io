@@ -1,3 +1,8 @@
+Terminal cross contamination
+how does that happen?
+a server side thing or a client side thing?
+starting to think it's client side?
+two different terminals looked the same?
 
 ---
 Script inline on the first line is bugged (off by one)

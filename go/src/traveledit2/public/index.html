@@ -3182,7 +3182,7 @@ function pollTerminals() {
                                 file.cursorLineIndex -= 1
                                 var prevLine = file.lines[file.cursorLineIndex]
                                 // file.lines[file.cursorLineIndex] = file.lines[file.cursorLineIndex] + theLine
-                                updateLine(file, file.cursorLineIndex, file.lines[file.cursorLineIndex] + theLine)
+                                updateLineFile(file, file.cursorLineIndex, file.lines[file.cursorLineIndex] + theLine)
                                 // TODO: process the index here!!!
                                 file.cursorColIndex = prevLine.length
                                 setSelectionRangeForText(prevLine.length, prevLine.length)
@@ -5057,6 +5057,7 @@ function onStart(e) {
                 hasSwitchedFile = true
                 // seeFiles()
                 moveFileAllTheWayLeft()
+                saveOrder()
             }
         }
         var oldCursorLineIndex = fx.cursorLineIndex

@@ -45,13 +45,13 @@ function play(action, e) {
         //o.frequency.value = 35
         //o.frequency.value = 432
         //o.frequency.value = randFreq()
-        o.frequency.value = 600
-        // o.frequency.value = 100
+        // o.frequency.value = 600
+        o.frequency.value = 100
         startTime = audio.currentTime
         //o.start(audio.currentTime) // or just o.Start
 
         //o.frequency.exponentialRampToValueAtTime(0.1, audio.currentTime +1);
-        //o.frequency.exponentialRampToValueAtTime(1800, audio.currentTime +3);
+        // o.frequency.exponentialRampToValueAtTime(1800, audio.currentTime +3);
         //o.frequency.setTargetAtTime(500, audio.currentTime +1, 0.33);
 
         gainNode = audio.createGain();
@@ -87,11 +87,15 @@ document.body.onkeyup = play
 
 document.body.ontouchstart = function(e) {
     e.preventDefault()
+    e.stopPropagation()
+    e.returnValue = false
     play("touchstart")
 }
 
 document.body.ontouchend = function(e) {
     e.preventDefault()
+    e.stopPropagation()
+    e.returnValue = false
     play()
 }
 
