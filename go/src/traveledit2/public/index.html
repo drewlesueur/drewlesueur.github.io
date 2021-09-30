@@ -8,7 +8,10 @@ var proxyPath = ""
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
 <meta name="apple-mobile-web-app-title" content="Editor">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="hidden">
+<!-- <meta name="apple-mobile-web-app-status-bar-style" content="hidden">
+-->
+
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 
 <meta charset='utf-8'>
 <!-- TODO: make this work with path proxy ok?3 -->
@@ -424,6 +427,7 @@ ontouchstart=onStart(event)
     <div class=square onclick="window.open(location.href)">dup tab</div>
     <div class=square onclick="saveOrder()">save order</div>
     <div class=square onclick="updateName()">update name</div>
+    <div class=square onclick="location.href = proxyPath + '/login'">login</div>
     <div class=square onclick="location.reload()">refresh</div>
     <!--<div class=square onclick="location.href = urlForRefreash">refresh</div>-->
 </div>
@@ -432,7 +436,7 @@ ontouchstart=onStart(event)
     allow polling
 </label>
 <label for=useUnicodeCheckbox>
-    <input onchange="useUnicode = useUnicodeCheckbox.checked" type=checkbox name=useUnicodeCheckbox id=useUnicodeCheckbox checked />
+    <input onchange="useUnicode = useUnicodeCheckbox.checked" type=checkbox name=useUnicodeCheckbox id=useUnicodeCheckbox />
     use unicode
 </label>
 <label for=agressiveRenderCheckbox>
@@ -3167,8 +3171,9 @@ function pollTerminals() {
                         if (strToProcess[i] == "\n") {
                             file.lines.push("")
                         // for  now commenting out \r, later do I need to code the difference between newline and carriage return?
-                        // } else if (strToProcess[i] == "\r") {
-                        //     file.lines.push("")
+                        } else if (strToProcess[i] == "\r") {
+                            // file.lines.push("")
+                            // do nothing for now
                         } else if (strToProcess[i] == "\b") {
                             // copied from another part of this code // == 8    
                             var theLine = file.lines[file.cursorLineIndex]
@@ -3883,7 +3888,6 @@ function handleKeydown(e) {
     
     wasWasDelete = wasDelete
     wasDelete = e.keyCode == 8
-    log("wasWasDelete: " + wasWasDelete)
     // 8 means backspace
     if (e.keyCode == 8 && theText.selectionStart == 0 && fx.cursorLineIndex != 0) {
         e.preventDefault()
@@ -4970,6 +4974,7 @@ function onStart(e) {
         shouldAutocompleteLine = false
         hasMovedSinceNewLine = true
         hasMovedSinceCut = true
+        wasDelete = false // so a previous delete doesn't cause split line when you don't want
         acWord = null
         clearTimeout(selectTimeout)
         if (e.touches.length > 1) {
@@ -5050,7 +5055,8 @@ function onStart(e) {
             // log("theoffsetx: " + fx.offsetX)
             if (!hasSwitchedFile && !changedY && startCursorColIndex == -marginLeft && prevOffsetX < -20) {
                 hasSwitchedFile = true
-                seeFiles()
+                // seeFiles()
+                moveFileAllTheWayLeft()
             }
         }
         var oldCursorLineIndex = fx.cursorLineIndex

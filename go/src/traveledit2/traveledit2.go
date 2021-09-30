@@ -1,6 +1,7 @@
 package main
 
 import "net/http"
+import "net/url"
 import "time"
 import "log"
 import "flag"
@@ -24,7 +25,26 @@ type SaveResponse struct {
 	Saved bool   `json:"saved"`
 	Error string `json:"error"`
 }
-
+func PretendBasicAuth(r *http.Request) (string, string, bool) {
+    cookie, err := r.Cookie("pretendba")
+    if err != nil {
+        return "", "", false
+    }
+    cookieDecoded , err := url.QueryUnescape(cookie.Value)
+    if err != nil {
+        return "", "", false
+    }
+    cookieBytes, err := base64.StdEncoding.DecodeString(cookieDecoded)
+    if err != nil {
+        return "", "", false
+    }
+    parts := strings.Split(string(cookieBytes), ":")
+    if len(parts) != 2 {
+        return "", "", false
+    }
+    return parts[0], parts[1], true 
+     
+}
 func BasicAuth(handler http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := os.Getenv("BASICUSER")
@@ -32,6 +52,10 @@ func BasicAuth(handler http.Handler) http.HandlerFunc {
 		if user == "" || pass == "" {
 			log.Fatal("BASICUSER or BASICPASS environment variables not set")
 		}
+        if r.URL.Path == "/login" {
+            handler.ServeHTTP(w, r)
+            return
+        }
 		
 		if os.Getenv("SCREENSHARENOAUTH") == "1" {
 		    if r.URL.Path == "/screenshare" || r.URL.Path == "/view" {
@@ -46,8 +70,12 @@ func BasicAuth(handler http.Handler) http.HandlerFunc {
 		// }
 
 		log.Printf("url hit: %s by %s", r.URL.Path, r.RemoteAddr)
-		rUser, rPass, ok := r.BasicAuth()
+		//rUser, rPass, ok := r.BasicAuth()
+		rUser, rPass, ok := PretendBasicAuth(r)
 		if !ok || subtle.ConstantTimeCompare([]byte(rUser), []byte(user)) != 1 || subtle.ConstantTimeCompare([]byte(rPass), []byte(pass)) != 1 {
+            http.Redirect(w, r, *proxyPath + "/login", 302)
+            return
+            // below here is basic auth stuff           
 			log.Printf("unauthorized: %s", r.URL.Path)
 			w.Header().Set("WWW-Authenticate", `Basic realm="Hi. Please log in."`)
 			w.WriteHeader(401)
@@ -261,7 +289,7 @@ var lastFileID = 0
 var workspaceMu sync.Mutex
 var workspaceCond *sync.Cond
 
-
+var proxyPath *string
 func main() {
     // TODO: #wschange save workspace to file so ot persists
     // TODO: secial path prefix for saving/loading files not just /
@@ -272,8 +300,9 @@ func main() {
 	serverAddress := flag.String("addr", "localhost:8000", "serverAddress to listen on")
 	indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
 	screenshareFile := flag.String("screensharefile", "./public/view.html", "path to view html file")
+	loginFile := flag.String("loginFile", "./public/login.html", "path to login  html file")
 	location := flag.String("location", "", "path to directory to serve")
-	proxyPath := flag.String("proxypath", "", "the path for proxies, what to ignore")
+	proxyPath = flag.String("proxypath", "", "the path for proxies, what to ignore")
 	// Whether or not the proxypath is removed by the reverse proxy
 	// seems with apache ProxyPath it is removed.
 	proxyPathTrimmed := flag.Bool("proxypathtrimmed", false, "does the reverse proxy trim the proxy path?")
@@ -341,6 +370,21 @@ func main() {
 		b, err := ioutil.ReadFile(*screenshareFile)
 		if err != nil {
 			logAndErr(w, "error reading screenshare file: %v", err)
+			return
+		}
+		htmlString := string(b)
+		if *proxyPath != "" {
+			replaceProxyPath := "var proxyPath = \"" + *proxyPath + "\""
+			htmlString = strings.Replace(htmlString, "// PROXYPATH GOES HERE", replaceProxyPath, 1)
+			log.Printf("replaceProxyPath: %s", replaceProxyPath)
+		}
+		fmt.Fprintf(w, "%s", htmlString)
+	})
+	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		// http.ServeFile(w, r, "./public/view.html")
+		b, err := ioutil.ReadFile(*loginFile)
+		if err != nil {
+			logAndErr(w, "error reading login file: %v", err)
 			return
 		}
 		htmlString := string(b)
