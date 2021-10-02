@@ -1,3 +1,16 @@
+moving cursor far to the left should open up menu?
+back right again goes back
+menu should have files too?
+should be able to move files around
+by copy-pasting etc
+----
+after you touch to select move cursor to end
+ 
+----
+the weirdness of autocomplete vs select
+----
+paste and then start typing
+
 Terminal cross contamination
 how does that happen?
 a server side thing or a client side thing?
