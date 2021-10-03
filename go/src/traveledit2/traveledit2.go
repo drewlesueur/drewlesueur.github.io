@@ -226,6 +226,9 @@ func parseFirstNumber(s string) int {
 
 // Will these die when the server restarts?
 // I think not.
+// Interesting how we have different fields for separate File types
+// Maybe I could have ised an interface
+// But also maybe would be cool if Go had sum types
 type File struct{
     ID int
     Type string // terminal, file, directory, remotefile, shell(semi interactive)
@@ -852,7 +855,7 @@ func main() {
 	
 	
 	// #wschange make a File and add the cmd, and the CWD
-	mux.HandleFunc("/mybash", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/myshell", func(w http.ResponseWriter, r *http.Request) {
 		workspaceMu.Lock()
 		
 		ID, _ := strconv.Atoi(r.FormValue("id"))
@@ -945,7 +948,7 @@ func main() {
 		// This content lines has to be the last one.
 		// htmlString = strings.Replace(htmlString, "// LINES GO HERE", "var lines = "+contentLinesJSONString, 1)
 		
-		// TODO: when bash mode is disabled, don't do this part.
+		// TODO: when shell mode is disabled, don't do this part.
 		log.Printf("yea I set rootLocation to be: %s", *location)
 		if r.FormValue("src") != "1" {
 			w.Header().Set("Content-Type", "text/html")

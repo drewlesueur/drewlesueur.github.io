@@ -206,6 +206,7 @@ opacity: 0.5;
         --font: 13px IosevkaLucida;
         font: 16px Courier;
         height: 24px;
+        outline: none;
         "
         onfocus="focusSearchText()"
         oninput="inputSearchText()"
@@ -246,6 +247,7 @@ font: 16px Times;
 padding: 0;
 color: brown;
 height: 24px;
+outline: none;
 --position:absolute; top: 100px;
 display: block;
 "
@@ -307,7 +309,7 @@ ontouchstart=onStart(event)
 <div class="toolbar hidden" id=terminalToolbar2 style="--display: none">
 </div>
 
-<div class="toolbar hidden" id=bashToolbar1 style="--display: none">
+<div class="toolbar hidden" id=shellToolbar1 style="--display: none">
     <div class=square onclick='runBashCommand("git branch")'>branch</div>
     <div class=square onclick='runBashCommand("git status")'>status</div>
     <div class=square onclick='runBashCommand("git diff")'>diff</div>
@@ -322,10 +324,9 @@ ontouchstart=onStart(event)
     -->
     <div class=square onclick='runBashCommand("git add -u :/")'>add -u :/</div>
 </div>
-<div class="toolbar hidden" id=bashToolbar2 style="--display: none">
+<div class="toolbar hidden" id=shellToolbar2 style="--display: none">
     <div class=square onclick='runBashCommand("git push origin HEAD")'>push origin H</div>
     <div class=square onclick=openAtCursor()>open</div>
-    <div class=square onclick=urlAtCursor()>visit</div>
     <div class=square onclick='runBashCommand("cd ..")'>cd ..</div>
     <!--
     <div class=square onclick='runBashCommand("git stash")'>stash</div>
@@ -366,28 +367,36 @@ ontouchstart=onStart(event)
     <div class=square onclick="newLine(null, false)">new line</div>
     -->
 </div>
+<div class=toolbar>
+    <div class=square onclick="osCopyText()">os copy</div>
+    <div class=square onclick="osPasteText()">os paste</div>
+    <!--
+    <button class=square onclick="osCopyText()">os copy</button>
+    <button class=square onclick="osPasteText()">os paste</button>
+    -->
+    <div class=square onclick=openAtCursor()>open</div>
+    <div class=square onclick=openEditorCommamd()>editor cmd</div>
+    <div class=square onclick=redo()>redo</div>
+    <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
+    <div class=square onclick="moveFileAllTheWayLeft()">move home</div>
+</div>
 <!-- Stuff after here is after the fold -->
 <div class=toolbar>
-    <div class=square onclick=debugView()>debug view</div>
-    <div class=square onclick=openAtCursor()>open</div>
-    <div class=square onclick=urlAtCursor()>visit</div>
-    <div class=square onclick=redo()>redo</div>
-    <div class=square onclick=doEval()>eval</div>
-    <div class=square onclick=runScript()>run script</div>
-    <div class=square onclick=reloadFile(fx)>reload</div>
-</div>
-<div class=toolbar>
     <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
-    <div class=longButton onclick="selectFont('RobotoMono')">Roboto Mono</div>
+    <div class=longButton onclick="selectFont('Courier')">Courier</div>
     <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
     <div class=longButton onclick="fontScaleInput.value = 0.9; updateFontScale()">0.9</div>
     <div class=longButton onclick="fontScaleInput.value = 1.0; updateFontScale()">1.0</div>
     <div class=longButton onclick="fontScaleInput.value = 1.1; updateFontScale()">1.1</div>
+    <div class=longButton onclick="fontScaleInput.value = 1.15; updateFontScale()">1.15</div>
     <div class=longButton onclick="fontScaleInput.value = 1.2; updateFontScale()">1.2</div>
     <div class=longButton onclick="fontScaleInput.value = 1.3; updateFontScale()">1.3</div>
     <div class=longButton onclick="fontScaleInput.value = 1.4; updateFontScale()">1.4</div>
+    <div class=longButton onclick="fontScaleInput.value = 1.5; updateFontScale()">1.5</div>
+    <div class=longButton onclick="fontScaleInput.value = 1.6; updateFontScale()">1.6</div>
+    <div class=longButton onclick="fontScaleInput.value = 1.7; updateFontScale()">1.7</div>
     <div class=longButton onclick="fontScaleInput.value = 2; updateFontScale()">2</div>
-    <div class=longButton onclick="selectFont('Courier')">Courier</div>
+    <div class=longButton onclick="selectFont('RobotoMono')">Roboto Mono</div>
     <div class=longButton onclick="selectFont('CourierThin')">Courier Thin</div>
     <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
     <div class=longButton onclick="selectFont('SFMonoThin')">SF Thin</div>
@@ -405,7 +414,7 @@ ontouchstart=onStart(event)
 <div class=toolbar>
     <div class=square onclick="copyBuffer = [location.href]">copy url</div>
     <div class=square onclick="showDiff()">show diff</div>
-    <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
+    <div class=square onclick=reloadFile(fx)>reload</div>
     <div class=square onclick=scriptLines()>script lines</div>
     <div class=square onclick=scriptLinesInline()>script inline</div>
     <!--<div class=square onclick=addBrowser()>add browser</div>
@@ -414,8 +423,8 @@ ontouchstart=onStart(event)
     <div class=square onclick=navForward()>nav forward</div>
 </div>
 <div class=toolbar>
-    <button class=square onclick="osCopyText()">os copy</button>
-    <button class=square onclick="osPasteText()">os paste</button>
+    <div class=square onclick=debugView()>debug view</div>
+    <div class=square onclick=doEval()>eval</div>
     <div class=square onclick="reloadAll()">reload All</div>
     <div class=square onclick="comment('--')">--</div>
     <div class=square onclick="copyString(fx.fullPath + ':' + (fx.cursorLineIndex + 1))">copy path</div>
@@ -426,7 +435,7 @@ ontouchstart=onStart(event)
     <div class=square onclick=doFormat()>format</div>
     <div class=square onclick="toggleSeeTabs()">see tabs</div>
     <div class=square onclick="diffFiles()">diff files</div>
-    <div class=square onclick="moveFileAllTheWayLeft()">move home</div>
+    <div class=square onclick=runScript()>run script</div>
     <div class=square onclick="moveFileLeft()">move left</div>
     <div class=square onclick="moveFileRight()">move right</div>
     <div class=square onclick="stopServer()">stop server</div>
@@ -436,6 +445,7 @@ ontouchstart=onStart(event)
     <div class=square onclick="saveOrder()">save order</div>
     <div class=square onclick="updateName()">update name</div>
     <div class=square onclick="location.href = proxyPath + '/login'">login</div>
+    <div class=square onclick=urlAtCursor()>visit</div>
     <div class=square onclick="location.reload()">refresh</div>
     <!--<div class=square onclick="location.href = urlForRefreash">refresh</div>-->
 </div>
@@ -596,7 +606,7 @@ var fonts = {
         fontHeightPre: 36,
         fontWidthPre: 17,
         fontSize: 30,
-        fontName: "SFMono",
+        fontName: "ui-monospace",
     },
     "SFMonoThin": {
         // I think this actually only works because we default to ui-monospace
@@ -724,7 +734,7 @@ canvasWidth=innerWidth * 3
 //var canvasWidth=600
 // I turned off "Predictive" to get more vertical space
 // TODO: make these configurable in UI
-var canvasHeightFull=1800
+var canvasHeightFull=1710
 var canvasHeightKeyboard=1200
 // alert(screen.width+" "+screen.height)
 if (screen.width == 744 && screen.height == 1133) {
@@ -736,7 +746,7 @@ c.height = canvasHeightFull
 var canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*1)
 
 // 34 button height plus 1px*2 margin
-// 2 rows of new buttons for bash
+// 2 rows of new buttons for shell
 var canvasHeightBash = canvasHeightFull - ((36*3) * 2)
 var canvasHeightTerminal = canvasHeightFull - ((36*3) * 1)
 var maxLines = 0
@@ -770,7 +780,7 @@ var theStatus = {}
 
 // note: fileMode can be
 // * file
-// * bash (like a terminal lite)
+// * shell (like a terminal lite)
 // * fileList
 // * directory
 // * terminal
@@ -793,7 +803,13 @@ var scrollTimeout
 var useRegexSearch = true
 // TODO: as you add or delete lines
 // go thru these locations and update them
-selectFont("IosevkaLucida")
+// selectFont("IosevkaLucida")
+// selectFont("Courier")
+
+// Using menlo while in poor intetnet situation to save space
+// Note there is a bug when using a ttf font after page load
+// this bug may have started with ios 15 (double check)
+selectFont("Menlo")
 setInterval(function() {
     if (!fx) {
         return
@@ -1263,8 +1279,8 @@ function getAtCursor() {
 
 function openAtCursor() {
     var path = getAtCursor()
-    if (fx.fileMode == "bash") {
-        var fileName = trimPrefix(fx.bashCWD, rootLocation) + "/" + path
+    if (fx.fileMode == "shell") {
+        var fileName = trimPrefix(fx.shellCWD, rootLocation) + "/" + path
     } else if (fx.fileMode == "terminal") {
         // TODO: how do we know what the cwd is? 
         // isn't there a way to get the cwd of a running process?
@@ -1316,12 +1332,18 @@ function selectFont(fontName) {
     if (currentFont.url) {
         var font
         if (currentFont.descriptors) {
+            log("newing up FontFace1")
             font = new FontFace(fontName, "url(" + currentFont.url + ")")    
         } else {
+            log("newing up FontFace2")
             font = new FontFace(fontName, "url(" + currentFont.url + ")", currentFont.descriptors)    
         }
+        log("loading font " + fontName)
+        log("loading font url " + currentFont.url)
         font.load().then(function(loaded){
+            log("font loaded, adding")
             document.fonts.add(loaded)
+            log("font added")
         }).catch(function(e){
             alert(e)
         })
@@ -1455,7 +1477,7 @@ function closeFile() {
 }
 
 
-var bashHelpers = [
+var shellHelpers = [
     // some common commands to use quickly
     // TODO: make these common commands configurable
     "gofmt -s -w .",
@@ -1482,16 +1504,16 @@ var bashHelpers = [
 ]
 
 function useExisingWD(file) {
-    if (fx.fileMode == "bash") {
-        file.bashCWD = fx.bashCWD
+    if (fx.fileMode == "shell") {
+        file.shellCWD = fx.shellCWD
         file.originatingFullPath = fx.originatingFullPath
     } else if (fx.fileMode == "file") {
         var parts = trimPrefix(fx.fullPath, proxyPath).split("/")
         parts = parts.slice(0, parts.length - 1)
-        file.bashCWD = rootLocation + parts.join("/")
+        file.shellCWD = rootLocation + parts.join("/")
         file.originatingFullPath = fx.fullPath.split("/").slice(0, -1).join("/") + "/cmd"
     } else if (fx.fileMode == "directory") {
-        file.bashCWD = rootLocation + trimPrefix(fx.fullPath, proxyPath)
+        file.shellCWD = rootLocation + trimPrefix(fx.fullPath, proxyPath)
         file.originatingFullPath = fx.fullPath + "/cmd"
     }
 }
@@ -1499,8 +1521,8 @@ function useExisingWD(file) {
 function addCmdTab(id=0, cwd="", name="") {
     // I think this /cmd isn't hit on the server 
     // I think we need a special endpoint for serving files and not just /
-    var file = makeFile(proxyPath + "/cmd", 0, bashHelpers.join("\n"))
-    file.fileMode = "bash"
+    var file = makeFile(proxyPath + "/cmd", 0, shellHelpers.join("\n"))
+    file.fileMode = "shell"
     if (id) {
         file.ID = id
     }
@@ -1508,7 +1530,7 @@ function addCmdTab(id=0, cwd="", name="") {
     if (!cwd) {
         useExisingWD(file)
     } else {
-        file.bashCWD = cwd
+        file.shellCWD = cwd
         file.originatingFullPath = cwd
     }
     addFileToList(file, false)
@@ -1576,8 +1598,8 @@ function renderURL() {
     if (preventRender) {
         return
     }
-    // For now we don't get files with bash mode.
-    var filtered = files.filter(f => f.fileMode != "bash")
+    // For now we don't get files with shell mode.
+    var filtered = files.filter(f => f.fileMode != "shell")
     var theNewPath = "/" + filtered.map(function(f) {
         if (f.fileMode == "terminal") {
             // TODO: ensure that the terminal is not the first one somewhere?
@@ -1770,7 +1792,7 @@ function redo() {
     repositionUndo(false)
 }
 function clearLog() {
-    if (fx.fileMode == "bash") {
+    if (fx.fileMode == "shell") {
         runBashCommand("clear")
     } else if (fx.fileMode == "terminal") {
         // TODO: should I be using setLines?
@@ -1842,8 +1864,8 @@ function isWordy(a) {
         (a == 95)            ||    // _
         
         // note: I kind of don't like how we depend on fx in this func, hmm
-        ((fx.fileMode == "bash" || fx.fileMode == "terminal") && a == 46) || // .
-        ((fx.fileMode == "bash" || fx.fileMode == "terminal") && a == 45) // -
+        ((fx.fileMode == "shell" || fx.fileMode == "terminal") && a == 46) || // .
+        ((fx.fileMode == "shell" || fx.fileMode == "terminal") && a == 45) // -
     )
 }
 function isRegularWord(theLine) {
@@ -2759,7 +2781,7 @@ function setCanvasHeightAccordingly() {
             setCanvasHeight(canvasHeightKeyboard - heightReduction)
         }
     } else {
-       if (fx && fx.fileMode == "bash") {
+       if (fx && fx.fileMode == "shell") {
            setCanvasHeight(canvasHeightBash - heightReduction)   
        } else if (fx && fx.fileMode == "terminal") {
            setCanvasHeight(canvasHeightTerminal - heightReduction)   
@@ -3041,7 +3063,7 @@ function uploadFile(e) {
 function newLine(e, shouldFocus) {
     var theLine = fx.lines[fx.cursorLineIndex]
     e && e.preventDefault()
-    if (fx.fileMode == "bash") {
+    if (fx.fileMode == "shell") {
         runBashCommand(theLine)
         return false
     } else if (fx.fileMode == "terminal") {
@@ -3058,7 +3080,7 @@ function newLine(e, shouldFocus) {
 }
 function runBashCommand(line) {
     // outer loop to simulate goto
-    if (fx.fileMode != "bash") {
+    if (fx.fileMode != "shell") {
         return
     }
     var oldCopyBuffer = copyBuffer
@@ -3086,15 +3108,15 @@ function runBashCommand(line) {
             fx.cursorLineIndex += 1
             fx.cursorColIndex = 0
             ensureCursorInScreen()
-            addFile(trimPrefix(fx.bashCWD, rootLocation) + "/" + fileToLoad)
+            addFile(trimPrefix(fx.shellCWD, rootLocation) + "/" + fileToLoad)
             break
         }
 
         if (line == "p") {
             // TODO: should we be restoring the old copyBuffer here?
-            copyBuffer = bashHelpers.concat([
+            copyBuffer = shellHelpers.concat([
                 // Adding the cwd here because it's helpful
-                fx.bashCWD
+                fx.shellCWD
                     .split("/")
                     .reverse()
                     .join(" < ")
@@ -3109,7 +3131,7 @@ function runBashCommand(line) {
         }
 
         let myFx = fx
-        fetch(proxyPath + "/mybash?id="+fx.ID+"&cwd="+encodeURIComponent(fx.bashCWD)+"&cmd="+encodeURIComponent(line), {
+        fetch(proxyPath + "/myshell?id="+fx.ID+"&cwd="+encodeURIComponent(fx.shellCWD)+"&cmd="+encodeURIComponent(line), {
             cache: "no-cache"
         }).then(r => {
             if (r.headers.get("X-ID")) {
@@ -3122,11 +3144,11 @@ function runBashCommand(line) {
             copyBuffer = r.split("\n")
             copyBuffer.unshift("") // leading newline
             // second to last item is cwd
-            myFx.bashCWD = copyBuffer[copyBuffer.length - 2]
+            myFx.shellCWD = copyBuffer[copyBuffer.length - 2]
             // let's restyle the pwd after we grab it
             
             // TODO: maybe come up with something more elegant than this paste dance
-            copyBuffer[copyBuffer.length - 2] = myFx.bashCWD
+            copyBuffer[copyBuffer.length - 2] = myFx.shellCWD
                 .split("/")
                 .reverse()
                 .join(" < ")
@@ -3357,7 +3379,7 @@ function openTerminal() {
         pollTerminals()    
     }
     var myFx = fx // in case the scope changes
-    fetch(proxyPath + "/myterminalopen?cwd="+encodeURIComponent(fx.bashCWD), {
+    fetch(proxyPath + "/myterminalopen?cwd="+encodeURIComponent(fx.shellCWD), {
         cache: "no-cache"
     }).then(r => {
         return r.json()
@@ -3811,8 +3833,8 @@ function handleSearchFocusAfter() {
 // pressing the save button disables autosave
 function saveWrapper() {
     log("clicked save")
-    if (fx.fileMode == "bash") {
-        // the save button turns into run when it's a "bash" file
+    if (fx.fileMode == "shell") {
+        // the save button turns into run when it's a "shell" file
         if (fx.selectedRegions.length) {
             copy()
             runBashCommand(copyBuffer.join("\n"))
@@ -4368,7 +4390,7 @@ function render() {
     //         saveButton.style.backgroundColor = "red"
     //         saveButton.innerText = "save"
     //     }
-    // } else if (fx.fileMode == "bash") {
+    // } else if (fx.fileMode == "shell") {
     //     // TODO: consider not setting this every render
     //     saveButton.innerText = "run"
     // } else if (fx.fileMode == "terminal") {
@@ -4484,7 +4506,7 @@ function render() {
 
 // this is a workaround for iphone 12 mini issue where dom is slow
 // and we can't blindly update it in the render loop
-// TODO: you can make bash and terminal faster too. 
+// TODO: you can make shell and terminal faster too. 
 var renderedSaveRed = false
 function renderSaves() {
     if (!fx) {
@@ -4504,7 +4526,7 @@ function renderSaves() {
             saveButton.innerText = "save"
             renderedSaveRed = true
         }
-    } else if (fx.fileMode == "bash") {
+    } else if (fx.fileMode == "shell") {
         // TODO: consider not setting this every render
         saveButton.innerText = "run"
     } else if (fx.fileMode == "terminal") {
@@ -6147,7 +6169,7 @@ function makeFile(fullPath, cursorLineIndex, contents) {
         offsetY: cursorLineIndex, // you could get smarter about this
         offsetX: 0,
         fileMode: "file",
-        bashCWD: "",
+        shellCWD: "",
         originatingFullPath: "",
         version: 0,
         savedVersion: 0,
@@ -6306,7 +6328,7 @@ function treeToLines(theTree, path, indent, kPrefix) {
         if (theTree[k].fileToken == fileToken) {
             if (theTree[k].fileMode == "file") {
                 treeFiles.push("" + indent + kPrefix + k)
-            } else if (theTree[k].fileMode == "bash") {
+            } else if (theTree[k].fileMode == "shell") {
                 treeFiles.push("" + indent + kPrefix + k)
             } else if (theTree[k].fileMode == "terminal") {
                 // same as others but a separate if statement so we can easily change it later
@@ -6337,8 +6359,8 @@ function getLinesForFileList() {
     
     // doing the slice so we don't mutate the original array
     var sortedFiles = files.slice().sort(function(f1, f2) {
-        if (f1.fileMode == "bash") {
-            // TODO: should we set the fullPath for bash to be the CWD?  
+        if (f1.fileMode == "shell") {
+            // TODO: should we set the fullPath for shell to be the CWD?  
             return (f1.originatingFullPath + f1.tmpIndex) > (f2.originatingFullPath + f2.tmpIndex)
         } else if (f1.fileMode == "terminal") {
             // #todoterminal: how get the cwd of the process (/proc/fd) ?
@@ -6354,7 +6376,7 @@ function getLinesForFileList() {
         // var parts = (f.fullPath + ":" + (f.cursorLineIndex+1)).split("/")
         // var parts = (f.fullPath + "(" + (f.tmpIndex) + ")").split("/")
         var parts = (f.fullPath + "(" + (f.ID) + ")").split("/")
-        if (f.fileMode == "bash") {
+        if (f.fileMode == "shell") {
             // parts = (f.originatingFullPath + ":" + (f.cursorLineIndex+1)).split("/")
             // parts = (f.originatingFullPath + " (" + (f.tmpIndex+1) + ")").split("/")
             parts = ["(cmd)", (f.tmpIndex+"").padStart(2, "0") + ": " + (f.name || "")]
@@ -6434,19 +6456,19 @@ function setCurrentFile(file) {
         lastFile = fx
     }
     fx = file
-    if (fx.fileMode == "bash") {
-        bashToolbar1.classList.remove("hidden")
-        bashToolbar2.classList.remove("hidden")
+    if (fx.fileMode == "shell") {
+        shellToolbar1.classList.remove("hidden")
+        shellToolbar2.classList.remove("hidden")
         terminalToolbar1.classList.add("hidden")
         terminalToolbar2.classList.add("hidden")
     } else if (fx.fileMode == "terminal") {
-        bashToolbar1.classList.add("hidden")
-        bashToolbar2.classList.add("hidden")
+        shellToolbar1.classList.add("hidden")
+        shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.remove("hidden")
         terminalToolbar2.classList.remove("hidden")
     } else {
-        bashToolbar1.classList.add("hidden")
-        bashToolbar2.classList.add("hidden")
+        shellToolbar1.classList.add("hidden")
+        shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.add("hidden")
         terminalToolbar2.classList.add("hidden")
     }
@@ -6614,7 +6636,7 @@ function oldStuff() {
     } 
     var initialFile = makeFile(fullPath, cursorLineIndex, lines.join("\n"))
     initialFile.fileMode = fileMode
-    initialFile.bashCWD = rootLocation
+    initialFile.shellCWD = rootLocation
     initialFile.loadedFirstTime = true 
     verifyLoadedMD5(initialFile, firstFileMD5)
     var serverLoadFirstFile = true
@@ -6687,10 +6709,10 @@ function saveOrder() {
         serverFiles.push({
             "ID": f.ID,
             "Name": f.name,
-            "Type": f.fileMode == "bash" ? "shell" : f.fileMode,
+            "Type": f.fileMode,
             "FullPath": f.fullPath,
             "LineNumber": f.cursorLineIndex + 1,
-            "CWD": f.bashCWD,
+            "CWD": f.shellCWD,
         })
     }
     fetch(proxyPath + "/mysaveorder", {    
