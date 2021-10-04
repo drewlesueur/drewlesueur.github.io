@@ -8,57 +8,18 @@ var proxyPath = ""
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
 <meta name="apple-mobile-web-app-title" content="Editor">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<!-- <meta name="apple-mobile-web-app-status-bar-style" content="hidden">
--->
-
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
 <meta charset='utf-8'>
-<!-- TODO: make this work with path proxy ok?3 -->
 <script>
 document.write(`
-<script src="`+proxyPath+`/tepublic/diff.js"></scr`+`ipt>
+<!-- For now not loading in third party diff library. -->
+<!--<script src="`+proxyPath+`/tepublic/diff.js"></scr`+`ipt>-->
 <script src="`+proxyPath+`/tepublic/md52.js"></scr`+`ipt>
 <script src="`+proxyPath+`/tepublic/grapheme-splitter.js"></scr`+`ipt>
 `)
 </script>
 <style>
-/*
-@font-face {
-  font-family: IosevkaLucida;
-  src: url('http://tel.drewles.com:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf');
-}
-@import url('https://fonts.googleapis.com/css2?family=Nova+Mono&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Anonymous+Pro&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Overpass+Mono&display=swap');
-// @font-face {
-//   font-family: GoMono;
-//   src: url(tepublic/fonts/Go-Mono.ttf);
-    // }
-
-// @import url('https://fonts.googleapis.com/css2?family=Courier+Prime&family=Inconsolata&family=JetBrains+Mono&family=Nanum+Gothic+Coding&family=Overpass+Mono&family=Oxygen+Mono&family=Roboto+Mono&family=Share+Tech+Mono&family=VT323&family=Xanh+Mono&display=swap');
-
-// @font-face {
-//   font-family: IosevkaLucida;
-//   src: url('tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf');
-// }
-
-
-// @font-face {
-//   font-family: IosevkaLucida;
-//   src: url('http://tel.drewles.com:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf');
-// }
-// @font-face {
-//   font-family: Iosevka;
-//   src: url('http://tel.drewles.com:8000/tepublic/iosevka/iosevka-fixed-regular.ttf');
-// }
-
-// @font-face {
-//   font-family: IosevkaSlab;
-//   src: url('http://tel.drewles.com:8000/tepublic/iosevka_slab/iosevka-fixed-slab-regular.ttf');
-// }
-*/
 * {
     margin: 0; padding: 0;
     box-sizing: border-box;
@@ -84,11 +45,8 @@ document.write(`
 .toolbar {
     display: flex;
     flex-flow: row nowrap;
-    --flex-flow: row wrap;
     overflow: scroll;
     -webkit-overflow-scrolling: touch;
-    --font-family: 'IosevkaLucida';
-    --font-family: 'Courier';
 }
 .hidden {
    display: none;
@@ -100,7 +58,6 @@ body.dark .toolbar div {
     color: rgba(255, 255, 200);
     border: 1px solid rgba(255, 255, 200);
     opacity: 0.7;
-    --text-decoration: underline;
 }
 body.dark .toolbar div.selected {
     background-color: gray;
@@ -108,8 +65,6 @@ body.dark .toolbar div.selected {
     border: 1px solid black;
 }
 body.light .toolbar div {
-    --background-color: #077;
-    --color: white;
     background-color: lightyellow;
     color: black;
     border: 1px solid black;
@@ -127,7 +82,6 @@ body.light .toolbar div.selected {
     padding: 0px;
     width: 40px;
     height: 34px;
-    --height: 20px;
     margin: 1px;
     flex: 1 0 auto;
     font-size: 12px;
@@ -139,13 +93,10 @@ body.light .toolbar div.selected {
 .toolbar .longButton {
     padding: 0px;
     width: 80px;
-    -- width: 80px;
     -- width: 60px;
-    --height: 28px;
     height: 34px;
     margin: 1px;
     flex: 1 0 auto;
-    --font-size: 12px;
     font-size: 12px;
     display: flex;
     align-items: center;
@@ -153,12 +104,6 @@ body.light .toolbar div.selected {
     text-align: center;
 }
 
-#fileRow {
-    -- height: 68px;
-    -- flex-direction:column;
-    -- justify-content:flex-end;
-    -- flex-wrap: wrap;
-}
 #fileRow div {
     font-size: 10px !important;
 }
@@ -193,8 +138,7 @@ opacity: 0.5;
 <form onsubmit="findDownForm(event)">
     <input id=searchTextBefore class=fullWidth type=text
     style="
-    --font: 8px IosevkaLucida;
-    font: px Courier;
+    font: 8px Courier;
     height:1px; overflow: hidden;
     display: block;"
     onfocus=handleSearchFocusBefore()
@@ -203,7 +147,6 @@ opacity: 0.5;
     
     <input class=fullWidth type=text id=searchText
         style="display: none;
-        --font: 13px IosevkaLucida;
         font: 16px Courier;
         height: 24px;
         outline: none;
@@ -215,7 +158,6 @@ opacity: 0.5;
     
     <input id=searchTextAfter class=fullWidth type=text
     style="
-    --font: 8px IosevkaLucida;
     font: 8px Courier;
     height:1px; overflow: hidden;
     display: block;
@@ -231,7 +173,6 @@ opacity: 0.5;
 
 <input type=hidden id=theTextBefore class=fullWidth type=text
 style="
---font: 8px IosevkaLucida;
 font: 8px Courier;
 /* display: none; see what it looks like without */
 height:1px; overflow: hidden;
@@ -241,14 +182,11 @@ onblur=handleBlur()
 >
 <input id=theText class=fullWidth type=text
 style="
---font: 13px IosevkaLucida;
---font: 16px Courier;
 font: 16px Times;
 padding: 0;
 color: brown;
 height: 24px;
 outline: none;
---position:absolute; top: 100px;
 display: block;
 "
 onfocus=handleFocusIn()
@@ -258,7 +196,6 @@ onkeydown=handleKeydown(event)
 >
 <input type=hidden id=theTextAfter class=fullWidth type=text
 style="
---font: 8px IosevkaLucida;
 font: 8px Courier;
 /* display: none; see what it looks like without */
 height:1px; overflow: hidden;
@@ -285,9 +222,9 @@ onblur=handleBlur()
 Note that the css width needs to be 1/3 of
 the with attribute, and same for height.
 See canvasHeightFull
+The width and height here are placeholders
+They get changed later on.
 -->
-
-<!-- <canvas id=c width=1125 height=1470 -->
 <canvas id=c width=99 height=99
 style="width: 375px; height:10px;
 display: block;"
@@ -305,8 +242,6 @@ ontouchstart=onStart(event)
     <div class=square ontouchstart='sendTerminal("\x1b[B"); event.preventDefault()'>down</div>
     <div class=square ontouchstart='sendTerminal("\x1b[A"); event.preventDefault()'>up</div>
     <div class=square ontouchstart='sendTerminal("\x1b[C"); event.preventDefault()'>right</div>
-</div>
-<div class="toolbar hidden" id=terminalToolbar2 style="--display: none">
 </div>
 
 <div class="toolbar hidden" id=shellToolbar1 style="--display: none">
@@ -351,33 +286,21 @@ ontouchstart=onStart(event)
     <div class=square onclick=closeFile()>close</div>
 </div>
 <div class=toolbar>
+    <div class=square onclick="osCopyText()">os copy</div>
+    <div class=square onclick="osPasteText()">os paste</div>
+    <div class=square onclick=openAtCursor()>open</div>
+    <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
+    <div class=square onclick=redo()>redo</div>
+    <div class=square onclick=undo()>undo</div>
+    <div class=square onclick=comment()>//</div>
+</div>
+<div class=toolbar>
     <div class=square ontouchstart="setCurrentFile(lastFile); event.preventDefault()">alt tab</div>
     <div class=square onclick="duplicateFile(fx, -1)">dupl file</div>
     <div class=square onclick=addCmdTab()>cmd</div>
     <div class=square onclick=addTerminalTab()>xterm</div>
     <div class=square onclick=clearLog()>clear log</div>
-    <div class=square onclick=undo()>undo</div>
-    <div class=square onclick=comment()>//</div>
-</div>
-<div class=toolbar>
-    
-    <!--<div class=square onclick=addSpace()>space</div>
-    <div class=square onclick=backspace()>backspace</div>
-    <div class=square onclick="theText.focus()">insert</div>
-    <div class=square onclick="newLine(null, false)">new line</div>
-    -->
-</div>
-<div class=toolbar>
-    <div class=square onclick="osCopyText()">os copy</div>
-    <div class=square onclick="osPasteText()">os paste</div>
-    <!--
-    <button class=square onclick="osCopyText()">os copy</button>
-    <button class=square onclick="osPasteText()">os paste</button>
-    -->
-    <div class=square onclick=openAtCursor()>open</div>
     <div class=square onclick=openEditorCommamd()>editor cmd</div>
-    <div class=square onclick=redo()>redo</div>
-    <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
     <div class=square onclick="moveFileAllTheWayLeft()">move home</div>
 </div>
 <!-- Stuff after here is after the fold -->
@@ -386,17 +309,17 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="selectFont('Courier')">Courier</div>
     <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
     <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
-    <div class=longButton onclick="fontScaleInput.value = 0.9; updateFontScale()">0.9</div>
-    <div class=longButton onclick="fontScaleInput.value = 1.0; updateFontScale()">1.0</div>
-    <div class=longButton onclick="fontScaleInput.value = 1.1; updateFontScale()">1.1</div>
-    <div class=longButton onclick="fontScaleInput.value = 1.15; updateFontScale()">1.15</div>
-    <div class=longButton onclick="fontScaleInput.value = 1.2; updateFontScale()">1.2</div>
-    <div class=longButton onclick="fontScaleInput.value = 1.3; updateFontScale()">1.3</div>
-    <div class=longButton onclick="fontScaleInput.value = 1.4; updateFontScale()">1.4</div>
-    <div class=longButton onclick="fontScaleInput.value = 1.5; updateFontScale()">1.5</div>
-    <div class=longButton onclick="fontScaleInput.value = 1.6; updateFontScale()">1.6</div>
-    <div class=longButton onclick="fontScaleInput.value = 1.7; updateFontScale()">1.7</div>
-    <div class=longButton onclick="fontScaleInput.value = 2; updateFontScale()">2</div>
+    <div class=longButton onclick="fontScale = 0.9; updateFontScale()">0.9</div>
+    <div class=longButton onclick="fontScale = 1.0; updateFontScale()">1.0</div>
+    <div class=longButton onclick="fontScale = 1.1; updateFontScale()">1.1</div>
+    <div class=longButton onclick="fontScale = 1.15; updateFontScale()">1.15</div>
+    <div class=longButton onclick="fontScale = 1.2; updateFontScale()">1.2</div>
+    <div class=longButton onclick="fontScale = 1.3; updateFontScale()">1.3</div>
+    <div class=longButton onclick="fontScale = 1.4; updateFontScale()">1.4</div>
+    <div class=longButton onclick="fontScale = 1.5; updateFontScale()">1.5</div>
+    <div class=longButton onclick="fontScale = 1.6; updateFontScale()">1.6</div>
+    <div class=longButton onclick="fontScale = 1.7; updateFontScale()">1.7</div>
+    <div class=longButton onclick="fontScale = 2; updateFontScale()">2</div>
     <div class=longButton onclick="selectFont('RobotoMono')">Roboto Mono</div>
     <div class=longButton onclick="selectFont('CourierThin')">Courier Thin</div>
     <div class=longButton onclick="selectFont('SFMonoThin')">SF Thin</div>
@@ -417,8 +340,6 @@ ontouchstart=onStart(event)
     <div class=square onclick=reloadFile(fx)>reload</div>
     <div class=square onclick=scriptLines()>script lines</div>
     <div class=square onclick=scriptLinesInline()>script inline</div>
-    <!--<div class=square onclick=addBrowser()>add browser</div>
-    -->
     <div class=square onclick=navBack()>nav back</div>
     <div class=square onclick=navForward()>nav forward</div>
 </div>
@@ -447,9 +368,14 @@ ontouchstart=onStart(event)
     <div class=square onclick="location.href = proxyPath + '/login'">login</div>
     <div class=square onclick=urlAtCursor()>visit</div>
     <div class=square onclick="location.reload()">refresh</div>
-    <!--<div class=square onclick="location.href = urlForRefreash">refresh</div>-->
 </div>
-<div class=square onclick='alert("hi")'>test button</div>
+<div class=toolbar>
+    <!--<div class=square onclick=addSpace()>space</div>
+    <div class=square onclick=backspace()>backspace</div>
+    <div class=square onclick="theText.focus()">insert</div>
+    <div class=square onclick="newLine(null, false)">new line</div>
+    -->
+</div>
 <label for=allowPollingCheckbox>
     <input onchange="allowPolling = allowPollingCheckbox.checked" type=checkbox name=allowPollingCheckbox id=allowPollingCheckbox checked />
     allow polling
@@ -481,21 +407,11 @@ ontouchstart=onStart(event)
     <input onchange="reorderFiles = reorderFilesCheckbox.checked" type=checkbox name=reorderFilesCheckbox id=reorderFilesCheckbox />
     Auto-Reorder Files
 </label>
-<div>
-    Term name: <input id=fileNameInput onchange="saveTerminalName(this.value)">
-</div>
-<div>
-    Workspace name: <input id=fileNameInput onchange="saveTerminalName(this.value)">
-</div>
 <!--
 <iframe width="100%" height=400 src="/te/screenshare"></iframe>
 -->
-<select onchange="selectFont(this.value)">
-    <option>Courier</option>
-    <option>Menlo</option>
-    <option>IosevkaLucida</option>
-    <option>Fake</option>
-</select>
+
+<!-- These textareas are for if you are not on https and can't use osCopu and osPaste functions -->
 <textarea class=dark id=pasteEl
 style="width:100%; height:100px;"
 onfocus="this.setSelectionRange(0, this.value.length)"
@@ -508,21 +424,11 @@ onfocus="this.setSelectionRange(0, this.value.length)"
 style="width:100%; height:100px;"
     placeholder="when you copy something, it will show up here"
 ></textarea>
-<div>
-    <input
-        id=fontScaleInput
-        oninput="updateFontScale()"
-        style="font-size: 16px;"
-    > font scale
-</div>
 <form onsubmit=uploadFile(event)>
     Upload files:<br>
     <input id=filesToUpload type=file multiple>
     <input type=Submit value=Upload>
 </form>
-
-<textarea id=s1 placeholder=s1 style="width:100%; height:100px;"></textarea>
-<textarea id=s2 placeholder=s2 style="width:100%; height:100px;"></textarea>
 
 <div id=bottomPadding style="height: 100px;"></div>
 <div id=colorGetterEl style="width: 100px; height: 100px;"></div>
@@ -547,7 +453,6 @@ var saveEveryMS = 3000
 var lastWord = ""
 var lastCleared = ""
 var fontScale = 1.2
-fontScaleInput.value = fontScale
 var useUnicode = false
 var agressiveRender = false
 
@@ -738,8 +643,10 @@ canvasWidth=innerWidth * 3
 var canvasHeightFull=1710
 var canvasHeightKeyboard=1200
 // alert(screen.width+" "+screen.height)
+
+// This condition for the 2021 iPad mini
 if (screen.width == 744 && screen.height == 1133) {
-    canvasHeightFull = 2800
+    canvasHeightFull = 2750
     canvasHeightKeyboard = 2200
 }
 
@@ -885,27 +792,7 @@ function osPasteText() {
     })
 }
 
-function addBrowser() {
-    var f = makeFile("http://google.com", 0, contents)
-    addFileToList(f)
-}
 function showDiff() {
-    // var start = Date.now()
-    // var contents = simpleDiffOld(fx.undo.lastSavedLines, fx.lines, false).join("\n")
-    // log("diff1: " + (Date.now()-start))
-    // var f = makeFile("__diffOld", 0, contents)
-    // f.fileMode = "file"
-    // f.cursorLineIndex = 0
-    // addFileToList(f)
-    // 
-    // var start = Date.now()
-    // var contents = simpleDiffOld2(fx.undo.lastSavedLines, fx.lines, false).join("\n")
-    // log("diff2: " + (Date.now()-start))
-    // var f2 = makeFile("__diffOld2", 0, contents)
-    // f2.fileMode = "file"
-    // f2.cursorLineIndex = 0
-    // addFileToList(f2)
-    
     var start = Date.now()
     var contents = simpleDiffOld3(fx.undo.lastSavedLines, fx.lines, false).join("\n")
     log("diff3: " + (Date.now()-start))
@@ -914,19 +801,19 @@ function showDiff() {
     f3.cursorLineIndex = 0
     addFileToList(f3)
     
-    var oldContents = fx.undo.lastSavedLines.join("\n")
-    var newContents = fx.lines.join("\n")
-    var start = Date.now()
-    var contents = Diff.createPatch("foo", oldContents, newContents, "", "", {context:0})
-    // var contents = Diff.createPatch("foo", "aaaaa", "bbbbbb", "", "")
-    log("diffM: " + (Date.now()-start))
-    var f4 = makeFile("__diffMyers", 0, contents)
-    f4.fileMode = "file"
-    f4.cursorLineIndex = 0
-    addFileToList(f4)
+    // For now we don't load in the third party diff algorithm
+    // var oldContents = fx.undo.lastSavedLines.join("\n")
+    // var newContents = fx.lines.join("\n")
+    // var start = Date.now()
+    // var contents = Diff.createPatch("foo", oldContents, newContents, "", "", {context:0})
+    // log("diffM: " + (Date.now()-start))
+    // var f4 = makeFile("__diffMyers", 0, contents)
+    // f4.fileMode = "file"
+    // f4.cursorLineIndex = 0
+    // addFileToList(f4)
+    // setCurrentFile(f4)
     
-    
-    setCurrentFile(f4)
+    setCurrentFile(f3)
     updateCursorXY()
     ensureCursorInScreen()
 }
@@ -1355,7 +1242,6 @@ function whenFontReady(fontName) {
 }
 
 function updateFontScale() {
-    fontScale = fontScaleInput.value - 0
     if (!fontScale) {
         fontScale = 1
     }
@@ -1442,6 +1328,12 @@ function inputSearchText() {
     render()
 }
 function blurSearchText() {
+    // handle the case where when you collapse the keyboard on iPad
+    // it triggers a blur event, but it's still the activeElement
+    if (document.activeElement == searchText) {
+        searchText.blur()
+        return
+    }
     theText.style.display = "block"
     searchText.style.display = "none"
     setCanvasHeightAccordingly()
@@ -1598,7 +1490,6 @@ function normalizeFullPath(fullPath) {
     return newFullPath
 }
 
-var urlForRefreash = location.href
 function renderURL() {
     return // with workspaces we don't render url
     if (preventRender) {
@@ -1618,7 +1509,6 @@ function renderURL() {
     }).join(",")
     theNewPath += "?dark=" + (isDark ? "1" : "0") 
     history.replaceState({}, "", theNewPath)
-    // urlForRefreash = theNewPath
 }
 
 function doEval() {
@@ -3176,11 +3066,8 @@ function runBashCommand(line) {
     }
     copyBuffer = oldCopyBuffer
 }
-function saveTerminalName(name) {
-    if (fx.fileMode != "terminal") {
-        return
-    }
-    fetch(proxyPath + "/myterminalname?id="+fx.ID+"&name=" + encodeURIComponent(name), {cache: "no-cache"})
+function saveName(name) {
+    fetch(proxyPath + "/myname?id="+fx.ID+"&name=" + encodeURIComponent(name), {cache: "no-cache"})
     .then(r => r.json())
     .then(r => {})
     .catch(r => {})
@@ -3799,11 +3686,11 @@ function handleBlur() {
     
     // handle the case where when you collapse the keyboard on iPad
     // it triggers a blur event, but it's still the activeElement
-    if (document.activeElement && document.activeElement == theText) {
+    if (document.activeElement == theText) {
         theText.blur()
+        return
     }
     
-    log("we got a blur")
     if (dirtyInput) {
         saveUndo()
         dirtyInput = false
@@ -3813,7 +3700,6 @@ function handleBlur() {
             save()
         }
     }
-    log("handleBlur: " + document.activeElement.id)
     setCanvasHeightAccordingly()
     render()
     window.scrollTo(0, lastPageYOffset)
@@ -4413,7 +4299,7 @@ function render() {
         
         if (fx.selectedRegions.length) {
             if (agressiveRender || (touchCount == 0)) {
-                // we comment this out because on ipad the "lines selected" part can make it in to the actual text of the document
+                // we comment this out because on iPad the "lines selected" part can make it in to the actual text of the document
                 // renderTheText((fx.selectedRegions[0].stopY - fx.selectedRegions[0].startY + 1) + " lines selected")
             }
         } else {
@@ -6466,19 +6352,15 @@ function setCurrentFile(file) {
         shellToolbar1.classList.remove("hidden")
         shellToolbar2.classList.remove("hidden")
         terminalToolbar1.classList.add("hidden")
-        terminalToolbar2.classList.add("hidden")
     } else if (fx.fileMode == "terminal") {
         shellToolbar1.classList.add("hidden")
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.remove("hidden")
-        terminalToolbar2.classList.remove("hidden")
     } else {
         shellToolbar1.classList.add("hidden")
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.add("hidden")
-        terminalToolbar2.classList.add("hidden")
     }
-    fileNameInput.value = file.name || ""
     setCanvasHeightAccordingly()
     updateCursorXY()
     searchText.setAttribute("placeholder", fx.fullPath + " (search)")
@@ -6705,6 +6587,7 @@ function updateName() {
         return
     }
     fx.name = name
+    // TODO: could you also call saveName?
     saveOrder()
 }
 function saveOrder() {
