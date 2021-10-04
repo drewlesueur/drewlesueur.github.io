@@ -245,32 +245,32 @@ ontouchstart=onStart(event)
 </div>
 
 <div class="toolbar hidden" id=shellToolbar1 style="--display: none">
-    <div class=square onclick='runBashCommand("git branch")'>branch</div>
-    <div class=square onclick='runBashCommand("git status")'>status</div>
-    <div class=square onclick='runBashCommand("git diff")'>diff</div>
+    <div class=square onclick='runShellCommand("git branch")'>branch</div>
+    <div class=square onclick='runShellCommand("git status")'>status</div>
+    <div class=square onclick='runShellCommand("git diff")'>diff</div>
     <!-- this one tries to make light backgroud, but doesn't work with mac sed.
-    <div class=square onclick='runBashCommand("rm coverage.out coverage.html; if go test -cover -coverprofile coverage.out ./...; then go tool cover -func=coverage.out; go tool cover -o=coverage.html -html=coverage.out; sed -i &apos;s/black;/white;/g&apos; coverage.html; fi")'>gotest</div>
+    <div class=square onclick='runShellCommand("rm coverage.out coverage.html; if go test -cover -coverprofile coverage.out ./...; then go tool cover -func=coverage.out; go tool cover -o=coverage.html -html=coverage.out; sed -i &apos;s/black;/white;/g&apos; coverage.html; fi")'>gotest</div>
     -->
-    <div class=square onclick='runBashCommand("rm coverage.out coverage.html; if go test -cover -coverprofile coverage.out ./...; then go tool cover -func=coverage.out; go tool cover -o=coverage.html -html=coverage.out; fi")'>gotest</div>
+    <div class=square onclick='runShellCommand("rm coverage.out coverage.html; if go test -cover -coverprofile coverage.out ./...; then go tool cover -func=coverage.out; go tool cover -o=coverage.html -html=coverage.out; fi")'>gotest</div>
     <div class=square onclick='insertText(["git checkout "], 0, -1)'>checkout</div>
     <div class=square onclick='insertText(["git commit -m &apos;&apos;"], 0, 15)'>commit -m</div>
     <!--
     <div class=square onclick='insertText(["git checkout -b "], 0, -1)'>checkout -b</div>
     -->
-    <div class=square onclick='runBashCommand("git add -u :/")'>add -u :/</div>
+    <div class=square onclick='runShellCommand("git add -u :/")'>add -u :/</div>
 </div>
 <div class="toolbar hidden" id=shellToolbar2 style="--display: none">
-    <div class=square onclick='runBashCommand("git push origin HEAD")'>push origin H</div>
+    <div class=square onclick='runShellCommand("git push origin HEAD")'>push origin H</div>
     <div class=square onclick=openAtCursor()>open</div>
-    <div class=square onclick='runBashCommand("cd ..")'>cd ..</div>
+    <div class=square onclick='runShellCommand("cd ..")'>cd ..</div>
     <!--
-    <div class=square onclick='runBashCommand("git stash")'>stash</div>
-    <div class=square onclick='runBashCommand("git stash pop")'> stash pop</div>
-    <div class=square onclick='runBashCommand("git pull origin master")'>pull origin m</div>
+    <div class=square onclick='runShellCommand("git stash")'>stash</div>
+    <div class=square onclick='runShellCommand("git stash pop")'> stash pop</div>
+    <div class=square onclick='runShellCommand("git pull origin master")'>pull origin m</div>
     -->
-    <div class=square onclick='runBashCommand("git diff --cached")'>diff --cached</div>
-    <div class=square onclick='runBashCommand("git log -10")'>log -10</div>
-    <div class=square onclick='runBashCommand("git log -p -3")'>log -p -3</div>
+    <div class=square onclick='runShellCommand("git diff --cached")'>diff --cached</div>
+    <div class=square onclick='runShellCommand("git log -10")'>log -10</div>
+    <div class=square onclick='runShellCommand("git log -p -3")'>log -p -3</div>
 </div>
 <!--<div class="toolbar xhidden" id=fileRow ontouchstart=selectFileRow(event)>-->
 <div class="toolbar xhidden" id=fileRow onclick=selectFileRow(event)>
@@ -655,7 +655,7 @@ var canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*1)
 
 // 34 button height plus 1px*2 margin
 // 2 rows of new buttons for shell
-var canvasHeightBash = canvasHeightFull - ((36*3) * 2)
+var canvasHeightShell = canvasHeightFull - ((36*3) * 2)
 var canvasHeightTerminal = canvasHeightFull - ((36*3) * 1)
 var maxLines = 0
 var maxCols = 0
@@ -1252,7 +1252,7 @@ function addCmdTab(id=0, cwd="", name="") {
     setCurrentFile(file)
     fx.cursorLineIndex = fx.lines.length - 1
     updateCursorXY()
-    runBashCommand("")
+    runShellCommand("")
     //theText.focus()
 }
 
@@ -1506,7 +1506,7 @@ function redo() {
 }
 function clearLog() {
     if (fx.fileMode == "shell") {
-        runBashCommand("clear")
+        runShellCommand("clear")
     } else if (fx.fileMode == "terminal") {
         // TODO: should I be using setLines?
         fx.lines = [""]
@@ -2340,7 +2340,7 @@ function setCanvasHeightAccordingly() {
         }
     } else {
        if (fx && fx.fileMode == "shell") {
-           setCanvasHeight(canvasHeightBash - heightReduction)   
+           setCanvasHeight(canvasHeightShell - heightReduction)   
        } else if (fx && fx.fileMode == "terminal") {
            setCanvasHeight(canvasHeightTerminal - heightReduction)   
        } else {
@@ -2622,7 +2622,7 @@ function newLine(e, shouldFocus) {
     var theLine = fx.lines[fx.cursorLineIndex]
     e && e.preventDefault()
     if (fx.fileMode == "shell") {
-        runBashCommand(theLine)
+        runShellCommand(theLine)
         return false
     } else if (fx.fileMode == "terminal") {
         // #todoterminal Send the right command to the server
@@ -2636,7 +2636,7 @@ function newLine(e, shouldFocus) {
     }
     return false
 }
-function runBashCommand(line) {
+function runShellCommand(line) {
     // outer loop to simulate goto
     if (fx.fileMode != "shell") {
         return
@@ -3391,9 +3391,9 @@ function saveWrapper() {
         // the save button turns into run when it's a "shell" file
         if (fx.selectedRegions.length) {
             copy()
-            runBashCommand(copyBuffer.join("\n"))
+            runShellCommand(copyBuffer.join("\n"))
         } else {
-            runBashCommand(fx.lines[fx.cursorLineIndex] || "")
+            runShellCommand(fx.lines[fx.cursorLineIndex] || "")
         }
         return
     } else if (fx.fileMode == "terminal") {
