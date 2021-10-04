@@ -385,6 +385,7 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
     <div class=longButton onclick="selectFont('Courier')">Courier</div>
     <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
+    <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
     <div class=longButton onclick="fontScaleInput.value = 0.9; updateFontScale()">0.9</div>
     <div class=longButton onclick="fontScaleInput.value = 1.0; updateFontScale()">1.0</div>
     <div class=longButton onclick="fontScaleInput.value = 1.1; updateFontScale()">1.1</div>
@@ -398,7 +399,6 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="fontScaleInput.value = 2; updateFontScale()">2</div>
     <div class=longButton onclick="selectFont('RobotoMono')">Roboto Mono</div>
     <div class=longButton onclick="selectFont('CourierThin')">Courier Thin</div>
-    <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
     <div class=longButton onclick="selectFont('SFMonoThin')">SF Thin</div>
     <div class=longButton onclick="selectFont('IosevkaThin')">Iosevka Thin</div>
     <div class=longButton onclick="selectFont('Iosevka')">Iosevka</div>
@@ -606,7 +606,8 @@ var fonts = {
         fontHeightPre: 36,
         fontWidthPre: 17,
         fontSize: 30,
-        fontName: "ui-monospace",
+        // fontName: "ui-monospace",
+        fontName: "SFMono",
     },
     "SFMonoThin": {
         // I think this actually only works because we default to ui-monospace
@@ -807,8 +808,6 @@ var useRegexSearch = true
 // selectFont("Courier")
 
 // Using menlo while in poor intetnet situation to save space
-// Note there is a bug when using a ttf font after page load
-// this bug may have started with ios 15 (double check)
 selectFont("Menlo")
 setInterval(function() {
     if (!fx) {
@@ -1332,25 +1331,26 @@ function selectFont(fontName) {
     if (currentFont.url) {
         var font
         if (currentFont.descriptors) {
-            log("newing up FontFace1")
             font = new FontFace(fontName, "url(" + currentFont.url + ")")    
         } else {
-            log("newing up FontFace2")
             font = new FontFace(fontName, "url(" + currentFont.url + ")", currentFont.descriptors)    
         }
-        log("loading font " + fontName)
-        log("loading font url " + currentFont.url)
         font.load().then(function(loaded){
-            log("font loaded, adding")
             document.fonts.add(loaded)
-            log("font added")
+            whenFontReady(fontName)
         }).catch(function(e){
             alert(e)
         })
+    } else {
+        // assuming we have this font
+        whenFontReady(fontName)
     }
-    
+}
+
+function whenFontReady(fontName) {
     searchText.style.fontFamily = fontName
     theText.style.fontFamily = fontName
+    log("calling updateFontScale")
     updateFontScale()
 }
 
@@ -1367,7 +1367,13 @@ function updateFontScale() {
 function setFontVars() {
     fontHeight = currentFont.fontHeightPre * fontScale
     fontWidth = currentFont.fontWidthPre * fontScale
-    fontCSS = (currentFont.fontSize * fontScale) + "px '"+currentFont.fontName+"', ui-monospace"
+    // fontCSS = (currentFont.fontSize * fontScale) + "px '"+currentFont.fontName+"', ui-monospace"
+    // fontCSS = (currentFont.fontSize * fontScale) + "px 'Courier', ui-monospace"
+    // fontCSS = (currentFont.fontSize * fontScale) + "px ui-monospace"
+    // after experimentation, there seems to be a bug in ios 15 where if we use the ui-monospace font
+    // which would render SF Mono before, but now
+    // causes the page to crash
+    fontCSS = (currentFont.fontSize * fontScale) + "px '"+currentFont.fontName+"'"
     fontCSSEmoji = (currentFont.fontSize * fontScale * .6) + "px '"+currentFont.fontName+"', ui-monospace"
     extraYEmoji = (currentFont.fontSize * fontScale * .6) / 2
 }
