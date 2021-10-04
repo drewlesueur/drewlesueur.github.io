@@ -743,6 +743,7 @@ func main() {
 	        // FullPath: "(terminal)/???",
 	        Cmd: cmd,
 	        ID: lastFileID,
+	        CWD: cwd,
 	        Pty: f,       
 	    }
 	    workspaceMu.Lock()
@@ -853,7 +854,18 @@ func main() {
 	    }
 	})
 	
-	
+	mux.HandleFunc("/myquickshell", func(w http.ResponseWriter, r *http.Request) {
+		cwd := r.FormValue("cwd") // current working directory
+		cmdString := r.FormValue("cmd")
+		cmd := exec.Command("bash", "-c", cmdString)
+		cmd.Dir = cwd
+		ret, err := cmd.CombinedOutput()
+		if err != nil {
+			logAndErr(w, "myquickshell error running command: %s: %v", cmdString, err) 
+			return
+		}
+		w.Write(ret)
+	})
 	// #wschange make a File and add the cmd, and the CWD
 	mux.HandleFunc("/myshell", func(w http.ResponseWriter, r *http.Request) {
 		workspaceMu.Lock()
@@ -877,6 +889,7 @@ func main() {
 	    	    Type: "shell",
 	    	    // FullPath: "(shell)/???",
 	    	    ID: lastFileID,
+	    	    CWD: cwd,
 	    	}
 	    	workspace.Files = append(workspace.Files, f)
 		} else if t, ok := workspace.GetFile(ID); ok {

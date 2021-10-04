@@ -1218,21 +1218,6 @@ var shellHelpers = [
     "",
 ]
 
-function useExisingWD(file) {
-    if (fx.fileMode == "shell") {
-        file.shellCWD = fx.shellCWD
-        file.originatingFullPath = fx.originatingFullPath
-    } else if (fx.fileMode == "file") {
-        var parts = trimPrefix(fx.fullPath, proxyPath).split("/")
-        parts = parts.slice(0, parts.length - 1)
-        file.shellCWD = rootLocation + parts.join("/")
-        file.originatingFullPath = fx.fullPath.split("/").slice(0, -1).join("/") + "/cmd"
-    } else if (fx.fileMode == "directory") {
-        file.shellCWD = rootLocation + trimPrefix(fx.fullPath, proxyPath)
-        file.originatingFullPath = fx.fullPath + "/cmd"
-    }
-}
-
 function addCmdTab(id=0, cwd="", name="") {
     // I think this /cmd isn't hit on the server 
     // I think we need a special endpoint for serving files and not just /
@@ -1243,10 +1228,9 @@ function addCmdTab(id=0, cwd="", name="") {
     }
     file.name = name
     if (!cwd) {
-        useExisingWD(file)
+        file.shellCWD = fx.shellCWD
     } else {
         file.shellCWD = cwd
-        file.originatingFullPath = cwd
     }
     addFileToList(file, false)
     setCurrentFile(file)
@@ -1262,7 +1246,7 @@ function addTerminalTab() {
     // TODO: follow up on the path variable, seems mostly useless for now.
     var file = makeFile(proxyPath + "/terminal", 0, "")
     file.fileMode = "terminal"
-    useExisingWD(file)
+    file.shellCWD = fx.shellCWD
     addFileToList(file, false)
     setCurrentFile(file)
     fx.cursorLineIndex = fx.lines.length - 1
@@ -1270,10 +1254,11 @@ function addTerminalTab() {
     openTerminal()
     //theText.focus()
 }
-function addExistingTerminalTab(id, name) {
+function addExistingTerminalTab(id, name, cwd) {
     var file = makeFile(proxyPath + "/terminal", 0, "")
     file.fileMode = "terminal"
     file.ID = id
+    file.shellCWD = cwd
     if (name) {
         file.name = name
     }
@@ -2635,6 +2620,20 @@ function newLine(e, shouldFocus) {
         setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
     }
     return false
+}
+
+
+// JSON.stringify(fx.shellCWD, "", "    ")
+// ""
+
+function runQuickShellCommand(cmdString) {
+    fetch(proxyPath + "/myquickshell?cwd="+encodeURIComponent(fx.shellCWD)+"&cmd="+encodeURIComponent(line), {
+        cache: "no-cache"
+    }).then(r => {
+        return r.text()
+    }).then(r => {
+        log("quick shell output: " + r)
+    })
 }
 function runShellCommand(line) {
     // outer loop to simulate goto
@@ -5724,7 +5723,6 @@ function makeFile(fullPath, cursorLineIndex, contents) {
         offsetX: 0,
         fileMode: "file",
         shellCWD: "",
-        originatingFullPath: "",
         version: 0,
         savedVersion: 0,
         savingVersion: -1,
@@ -5915,10 +5913,10 @@ function getLinesForFileList() {
     var sortedFiles = files.slice().sort(function(f1, f2) {
         if (f1.fileMode == "shell") {
             // TODO: should we set the fullPath for shell to be the CWD?  
-            return (f1.originatingFullPath + f1.tmpIndex) > (f2.originatingFullPath + f2.tmpIndex)
+            return (f1.shellCWD + f1.tmpIndex) > (f2.shellCWD + f2.tmpIndex)
         } else if (f1.fileMode == "terminal") {
             // #todoterminal: how get the cwd of the process (/proc/fd) ?
-            return (f1.originatingFullPath + f1.tmpIndex) > (f2.originatingFullPath + f2.tmpIndex)
+            return (f1.shellCWD + f1.tmpIndex) > (f2.shellCWD + f2.tmpIndex)
         } else {
             return (f1.fullPath + f1.tmpIndex) > (f2.fullPath + f2.tmpIndex)
         }
@@ -5931,8 +5929,6 @@ function getLinesForFileList() {
         // var parts = (f.fullPath + "(" + (f.tmpIndex) + ")").split("/")
         var parts = (f.fullPath + "(" + (f.ID) + ")").split("/")
         if (f.fileMode == "shell") {
-            // parts = (f.originatingFullPath + ":" + (f.cursorLineIndex+1)).split("/")
-            // parts = (f.originatingFullPath + " (" + (f.tmpIndex+1) + ")").split("/")
             parts = ["(cmd)", (f.tmpIndex+"").padStart(2, "0") + ": " + (f.name || "")]
         } else if (f.fileMode == "terminal") {
             // #todoterminal: how get the cwd of the process (/proc/fd) ?
@@ -6098,8 +6094,12 @@ function fetchFile(fullPath, file, id="") {
         if (isDir) {
             file.fileMode = "directory"
             file.cursorLineIndex = 1
+            file.shellCWD = rootLocation + trimPrefix(file.fullPath, proxyPath)
         } else {
             file.fileMode = "file"
+            var parts = trimPrefix(file.fullPath, proxyPath).split("/")
+            parts = parts.slice(0, parts.length - 1)
+            file.shellCWD = rootLocation + parts.join("/")
         }
         verifyLoadedMD5(file, md5String)
     }).catch(e => {
@@ -6175,46 +6175,6 @@ var firstFileMD5 = ""
 
 
 var initialFileAdding = false
-function oldStuff() {
-    // The first one get's "hydrated" by the server
-    // ay, joining just to split again. Clean up.
-    var cursorLineIndex = 0
-    var parts = paths[0].split(":")
-    var fullPath = parts[0]
-    if (parts.length > 1) {
-        cursorLineIndex = (parts[1] - 1) || 0   
-    } 
-    var initialFile = makeFile(fullPath, cursorLineIndex, lines.join("\n"))
-    initialFile.fileMode = fileMode
-    initialFile.shellCWD = rootLocation
-    initialFile.loadedFirstTime = true 
-    verifyLoadedMD5(initialFile, firstFileMD5)
-    var serverLoadFirstFile = true
-    var ajaxLoadStartIndex
-    if (serverLoadFirstFile) {
-        ajaxLoadStartIndex = 1
-        addFileToList(initialFile)
-        setCurrentFile(initialFile)
-    } else {
-       ajaxLoadStartIndex = 0
-    }
-    
-    
-    // Subsequent ones will get added after the fact.
-    // Starting at index 1 for this reason.
-    // TODO: remove this? #wschange
-    var initialFileAdding = true
-    for (var i=ajaxLoadStartIndex; i<paths.length; i++) {
-        if (paths[i].startsWith("__TERMINAL__")) {
-            parts = paths[i].split(":")
-            var id = parts[1]
-            addExistingTerminalTab(id)
-        } else {
-            addFile(paths[i])
-        }
-    }
-    setCurrentFile(files[0])
-}
 
 // add exising files
 // TODO: you should hydrate this in the first pageload.
@@ -6227,9 +6187,9 @@ fetch(proxyPath + "/myfiles", {
     for (var serverFile of r) {
         // TODO: fix inconsistent file naming #inconsistentFileNaming
         if (serverFile.Type == "terminal") {
-            addExistingTerminalTab(serverFile.ID, serverFile.Name)
+            addExistingTerminalTab(serverFile.ID, serverFile.Name, serverFile.CWD)
         } else if (serverFile.Type == "shell") {
-           addCmdTab(serverFile.ID, serverFile.CWD, serverFile.Name)
+            addCmdTab(serverFile.ID, serverFile.CWD, serverFile.Name)
         } else {
             addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), false, serverFile.ID)
         }
