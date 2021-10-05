@@ -255,7 +255,9 @@ ontouchstart=onStart(event)
     -->
     <div class=square onclick='runShellCommand("rm coverage.out coverage.html; if go test -cover -coverprofile coverage.out ./...; then go tool cover -func=coverage.out; go tool cover -o=coverage.html -html=coverage.out; fi")'>gotest</div>
     <div class=square onclick='insertText(["git checkout "], 0, -1)'>checkout</div>
-    <div class=square onclick='insertText(["git commit -m &apos;&apos;"], 0, 15)'>commit -m</div>
+    <!-- <div class=square onclick='insertText(["git commit -m &apos;&apos;"], 0, 15)'>commit -m</div>
+    -->
+    <div class=square onclick='readySameCommitAsBefore()'>commit -m</div>
     <!--
     <div class=square onclick='insertText(["git checkout -b "], 0, -1)'>checkout -b</div>
     -->
@@ -391,6 +393,10 @@ ontouchstart=onStart(event)
 <label for=saveDiffsCheckbox>
     <input onchange="saveDiffs = saveDiffsCheckbox.checked" type=checkbox name=saveDiffsCheckbox id=saveDiffsCheckbox checked />
     save diffs
+</label>
+<label for=useUnicodeCheckbox>
+    <input onchange="useUnicode = useUnicodeCheckbox.checked" type=checkbox name=useUnicodeCheckbox id=useUnicodeCheckbox />
+    use unicode
 </label>
 <br>
 <label for=serverViewCheckbox>
@@ -2316,6 +2322,36 @@ function insertText(theLines, yOffset, xOffset) {
     render()
     copyBuffer = oldCopyBuffer
 }
+function readySameCommitAsBefore() {
+    runQuickShellCommand("git log -1", function(err, result) {
+        if (err) {
+            return
+        }    
+        // commit 7567b8aed34738da36b23d67b3053f3b6a30e13e
+        // Author: Drew LeSueur <drewalex@gmail.com>
+        // Date:   Mon Oct 4 19:24:54 2021 -0700
+        // 
+        //     remove navBack and navForward features, wasnt using them
+        
+        if (result.indexOf("\r") != -1) {
+            alert("you got cr!")    
+        }
+        var lines = result.split("\n")
+        if (lines.length < 5) {
+            alert("could not get previous commit")
+            return
+        }
+        var author = lines[1].substr("Author:".length).trim()
+        var message = lines[4].trim()
+        insertText(["git commit -m '"+bashEscapeSingleQuote(message)+"' --author '"+bashEscapeSingleQuote(author)+"'"], 0, 15)
+        
+    })
+}
+
+function bashEscapeSingleQuote(str) {
+    return str.replaceAll("'", "'\\''")
+}
+
 function paste(unselect, pasteBefore, fromTap) {
     pasteLines(copyBuffer, unselect, pasteBefore, fromTap)
 }
@@ -2583,13 +2619,14 @@ function newLine(e, shouldFocus) {
     return false
 }
 
-function runQuickShellCommand(cmdString) {
+function runQuickShellCommand(cmdString, cb) {
     fetch(proxyPath + "/myquickshell?cwd="+encodeURIComponent(getDefaultCWD(fx))+"&cmd="+encodeURIComponent(cmdString), {
         cache: "no-cache"
     }).then(r => {
         return r.text()
     }).then(r => {
         log("quick shell output: " + r)
+        cb(null, r)
     })
 }
 function runShellCommand(line) {
@@ -5016,7 +5053,7 @@ function onStart(e) {
         var bbox = c.getBoundingClientRect()
         
         if (startTouchY - bbox.top < 40) {
-            if (document.activeElement == theText) {
+            if (document.activeElement == theText && !acWord) {
                shouldAutocompleteLine = true
             } else if (false) { // commenting out the page down feature
                 var origOffsetY = fx.offsetY
@@ -5077,6 +5114,31 @@ function clickItemInDirectory() {
     }
     addFile(newFullPath, preventSelect)
 }
+
+
+function fuzzyMatch(fuzzyWord, word) {
+    if (!word) {
+        return false
+    }
+    if (word.length > 50) {
+        // prevent against long base64 values from matching
+        return false
+    }
+    
+    fuzzyWord = fuzzyWord.toLowerCase()
+    word = word.toLowerCase()
+    var lastMatch = 0
+    for (var i=0; i<fuzzyWord.length; i++) {
+        var chr = fuzzyWord.charAt(i)
+        lastMatch = word.indexOf(chr, lastMatch) 
+        if (lastMatch == -1) {
+            return false
+        }
+    }
+    return true
+}
+var fuzzyAutocomplete = true
+
 // marker orange
 var shouldAutocompleteLine = false
 // NEW FIND WORD
@@ -5109,8 +5171,12 @@ function acWordToggle(recursive) {
             //if (theLine.substring(0, w.start)
             acWord.prefix = w.word
             acWord.word = w.word
-            acWord.startX = fx.cursorColIndex
-            acWord.stopX = fx.cursorColIndex
+            
+            // fuzzy
+            acWord.startXNonFuzzy = fx.cursorColIndex
+            acWord.stopXNonFuzzy = fx.cursorColIndex
+            acWord.startX = expandTabIndex(theLine, w.start)
+            acWord.stopX = expandTabIndex(theLine, w.end)
             
             // to prevent autocomplet in the middle
             // of a word from getting that compound word.
@@ -5172,10 +5238,16 @@ function acWordToggle(recursive) {
                 acWord.findDirection = !acWord.findDirection
                 if (acWord.fileIndex >= files.length) {
                     //alert("allDone")
-                    acPlop([""])
-                    if (!acWord.autocompleteLine) {
-                       shouldAutocompleteLine = true
-                    } 
+                    
+                    if (acWord.autocompleteLine || !fuzzyAutocomplete) {
+                        acPlop([""])
+                    } else {                   
+                        acPlop([acWord.prefix])
+                    }
+                    // not going to cycle to turn on shouldAutocompleteLine
+                    // if (!acWord.autocompleteLine) {
+                    //    shouldAutocompleteLine = true
+                    // } 
                     if (acWord.autocompleteLine && !acWord.hasPlopped && !recursive) {
                         acWord = null
                         acWordToggle(true)
@@ -5227,7 +5299,13 @@ function acWordToggle(recursive) {
             }
 
             // here we have found a word
-            acPlop([trimPrefix(found, acWord.prefix)])
+            
+            if (acWord.autocompleteLine || !fuzzyAutocomplete) {
+                acPlop([trimPrefix(found, acWord.prefix)])
+            } else {
+                // don't trim prefix with fuzzy match
+                acPlop([found])
+            }
             break loopBlock
         }
         
@@ -5289,9 +5367,16 @@ function acPlop(buff) {
     var oldCutBuffer = cutBuffer
     copyBuffer = buff
     var oldSelectMode = selectMode
+    
+    var acWordStartX = acWord.startX
+    var acWordStopX = acWord.stopX
+    if (acWord.autocompleteLine || !fuzzyAutocomplete) {
+        acWordStartX = acWord.startXNonFuzzy    
+        acWordStopX = acWord.stopXNonFuzzy    
+    }
     fx.selectedRegions = [{
-        startX: acWord.startX,
-        stopX: acWord.stopX,
+        startX: acWordStartX,
+        stopX: acWordStopX,
         startY: acWord.startY,
         stopY: acWord.stopY,
     }]
@@ -5302,12 +5387,13 @@ function acPlop(buff) {
     acWord.stopY = acWord.startY + copyBuffer.length - 1
     if (copyBuffer.length == 1) {
         var theLine = fx.lines[fx.cursorLineIndex] || ""
-
-        acWord.stopX = expandTabIndex(theLine, u(acWord.startX) + copyBuffer[0].length)
+        acWord.stopX = expandTabIndex(theLine, u(acWordStartX) + copyBuffer[0].length)
+        acWord.stopXNonFuzzy = acWord.stopX
     } else {
         var lastCopyBufferLine = copyBuffer[copyBuffer.length - 1]
         // note. we don't cache this
         acWord.stopX = expandTabIndex(lastCopyBufferLine, lastCopyBufferLine.length, null, null, "nocache")
+        acWord.stopXNonFuzzy = acWord.stopX
     }
     // marker aquamarine autocomplete
     if (!acWord.autocompleteLine) {
@@ -5361,7 +5447,10 @@ function acFindUp() {
             }
             var seen = acWord.seen[w.word]
             if (!seen && w.word != "" &&
-                (acWord.prefix == "" || (w.word != acWord.prefix && w.word.startsWith(acWord.prefix)))) {
+                
+                // fuzzy
+                (acWord.prefix == "" || (w.word != acWord.prefix && isAutocompleteMatch(acWord.prefix, w.word))))
+            {
                 if (acWord.findUpX < 0) {
                     acWord.findUpY -= 1
                 }
@@ -5371,6 +5460,14 @@ function acFindUp() {
         }
     }
     return {start: -1, end: -1, word: ""}
+}
+
+function isAutocompleteMatch(prefix, word) {
+    if (fuzzyAutocomplete) {
+        return fuzzyMatch(prefix, word)
+    } else {
+        return word.startsWith(prefix)   
+    }    
 }
 
 function acFindDown() {
@@ -5403,7 +5500,9 @@ function acFindDown() {
             }
             var seen = acWord.seen[w.word]
             if (!seen && w.word != "" &&
-                (acWord.prefix == "" || (w.word != acWord.prefix && w.word.startsWith(acWord.prefix)))) {
+                // fuzzy
+                (acWord.prefix == "" || (w.word != acWord.prefix && isAutocompleteMatch(acWord.prefix, w.word))))
+            {
                 if (acWord.findDownX >= line.length) {
                     acWord.findDownY += 1
                     acWord.findDownX = 0
