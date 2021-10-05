@@ -16,7 +16,9 @@ document.write(`
 <!-- For now not loading in third party diff library. -->
 <!--<script src="`+proxyPath+`/tepublic/diff.js"></scr`+`ipt>-->
 <script src="`+proxyPath+`/tepublic/md52.js"></scr`+`ipt>
-<script src="`+proxyPath+`/tepublic/grapheme-splitter.js"></scr`+`ipt>
+<!-- For now not loading in grapheme splitter to save pageload. -->
+<!-- it means we can't use emojis, other unicode chars for now -->
+<!-- <script src="`+proxyPath+`/tepublic/grapheme-splitter.js"></scr`+`ipt> -->
 `)
 </script>
 <style>
@@ -440,6 +442,10 @@ style="width:100%; height:100px;"
 window.onerror = function(message, url, lineNumber, columnNumber, error) {
     alert(lineNumber + ": " + message)
 }
+</script>
+<script>
+// uncomment this line if you want to add back emoji, etc support
+// var splitter = new GraphemeSplitter()
 </script>
 <script>
 var t = c.getContext("2d")
@@ -1218,6 +1224,24 @@ var shellHelpers = [
     "",
 ]
 
+function getDefaultCWD(f) {
+    // TODO: check again the proxyPath stuff here
+    // it might be old and not used. 
+    if (f.shellCWD) {
+        return f.shellCWD
+    }
+    
+    if (f.fileMode == "directory") {
+        return rootLocation + trimPrefix(f.fullPath, proxyPath)
+    }
+    
+    if (f.fileMode == "file") {
+        var parts = trimPrefix(f.fullPath, proxyPath).split("/")
+        parts = parts.slice(0, parts.length - 1)
+        return rootLocation + parts.join("/")
+    }
+}
+
 function addCmdTab(id=0, cwd="", name="") {
     // I think this /cmd isn't hit on the server 
     // I think we need a special endpoint for serving files and not just /
@@ -1228,10 +1252,9 @@ function addCmdTab(id=0, cwd="", name="") {
     }
     file.name = name
     if (!cwd) {
-        file.shellCWD = fx.shellCWD
-    } else {
-        file.shellCWD = cwd
+        cwd = getDefaultCWD(fx) 
     }
+    file.shellCWD = cwd
     addFileToList(file, false)
     setCurrentFile(file)
     fx.cursorLineIndex = fx.lines.length - 1
@@ -1246,7 +1269,7 @@ function addTerminalTab() {
     // TODO: follow up on the path variable, seems mostly useless for now.
     var file = makeFile(proxyPath + "/terminal", 0, "")
     file.fileMode = "terminal"
-    file.shellCWD = fx.shellCWD
+    file.shellCWD = getDefaultCWD(fx)
     addFileToList(file, false)
     setCurrentFile(file)
     fx.cursorLineIndex = fx.lines.length - 1
@@ -2622,12 +2645,8 @@ function newLine(e, shouldFocus) {
     return false
 }
 
-
-// JSON.stringify(fx.shellCWD, "", "    ")
-// ""
-
 function runQuickShellCommand(cmdString) {
-    fetch(proxyPath + "/myquickshell?cwd="+encodeURIComponent(fx.shellCWD)+"&cmd="+encodeURIComponent(line), {
+    fetch(proxyPath + "/myquickshell?cwd="+encodeURIComponent(getDefaultCWD(fx))+"&cmd="+encodeURIComponent(cmdString), {
         cache: "no-cache"
     }).then(r => {
         return r.text()
@@ -3030,105 +3049,6 @@ function eq(a, b, message) {
 }
 
 
-setTimeout(function() {
-    return
-    // useUnicode = false
-    eq(0, expandTabIndexNoCache("", 0))    
-    eq(0, expandTabIndexNoCache("", -1))    
-    eq(1, expandTabIndexNoCache("a", -1))    
-    eq(1, expandTabIndexNoCache("a", 1))
-    eq(4, expandTabIndexNoCache("abcd", -1))
-    eq(8,   expandTabIndexNoCache("abcd	", -1))
-    eq(8, expandTabIndexNoCache("abcd\t", -1))
-    eq(4, expandTabIndexNoCache("abc\t", -1))
-    eq(4, expandTabIndexNoCache("ab\t", -1))
-    eq(8, expandTabIndexNoCache("ab\t" + "ab\t", -1))
-    eq(12, expandTabIndexNoCache("ab\t" + "ab\t" + "ab\t", -1))
-    eq(12, expandTabIndexNoCache("abc\t" + "a\t" + "ab\t", -1))
-    eq(10, expandTabIndexNoCache("abc\t" + "a\t" + "ab", -1))
-    eq(10, expandTabIndexNoCache("abca" + "\t" + "ab", -1))
-    eq(10, expandTabIndexNoCache("abca"+"a\t" + "ab", -1))
-    eq(4, expandTabIndexNoCache("\t", -1))
-    
-    eq(8, "👩‍❤️‍👩".length)
-    eq(8, splitter.splitGraphemes("👩‍❤️‍👩")[0].length)
-    eq(1, expandTabIndexNoCache("👩‍❤️‍👩", -1))    
-    eq(1, expandTabIndexNoCache("👩‍❤️‍👩", 8))
-    eq(4, expandTabIndexNoCache("👩‍❤️‍👩👩‍❤️‍👩👩‍❤️‍👩👩‍❤️‍👩", -1))
-    eq(8,   expandTabIndexNoCache("❤️❤️❤️❤️	", -1))
-    eq(8, expandTabIndexNoCache("👩‍❤️‍👩❤️👩‍❤️‍👩❤️\t", -1))
-    eq(4, expandTabIndexNoCache("a👩‍❤️‍👩c\t", -1))
-    eq(4, expandTabIndexNoCache("😎👩‍❤️‍👩\t", -1))
-    eq(8, expandTabIndexNoCache("a❤️\t" + "👩‍❤️‍👩👩‍❤️‍👩\t", -1))
-    eq(12, expandTabIndexNoCache("ab\t" + "ab\t" + "ab\t", -1))
-    eq(12, expandTabIndexNoCache("abc\t" + "👩‍❤️‍👩\t" + "ab\t", -1))
-    eq(10, expandTabIndexNoCache("abc\t" + "a\t" + "ab", -1))
-    eq(10, expandTabIndexNoCache("abca" + "\t" + "👩‍❤️‍👩b", -1))
-    eq(10, expandTabIndexNoCache("👩‍❤️‍👩👩‍❤️‍👩❤️❤️"+"a\t" + "ab", -1))
-    eq(4, expandTabIndexNoCache("\t", -1))
-    
-    eq(0, unExpandTabIndexNoCache("", 0))
-    eq(1, unExpandTabIndexNoCache("a", 1))
-    eq(2, unExpandTabIndexNoCache("ab", 2))
-    eq(0, unExpandTabIndexNoCache("\t", 0))
-    eq(0, unExpandTabIndexNoCache("\t", 1))
-    eq(0, unExpandTabIndexNoCache("\t", 2))
-    eq(0, unExpandTabIndexNoCache("\t", 3))
-    eq(1, unExpandTabIndexNoCache("\t", 4))
-    eq(2, unExpandTabIndexNoCache("\t"+"a", 5))
-    eq(3, unExpandTabIndexNoCache("a\t"+"a", 5))
-    eq(4, unExpandTabIndexNoCache("ab\t"+"a", 5))
-    eq(5, unExpandTabIndexNoCache("ab\t"+"a\t", 8))
-    eq(4, unExpandTabIndexNoCache("ab\t"+"a\t", 7))
-    eq(4, unExpandTabIndexNoCache("ab\t"+"a\t", 6))
-    eq(4, unExpandTabIndexNoCache("ab\t"+"a\t", 5))
-    eq(3, unExpandTabIndexNoCache("ab\t"+"a\t", 4))
-    
-    // abcda•••@
-    eq(6, unExpandTabIndexNoCache("abcd"+"a\t", 8))
-    
-    // abcda••@_
-    eq(5, unExpandTabIndexNoCache("abcd"+"a\t", 7))
-    
-    // abcda•@•_
-    eq(5, unExpandTabIndexNoCache("abcd"+"a\t", 6))
-    
-    // abcda@••_
-    eq(5, unExpandTabIndexNoCache("abcd"+"a\t", 5))
-    
-    // abcd@•••_
-    eq(4, unExpandTabIndexNoCache("abcd"+"a\t", 4))
-    
-    // ❤️ has length of 2
-    // 👩‍❤️‍👩 has length of 8
-    // 🌈 has length of 2
-    eq(8, unExpandTabIndexNoCache("👩‍❤️‍👩", 1))
-    eq(16, unExpandTabIndexNoCache("👩‍❤️‍👩👩‍❤️‍👩", 2))
-    eq(3, unExpandTabIndexNoCache("\t"+"❤️", 5))
-    eq(17, unExpandTabIndexNoCache("👩‍❤️‍👩\t"+"👩‍❤️‍👩", 5))
-    eq(7, unExpandTabIndexNoCache("❤️❤️\t"+"❤️", 5))
-    eq(8, unExpandTabIndexNoCache("❤️❤️\t"+"❤️\t", 8))
-    eq(7, unExpandTabIndexNoCache("❤️❤️\t"+"❤️\t", 7))
-    eq(7, unExpandTabIndexNoCache("🌈🌈\t"+"🌈\t", 6))
-    eq(7, unExpandTabIndexNoCache("🌈🌈\t"+"🌈\t", 5))
-    eq(5, unExpandTabIndexNoCache("🌈🌈\t"+"🌈\t", 4))
-    
-    // abcda•••@
-    eq(11, unExpandTabIndexNoCache("❤️❤️❤️❤️"+"❤️\t", 8))
-    
-    // abcda••@_
-    eq(10, unExpandTabIndexNoCache("❤️❤️❤️❤️"+"❤️\t", 7))
-    
-    // abcda•@•_
-    eq(10, unExpandTabIndexNoCache("❤️❤️❤️❤️"+"❤️\t", 6))
-    
-    // abcda@••_
-    eq(10, unExpandTabIndexNoCache("❤️❤️❤️❤️"+"❤️\t", 5))
-    
-    // abcd@•••_
-    eq(8, unExpandTabIndexNoCache("❤️❤️❤️❤️"+"❤️\t", 4))
-    // eq(999, -999)
-}, 1)
 
 function unExpandTabIndexNoCache(theLine, start) {
     return unExpandTabIndex(theLine, start, null, null, "nocache")
@@ -4097,8 +4017,6 @@ function renderTheText(v) {
         theTextValue = v
     // }
 }
- 
-var splitter = new GraphemeSplitter()
 
 var renderDuration = 0
 var renderCount = 0   
@@ -6094,12 +6012,8 @@ function fetchFile(fullPath, file, id="") {
         if (isDir) {
             file.fileMode = "directory"
             file.cursorLineIndex = 1
-            file.shellCWD = rootLocation + trimPrefix(file.fullPath, proxyPath)
         } else {
             file.fileMode = "file"
-            var parts = trimPrefix(file.fullPath, proxyPath).split("/")
-            parts = parts.slice(0, parts.length - 1)
-            file.shellCWD = rootLocation + parts.join("/")
         }
         verifyLoadedMD5(file, md5String)
     }).catch(e => {

@@ -1,3 +1,8 @@
+shellCWD is not remembered for duplicates of same file on load
+
+when you commit remeber the last commit message and try to use it.
+
+
 editor command button
 get cmd and terminal wrangled
 names saving and persisting
