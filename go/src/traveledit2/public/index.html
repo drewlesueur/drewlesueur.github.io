@@ -342,8 +342,6 @@ ontouchstart=onStart(event)
     <div class=square onclick=reloadFile(fx)>reload</div>
     <div class=square onclick=scriptLines()>script lines</div>
     <div class=square onclick=scriptLinesInline()>script inline</div>
-    <div class=square onclick=navBack()>nav back</div>
-    <div class=square onclick=navForward()>nav forward</div>
 </div>
 <div class=toolbar>
     <div class=square onclick=debugView()>debug view</div>
@@ -722,67 +720,7 @@ var useRegexSearch = true
 
 // Using menlo while in poor intetnet situation to save space
 selectFont("Menlo")
-setInterval(function() {
-    if (!fx) {
-        return
-    }
-    // has to be at the same place for 2 seconds
-    if (fx.lastOffsetY != fx.offsetY) {
-        fx.lastOffsetY = fx.offsetY   
-        return
-    }
-    var lastLocation = fx.locationStack[fx.locationIndex]
-    if (!lastLocation || (Math.abs(fx.offsetY - lastLocation.offsetY) > maxLines)) {
-        if (fx.locationIndex != fx.locationStack.length - 1) {
-            fx.locationStack = fx.locationStack.slice(0, fx.locationIndex + 1)
-        }
-        var loc = {
-            offsetY: fx.offsetY,
-            cursorLineIndex: fx.cursorLineIndex,
-            cursorColIndex: fx.cursorColIndex,
-        }
-        fx.locationStack.push(loc)
-        fx.locationIndex++
-        if (fx.locationStack.length > 30) {
-            fx.locationStack.shift()       
-            fx.locationIndex--
-        }
-    } else {
-        var loc = {
-            offsetY: fx.offsetY,
-            cursorLineIndex: fx.cursorLineIndex,
-            cursorColIndex: fx.cursorColIndex,
-        }
-        fx.locationStack[fx.locationIndex] = loc
-    }
-}, 1000)
 
-function navBack() {
-    if (fx.locationIndex == 0) {
-        return
-    }    
-    fx.locationIndex--
-    var loc = fx.locationStack[fx.locationIndex]
-    gotoLoc(loc)
-}
-function navForward() {
-    if (fx.locationIndex >= fx.locationStack.length - 1) {
-        return
-    }    
-    fx.locationIndex++
-    var loc = fx.locationStack[fx.locationIndex]
-    gotoLoc(loc)
-}
-function gotoLoc(loc) {
-    if (!loc) {
-        return
-    }
-    fx.cursorLineIndex = loc.cursorLineIndex
-    fx.cursorColIndex = loc.cursorColIndex
-    fx.offsetY = loc.offsetY
-    updateCursorXY()
-    render()
-}
 
 function osCopyText() {
     navigator.clipboard.writeText(copyBuffer.join("\n")).then(function() {
@@ -5549,16 +5487,6 @@ function selectFileRow(e) {
     }
     var index = e.target.getAttribute("data-index")
     
-    if (index == 0 && reorderFiles) {
-        // simple (alt+tab) within file
-        // Won't work if we alrady have been having back.
-        if (fx.locationIndex == fx.locationStack.length - 1) {
-            navBack()
-        } else {
-            navForward()
-        } 
-        return
-    }
     selectFileIndex(index)
 }
 function selectFileIndex(index) {
@@ -5648,8 +5576,6 @@ function makeFile(fullPath, cursorLineIndex, contents) {
         fileToken: fileToken,
         selectedRegions: [],
         
-        locationStack: [],
-        locationIndex: -1,
         lastOffsetY: -1,
     }
 }
