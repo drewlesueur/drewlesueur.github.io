@@ -149,16 +149,6 @@ opacity: 0.5;
         onblur="blurEditorCommandText()"
     >
     
-    <input id=searchTextAfter class=fullWidth type=text
-    style="
-    font: 8px Courier;
-    height:1px; overflow: hidden;
-    display: block;
-    "
-    onfocus=handleSearchFocusAfter()
-    xonblur=handleBlur()
-    >
-    
     <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
 <form onsubmit="findDownForm(event)">
@@ -197,7 +187,7 @@ opacity: 0.5;
 
 <form onsubmit="newLine(event, true)">
 
-<input type=hidden id=theTextBefore class=fullWidth type=text
+<input type=text id=theTextBefore class=fullWidth
 style="
 font: 8px Courier;
 /* display: none; see what it looks like without */
@@ -220,7 +210,7 @@ onblur=handleBlur()
 oninput=saveLine()
 onkeydown=handleKeydown(event)
 >
-<input type=hidden id=theTextAfter class=fullWidth type=text
+<input type=text id=theTextAfter class=fullWidth
 style="
 font: 8px Courier;
 /* display: none; see what it looks like without */
@@ -3330,8 +3320,10 @@ function handleFocusAfter() {
     if (searchText.value) {
         findDown()
     } else {
-        if (fx.cursorLineIndex == fx.lines.Length - 1) return
-        fx.cursorLineIndex += 1
+        // if (fx.cursorLineIndex == fx.lines.Length - 1) return
+        // fx.cursorLineIndex += 1
+        // instead of going one line down, let's alt tab
+        setCurrentFile(lastFile);
     }
     setCanvasHeightAccordingly()
     ensureCursorInScreen()
@@ -3347,8 +3339,10 @@ function handleFocusBefore() {
     if (searchText.value) {
         findUp()
     } else {
-        if (fx.cursorLineIndex == 0) return
-        fx.cursorLineIndex -= 1
+        // if (fx.cursorLineIndex == 0) return
+        // fx.cursorLineIndex -= 1
+        // instead of going one line down, let's alt tab
+        setCurrentFile(lastFile);
     }
     setCanvasHeightAccordingly()
     ensureCursorInScreen()
