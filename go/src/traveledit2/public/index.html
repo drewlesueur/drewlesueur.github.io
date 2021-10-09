@@ -391,7 +391,7 @@ ontouchstart=onStart(event)
 </div>
 <div class=toolbar>
     <div class=square onclick="window.open(location.href)">dup tab</div>
-    <div class=square onclick="saveOrder()">save order</div>
+    <div class=square onclick="saveWorkspace()">save order</div>
     <div class=square onclick="updateName()">update name</div>
     <div class=square onclick="location.href = proxyPath + '/login'">login</div>
     <div class=square onclick=urlAtCursor()>visit</div>
@@ -1139,12 +1139,12 @@ function runEditorCommand(e) {
     case "color":
         fx.color = rest
         // TODO: you could have a custom function that just sets the color
-        saveOrder()
+        saveWorkspace()
         break
     case "name":
         fx.name = name
         // TODO: could you also call saveName?
-        saveOrder()
+        saveWorkspace()
         break
     case "copyurl":
         copyBuffer = [location.href]
@@ -4709,7 +4709,7 @@ function onStart(e) {
                 hasSwitchedFile = true
                 // seeFiles()
                 moveFileAllTheWayLeft()
-                saveOrder()
+                saveWorkspace()
             }
         }
         var oldCursorLineIndex = fx.cursorLineIndex
@@ -6307,7 +6307,7 @@ function updateName() {
     }
     fx.name = name
     // TODO: could you also call saveName?
-    saveOrder()
+    saveWorkspace()
 }
 function saveWorkspace() {
    var serverFiles = []
