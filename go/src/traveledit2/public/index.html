@@ -391,7 +391,7 @@ ontouchstart=onStart(event)
 </div>
 <div class=toolbar>
     <div class=square onclick="window.open(location.href)">dup tab</div>
-    <div class=square onclick="saveWorkspace()">save order</div>
+    <div class=square onclick="saveWorkspace()">save workspace</div>
     <div class=square onclick="updateName()">update name</div>
     <div class=square onclick="location.href = proxyPath + '/login'">login</div>
     <div class=square onclick=urlAtCursor()>visit</div>
@@ -5258,11 +5258,11 @@ function clickItemInDirectory() {
 // true
 function fuzzyMatch(fuzzyWord, word) {
     
-    // make sure the first letter matches
-    if (fuzzyWord.charAt(0) != word.charAt(0)) {
+    if (!word) {
         return false
     }
-    if (!word) {
+    // make sure the first letter matches
+    if (fuzzyWord.charAt(0).toLowerCase() != word.charAt(0).toLowerCase()) {
         return false
     }
     if (word.length > 50) {
@@ -6280,12 +6280,12 @@ fetch(proxyPath + "/myworkspace", {
         }
     }
     initialFileAdding = false
-    if (workspace.fontName) {
+    if (workspace.FontName) {
         selectFont(workspace.FontName)
     }
-    if (workspace.fontScale) {
+    if (workspace.FontScale) {
         // TODO: Maybe make a setter for this, like we have in selectFont
-        fontScale = 1.15;
+        fontScale = workspace.FontScale;
         updateFontScale()
     }
     if (workspace.DarkMode != isDark) {
@@ -6310,11 +6310,16 @@ function updateName() {
     saveWorkspace()
 }
 function saveWorkspace() {
-   var serverFiles = []
+    var tmpWorkspace = {
+        DarkMode: isDark,
+        FontName: currentFont.fontName,
+        FontScale: fontScale,
+        Files: [] 
+    }
     for (var i = 0; i < files.length; i++) {
         var f = files[i]
         // TODO: fix inconsistent file naming #inconsistentFileNaming
-        serverFiles.push({
+        tmpWorkspace.Files.push({
             "ID": f.ID,
             "Name": f.name,
             "Type": f.fileMode,
@@ -6327,12 +6332,12 @@ function saveWorkspace() {
     fetch(proxyPath + "/mysaveworkspace", {    
         cache: "no-cache",
         method: "POST",
-        body: JSON.stringify(serverFiles),
+        body: JSON.stringify(tmpWorkspace),
     // }).then(r => {
     //     return r.json()
     // }).then(r => {
     }).catch(e => {
-        alert("error saving order: " + e)
+        alert("error saving workspace: " + e)
     })
 }
 

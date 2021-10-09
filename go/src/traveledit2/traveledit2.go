@@ -1,6 +1,7 @@
 package main
 
 import "net/http"
+import "net/http/httptest"
 import "net/url"
 import "time"
 import "log"
@@ -258,7 +259,7 @@ type Workspace struct {
     Files []*File
     Name string
     DarkMode bool
-    FontName bool
+    FontName string
     FontScale float64
 }
 func (w *Workspace) GetFile(id int) (*File, bool) {
@@ -285,6 +286,172 @@ func (w *Workspace) RemoveFile(id int) () {
     }
 }
 
+// workspaceView is a function that returns a json marshallable version of a
+// workspace for use in saving a file and in the front end
+// we could maybe just serialize the raw workspace?
+// or create a toJSON func? but this works
+func workspaceView(w *Workspace) map[string]interface{} {
+    // workspaceMu lock needs to be held when calling this function
+    files := []map[string]interface{}{}  
+    for _, f := range workspace.Files {
+        files = append(files, map[string]interface{}{
+            "ID": f.ID,
+            "Name": f.Name,
+            "Type": f.Type,
+            "FullPath": f.FullPath,
+            "LineNumber": f.LineNumber,
+            "CWD": f.CWD,
+            "Color": f.Color,
+        })
+    }
+    workspaceRet := map[string]interface{}{
+        "Name": workspace.Name,
+        "DarkMode": workspace.DarkMode,
+        "FontName": workspace.FontName,
+        "FontScale": workspace.FontScale,
+        "Files": files,
+    }
+    return workspaceRet
+}
+func runShellCommand(id string, cmdString string, cwd string, w http.ResponseWriter) {
+    workspaceMu.Lock()
+    
+    ID, _ := strconv.Atoi(id)
+    if cmdString == "" {
+    	cmdString = ":"
+    }
+    
+    // add the cwd so the client can remember it
+    cmdString = "cd " + cwd + ";\n" + cmdString + ";\necho ''; pwd"
+    
+    log.Printf("the command we want is: %s", cmdString)
+    cmd := exec.Command("bash", "-c", cmdString)
+    var f *File
+    if ID == 0 {
+        lastFileID++
+        f = &File{
+            Type: "shell",
+            // FullPath: "(shell)/???",
+            ID: lastFileID,
+            CWD: cwd,
+        }
+        workspace.Files = append(workspace.Files, f)
+    } else if t, ok := workspace.GetFile(ID); ok {
+        f = t   
+    } else {
+    	workspaceMu.Unlock()
+    	logAndErr(w, "no bash session found: %d", ID) 
+    	return
+    }
+    // log.Printf("the file is %+v", f)
+    // curious this case?
+    if f.Cmd != nil && f.Cmd.Process != nil {
+        // close the last process if there is one
+        f.Cmd.Process.Kill()
+    }
+    f.Cmd = cmd
+    workspaceMu.Unlock()
+    
+    ret, err := cmd.CombinedOutput()
+    if err != nil {
+    	logAndErr(w, "error running command: %s: %v", cmdString, err) 
+    	return
+    }
+    
+    lines := strings.Split(string(ret), "\n")
+    if len(lines) >= 2 {
+    	workspaceMu.Lock()
+    	f.CWD = lines[len(lines)-2]
+    	workspaceMu.Unlock()
+    }
+    
+    log.Printf("the combined output of the command is: %s", string(ret))
+    if ID == 0 {
+        w.Header().Set("X-ID", strconv.Itoa(f.ID))
+    }
+    w.Write(ret)
+}
+func openTerminal(cwd string, w http.ResponseWriter) {
+    log.Println("my terminal open!")
+    lastFileID++
+    // TODO: configurable shell, login shell (-l)?
+	cmd := exec.Command("bash", "-l")
+	// cmd := exec.Command("bash")
+	// cmd := exec.Command("zsh", "-l")
+	cmd.Dir = cwd
+    
+	f, err := pty.Start(cmd)
+    if err != nil {
+		logAndErr(w, "starting pty: %s: %v", cwd, err) 
+		return
+    }
+    // append the pid to a file for debugging
+    pidF, err := os.OpenFile("pid.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+    if err != nil {
+		logAndErr(w, "opening pid file for logging: %s: %v", cwd, err) 
+		f.Close()
+		return
+    }
+    if _, err := pidF.WriteString(strconv.Itoa(cmd.Process.Pid) + " " + time.Now().Format("2006-01-02 15:04:05") + "\n"); err != nil {
+		logAndErr(w, "writing pid: %s: %v", cwd, err) 
+		f.Close()
+		return
+    }
+    file := &File{
+        Type: "terminal",
+        // FullPath: "(terminal)/???",
+        Cmd: cmd,
+        ID: lastFileID,
+        CWD: cwd,
+        Pty: f,       
+    }
+    workspaceMu.Lock()
+    workspace.Files = append(workspace.Files, file)
+    workspaceMu.Unlock()
+    
+    // in a go func, continually read from the pty and write to buffer
+    go func() {
+        for {
+            log.Println("a loop!")
+            // TODO: reuse buffer?
+            b := make([]byte, 1024)
+    	    n, err := file.Pty.Read(b)
+    	    // if err != nil && err != io.EOF {
+    	    if err != nil {
+    	        workspaceMu.Lock()
+    	        log.Printf("error reading terminal: %v", err) // could be just EOF
+    	        file.Pty.Close()
+    	        file.Closed = true
+    	        workspaceCond.Broadcast()
+    	        workspaceMu.Unlock()
+    	        break
+    	    }
+    	    if n == 0 {
+    	        continue
+    	    }
+            workspaceMu.Lock()
+            file.ReadBuffer = append(file.ReadBuffer, b[0:n]...)
+            
+            // little protection from runaway
+            if len(file.ReadBuffer) > 5000000 {
+                file.ReadBuffer = nil    
+            }
+            log.Printf("<==========")
+            log.Printf("%s", string(file.ReadBuffer))
+            log.Printf("==========>")
+            workspaceCond.Broadcast()
+            workspaceMu.Unlock()
+            // should we put this before the unlock?
+    	}
+    }()
+    
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "ID": lastFileID,
+    })
+}
+
+
+
 
 var workspaces []*Workspace
 var workspace *Workspace
@@ -302,10 +469,67 @@ var proxyPath *string
 func main() {
     // TODO: #wschange save workspace to file so ot persists
     // TODO: secial path prefix for saving/loading files not just /
-    workspace = &Workspace{}
-    workspaces = []*Workspace{workspace}
     
-    addFile("", true, "/")
+    
+    
+    // read in the existing workspaces
+    workspacesJSON, err := ioutil.ReadFile("./workspaces.json")
+	if err != nil {
+		log.Printf("could not read workspaces.json: %v", err)
+	} else {
+	    var tmpWorkspaces []*Workspace
+	    err := json.Unmarshal(workspacesJSON, &tmpWorkspaces)
+	    if err != nil {
+			log.Printf("could not parse workspaces.json: %v", err)
+	    } else {
+	        // reload the workspace
+	        for _, tmpW := range tmpWorkspaces {
+	            workspace = &Workspace{
+	                FontScale: tmpW.FontScale,
+	                FontName: tmpW.FontName,
+	                DarkMode: tmpW.DarkMode,
+	            }
+	            for _, f := range tmpW.Files {
+	                if f.Type == "file" {
+	                    // TODO: I think you might not be taking into account *location
+	                    // maybe I shoulf remove that feature and always make it /
+	                    
+	                    // also for the addFile portion you might just be able to set thr file
+	                    // instrad of calling addFile
+	                    // it's the shell and terminal types that need to start a process
+	                    addFile("", false, f.FullPath)
+	                } else if f.Type == "directory" {
+	                    addFile("", true, f.FullPath)
+	                } else if f.Type == "terminal" {
+	                    openTerminal(f.CWD, httptest.NewRecorder()) // being lazy with ResponseRecorder for now
+	                } else if f.Type == "shell" {
+	                    runShellCommand("", "", f.CWD, httptest.NewRecorder()) // being lazy with ResponseRecorder for now
+	                }    
+	            	// update the editable props too
+	            	// the way I am doing it here is a little kludgy
+	            	// sort of retrofitting the existing code to recreate the files.
+	            	// (See httptest.NewRecorder for example)
+	            	addedFile := workspace.Files[len(workspace.Files)-1]
+	            	addedFile.LineNumber = f.LineNumber
+        		    addedFile.Name = f.Name
+        		    addedFile.Color = f.Color
+	            }
+	            
+	            workspaces = append(workspaces, workspace)
+	        }
+	        
+	        // TODO: you could remember the lst workspace
+	        if len(workspaces) > 0 {
+	        	workspace = workspaces[0]
+	        }
+	    }
+	}
+
+    if workspace == nil {
+        workspace = &Workspace{}
+        workspaces = []*Workspace{workspace}
+        addFile("", true, "/")
+    }
 	serverAddress := flag.String("addr", "localhost:8000", "serverAddress to listen on")
 	indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
 	screenshareFile := flag.String("screensharefile", "./public/view.html", "path to view html file")
@@ -642,28 +866,9 @@ func main() {
 	
 	// #wschange this replaced myterminals, now is an array not map
 	mux.HandleFunc("/myworkspace", func(w http.ResponseWriter, r *http.Request) {
-	    // load existing terminal sessions.
-	    workspaceMu.Lock()    
-	    defer workspaceMu.Unlock()
-	    files := []map[string]interface{}{}
-	    for _, f := range workspace.Files {
-	        files = append(files, map[string]interface{}{
-	            "ID": f.ID,
-	            "Name": f.Name,
-	            "Type": f.Type,
-            	"FullPath": f.FullPath,
-            	"LineNumber": f.LineNumber,
-            	"CWD": f.CWD,
-            	"Color": f.Color,
-	        })
-        }
-        workspaceRet := map[string]interface{}{
-            "Name": workspace.Name,
-            "DarkMode": workspace.DarkMode,
-            "FontName": workspace.FontName,
-            "FontScale": workspace.FontScale,
-            "Files": workspace.Files,
-        }
+    	workspaceMu.Lock()    
+    	defer workspaceMu.Unlock()
+	    workspaceRet := workspaceView(workspace)
 	    json.NewEncoder(w).Encode(workspaceRet)
 	})
 	// #wschange this replaced myterminals, now is an array not map
@@ -674,10 +879,9 @@ func main() {
 	    
 	    
 	    tmpWorkspace := Workspace{}
-	    filesFromClient := []*File{}
 	    err := json.NewDecoder(r.Body).Decode(&tmpWorkspace)
 	    if err != nil {
-	        logAndErr(w, "parsing for mysaveorder: %v", err)    
+	        logAndErr(w, "parsing for mysaveworkspace: %v", err)    
 	        return
 	    }
 	    filesByID := map[int]*File{}
@@ -689,9 +893,10 @@ func main() {
 	    for _, fc := range tmpWorkspace.Files {
 	         if f, ok := filesByID[fc.ID]; ok {
 	             delete(filesByID, fc.ID)
-        	 	 // Let's update the name and line number while we are at it.
+        	 	 // Let's update the editable foelds while we are at it.
 	             f.LineNumber = fc.LineNumber
         		 f.Name = fc.Name
+        		 f.Color = fc.Color
 	             newFiles = append(newFiles, f)
 	         }
 	    }
@@ -701,8 +906,24 @@ func main() {
 	    }
 	    workspace.Files = newFiles
 	    workspace.DarkMode = tmpWorkspace.DarkMode
-	    workspace.FontSize = tmpWorkspace.FontSize
+	    workspace.FontName = tmpWorkspace.FontName
 	    workspace.FontScale = tmpWorkspace.FontScale
+	    
+	    // now write to file
+	    workspaceViews := []map[string]interface{}{}
+	    for _, w := range workspaces {
+	        workspaceViews = append(workspaceViews, workspaceView(w))
+	    }
+        jsonBytes, err := json.MarshalIndent(workspaceViews, "", "    ")
+	    if err != nil {
+	        logAndErr(w, "marshalling for mysaveworkspace: %v", err)    
+	        return
+	    }
+	    err = ioutil.WriteFile("workspaces.json", jsonBytes, 0644)
+	    if err != nil {
+	        logAndErr(w, "saving workspaces.json: %v", err)    
+	        return
+	    }
 	})
 	mux.HandleFunc("/myterminalpoll", func(w http.ResponseWriter, r *http.Request) {
 	    workspaceMu.Lock()    
@@ -753,83 +974,8 @@ func main() {
 	    json.NewEncoder(w).Encode(ret)
 	})
 	mux.HandleFunc("/myterminalopen", func(w http.ResponseWriter, r *http.Request) {
-	    log.Println("my terminal open!")
-	    lastFileID++
-	    // TODO: configurable shell, login shell (-l)?
-		cmd := exec.Command("bash", "-l")
-		// cmd := exec.Command("bash")
-		// cmd := exec.Command("zsh", "-l")
 		cwd := r.FormValue("cwd")
-		cmd.Dir = cwd
-	    
-		f, err := pty.Start(cmd)
-	    if err != nil {
-			logAndErr(w, "starting pty: %s: %v", cwd, err) 
-			return
-	    }
-	    // append the pid to a file for debugging
-	    pidF, err := os.OpenFile("pid.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	    if err != nil {
-			logAndErr(w, "opening pid file for logging: %s: %v", cwd, err) 
-			f.Close()
-			return
-	    }
-	    if _, err := pidF.WriteString(strconv.Itoa(cmd.Process.Pid) + " " + time.Now().Format("2006-01-02 15:04:05") + "\n"); err != nil {
-			logAndErr(w, "writing pid: %s: %v", cwd, err) 
-			f.Close()
-			return
-	    }
-	    file := &File{
-	        Type: "terminal",
-	        // FullPath: "(terminal)/???",
-	        Cmd: cmd,
-	        ID: lastFileID,
-	        CWD: cwd,
-	        Pty: f,       
-	    }
-	    workspaceMu.Lock()
-	    workspace.Files = append(workspace.Files, file)
-	    workspaceMu.Unlock()
-	    
-	    // in a go func, continually read from the pty and write to buffer
-	    go func() {
-            for {
-                log.Println("a loop!")
-                // TODO: reuse buffer?
-                b := make([]byte, 1024)
-	    	    n, err := file.Pty.Read(b)
-	    	    // if err != nil && err != io.EOF {
-	    	    if err != nil {
-	    	        workspaceMu.Lock()
-	    	        log.Printf("error reading terminal: %v", err) // could be just EOF
-	    	        file.Pty.Close()
-	    	        file.Closed = true
-	    	        workspaceCond.Broadcast()
-	    	        workspaceMu.Unlock()
-	    	        break
-	    	    }
-	    	    if n == 0 {
-	    	        continue
-	    	    }
-    	        workspaceMu.Lock()
-    	        file.ReadBuffer = append(file.ReadBuffer, b[0:n]...)
-    	        
-    	        // little protection from runaway
-    	        if len(file.ReadBuffer) > 5000000 {
-    	            file.ReadBuffer = nil    
-    	        }
-    	        log.Printf("<==========")
-    	        log.Printf("%s", string(file.ReadBuffer))
-    	        log.Printf("==========>")
-    	        workspaceCond.Broadcast()
-    	        workspaceMu.Unlock()
-    	        // should we put this before the unlock?
-	    	}
-	    }()
-	    
-	    json.NewEncoder(w).Encode(map[string]interface{}{
-	        "ID": lastFileID,
-	    })
+		openTerminal(cwd, w)
 	})
 	mux.HandleFunc("/myterminalsend", func(w http.ResponseWriter, r *http.Request) {
 	    // TODO: do consider an rwlock
@@ -909,64 +1055,7 @@ func main() {
 	})
 	// #wschange make a File and add the cmd, and the CWD
 	mux.HandleFunc("/myshell", func(w http.ResponseWriter, r *http.Request) {
-		workspaceMu.Lock()
-		
-		ID, _ := strconv.Atoi(r.FormValue("id"))
-		cmdString := r.FormValue("cmd")
-		if cmdString == "" {
-			cmdString = ":"
-		}
-		cwd := r.FormValue("cwd") // current working directory
-
-		// add the cwd so the client can remember it
-		cmdString = "cd " + cwd + ";\n" + cmdString + ";\necho ''; pwd"
-
-		log.Printf("the command we want is: %s", cmdString)
-		cmd := exec.Command("bash", "-c", cmdString)
-		var f *File
-		if ID == 0 {
-		    lastFileID++
-	    	f = &File{
-	    	    Type: "shell",
-	    	    // FullPath: "(shell)/???",
-	    	    ID: lastFileID,
-	    	    CWD: cwd,
-	    	}
-	    	workspace.Files = append(workspace.Files, f)
-		} else if t, ok := workspace.GetFile(ID); ok {
-		    f = t   
-		} else {
-			workspaceMu.Unlock()
-			logAndErr(w, "no bash session found: %d", ID) 
-			return
-		}
-		// log.Printf("the file is %+v", f)
-		// curious this case?
-		if f.Cmd != nil && f.Cmd.Process != nil {
-		    // close the last process if there is one
-		    f.Cmd.Process.Kill()
-		}
-		f.Cmd = cmd
-		workspaceMu.Unlock()
-		
-		ret, err := cmd.CombinedOutput()
-		if err != nil {
-			logAndErr(w, "error running command: %s: %v", cmdString, err) 
-			return
-		}
-		
-		lines := strings.Split(string(ret), "\n")
-		if len(lines) >= 2 {
-			workspaceMu.Lock()
-			f.CWD = lines[len(lines)-2]
-			workspaceMu.Unlock()
-		}
-
-		log.Printf("the combined output of the command is: %s", string(ret))
-    	if ID == 0 {
-    	    w.Header().Set("X-ID", strconv.Itoa(f.ID))
-    	}
-		w.Write(ret)
+		runShellCommand(r.FormValue("id"), r.FormValue("cmd"), r.FormValue("cwd"), w)
 	})
 	mux.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
 	    os.Exit(1)    
