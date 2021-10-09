@@ -137,6 +137,30 @@ color: magenta;
 opacity: 0.5;
 "></div>
 
+<form onsubmit="runEditorCommand(event)">
+    <input class=fullWidth type=text id=editorCommandText
+        style="display: none;
+        font: 16px Courier;
+        height: 24px;
+        outline: none;
+        "
+        onfocus="focusEditorCommandText()"
+        oninput="inputEditorCommandText()"
+        onblur="blurEditorCommandText()"
+    >
+    
+    <input id=searchTextAfter class=fullWidth type=text
+    style="
+    font: 8px Courier;
+    height:1px; overflow: hidden;
+    display: block;
+    "
+    onfocus=handleSearchFocusAfter()
+    xonblur=handleBlur()
+    >
+    
+    <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
+</form>
 <form onsubmit="findDownForm(event)">
     <input id=searchTextBefore class=fullWidth type=text
     style="
@@ -304,7 +328,7 @@ ontouchstart=onStart(event)
     <div class=square onclick=addCmdTab()>cmd</div>
     <div class=square onclick=addTerminalTab()>xterm</div>
     <div class=square onclick=clearLog()>clear log</div>
-    <div class=square onclick=openEditorCommamd()>editor cmd</div>
+    <div class=square onclick=editEditorCommandText()>editor cmd</div>
     <div class=square onclick="moveFileAllTheWayLeft()">move home</div>
 </div>
 <!-- Stuff after here is after the fold -->
@@ -312,6 +336,9 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
     <div class=longButton onclick="selectFont('Courier')">Courier</div>
     <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
+    <div class=longButton onclick="selectFont('IosevkaLucidaMedium')">Iosevka L Medium</div>
+    <div class=longButton onclick="selectFont('IosevkaLucidaSemiBold')">Iosevka L SemiBold</div>
+    <div class=longButton onclick="selectFont('IosevkaLucidaThin')">Iosevka L Thin</div>
     <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
     <div class=longButton onclick="fontScale = 0.9; updateFontScale()">0.9</div>
     <div class=longButton onclick="fontScale = 1.0; updateFontScale()">1.0</div>
@@ -343,12 +370,11 @@ ontouchstart=onStart(event)
     <div class=square onclick="showDiff()">show diff</div>
     <div class=square onclick=reloadFile(fx)>reload</div>
     <div class=square onclick=scriptLines()>script lines</div>
-    <div class=square onclick=scriptLinesInline()>script inline</div>
 </div>
 <div class=toolbar>
     <div class=square onclick=debugView()>debug view</div>
     <div class=square onclick=doEval()>eval</div>
-    <div class=square onclick="reloadAll()">reload All</div>
+    <div class=square onclick="reloadAll()">reload all</div>
     <div class=square onclick="comment('--')">--</div>
     <div class=square onclick="copyString(fx.fullPath + ':' + (fx.cursorLineIndex + 1))">copy path</div>
     <div class=square onclick="searchText.value = getWordAtCursor().word; render();">highlight word</div>
@@ -555,6 +581,27 @@ var fonts = {
         // url: "http://tel.drewles.com:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf"
         //url: "http://192.168.0.21:8000/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf"
         url: proxyPath + "/tepublic/iosevka_lucida/iosevka-fixed-ss13-regular.ttf"
+    },
+    "IosevkaLucidaMedium": {
+        fontHeightPre: 36,
+        fontWidthPre: 16,
+        fontSize: 30,
+        fontName: "IosevkaLucidaMedium",
+        url: proxyPath + "/tepublic/iosevka_lucida/iosevka-fixed-ss13-medium.ttf"
+    },
+    "IosevkaLucidaSemiBold": {
+        fontHeightPre: 36,
+        fontWidthPre: 16,
+        fontSize: 30,
+        fontName: "IosevkaLucidaSemiBold",
+        url: proxyPath + "/tepublic/iosevka_lucida/iosevka-fixed-ss13-semibold.ttf"
+    },
+    "IosevkaLucidaThin": {
+        fontHeightPre: 36,
+        fontWidthPre: 16,
+        fontSize: 30,
+        fontName: "IosevkaLucidaThin",
+        url: proxyPath + "/tepublic/iosevka_lucida/iosevka-fixed-ss13-thin.ttf"
     },
     "IosevkaThin": {
         fontHeightPre: 36,
@@ -1003,6 +1050,7 @@ function selectFont(fontName) {
 }
 
 function whenFontReady(fontName) {
+    editorCommandText.style.fontFamily = fontName
     searchText.style.fontFamily = fontName
     theText.style.fontFamily = fontName
     log("calling updateFontScale")
@@ -1077,6 +1125,92 @@ function updateClassForSelector(selector, remove, add) {
         input.classList.add(add)
     }
 }
+function runEditorCommand(e) {
+    e.preventDefault()
+    // editorCommandText.style.display = "none"
+    var parts = editorCommandText.value.split(" ")
+    if (parts.length == 0) {
+        return false
+    }
+    var cmd = parts[0]
+    var rest = parts.slice(1).join(" ")
+    
+    switch (cmd) {
+    case "color":
+        fx.color = rest
+        // TODO: you could have a custom function that just sets the color
+        saveOrder()
+        break
+    case "name":
+        fx.name = name
+        // TODO: could you also call saveName?
+        saveOrder()
+        break
+    case "copyurl":
+        copyBuffer = [location.href]
+        break
+    case "reloadall":
+        reloadAll()
+        break
+    case "reload":
+        reloadFile()
+        break
+    case "light":
+        toggleDarkMode()
+        break
+    case "dark":
+        toggleDarkMode()
+        break
+    case "copypath":
+        copyString(fx.fullPath + ':' + (fx.cursorLineIndex + 1))
+        break
+    case "js":
+        // see also runScript
+        var oldCopyBuffer = copyBuffer
+        var f = new Function(code)
+        var ret = f()
+        ret = ret + ""
+        copyBuffer = ret.split("\n")
+        paste()
+        copyBuffer = oldCopyBuffer
+        break
+    case "script":
+    case "s":
+        // see also scriptLines
+        scriptLinesWithOneLineScript(rest)
+        break
+    case "hl":
+        searchText.value = getWordAtCursor().word; render();
+        break
+    }
+    return false
+}
+function editEditorCommandText() {
+    editorCommandText.style.display = "block"
+    editorCommandText.focus()
+}
+function focusEditorCommandText() {
+    window.scrollTo(0, 0)
+    editorCommandText.setSelectionRange(0, editorCommandText.value.length)
+    editorCommandText.style.display = "block"
+    theText.style.display = "none"
+    searchText.style.display = "none"
+    setCanvasHeightAccordingly()
+}
+function inputEditorCommandText() {
+}
+function blurEditorCommandText() {
+    // handle the case where when you collapse the keyboard on iPad
+    // it triggers a blur event, but it's still the activeElement
+    if (document.activeElement == editorCommandText) {
+        editorCommandText.blur()
+        return
+    }
+    theText.style.display = "block"
+    searchText.style.display = "none"
+    editorCommandText.style.display = "none"
+    setCanvasHeightAccordingly()
+}
 
 function editSearch() {
     searchText.style.display = "block"
@@ -1087,6 +1221,7 @@ function focusSearchText() {
     searchText.setSelectionRange(0, searchText.value.length)
     searchText.style.display = "block"
     theText.style.display = "none"
+    editorCommandText.style.display = "none"
     setCanvasHeightAccordingly()
 }
 function inputSearchText() {
@@ -1104,6 +1239,7 @@ function blurSearchText() {
     }
     theText.style.display = "block"
     searchText.style.display = "none"
+    editorCommandText.style.display = "none"
     setCanvasHeightAccordingly()
 }
 function closeFile() {
@@ -2047,16 +2183,14 @@ function getSelectedLines(f, shouldDeleteSelected) {
         isWholeFile: isWholeFile,
     }
 }
-
-function scriptLinesInline() {
+function scriptLinesWithOneLineScript(oneLineScript) {
     var oldPreventRender = preventRender
     preventRender = true
     
-    // second-most-recent file
     var _t = getSelectedLines(fx, true)
     var linesToProcess = _t.lines
     var isWholeFile = _t.isWholeFile
-    var s = linesToProcess[0].trim().slice(2).trim()
+    var s = oneLineScript
     if (s.slice(0, 2) == "r ") {
         var parts = s.split(" ")
         s = `x.replaceAll("${parts[1]}", "${parts[2]}")`
@@ -2066,7 +2200,7 @@ function scriptLinesInline() {
         s = `ll(x,"${parts[0].slice(2)}", "${parts.slice(1).join(" - ")}")`
     }
     var theScriptLines = [s]
-    linesToProcess = linesToProcess.slice(1)
+    // This next part mostly copy-pasted from scriptLines function
     if (theScriptLines.length) {
         // add return to the last non-empty line
         for (var i=theScriptLines.length-1; i>=0; i--) {
@@ -3263,6 +3397,7 @@ function handleBlur() {
 }
 function handleSearchFocusBefore() {
     theText.style.display = "none"
+    editorCommandText.style.display = "none"
     searchText.style.display = "block"
     searchText.focus()
     setCanvasHeightAccordingly()
@@ -3271,6 +3406,7 @@ function handleSearchFocusBefore() {
 }
 function handleSearchFocusAfter() {
     theText.style.display = "none"
+    editorCommandText.style.display = "none"
     searchText.style.display = "block"
     searchText.focus()
     setCanvasHeightAccordingly()
@@ -5116,7 +5252,16 @@ function clickItemInDirectory() {
 }
 
 
+// fuzzyMatch("fzy", "if")
+// false
+// fuzzyMatch("fzy", "fuzzy")
+// true
 function fuzzyMatch(fuzzyWord, word) {
+    
+    // make sure the first letter matches
+    if (fuzzyWord.charAt(0) != word.charAt(0)) {
+        return false
+    }
     if (!word) {
         return false
     }
@@ -5127,10 +5272,10 @@ function fuzzyMatch(fuzzyWord, word) {
     
     fuzzyWord = fuzzyWord.toLowerCase()
     word = word.toLowerCase()
-    var lastMatch = 0
+    var lastMatch = -1
     for (var i=0; i<fuzzyWord.length; i++) {
         var chr = fuzzyWord.charAt(i)
-        lastMatch = word.indexOf(chr, lastMatch) 
+        lastMatch = word.indexOf(chr, lastMatch+1)
         if (lastMatch == -1) {
             return false
         }
@@ -6118,12 +6263,13 @@ var initialFileAdding = false
 // add exising files
 // TODO: you should hydrate this in the first pageload.
 // and maybe at least hydrate the first file.
-fetch(proxyPath + "/myfiles", {
+fetch(proxyPath + "/myworkspace", {
     cache: "no-cache"
 }).then(r => {
     return r.json()
-}).then(r => {
-    for (var serverFile of r) {
+}).then(workspace => {
+    
+    for (var serverFile of workspace.Files) {
         // TODO: fix inconsistent file naming #inconsistentFileNaming
         if (serverFile.Type == "terminal") {
             addExistingTerminalTab(serverFile.ID, serverFile.Name, serverFile.CWD)
@@ -6134,6 +6280,18 @@ fetch(proxyPath + "/myfiles", {
         }
     }
     initialFileAdding = false
+    if (workspace.fontName) {
+        selectFont(workspace.FontName)
+    }
+    if (workspace.fontScale) {
+        // TODO: Maybe make a setter for this, like we have in selectFont
+        fontScale = 1.15;
+        updateFontScale()
+    }
+    if (workspace.DarkMode != isDark) {
+        toggleDarkMode()
+    }
+    
     preventRender = false
     render()
     renderDarkMode()
@@ -6151,7 +6309,7 @@ function updateName() {
     // TODO: could you also call saveName?
     saveOrder()
 }
-function saveOrder() {
+function saveWorkspace() {
    var serverFiles = []
     for (var i = 0; i < files.length; i++) {
         var f = files[i]
@@ -6163,9 +6321,10 @@ function saveOrder() {
             "FullPath": f.fullPath,
             "LineNumber": f.cursorLineIndex + 1,
             "CWD": f.shellCWD,
+            "Color": f.color,
         })
     }
-    fetch(proxyPath + "/mysaveorder", {    
+    fetch(proxyPath + "/mysaveworkspace", {    
         cache: "no-cache",
         method: "POST",
         body: JSON.stringify(serverFiles),
@@ -6176,6 +6335,7 @@ function saveOrder() {
         alert("error saving order: " + e)
     })
 }
+
 
 
 var ust = new URLSearchParams(window.location.search)

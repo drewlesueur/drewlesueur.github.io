@@ -235,12 +235,16 @@ type File struct{
     FullPath string
     LineNumber int
     
+    // CSS color
+    Color string
+    
     // fields for remotefile
     LocalTmpPath string // temorary file
     Remote string // like user@host
     
     // fields for shell
     CWD string
+    LastCommand string
     
     // fields for terminal
     Cmd *exec.Cmd
@@ -254,6 +258,8 @@ type Workspace struct {
     Files []*File
     Name string
     DarkMode bool
+    FontName bool
+    FontScale float64
 }
 func (w *Workspace) GetFile(id int) (*File, bool) {
     for _, f := range w.Files {
@@ -612,32 +618,64 @@ func main() {
 	    }) 
 	})
 	
-	// #wschange this replaced myterminals, now is an array not map
-	mux.HandleFunc("/myfiles", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/mycolor", func(w http.ResponseWriter, r *http.Request) {
 	    // load existing terminal sessions.
 	    workspaceMu.Lock()    
 	    defer workspaceMu.Unlock()
-	    ret := []map[string]interface{}{}
+	    idStr := r.FormValue("id")
+	    color := r.FormValue("color")
+	    id, err := strconv.Atoi(idStr)
+	    if err != nil {
+	        logAndErr(w, "invalid terminal id")
+	        return
+	    }
+	    t, ok := workspace.GetFile(id)
+	    if !ok {
+	        logAndErr(w, "not found")
+	        return
+	    }
+	    t.Color = color
+	    json.NewEncoder(w).Encode(map[string]interface{}{
+	        "success": true,
+	    }) 
+	})
+	
+	// #wschange this replaced myterminals, now is an array not map
+	mux.HandleFunc("/myworkspace", func(w http.ResponseWriter, r *http.Request) {
+	    // load existing terminal sessions.
+	    workspaceMu.Lock()    
+	    defer workspaceMu.Unlock()
+	    files := []map[string]interface{}{}
 	    for _, f := range workspace.Files {
-	        ret = append(ret, map[string]interface{}{
+	        files = append(files, map[string]interface{}{
 	            "ID": f.ID,
 	            "Name": f.Name,
 	            "Type": f.Type,
             	"FullPath": f.FullPath,
             	"LineNumber": f.LineNumber,
             	"CWD": f.CWD,
+            	"Color": f.Color,
 	        })
-	    }
-	    json.NewEncoder(w).Encode(ret)
+        }
+        workspaceRet := map[string]interface{}{
+            "Name": workspace.Name,
+            "DarkMode": workspace.DarkMode,
+            "FontName": workspace.FontName,
+            "FontScale": workspace.FontScale,
+            "Files": workspace.Files,
+        }
+	    json.NewEncoder(w).Encode(workspaceRet)
 	})
 	// #wschange this replaced myterminals, now is an array not map
-	mux.HandleFunc("/mysaveorder", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/mysaveworkspace", func(w http.ResponseWriter, r *http.Request) {
 	    // load existing terminal sessions.
 	    workspaceMu.Lock()    
 	    defer workspaceMu.Unlock()
 	    
+	    
+	    tmpWorkspace := Workspace{}
 	    filesFromClient := []*File{}
-	    err := json.NewDecoder(r.Body).Decode(&filesFromClient)
+	    err := json.NewDecoder(r.Body).Decode(&tmpWorkspace)
 	    if err != nil {
 	        logAndErr(w, "parsing for mysaveorder: %v", err)    
 	        return
@@ -648,7 +686,7 @@ func main() {
 	    }
 	    
 	    newFiles := []*File{}
-	    for _, fc := range filesFromClient {
+	    for _, fc := range tmpWorkspace.Files {
 	         if f, ok := filesByID[fc.ID]; ok {
 	             delete(filesByID, fc.ID)
         	 	 // Let's update the name and line number while we are at it.
@@ -662,6 +700,9 @@ func main() {
              newFiles = append(newFiles, f)
 	    }
 	    workspace.Files = newFiles
+	    workspace.DarkMode = tmpWorkspace.DarkMode
+	    workspace.FontSize = tmpWorkspace.FontSize
+	    workspace.FontScale = tmpWorkspace.FontScale
 	})
 	mux.HandleFunc("/myterminalpoll", func(w http.ResponseWriter, r *http.Request) {
 	    workspaceMu.Lock()    
