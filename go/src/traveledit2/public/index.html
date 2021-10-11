@@ -1132,7 +1132,7 @@ function runEditorCommand(e) {
         saveWorkspace()
         break
     case "name":
-        fx.name = name
+        fx.name = rest
         // TODO: could you also call saveName?
         saveWorkspace()
         break
@@ -1171,6 +1171,18 @@ function runEditorCommand(e) {
         break
     case "hl":
         searchText.value = getWordAtCursor().word; render();
+        break
+    case "fontscale":
+        fontScale = rest - 0
+        updateFontScale()
+        break
+    case "rr":
+    case "rerun":
+        clearLog()
+        // up arrow
+        sendTerminal("\x1b[A");
+        // return
+        sendTerminal("\r");
         break
     }
     return false
@@ -2731,7 +2743,8 @@ function newLine(e, shouldFocus) {
         runShellCommand(theLine)
         return false
     } else if (fx.fileMode == "terminal") {
-        // #todoterminal Send the right command to the server
+        // this is handled somewhere else
+        // see handleKeydown
     }
     // insertLine(true)
     insertLine(true, true) // this one just makes a new line
@@ -3341,8 +3354,8 @@ function handleFocusBefore() {
     } else {
         // if (fx.cursorLineIndex == 0) return
         // fx.cursorLineIndex -= 1
-        // instead of going one line down, let's alt tab
-        setCurrentFile(lastFile);
+        // instead of going one line down, let's clear the search
+        clearSearch()
     }
     setCanvasHeightAccordingly()
     ensureCursorInScreen()
@@ -6040,7 +6053,8 @@ function getLinesForFileList() {
     treeFiles = []
     treeFilesShadow = []
     
-    var showFilesFlatFirst = false
+    // var showFilesFlatFirst = false
+    var showFilesFlatFirst = true
     if (showFilesFlatFirst) {
         for (let i = 0; i < files.length; i++) {
             // treeFiles.push(files[i].fullPath.split("/").reverse().join(" < "))
