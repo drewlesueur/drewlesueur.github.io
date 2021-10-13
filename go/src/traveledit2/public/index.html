@@ -306,14 +306,14 @@ ontouchstart=onStart(event)
 <div class=toolbar>
     <div class=square onclick="osCopyText()">os copy</div>
     <div class=square onclick="osPasteText()">os paste</div>
-    <div class=square onclick=openAtCursor()>open</div>
+    <div class=square onclick=reloadFile(fx)>reload</div>
     <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
     <div class=square onclick=redo()>redo</div>
     <div class=square onclick=undo()>undo</div>
     <div class=square onclick=comment()>//</div>
 </div>
 <div class=toolbar>
-    <div class=square ontouchstart="setCurrentFile(lastFile); event.preventDefault()">alt tab</div>
+    <div class=square onmousedown="setCurrentFile(lastFile)" ontouchstart="setCurrentFile(lastFile); event.preventDefault(); event.stopPropagation()">alt tab</div>
     <div class=square onclick="duplicateFile(fx, -1)">dupl file</div>
     <div class=square onclick=addCmdTab()>cmd</div>
     <div class=square onclick=addTerminalTab()>xterm</div>
@@ -330,17 +330,6 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="selectFont('IosevkaLucidaSemiBold')">Iosevka L SemiBold</div>
     <div class=longButton onclick="selectFont('IosevkaLucidaThin')">Iosevka L Thin</div>
     <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
-    <div class=longButton onclick="fontScale = 0.9; updateFontScale()">0.9</div>
-    <div class=longButton onclick="fontScale = 1.0; updateFontScale()">1.0</div>
-    <div class=longButton onclick="fontScale = 1.1; updateFontScale()">1.1</div>
-    <div class=longButton onclick="fontScale = 1.15; updateFontScale()">1.15</div>
-    <div class=longButton onclick="fontScale = 1.2; updateFontScale()">1.2</div>
-    <div class=longButton onclick="fontScale = 1.3; updateFontScale()">1.3</div>
-    <div class=longButton onclick="fontScale = 1.4; updateFontScale()">1.4</div>
-    <div class=longButton onclick="fontScale = 1.5; updateFontScale()">1.5</div>
-    <div class=longButton onclick="fontScale = 1.6; updateFontScale()">1.6</div>
-    <div class=longButton onclick="fontScale = 1.7; updateFontScale()">1.7</div>
-    <div class=longButton onclick="fontScale = 2; updateFontScale()">2</div>
     <div class=longButton onclick="selectFont('RobotoMono')">Roboto Mono</div>
     <div class=longButton onclick="selectFont('CourierThin')">Courier Thin</div>
     <div class=longButton onclick="selectFont('SFMonoThin')">SF Thin</div>
@@ -356,9 +345,24 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="selectFont('AmericanTypewriter')">American T</div>
 </div>
 <div class=toolbar>
+    <div class=longButton onclick="fontScale = 0.9; updateFontScale()">0.9</div>
+    <div class=longButton onclick="fontScale = 1.0; updateFontScale()">1.0</div>
+    <div class=longButton onclick="fontScale = 1.1; updateFontScale()">1.1</div>
+    <div class=longButton onclick="fontScale = 1.15; updateFontScale()">1.15</div>
+    <div class=longButton onclick="fontScale = 1.2; updateFontScale()">1.2</div>
+    <div class=longButton onclick="fontScale = 1.3; updateFontScale()">1.3</div>
+    <div class=longButton onclick="fontScale = 1.4; updateFontScale()">1.4</div>
+    <div class=longButton onclick="fontScale = 1.5; updateFontScale()">1.5</div>
+    <div class=longButton onclick="fontScale = 1.6; updateFontScale()">1.6</div>
+    <div class=longButton onclick="fontScale = 1.7; updateFontScale()">1.7</div>
+    <div class=longButton onclick="fontScale = 2; updateFontScale()">2</div>
+</div>
+<div class=toolbar>
     <div class=square onclick="copyBuffer = [location.href]">copy url</div>
+    <div class=square onclick="copyString(fx.fullPath + ':' + (fx.cursorLineIndex + 1))">copy path</div>
+    <div class=square onclick="pastSpecialNav()">paste nav</div>
     <div class=square onclick="showDiff()">show diff</div>
-    <div class=square onclick=reloadFile(fx)>reload</div>
+    <div class=square onclick=openAtCursor()>open</div>
     <div class=square onclick=scriptLines()>script lines</div>
 </div>
 <div class=toolbar>
@@ -366,7 +370,6 @@ ontouchstart=onStart(event)
     <div class=square onclick=doEval()>eval</div>
     <div class=square onclick="reloadAll()">reload all</div>
     <div class=square onclick="comment('--')">--</div>
-    <div class=square onclick="copyString(fx.fullPath + ':' + (fx.cursorLineIndex + 1))">copy path</div>
     <div class=square onclick="searchText.value = getWordAtCursor().word; render();">highlight word</div>
     <div id=toggleTabStopButton class=square onclick="toggleTabStop()">tabs</div>
 </div>
@@ -681,6 +684,7 @@ var cursorX=0
 var cursorY=0
 // 4 chars for line number and 1 for space
 var marginLeft = 5
+// var marginLeft = 50
 // Note that the width and height need to match
 // the width and height of the canvas tag attribute.
 canvasWidth=innerWidth * 3
@@ -690,11 +694,12 @@ canvasWidth=innerWidth * 3
 var canvasHeightFull=1710
 var canvasHeightKeyboard=1200
 // alert(screen.width+" "+screen.height)
-
+var navTouchSize = 40
 // This condition for the 2021 iPad mini
 if (screen.width == 744 && screen.height == 1133) {
     canvasHeightFull = 2750
     canvasHeightKeyboard = 2200
+    navTouchSize = 80
 }
 
 c.height = canvasHeightFull
@@ -2880,14 +2885,14 @@ function pollTerminals() {
         isPollingTerminal = false
         return
     }
-    log("Polling!")
+    // log("Polling!")
     fetch(proxyPath + "/myterminalpoll", {
         cache: "no-cache"
     }).then(r => {
         return r.json()
     }).then(r => {
         // map of terminals and their payload and maybe meta info
-        log("result: " + JSON.stringify(r, "", "    "))
+        // log("result: " + JSON.stringify(r, "", "    "))
         for (var id in r) {
             var termInfo = r[id]
             var file = files.find(f => f.ID == id)    
@@ -3965,6 +3970,7 @@ function render() {
         theStatus.lastCleared = lastCleared
         theStatus.totalViewRequests = totalViewRequests 
         theStatus.totalViewBytesSent = totalViewBytesSent 
+        theStatus.overflowX = overflowX 
         // theStatus.acWord = acWord
         statusEl.innerText = JSON.stringify(theStatus, null, "    ")
     }
@@ -4482,7 +4488,7 @@ function renderInternal() {
     renderDuration += duration
     rendersInLastSecond += 1
     if (renderCount == 50) {
-        log("render avg: " + Math.round(renderDuration/renderCount))
+        // log("render avg: " + Math.round(renderDuration/renderCount))
         renderCount = 0
         renderDuration = 0
     }
@@ -4586,6 +4592,8 @@ function moveHomeEndAction() {
    ensureCursorInScreen()
    render()
 }
+
+var overflowX = 0
 
 var touchCount = 0
 function onStart(e) {
@@ -4695,6 +4703,7 @@ function onStart(e) {
             if (fx.offsetY < 0) fx.offsetY = 0
         }
 
+        // log("startCursorColIndex: " + startCursorColIndex)
         var maxWidth = (maxCols -1) * fontWidth
         //var maxWidth = canvasWidth
         if (cursorX > maxWidth) {
@@ -4709,15 +4718,26 @@ function onStart(e) {
             if (!changedY) fx.offsetX += Math.floor(extendX/fontWidth)
 
             var prevOffsetX = fx.offsetX
-            if (fx.offsetX < -marginLeft) fx.offsetX = -marginLeft
-            // if (!hasSwitchedFile && prevOffsetX < -50) {
-            // log("theoffsetx: " + fx.offsetX)
-            if (!hasSwitchedFile && !changedY && startCursorColIndex == -marginLeft && prevOffsetX < -20) {
-                hasSwitchedFile = true
-                // seeFiles()
-                moveFileAllTheWayLeft()
-                saveWorkspace()
+            if (fx.offsetX < -marginLeft) {
+                overflowX += -marginLeft - fx.offsetX
+                fx.offsetX = -marginLeft
             }
+            
+            // attempt 1 at swiping left to do an action
+            // log("theoffsetx: " + fx.offsetX)
+            // if (!hasSwitchedFile && !changedY && startCursorColIndex == -marginLeft && prevOffsetX < -20) {
+            //     hasSwitchedFile = true
+            //     seeFiles()
+            //     // moveFileAllTheWayLeft()
+            //     // saveWorkspace()
+            // }
+            
+            // attempt 2 at swiping left to do an action
+            // if (overflowX > 75 && !hasSwitchedFile && startCursorColIndex == -marginLeft) {
+            //     hasSwitchedFile = true
+            //     seeFiles()
+            //     overflowX = 0    
+            // }
         }
         var oldCursorLineIndex = fx.cursorLineIndex
         // maybe have a setter for this?
@@ -4754,6 +4774,7 @@ function onStart(e) {
         
         firstMove = false
         if (cursorType == "select") {
+            overflowX = 0
             var line = fx.lines[fx.cursorLineIndex] || ""
             selectedRegion.stopX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
             selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
@@ -4794,6 +4815,7 @@ function onStart(e) {
         return false
     }
     var onEnd = function(e) {
+        overflowX = 0
         touchCount = e.touches.length
         var touchType = e.changedTouches[0].touchType
         clearTimeout(selectTimeout)
@@ -4999,6 +5021,7 @@ function onStart(e) {
         moveListenerCount = max(moveListenerCount-1, 0)
     }
     var onEndWhileSelected = function(e) {
+        overflowX = 0
         touchCount = e.touches.length
         if (!moved && fx.selectedRegions.length) {
             fx.selectedRegions = []
@@ -5011,6 +5034,7 @@ function onStart(e) {
     }
     
     var onEndForEdges = function(e) {
+        overflowX = 0
         touchCount = e.touches.length
         document.body.removeEventListener("touchend", onEndForEdges)
         clearTimeout(moveHomeEndTimeout)
@@ -5033,9 +5057,10 @@ function onStart(e) {
 
     // scroll right and left and move cursor right and left or up and down
     // TODO: remove some duplication here. especially the bounds checks. Make a setter functions.
-    if (startTouchX > ((canvasWidth/3) - 40)) {
+    // We divide by 3 because of the whole, points vs pixels
+    if (startTouchX > ((canvasWidth/3) - navTouchSize)) {
         var bbox = c.getBoundingClientRect()
-        if (startTouchY - bbox.top < (bbox.height/2)) {
+        if (startTouchY - bbox.top < (bbox.height/3)) {
             moveHomeEndDirection = "down"
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
             fx.cursorLineIndex += 1
@@ -5056,6 +5081,17 @@ function onStart(e) {
                     fx.offsetY = lines.length - 10
                 }
             }
+        } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
+            var fileIndex = files.indexOf(fx)
+            if (fileIndex != -1) {
+                fileIndex = fileIndex+1
+                if (fileIndex < 0) {
+                    fileIndex = 0
+                } else if (fileIndex >= files.length) {
+                    fileIndex = files.length - 1
+                }
+                setCurrentFile(files[fileIndex])    
+            }
         } else if (fx.selectedRegions.length) {
             fx.selectedRegions[0].stopX += 1
             var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
@@ -5070,39 +5106,43 @@ function onStart(e) {
             }
             ensureCursorInScreen()
         } else {
-            moveHomeEndDirection = "right"
-            moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
-            // the "true ||" essentially comments out the shift screen to the left feature
-            // in practice it wasn't that helpful because I did one char at a time
-            if (true || document.activeElement == theText) {
-                fx.cursorColIndex += 1
-                if (document.activeElement == theText) {
-                    //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-                    setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-                }
-                ensureCursorInScreen()
+            if (searchText.value) {
+                findDown()
             } else {
-                var origOffsetX = fx.offsetX
-                // scroll by tabstop?
-                if (false && fx.offsetX < 0) {
-                    fx.offsetX = 0
-                }  else {
-                    // var tabStop = 4
-                    var tabStop = 1 // we changed this to only move one cursor at a time
-                    fx.offsetX = Math.ceil((fx.offsetX + 1) / tabStop) * tabStop
+                moveHomeEndDirection = "right"
+                moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
+                // the "true ||" essentially comments out the shift screen to the left feature
+                // in practice it wasn't that helpful because I did one char at a time
+                if (true || document.activeElement == theText) {
+                    fx.cursorColIndex += 1
+                    if (document.activeElement == theText) {
+                        //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+                        setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+                    }
+                    ensureCursorInScreen()
+                } else {
+                    var origOffsetX = fx.offsetX
+                    // scroll by tabstop?
+                    if (false && fx.offsetX < 0) {
+                        fx.offsetX = 0
+                    }  else {
+                        // var tabStop = 4
+                        var tabStop = 1 // we changed this to only move one cursor at a time
+                        fx.offsetX = Math.ceil((fx.offsetX + 1) / tabStop) * tabStop
+                    }
+                    ////fx.offsetX += Math.floor(maxCols/2)
+                    // fx.cursorColIndex += fx.offsetX - origOffsetX
+                    fx.cursorColIndex += 1
                 }
-                ////fx.offsetX += Math.floor(maxCols/2)
-                // fx.cursorColIndex += fx.offsetX - origOffsetX
-                fx.cursorColIndex += 1
             }
         }
         document.body.addEventListener("touchend", onEndForEdges)
         updateCursorXY()
         render()
         return
-    } else if (startTouchX < 40) {
+    } else if (startTouchX < navTouchSize) {
         var bbox = c.getBoundingClientRect()
-        if (startTouchY - bbox.top < (bbox.height/2)) {
+        if (startTouchY - bbox.top < (bbox.height/3)) {
             moveHomeEndDirection = "up"
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
             fx.cursorLineIndex -= 1
@@ -5123,6 +5163,17 @@ function onStart(e) {
                     fx.offsetY = 0
                 }
             }
+        } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
+            var fileIndex = files.indexOf(fx)
+            if (fileIndex != -1) {
+                fileIndex = fileIndex-1
+                if (fileIndex < 0) {
+                    fileIndex = 0
+                } else if (fileIndex >= files.length) {
+                    fileIndex = files.length - 1
+                }
+                setCurrentFile(files[fileIndex])    
+            }
         } else if (fx.selectedRegions.length) {
             fx.selectedRegions[0].stopX -= 1
             if (fx.selectedRegions[0].stopX < 0) {
@@ -5135,30 +5186,34 @@ function onStart(e) {
             }
             ensureCursorInScreen()
         } else {
-            moveHomeEndDirection = "left"
-            moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
-            // the "true ||" essentially comments out the shift screen to the left feature
-            // in practice it wasn't that helpful because I did one char at a time
-            if (true || document.activeElement == theText) {
-                fx.cursorColIndex -= 1
-                if (document.activeElement == theText) {
-                    //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-                    setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-                }
-                ensureCursorInScreen()
+            if (searchText.value) {
+                findUp()
             } else {
-                var origOffsetX = fx.offsetX
-                if (false && fx.offsetX <= 0) {
-                    fx.offsetX = -5
-                }  else {
-                    // var tabStop = 4
-                    var tabStop = 1 // we changed this to only move one cursor at a time
-                    fx.offsetX = Math.floor((fx.offsetX-1) / tabStop) * tabStop
-                }
-                // fx.cursorColIndex += fx.offsetX - origOffsetX
-                fx.cursorColIndex -= 1
-                if (fx.cursorColIndex < -5) {
-                     fx.cursorColIndex = -5    
+                moveHomeEndDirection = "left"
+                moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
+                // the "true ||" essentially comments out the shift screen to the left feature
+                // in practice it wasn't that helpful because I did one char at a time
+                if (true || document.activeElement == theText) {
+                    fx.cursorColIndex -= 1
+                    if (document.activeElement == theText) {
+                        //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+                        setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+                    }
+                    ensureCursorInScreen()
+                } else {
+                    var origOffsetX = fx.offsetX
+                    if (false && fx.offsetX <= 0) {
+                        fx.offsetX = -5
+                    }  else {
+                        // var tabStop = 4
+                        var tabStop = 1 // we changed this to only move one cursor at a time
+                        fx.offsetX = Math.floor((fx.offsetX-1) / tabStop) * tabStop
+                    }
+                    // fx.cursorColIndex += fx.offsetX - origOffsetX
+                    fx.cursorColIndex -= 1
+                    if (fx.cursorColIndex < -5) {
+                         fx.cursorColIndex = -5    
+                    }
                 }
             }
         }
@@ -5195,7 +5250,7 @@ function onStart(e) {
 
         var bbox = c.getBoundingClientRect()
         
-        if (startTouchY - bbox.top < 40) {
+        if (startTouchY - bbox.top < navTouchSize) {
             if (document.activeElement == theText && !acWord) {
                shouldAutocompleteLine = true
             } else if (false) { // commenting out the page down feature
@@ -5211,7 +5266,7 @@ function onStart(e) {
             }
         }
         // commenting out the page down feature
-        if (false && (bbox.top + bbox.height) - startTouchY < 40) {
+        if (false && (bbox.top + bbox.height) - startTouchY < navTouchSize) {
             if (document.activeElement == theText) {
             } else {
                 var origOffsetY = fx.offsetY
@@ -5815,7 +5870,8 @@ function makeFile(fullPath, cursorLineIndex, contents) {
         },
         lines: theLines,
         cursorLineIndex: cursorLineIndex,
-        cursorColIndex: 0,
+        // cursorColIndex: 0,
+        cursorColIndex: -marginLeft,
         offsetY: cursorLineIndex, // you could get smarter about this
         offsetX: 0,
         fileMode: "file",
@@ -5885,7 +5941,8 @@ function addFile(fullPath, preventSelect, id) {
                 files[i].undo = file.undo
             }
         }
-        updateCursorXY()
+        updateCursorXY(file)
+        ensureCursorInScreen(file)
         render()
     }).catch(e => {
         alert("Error loading file " + e)
@@ -6081,6 +6138,7 @@ function seeFiles() {
     f.fileMode = "fileList"
 
     f.cursorLineIndex = 0
+    f.cursorColIndex = -marginLeft
     var fileIndex = treeFilesShadow.indexOf(fx)
     if (fileIndex != -1) {
         f.cursorLineIndex = fileIndex
