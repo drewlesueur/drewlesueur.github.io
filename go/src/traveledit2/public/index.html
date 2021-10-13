@@ -2572,14 +2572,27 @@ function pasteLines(copyBuffer, unselect, pasteBefore, fromTap) {
     render()
 }
 
+var cutFileIndexStart = -1
+var cutFileIndexStop = -1
 var globalOldCopyBuffer = []
 var hasMovedSinceCut = true
 function del(preventCopy, preventDeleteWholeLine) {
     globalOldCopyBuffer = copyBuffer
     hasMovedSinceCut = false
     
+    
     if (fx.selectedRegions.length>0) {
         var r = fx.selectedRegions[0]
+        
+        // kind of a hacky way to allow moving around
+        // of files in the file list 
+        // we use <= instead of just < because of the initial "-" at the beginning of the file list
+        if (fx.fileMode == "fileList" && r.startY <= files.length && r.stopY <= files.length) {
+            // we subtract 1 because of the initial "-" at the beginning
+            cutFileIndexStart = r.startY - 1
+            cutFileIndexStop = r.stopY - 1
+        }
+        
         if (r.startY == r.stopY) {
             if (!preventDeleteWholeLine && r.startX == 0 && unExpandTabIndex(fx.lines[r.startY], r.stopX, r.startY) == fx.lines[r.startY].length) {
                 selectMode = "line"
@@ -4851,8 +4864,24 @@ function onStart(e) {
                 clickItemInDirectory()
                 return
             }
-
+            // Clicking a file #clickfile
             if (fx.fileMode == "fileList") {
+                if (cutFileIndexStart != -1 && cutFileIndexStop != -1) {
+                    var subFiles = files.splice(cutFileIndexStart, (cutFileIndexStop - cutFileIndexStart)+1)
+                    log({
+                        start: cutFileIndexStart,
+                        stop: cutFileIndexStop,
+                        len: subFiles.length,
+                    })
+                    files.splice(fx.cursorLineIndex, 0, ...subFiles)
+                    var prevCursorLineIndex = fx.cursorLineIndex
+                    seeFiles()
+                    seeFiles()
+                    fx.cursorLineIndex = prevCursorLineIndex
+                    updateCursorXY()
+                    ensureCursorInScreen()
+                    return    
+                }
                 var file = treeFilesShadow[fx.cursorLineIndex]
                 if (file.fileToken == fileToken) {
                     // #filestuff
@@ -5086,10 +5115,16 @@ function onStart(e) {
             if (fileIndex != -1) {
                 fileIndex = fileIndex+1
                 if (fileIndex < 0) {
-                    fileIndex = 0
+                    fileIndex = -1
                 } else if (fileIndex >= files.length) {
                     fileIndex = files.length - 1
                 }
+            } else {
+                fileIndex = 0    
+            }
+            if (fileIndex == -1) {
+                seeFiles()        
+            } else {
                 setCurrentFile(files[fileIndex])    
             }
         } else if (fx.selectedRegions.length) {
@@ -5168,10 +5203,16 @@ function onStart(e) {
             if (fileIndex != -1) {
                 fileIndex = fileIndex-1
                 if (fileIndex < 0) {
-                    fileIndex = 0
+                    fileIndex = -1
                 } else if (fileIndex >= files.length) {
                     fileIndex = files.length - 1
                 }
+            } else {
+                fileIndex = 0    
+            }
+            if (fileIndex == -1) {
+                seeFiles()        
+            } else {
                 setCurrentFile(files[fileIndex])    
             }
         } else if (fx.selectedRegions.length) {
@@ -6113,6 +6154,8 @@ function getLinesForFileList() {
     // var showFilesFlatFirst = false
     var showFilesFlatFirst = true
     if (showFilesFlatFirst) {
+        treeFilesShadow.push(null)
+        treeFiles.push("-") // blank line do you can paste on top
         for (let i = 0; i < files.length; i++) {
             // treeFiles.push(files[i].fullPath.split("/").reverse().join(" < "))
             treeFiles.push(files[i].name || files[i].fullPath.split("/").slice(-1)[0])
@@ -6127,12 +6170,14 @@ function getLinesForFileList() {
     return treeFiles
 }
 
-
 function seeFiles() {
     if (fx.fileMode == "fileList") {
         setCurrentFile(lastFile)
         return
     }
+    
+    cutFileIndexStart = -1
+    cutFileIndexStop = -1
     var contents = getLinesForFileList().join("\n")
     var f = makeFile("__", 0, contents)
     f.fileMode = "fileList"
@@ -6148,6 +6193,7 @@ function seeFiles() {
     updateCursorXY()
     ensureCursorInScreen()
 }
+
 function setCurrentFile(file) {
     if (!file) {
         return
