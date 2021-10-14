@@ -127,6 +127,18 @@ input[type="text"] {
 </head>
 <body class=dark>
 <div id=topPadding style="height: 0px;"></div>
+<div style="
+    display: flex;
+    flex-flow: row nowrap;
+">
+    <pre id=statusEl class=hidden style="overflow:scroll; font-size: 10px;">
+    </pre>
+    <div id=logEl class=hidden style="height: 450px; width:240px;
+    overflow:scroll;
+    -webkit-overflow-scrolling: touch;
+    font-size:10px;"
+    ></div>
+</div>
 <!-- status bar -->
 <div id=s style="font-size: 12px;
 display: none;
@@ -222,18 +234,6 @@ onblur=handleBlur()
 >
 <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
-<div style="
-    display: flex;
-    flex-flow: row nowrap;
-">
-    <pre id=statusEl class=hidden style="overflow:scroll; font-size: 10px;">
-    </pre>
-    <div id=logEl class=hidden style="height: 450px; width:240px;
-    overflow:scroll;
-    -webkit-overflow-scrolling: touch;
-    font-size:10px;"
-    ></div>
-</div>
 <!--
 Note that the css width needs to be 1/3 of
 the with attribute, and same for height.
@@ -358,7 +358,7 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="fontScale = 2; updateFontScale()">2</div>
 </div>
 <div class=toolbar>
-    <div class=square onclick="copyBuffer = [location.href]">copy url</div>
+    <div class=square onclick="copyBuffer = [location.href]; osCopyText()">copy url</div>
     <div class=square onclick="copyString(fx.fullPath + ':' + (fx.cursorLineIndex + 1))">copy path</div>
     <div class=square onclick="pastSpecialNav()">paste nav</div>
     <div class=square onclick="showDiff()">show diff</div>
@@ -1177,6 +1177,15 @@ function runEditorCommand(e) {
     case "hl":
         searchText.value = getWordAtCursor().word; render();
         break
+    case "h":
+        if (!rest && fx.selectedRegions.length) {
+            rest = getSelectedLines(fx, false).lines[0]
+        }
+        fx.highlightText = rest;
+        break
+    case "hx":
+        fx.highlightText = "";
+        break
     case "fontscale":
         fontScale = rest - 0
         updateFontScale()
@@ -1190,6 +1199,7 @@ function runEditorCommand(e) {
         sendTerminal("\r");
         break
     }
+    editorCommandText.blur()
     return false
 }
 function editEditorCommandText() {
@@ -1257,6 +1267,13 @@ function closeFile() {
             // try to get index again because it could have changed
             var indexToClose = files.indexOf(fileToClose)
             if (indexToClose != -1) {
+                var afterTreeSeparator = treeFilesShadow.indexOf("treeSeparator") < fx.cursorLineIndex
+                if (afterTreeSeparator) {
+                    // after the tree separator we need to move up one because 2 lines are deleted
+                    // see showFilesFlatFirst
+                    fx.cursorLineIndex -= 1
+                    ensureCursorInScreen()
+                }
                 files.splice(indexToClose, 1)
             }
             fx.lines = getLinesForFileList()
@@ -1736,6 +1753,26 @@ function findDownForm(e) {
     return false
 }
 
+
+function nextHighlightText() {
+    if (!fx.highlightText) {
+        return
+    }
+    var prevSearchText = searchText.value
+    searchText.value = fx.highlightText
+    findDown()
+    searchText.value = prevSearchText
+}
+function prevtHighlightText() {
+    if (!fx.highlightText) {
+        return
+    }
+    var prevSearchText = searchText.value
+    searchText.value = fx.highlightText
+    findUp()
+    searchText.value = prevSearchText
+}
+
 function findDown(searchDir, wrap, startTop) {
     lastAction = "move"
     shouldAutocompleteLine = false
@@ -1758,7 +1795,8 @@ function findDown(searchDir, wrap, startTop) {
             searchText.value = getWordAtCursor().word
         }
         if (searchText.value == "") {
-            navForward()
+            // navForward()
+            nextHighlightText()
             return
             // searchText.value = "// mar"+"ker"
             searchText.value = " mar"+"ker"
@@ -1860,7 +1898,8 @@ function findUp() {
             searchText.value = getWordAtCursor().word
         }
         if (searchText.value == "") {
-            navBack()
+            // navBack()
+            prevtHighlightText() 
             return
             // searchText.value = "// mar"+"ker"
             searchText.value = " mar"+"ker"
@@ -2922,7 +2961,7 @@ function pollTerminals() {
             // #todoterminal: add xterm parsing here!
             var strToProcess = atob(termInfo.Base64)
             // simple parsing for now
-            log("term"+JSON.stringify(strToProcess))
+            // log("term"+JSON.stringify(strToProcess))
             var parseState = "literal"
             var controlValues = [""]
             for (var i = 0; i < strToProcess.length; i++) {
@@ -4078,8 +4117,8 @@ function render() {
         var oldMaxLines = maxLines
         var oldT = t // canvas rendering context
         fx.offsetX = -5
-        if (maxCols < 120) {
-            maxCols = 120
+        if (maxCols < 300) {
+            maxCols = 300
         }
         if (maxLines < 32) {
             maxLines = 32
@@ -4288,6 +4327,66 @@ function renderInternal() {
                 var startFillHighlight = (startHighlightPos - fx.offsetX) * fontWidth
                 var highlightLength = (expandTabIndex(theLine, pos+matchLength, y + fx.offsetY)-startHighlightPos) * fontWidth
                 t.fillRect(
+                    startFillHighlight,
+                    y * fontHeight,
+                    highlightLength,
+                    fontHeight
+                )
+            }
+        }
+        
+        // Per file highlights
+        var highlightStartSearch = 0
+        var matchLength = 0
+        if (theLine && fx.highlightText) {
+            // max 20 highlights per line
+            for (var _i=0; _i<20; _i++) {
+                if (fx.fileMode == "directory") {
+                    var pos = theLine.toLowerCase().indexOf(fx.highlightText.toLowerCase(), highlightStartSearch)
+                    if (pos == -1) {
+                        break
+                    }
+                    matchLength = fx.highlightText.length
+                    highlightStartSearch = pos + matchLength
+                } else {
+                    if (useRegexSearch) {
+                        var theMatch = theLine.substr(highlightStartSearch).match(cachedSearchRegexp(fx.highlightText))
+                        if (theMatch == null) {
+                            break    
+                        }
+                        matchLength = theMatch[0].length
+                        pos = highlightStartSearch + theMatch.index  
+                        highlightStartSearch = pos + matchLength 
+                    } else {
+                        var pos = theLine.indexOf(fx.highlightText, highlightStartSearch)
+                        if (pos == -1) {
+                            break
+                        }
+                        matchLength = fx.highlightText.length
+                        highlightStartSearch = pos + matchLength
+                    }
+                }
+                // lime
+                if (isDark) {
+                    // t.fillStyle = "blue"
+                    // t.fillStyle = "rgba(0,0,255,0.7)"
+                    // t.fillStyle = "orange"
+                    // t.strokeStyle = "magenta"
+                    t.fillStyle = "deeppink"
+                } else {
+                    // t.fillStyle = "yellow"
+                    // t.fillStyle = "rgba(255,255,0,0.7)"
+                    // t.fillStyle = "orange"
+                    // t.strokeStyle = "magenta"
+                    t.fillStyle = "deeppink"
+                }
+                
+                // TODO: expanding the same line, we could come up with optimization for that
+                var startHighlightPos = expandTabIndex(theLine, pos, y + fx.offsetY)
+                var startFillHighlight = (startHighlightPos - fx.offsetX) * fontWidth
+                var highlightLength = (expandTabIndex(theLine, pos+matchLength, y + fx.offsetY)-startHighlightPos) * fontWidth
+                t.fillRect(
+                // t.strokeRect(
                     startFillHighlight,
                     y * fontHeight,
                     highlightLength,
@@ -4746,11 +4845,13 @@ function onStart(e) {
             // }
             
             // attempt 2 at swiping left to do an action
-            // if (overflowX > 75 && !hasSwitchedFile && startCursorColIndex == -marginLeft) {
-            //     hasSwitchedFile = true
-            //     seeFiles()
-            //     overflowX = 0    
-            // }
+            if (overflowX > 75 && !hasSwitchedFile && startCursorColIndex == -marginLeft) {
+                hasSwitchedFile = true
+                // seeFiles()
+                moveFileAllTheWayLeft()
+                saveWorkspace()
+                overflowX = 0    
+            }
         }
         var oldCursorLineIndex = fx.cursorLineIndex
         // maybe have a setter for this?
@@ -5092,22 +5193,27 @@ function onStart(e) {
         if (startTouchY - bbox.top < (bbox.height/3)) {
             moveHomeEndDirection = "down"
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
-            fx.cursorLineIndex += 1
-            if (fx.cursorLineIndex >= fx.lines.length) {
-                fx.cursorLineIndex = fx.lines.length - 1
-            }
-            ensureCursorInScreen()
-            if (fx.selectedRegions.length) {
-                fx.selectedRegions[0].stopY += 1
-                if (fx.selectedRegions[0].stopY > fx.lines.length - 1) { // stopY is inclusive I think, stopX isn't
-                    fx.selectedRegions[0].stopY = fx.lines.length - 1
-                }    
-                var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
-                fx.selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length, fx.selectedRegions[0].stopY)
-            } else if (document.activeElement != theText) {
-                fx.offsetY += 1
-                if (fx.offsetY > fx.lines.length - 10) {
-                    fx.offsetY = lines.length - 10
+            
+            if (fx.highlightText) {
+                nextHighlightText()    
+            } else {
+                fx.cursorLineIndex += 1
+                if (fx.cursorLineIndex >= fx.lines.length) {
+                    fx.cursorLineIndex = fx.lines.length - 1
+                }
+                ensureCursorInScreen()
+                if (fx.selectedRegions.length) {
+                    fx.selectedRegions[0].stopY += 1
+                    if (fx.selectedRegions[0].stopY > fx.lines.length - 1) { // stopY is inclusive I think, stopX isn't
+                        fx.selectedRegions[0].stopY = fx.lines.length - 1
+                    }    
+                    var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
+                    fx.selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length, fx.selectedRegions[0].stopY)
+                } else if (document.activeElement != theText) {
+                    fx.offsetY += 1
+                    if (fx.offsetY > fx.lines.length - 10) {
+                        fx.offsetY = lines.length - 10
+                    }
                 }
             }
         } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
@@ -5141,7 +5247,7 @@ function onStart(e) {
             }
             ensureCursorInScreen()
         } else {
-            if (searchText.value) {
+            if (false && searchText.value) {
                 findDown()
             } else {
                 moveHomeEndDirection = "right"
@@ -5180,22 +5286,27 @@ function onStart(e) {
         if (startTouchY - bbox.top < (bbox.height/3)) {
             moveHomeEndDirection = "up"
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
-            fx.cursorLineIndex -= 1
-            if (fx.cursorLineIndex < 0) {
-                fx.cursorLineIndex = 0
-            }
-            ensureCursorInScreen()
-            if (fx.selectedRegions.length) {
-                fx.selectedRegions[0].stopY -= 1
-                if (fx.selectedRegions[0].stopY < fx.selectedRegions[0].startY) {
-                    fx.selectedRegions[0].stopY = fx.selectedRegions[0].startY
-                }    
-                var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
-                fx.selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length, fx.selectedRegions[0].stopY)
-            } else if (document.activeElement != theText) {
-                fx.offsetY -= 1
-                if (fx.offsetY < 0) {
-                    fx.offsetY = 0
+            
+            if (fx.highlightText) {
+                prevtHighlightText()    
+            } else {
+                fx.cursorLineIndex -= 1
+                if (fx.cursorLineIndex < 0) {
+                    fx.cursorLineIndex = 0
+                }
+                ensureCursorInScreen()
+                if (fx.selectedRegions.length) {
+                    fx.selectedRegions[0].stopY -= 1
+                    if (fx.selectedRegions[0].stopY < fx.selectedRegions[0].startY) {
+                        fx.selectedRegions[0].stopY = fx.selectedRegions[0].startY
+                    }    
+                    var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
+                    fx.selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length, fx.selectedRegions[0].stopY)
+                } else if (document.activeElement != theText) {
+                    fx.offsetY -= 1
+                    if (fx.offsetY < 0) {
+                        fx.offsetY = 0
+                    }
                 }
             }
         } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
@@ -5227,7 +5338,7 @@ function onStart(e) {
             }
             ensureCursorInScreen()
         } else {
-            if (searchText.value) {
+            if (false && searchText.value) {
                 findUp()
             } else {
                 moveHomeEndDirection = "left"
@@ -6154,7 +6265,7 @@ function getLinesForFileList() {
     // var showFilesFlatFirst = false
     var showFilesFlatFirst = true
     if (showFilesFlatFirst) {
-        treeFilesShadow.push(null)
+        treeFilesShadow.push("initialSeparator")
         treeFiles.push("-") // blank line do you can paste on top
         for (let i = 0; i < files.length; i++) {
             // treeFiles.push(files[i].fullPath.split("/").reverse().join(" < "))
@@ -6163,7 +6274,7 @@ function getLinesForFileList() {
             treeFilesShadow.push(files[i])
         }
         treeFiles.push("-")
-        treeFilesShadow.push(null)
+        treeFilesShadow.push("treeSeparator")
     }
     
     treeToLines(fileTree, "", "", "")
