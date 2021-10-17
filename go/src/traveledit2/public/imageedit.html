@@ -1,0 +1,216 @@
+<!doctype html>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
+<style>
+* {
+    margin: 0;
+    padding: 0;
+}
+
+#c {
+    --border: 1px solid blue;
+}
+#w {
+    --border: 1px solid pink;
+}
+.toolbar {
+    display: flex;
+    flex-flow: row nowrap;
+    overflow: scroll;
+    -webkit-overflow-scrolling: touch;
+}
+.tool {
+    border: 1px solid;
+    width: 50px;
+    height: 50px;
+    padding: 0px;
+    width: 40px;
+    height: 34px;
+    margin: 1px;
+    flex: 1 0 auto;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+</style>
+
+<div id=w>
+    <canvas id=c><canvas>
+</div>
+
+<div class=toolbar>
+    <div class=tool>Cursor</div>
+    <div class=tool>Zoom In</div>
+    <div class=tool>Zoom Out</div>
+    <div class=tool>Brush</div>
+    <div class=tool>Erase</div>
+    <div class=tool>Fill</div>
+    <!-- tapping on edges will pan -->
+</div>
+<div class=toolbar>
+    <div class=tool onclick=toggleDark()>Light</div>
+</div>
+<input id=statusEl />
+<script>
+// it's important that this go in it's own script tag
+window.onerror = function(message, url, lineNumber, columnNumber, error) {
+    alert(lineNumber + ": " + message)
+}
+</script>
+<script>
+
+// this canvas is a window to the image
+// going to use my own zooming and translation
+// rendering will be series of shapes and lines, and text, etc
+//
+var tool = "brush"
+var dpr = 3
+var touchScaleY = 3.5
+var touchScaleX = 3.5
+var canvasStyleWidth = innerWidth
+var canvasStyleHeight = innerWidth 
+c.width = canvasStyleWidth * dpr
+c.height = canvasStyleHeight * dpr
+c.style.width = canvasStyleWidth + "px"
+c.style.height = canvasStyleHeight + "px"
+w.style.width = canvasStyleWidth + "px"
+w.style.height = (canvasStyleHeight + 100) + "px"
+w.ontouchstart = onStart
+
+var t = c.getContext("2d")
+t.fillStyle = "orange"
+t.fillRect(100, 100, 445, 100)
+
+var isDark = true
+renderDark()
+var fx = makeFile()
+
+function renderDark() {
+    var bgColor = "black"
+    var fgColor = "lightYellow"
+    
+    if (!isDark) {
+        bgColor = "lightYellow" 
+        fgColor = "black"
+    }
+    document.body.style.backgroundColor = bgColor
+    var toolButtons = document.querySelectorAll(".tool")
+    for (var i=0; i<toolButtons.length; i++) {
+        var toolButton = toolButtons[i]
+        toolButton.style.color = fgColor 
+        toolButton.style.backgroundColor = bgColor 
+    }
+}
+
+function toggleDark() {
+    isDark = !isDark
+    renderDark()
+}
+
+function makeFile() {
+    return {
+        width: 500,
+        height: 500,
+        cursorX: 0,
+        cursorY: 0,
+        scale: 0,
+        offsetX: 0,
+        offsetY: 0,
+        layers: [{
+            shapes: [],
+        }]
+    }
+}
+
+var lastRender = Date.now()
+var maxFPS = 60
+var minMillisBetweenRender = Math.floor(1000/maxFPS)
+var waitingToRender = false
+function render() {
+    if (waitingToRender) {
+        // statusEl.value = "returning early: "
+        return
+    }
+    statusEl.value = "not returning early"
+    var now = Date.now()
+    var waitToRender = minMillisBetweenRender - (now - lastRender)
+    statusEl.value = "waiting: " + waitToRender
+    if (waitToRender > 0) {
+        waitingToRender = true
+        statusEl.value = "wait"
+        setTimeout(function() {
+            waitingToRender = false
+            statusEl.value = (Date.now() - lastRender)
+            render()
+        }, waitToRender)
+        return
+    }
+    c.width = c.width // a way to clear
+    // statusEl.value = "render!!!"
+    t.fillStyle = "orange"
+    t.fillRect(fx.cursorX, fx.cursorY, 10, 10)    
+    // lastRender = Date.now()            
+    lastRender = now          
+}
+
+
+// 
+function onStart(e) {
+    e.preventDefault()
+    document.body.addEventListener("touchmove", onMove)
+    document.body.addEventListener("touchend", onEnd)
+    
+    fx.startTouchX = e.touches[0].pageX
+    fx.startTouchY = e.touches[0].pageY
+    fx.lastTouchX = e.touches[0].pageX
+    fx.lastTouchY = e.touches[0].pageY
+    fx.firstMove = true
+    
+    fx.startCursorX = fx.cursorX
+    fx.startCursorY = fx.cursorY
+    
+    
+    // if (tool == "brush") {
+    //     fx.layers[fx.currentLayer]
+    // }
+    render()
+}
+
+function onMove(e) {
+    e.preventDefault()
+    var diffTouchX = e.touches[0].pageX - fx.startTouchX
+    var diffTouchY = e.touches[0].pageY - fx.startTouchY
+    var diffLastTouchX = e.touches[0].pageX - fx.lastTouchX
+    var diffLastTouchY = e.touches[0].pageY - fx.lastTouchY
+        
+    var signX = diffLastTouchX < 0 ? -1: 1
+    var signY = diffLastTouchY < 0 ? -1 : 1
+    // var thePow = fx.firstMove ? 1 : 2
+    thePow = 1
+    
+    
+    fx.cursorX = fx.cursorX + ensureSign(signX, Math.round(Math.pow(diffLastTouchX, thePow)*touchScaleX))
+    fx.cursorY = fx.cursorY + ensureSign(signY, Math.round(Math.pow(diffLastTouchY, thePow)*touchScaleY))
+    
+    // fx.cursorX = fx.startCursorX + diffTouchX 
+    // fx.cursorY = fx.startCursorY + diffTouchY
+    
+    fx.firstMove = false
+    fx.lastTouchX = e.touches[0].pageX
+    fx.lastTouchY = e.touches[0].pageY
+    render()
+}
+function onEnd(e) {
+    e.preventDefault()
+    document.body.removeEventListener("touchmove", onMove)
+    document.body.removeEventListener("touchend", onEnd)
+    render()
+}
+function ensureSign(sign, v) {
+    if (sign < 0 && v > 0) return -v
+    if (sign > 0 && v < 0) return -v
+    return v
+}
+</script>
+
