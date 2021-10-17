@@ -238,6 +238,7 @@ type File struct{
     
     // CSS color
     Color string
+    HighlightText string
     
     // fields for remotefile
     LocalTmpPath string // temorary file
@@ -302,6 +303,7 @@ func workspaceView(w *Workspace) map[string]interface{} {
             "LineNumber": f.LineNumber,
             "CWD": f.CWD,
             "Color": f.Color,
+            "HighlightText": f.HighlightText,
         })
     }
     workspaceRet := map[string]interface{}{
@@ -513,6 +515,7 @@ func main() {
 	            	addedFile.LineNumber = f.LineNumber
         		    addedFile.Name = f.Name
         		    addedFile.Color = f.Color
+        	        addedFile.HighlightText = f.HighlightText
 	            }
 	            
 	            workspaces = append(workspaces, workspace)
@@ -896,7 +899,8 @@ func main() {
         	 	 // Let's update the editable foelds while we are at it.
 	             f.LineNumber = fc.LineNumber
         		 f.Name = fc.Name
-        		 f.Color = fc.Color
+        	     f.Color = fc.Color
+        		 f.HighlightText = fc.HighlightText
 	             newFiles = append(newFiles, f)
 	         }
 	    }

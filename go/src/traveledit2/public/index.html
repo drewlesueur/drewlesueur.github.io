@@ -307,7 +307,7 @@ ontouchstart=onStart(event)
     <div class=square onclick="osCopyText()">os copy</div>
     <div class=square onclick="osPasteText()">os paste</div>
     <div class=square onclick=reloadFile(fx)>reload</div>
-    <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
+    <div id=darkModeButton class=square onclick="toggleCompactRender()">compact</div>
     <div class=square onclick=redo()>redo</div>
     <div class=square onclick=undo()>undo</div>
     <div class=square onclick=comment()>//</div>
@@ -360,8 +360,8 @@ ontouchstart=onStart(event)
 <div class=toolbar>
     <div class=square onclick="copyBuffer = [location.href]; osCopyText()">copy url</div>
     <div class=square onclick="copyString(fx.fullPath + ':' + (fx.cursorLineIndex + 1))">copy path</div>
-    <div class=square onclick="pastSpecialNav()">paste nav</div>
     <div class=square onclick="showDiff()">show diff</div>
+    <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
     <div class=square onclick=openAtCursor()>open</div>
     <div class=square onclick=scriptLines()>script lines</div>
 </div>
@@ -412,10 +412,6 @@ ontouchstart=onStart(event)
 <label for=saveDiffsCheckbox>
     <input onchange="saveDiffs = saveDiffsCheckbox.checked" type=checkbox name=saveDiffsCheckbox id=saveDiffsCheckbox checked />
     save diffs
-</label>
-<label for=useUnicodeCheckbox>
-    <input onchange="useUnicode = useUnicodeCheckbox.checked" type=checkbox name=useUnicodeCheckbox id=useUnicodeCheckbox />
-    use unicode
 </label>
 <br>
 <label for=serverViewCheckbox>
@@ -483,6 +479,7 @@ var lastWord = ""
 var lastCleared = ""
 var fontScale = 1.2
 var useUnicode = false
+var compactRender = false
 var agressiveRender = false
 
 var toolbars = document.querySelectorAll(".fullWidth")
@@ -1178,13 +1175,18 @@ function runEditorCommand(e) {
         searchText.value = getWordAtCursor().word; render();
         break
     case "h":
-        if (!rest && fx.selectedRegions.length) {
-            rest = getSelectedLines(fx, false).lines[0]
+        // if (!rest && fx.selectedRegions.length) {
+        //     rest = getSelectedLines(fx, false).lines[0]
+        // }
+        if (!rest) {
+            rest = copyBuffer[0]
         }
         fx.highlightText = rest;
+        saveWorkspace()
         break
     case "hx":
         fx.highlightText = "";
+        saveWorkspace()
         break
     case "fontscale":
         fontScale = rest - 0
@@ -1907,6 +1909,9 @@ function findUp() {
     }
     for (var i=fx.cursorLineIndex; i>=0; i--) {
         var lineToSearch = fx.lines[i]
+        if (!lineToSearch) {
+            continue
+        }
         if (i == fx.cursorLineIndex) {
             lineToSearch = lineToSearch.substr(0, u(fx.cursorColIndex))
         }
@@ -2948,6 +2953,7 @@ function pollTerminals() {
         for (var id in r) {
             var termInfo = r[id]
             var file = files.find(f => f.ID == id)    
+            var lineLengthBeforeChange = file.lines.length 
             if (!file) {
                 // TODO: this can happen if we get the response for
                 // the poll before we even have the ID
@@ -2962,6 +2968,9 @@ function pollTerminals() {
             var strToProcess = atob(termInfo.Base64)
             // simple parsing for now
             // log("term"+JSON.stringify(strToProcess))
+            
+            // TODO: what if the chunk we get ends on a control character.
+            // Maybe we need to preserve the parseState to the file object.
             var parseState = "literal"
             var controlValues = [""]
             for (var i = 0; i < strToProcess.length; i++) {
@@ -3065,10 +3074,14 @@ function pollTerminals() {
                         break;
                 }
             }
-            file.cursorLineIndex = file.lines.length - 1
-            var theLine = file.lines[file.lines.length-1]
-            file.cursorColIndex = expandTabIndex(theLine, theLine.length, file.lines.length-1, file)
-            ensureCursorInScreen(file)
+            
+            // don't move the cursor if they are looking up higher in the file
+            if (file.cursorLineIndex >= (lineLengthBeforeChange - 1)) {
+                file.cursorLineIndex = file.lines.length - 1
+                var theLine = file.lines[file.lines.length-1]
+                file.cursorColIndex = expandTabIndex(theLine, theLine.length, file.lines.length-1, file)
+                ensureCursorInScreen(file)
+            }
         }
         render()
         setTimeout(pollTerminals, 1)
@@ -3158,7 +3171,7 @@ function trimPrefix(str, prefix) {
     }
     return str
 }
-// marker aquamarine
+
 function setSelectionRangeForText(start, end) {
     var adjustedStart = u(start)
     var adjustedEnd
@@ -4193,6 +4206,126 @@ function renderTheText(v) {
         theTextValue = v
     // }
 }
+function toggleCompactRender() {
+    compactRender = !compactRender
+    globalTabStop = compactRender ? 2 : 4
+    render()
+}
+
+var noCompactPrevWords = {
+    "function": true,
+    "func": true,
+    "class": true,
+    "type": true,
+    "var": true,
+}
+var compactReplace = {
+    "if": "if",
+    "for": "for",
+    "foreach": "frch",
+    "function": "fn",
+    "func": "fn",
+    "range": "rg",
+}
+function compactWord(word, theLine, startSpacesLength, index, prevWord) {
+    if (fx.cursorLineIndex == index && fx.cursorColIndex >= 0) {
+        return word
+    }
+    if (noCompactPrevWords[prevWord]) {
+      return word
+    }
+    if ((theLine.trimStart().length + startSpacesLength + marginLeft) <= maxCols) {
+        return word
+    }
+    var replacement = compactReplace[word]
+    if (replacement) {
+      return replacement
+    }
+    
+    if (word - 0 == word) {
+        return word
+    }
+    
+    return word.slice(0,1)
+}
+function compactSpace(spaces, index) {
+    return spaces
+    
+    if (fx.cursorLineIndex == index && fx.cursorColIndex >= 0) {
+        return spaces
+    }
+    var numbSpaces = 2*Math.floor(spaces.length / 4)
+    var leftover = spaces.length % 4
+    return " ".repeat(numbSpaces+leftover)
+}
+function compactLine(theLine, index) {
+    var ret = {
+        compactedLine: "",
+        fgColors: [],
+        bgBoxes: []
+    }
+    // if (theLine.length + marginLeft <= maxCols) {
+    //     ret.compactedLine = theLine
+    //     return ret    
+    // }
+    
+    
+    var currentToken = ""
+    var state="start"
+    var startSpaces = ""
+    var prevWord = ""
+    for (var i = 0; i < theLine.length; i++) {
+        var chr = theLine[i]    
+        if (state == "start") {
+            if (chr == " ") {
+                currentToken = chr
+                state = "startSpace"    
+            } else if (isWordyChar(chr)) {
+                currentToken = chr
+                state = "inWord"
+            } else {
+                state = "endThing"
+                ret.compactedLine += chr
+            }   
+        } else if (state == "startSpace") {
+            if (chr == " ") {
+                currentToken += chr
+            } else if (isWordyChar(chr)) {
+                startSpaces = compactSpace(currentToken, index) 
+                ret.compactedLine += startSpaces 
+                currentToken = chr
+                state = "inWord"
+            } else {
+                startSpaces = compactSpace(currentToken, index) 
+                ret.compactedLine += startSpaces 
+                state = "endThing"
+                ret.compactedLine += chr
+            }   
+        } else if (state == "inWord") {
+            if (isWordyChar(chr)) {
+                currentToken += chr
+            } else {
+                ret.compactedLine += compactWord(currentToken, theLine, startSpaces.length, index, prevWord)
+                prevWord = currentToken
+                ret.compactedLine += chr 
+                state = "endThing"
+            }   
+        } else if (state == "endThing") {
+            if (isWordyChar(chr)) {
+                state = "inWord"
+                currentToken = chr
+            } else {
+                ret.compactedLine += chr 
+            }   
+        }
+    }
+    if (state == "inWord") {
+        ret.compactedLine += compactWord(currentToken, theLine, startSpaces.length, index, prevWord)
+        prevWord = currentToken 
+    }    
+    return ret
+}
+
 
 var renderDuration = 0
 var renderCount = 0   
@@ -4239,7 +4372,6 @@ function renderInternal() {
     // actual selected text
     if (false && acWord) {
         t.fillStyle = "orange"
-        // marker aquamarine
         for (var y=acWord.startY-fx.offsetY; y<=acWord.stopY-fx.offsetY; y++) {
             var line = fx.lines[y + fx.offsetY] || ""
             if (acWord.startY == acWord.stopY) {
@@ -4420,7 +4552,7 @@ function renderInternal() {
         // TODO: set variable for line.trim()
         var textFillStyle 
         // the actual text
-        
+        var commentLine = false
         // TODO: maybe pull some of this out of the loop
         let cachedTrim
         var trim = function() {
@@ -4465,6 +4597,7 @@ function renderInternal() {
                 t.fillStyle = oldFillStyle
                 
             } else if (trim().startsWith("//") || trim().startsWith("#")) {
+                commentLine = true
                 // comments are gray
                 textFillStyle = lightFontColor
             } else {
@@ -4486,6 +4619,16 @@ function renderInternal() {
         var expandedLine = ""
         var tabStop = globalTabStop
         var afterLastTabPos = 0
+        if (compactRender && !commentLine) {
+            var lineAndInfo = compactLine(theLine, y + fx.offsetY)
+            theNewLine = lineAndInfo.compactedLine
+            
+            if (theNewLine != theLine) {
+                textFillStyle = isDark ? "lime" : "green"
+            }
+            
+            theLine = theNewLine
+        }
         
         // expandedLine = [...expandedLine]
         if (useUnicode) {
@@ -4978,6 +5121,7 @@ function onStart(e) {
                     var prevCursorLineIndex = fx.cursorLineIndex
                     seeFiles()
                     seeFiles()
+                    saveWorkspace()
                     fx.cursorLineIndex = prevCursorLineIndex
                     updateCursorXY()
                     ensureCursorInScreen()
@@ -6501,6 +6645,8 @@ fetch(proxyPath + "/myworkspace", {
         } else {
             addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), false, serverFile.ID)
         }
+        fx.color = serverFile.Color
+        fx.highlightText = serverFile.HighlightText
     }
     initialFileAdding = false
     if (workspace.FontName) {
@@ -6550,6 +6696,7 @@ function saveWorkspace() {
             "LineNumber": f.cursorLineIndex + 1,
             "CWD": f.shellCWD,
             "Color": f.color,
+            "HighlightText": f.highlightText,
         })
     }
     fetch(proxyPath + "/mysaveworkspace", {    

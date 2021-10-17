@@ -1,3 +1,19 @@
+mark something as unsaved when undo happens
+maybe make a split screen
+where in landscape mode
+the bottom half of the screen
+is the left side
+the top half of screen
+is the right side
+
+
+top right and left tap when in fileMode should jump
+to the other representation of the file.
+
+
+quick way to match only word \b
+
+in terminal only scroll down if you can already see the end
 
 middle right tap to go to next file?
 middle lef tap to go to prev file?
