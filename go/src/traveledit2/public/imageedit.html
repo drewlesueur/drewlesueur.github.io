@@ -7,10 +7,17 @@
 }
 
 #c {
-    --border: 1px solid blue;
+    position: absolute;
+    image-rendering: pixelated;
+}
+#c2 {
+    position: absolute;
+    image-rendering: pixelated;
+    background-color: white;
 }
 #w {
     --border: 1px solid pink;
+    background-color: gray;
 }
 .toolbar {
     display: flex;
@@ -36,7 +43,8 @@
 </style>
 
 <div id=w>
-    <canvas id=c><canvas>
+    <canvas id=c2></canvas>
+    <canvas id=c></canvas>
 </div>
 
 <div class=toolbar>
@@ -47,6 +55,13 @@
     <div class=tool>Erase</div>
     <div class=tool>Fill</div>
     <!-- tapping on edges will pan -->
+</div>
+<div class=toolbar>
+    <div style="background-color: red;" class=tool onclick=setColor("red")></div>
+    <div style="background-color: yellow;" class=tool onclick=setColor("yellow")></div>
+    <div style="background-color: blue;" class=tool onclick=setColor("blue")></div>
+    <div style="background-color: white;" class=tool onclick=setColor("white")></div>
+    <div style="background-color: black;" class=tool onclick=setColor("black")></div>
 </div>
 <div class=toolbar>
     <div class=tool onclick=toggleDark()>Light</div>
@@ -64,25 +79,81 @@ window.onerror = function(message, url, lineNumber, columnNumber, error) {
 // going to use my own zooming and translation
 // rendering will be series of shapes and lines, and text, etc
 //
-var tool = "brush"
-var dpr = 3
-var touchScaleY = 3.5
-var touchScaleX = 3.5
+// var dpr = 3
+var dpr = 2
+// var dpr = 0.25
+
+var moveTouchScaleX = 2
+var moveTouchScaleY = 2
+// var paintTouchScaleX = 1.5
+// var paintTouchScaleY = 1.5
+var paintTouchScaleX = 1
+var paintTouchScaleY = 1
+
+function setColor(color) {
+    t2.fillStyle = color
+    t2.strokeStyle = color
+}
+var mode
+var paintTimeoutMillis = 400
+function setMode(theMode) {
+    mode = theMode
+    if (mode == "move") {
+        touchScaleY = moveTouchScaleX
+        touchScaleX = moveTouchScaleY
+    } else if (mode == "paint") {
+        touchScaleY = paintTouchScaleX
+        touchScaleX = paintTouchScaleY
+        
+        // draw a dot
+        t2.beginPath()
+        t2.arc(fx.cursorX, fx.cursorY, brushSize/2, 0, 2*Math.PI, false)
+        t2.fill()
+        
+    }
+    render()
+    return 
+}
+
 var canvasStyleWidth = innerWidth
 var canvasStyleHeight = innerWidth 
+
+// if (canvasStyleWidth > 375) {
+//     canvasStyleWidth = 375
+// }
+// if (canvasStyleHeight > 375) {
+//     canvasStyleHeight = 375
+// }
+
 c.width = canvasStyleWidth * dpr
 c.height = canvasStyleHeight * dpr
 c.style.width = canvasStyleWidth + "px"
 c.style.height = canvasStyleHeight + "px"
+
+
+c2.width = canvasStyleWidth * dpr
+c2.height = canvasStyleHeight * dpr
+c2.style.width = canvasStyleWidth + "px"
+c2.style.height = canvasStyleHeight + "px"
+
+
 w.style.width = canvasStyleWidth + "px"
 w.style.height = (canvasStyleHeight + 100) + "px"
 w.ontouchstart = onStart
 
 var t = c.getContext("2d")
-t.fillStyle = "orange"
-t.fillRect(100, 100, 445, 100)
 
-var isDark = true
+var t2 = c2.getContext("2d")
+// this can be null!
+if (t2 == null) {
+    alert("could not get canvas context")    
+}
+// alert(t2)
+var brushSize = 20
+t2.lineWidth = 20
+t2.lineCap = "round"
+
+var isDark = false
 renderDark()
 var fx = makeFile()
 
@@ -112,8 +183,8 @@ function makeFile() {
     return {
         width: 500,
         height: 500,
-        cursorX: 0,
-        cursorY: 0,
+        cursorX: 100,
+        cursorY: 100,
         scale: 0,
         offsetX: 0,
         offsetY: 0,
@@ -148,9 +219,16 @@ function render() {
     }
     c.width = c.width // a way to clear
     // statusEl.value = "render!!!"
-    t.fillStyle = "orange"
-    t.fillRect(fx.cursorX, fx.cursorY, 10, 10)    
-    // lastRender = Date.now()            
+    if (mode == "move") {
+        t.strokeStyle = "blue"
+    } else if (mode == "paint") {
+        t.strokeStyle = "red"
+    }
+    t.lineWidth = 5
+    // t.fillRect(fx.cursorX, fx.cursorY, 10, 10)    
+    t.beginPath()
+    t.arc(fx.cursorX, fx.cursorY, 20, 0, 2*Math.PI, false)
+    t.stroke()
     lastRender = now          
 }
 
@@ -158,6 +236,16 @@ function render() {
 // 
 function onStart(e) {
     e.preventDefault()
+    
+    if (e.touches.length == 2) {
+        if (mode == "move") {
+            setMode("paint")
+            clearTimeout(paintModeTimeout)
+        } else if (mode == "paint") {
+            setMode("move")
+            clearTimeout(paintModeTimeout)
+        }
+    }
     document.body.addEventListener("touchmove", onMove)
     document.body.addEventListener("touchend", onEnd)
     
@@ -171,14 +259,17 @@ function onStart(e) {
     fx.startCursorY = fx.cursorY
     
     
-    // if (tool == "brush") {
-    //     fx.layers[fx.currentLayer]
-    // }
+    paintModeTimeout = setTimeout(function () {
+        setMode("paint")    
+    }, paintTimeoutMillis)
     render()
 }
 
+var paintModeTimeout
+
 function onMove(e) {
     e.preventDefault()
+    clearTimeout(paintModeTimeout)
     var diffTouchX = e.touches[0].pageX - fx.startTouchX
     var diffTouchY = e.touches[0].pageY - fx.startTouchY
     var diffLastTouchX = e.touches[0].pageX - fx.lastTouchX
@@ -187,11 +278,21 @@ function onMove(e) {
     var signX = diffLastTouchX < 0 ? -1: 1
     var signY = diffLastTouchY < 0 ? -1 : 1
     // var thePow = fx.firstMove ? 1 : 2
-    thePow = 1
+    var thePow = fx.firstMove ? 0 : 1
+    // thePow = 1
     
+    var oldCursorX = fx.cursorX
+    var oldCursorY = fx.cursorY
     
     fx.cursorX = fx.cursorX + ensureSign(signX, Math.round(Math.pow(diffLastTouchX, thePow)*touchScaleX))
     fx.cursorY = fx.cursorY + ensureSign(signY, Math.round(Math.pow(diffLastTouchY, thePow)*touchScaleY))
+    
+    if (mode == "paint") {
+        t2.beginPath()
+        t2.moveTo(oldCursorX, oldCursorY)
+        t2.lineTo(fx.cursorX, fx.cursorY)
+        t2.stroke()
+    }
     
     // fx.cursorX = fx.startCursorX + diffTouchX 
     // fx.cursorY = fx.startCursorY + diffTouchY
@@ -199,12 +300,21 @@ function onMove(e) {
     fx.firstMove = false
     fx.lastTouchX = e.touches[0].pageX
     fx.lastTouchY = e.touches[0].pageY
+    
+    paintModeTimeout = setTimeout(function () {
+        setMode("paint")    
+    }, paintTimeoutMillis)
     render()
 }
 function onEnd(e) {
     e.preventDefault()
-    document.body.removeEventListener("touchmove", onMove)
-    document.body.removeEventListener("touchend", onEnd)
+    clearTimeout(paintModeTimeout)
+    if (e.touches.length == 0) {
+        document.body.removeEventListener("touchmove", onMove)
+        document.body.removeEventListener("touchend", onEnd)
+        setMode("move")
+    }
+    
     render()
 }
 function ensureSign(sign, v) {
@@ -212,5 +322,25 @@ function ensureSign(sign, v) {
     if (sign > 0 && v < 0) return -v
     return v
 }
+
+setMode("move")
+/*
+A layer is a canvas tag
+Then there is the canvas used for cursor animation.
+And a canvas used for drawing. 
+
+
+every time you make a stroke, add a mini canvas.
+(only the size that you need)
+that will allow you to undo
+
+ios resource limits,
+maybe change layers to images!
+yea, have limited canvas contexts!
+
+2 large ones already?
+maybe change the cursor canvas to not be whole screen!!!
+just a little canvas that moves!
+*/
 </script>
 

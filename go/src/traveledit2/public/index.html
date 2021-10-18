@@ -450,7 +450,7 @@ style="width:100%; height:100px;"
     <input id=filesToUpload type=file multiple>
     <input type=Submit value=Upload>
 </form>
-
+<a href=/>
 <div id=bottomPadding style="height: 100px;"></div>
 <div id=colorGetterEl style="width: 100px; height: 100px;"></div>
 </div>
@@ -4130,8 +4130,8 @@ function render() {
         var oldMaxLines = maxLines
         var oldT = t // canvas rendering context
         fx.offsetX = -5
-        if (maxCols < 300) {
-            maxCols = 300
+        if (maxCols < 120) {
+            maxCols = 120
         }
         if (maxLines < 32) {
             maxLines = 32
