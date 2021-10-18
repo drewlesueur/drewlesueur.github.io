@@ -60,8 +60,17 @@
     <div style="background-color: red;" class=tool onclick=setColor("red")></div>
     <div style="background-color: yellow;" class=tool onclick=setColor("yellow")></div>
     <div style="background-color: blue;" class=tool onclick=setColor("blue")></div>
+    <div style="background-color: lime;" class=tool onclick=setColor("lime")></div>
     <div style="background-color: white;" class=tool onclick=setColor("white")></div>
+    <div style="background-color: magenta;" class=tool onclick=setColor("magenta")></div>
+    <div style="background-color: cyan;" class=tool onclick=setColor("cyan")></div>
     <div style="background-color: black;" class=tool onclick=setColor("black")></div>
+</div>
+<div class=toolbar>
+    <input oninput="setBrushSize(this.value)" style="width: 100%; height: 40px;" type=range min=0 max=100>
+</div>
+<div class=toolbar>
+    <input oninput="setBrushSize(this.value)" style="width: 100%; height: 40px;">
 </div>
 <div class=toolbar>
     <div class=tool onclick=toggleDark()>Light</div>
@@ -79,7 +88,7 @@ window.onerror = function(message, url, lineNumber, columnNumber, error) {
 // going to use my own zooming and translation
 // rendering will be series of shapes and lines, and text, etc
 //
-// var dpr = 3
+// var dpr = 1
 var dpr = 2
 // var dpr = 0.25
 
@@ -127,12 +136,20 @@ var canvasStyleHeight = innerWidth
 
 c.width = canvasStyleWidth * dpr
 c.height = canvasStyleHeight * dpr
+// c.width = 2048
+// c.height = 2048
+
+
 c.style.width = canvasStyleWidth + "px"
 c.style.height = canvasStyleHeight + "px"
 
 
 c2.width = canvasStyleWidth * dpr
 c2.height = canvasStyleHeight * dpr
+// c2.width = 2048
+// c2.height = 2048
+
+
 c2.style.width = canvasStyleWidth + "px"
 c2.style.height = canvasStyleHeight + "px"
 
@@ -150,12 +167,17 @@ if (t2 == null) {
 }
 // alert(t2)
 var brushSize = 20
-t2.lineWidth = 20
-t2.lineCap = "round"
 
 var isDark = false
 renderDark()
 var fx = makeFile()
+
+function setBrushSize(theBrushsize) {
+    brushSize = theBrushsize
+    t2.lineWidth = brushSize
+    t2.lineCap = "round"
+    render()
+}
 
 function renderDark() {
     var bgColor = "black"
@@ -170,7 +192,7 @@ function renderDark() {
     for (var i=0; i<toolButtons.length; i++) {
         var toolButton = toolButtons[i]
         toolButton.style.color = fgColor 
-        toolButton.style.backgroundColor = bgColor 
+        // toolButton.style.backgroundColor = bgColor 
     }
 }
 
@@ -227,7 +249,7 @@ function render() {
     t.lineWidth = 5
     // t.fillRect(fx.cursorX, fx.cursorY, 10, 10)    
     t.beginPath()
-    t.arc(fx.cursorX, fx.cursorY, 20, 0, 2*Math.PI, false)
+    t.arc(fx.cursorX, fx.cursorY, brushSize, 0, 2*Math.PI, false)
     t.stroke()
     lastRender = now          
 }
@@ -323,6 +345,7 @@ function ensureSign(sign, v) {
     return v
 }
 
+setBrushSize(20)
 setMode("move")
 /*
 A layer is a canvas tag
