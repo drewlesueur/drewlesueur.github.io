@@ -58,12 +58,20 @@
 </div>
 <div class=toolbar>
     <div style="background-color: red;" class=tool onclick=setColor("red")></div>
+    <div style="background-color: orange;" class=tool onclick=setColor("orange")></div>
     <div style="background-color: yellow;" class=tool onclick=setColor("yellow")></div>
     <div style="background-color: blue;" class=tool onclick=setColor("blue")></div>
     <div style="background-color: lime;" class=tool onclick=setColor("lime")></div>
-    <div style="background-color: white;" class=tool onclick=setColor("white")></div>
     <div style="background-color: magenta;" class=tool onclick=setColor("magenta")></div>
     <div style="background-color: cyan;" class=tool onclick=setColor("cyan")></div>
+</div>
+<div class=toolbar>
+    <div style="background-color: green;" class=tool onclick=setColor("green")></div>
+    <div style="background-color: navy;" class=tool onclick=setColor("navy")></div>
+    <div style="background-color: brown;" class=tool onclick=setColor("brown")></div>
+    <div style="background-color: pink;" class=tool onclick=setColor("pink")></div>
+    <div style="background-color: purple;" class=tool onclick=setColor("purple")></div>
+    <div style="background-color: white;" class=tool onclick=setColor("white")></div>
     <div style="background-color: black;" class=tool onclick=setColor("black")></div>
 </div>
 <div class=toolbar>
@@ -89,7 +97,7 @@ window.onerror = function(message, url, lineNumber, columnNumber, error) {
 // rendering will be series of shapes and lines, and text, etc
 //
 // var dpr = 1
-var dpr = 2
+var dpr = 0.5
 // var dpr = 0.25
 
 var moveTouchScaleX = 2
@@ -98,6 +106,8 @@ var moveTouchScaleY = 2
 // var paintTouchScaleY = 1.5
 var paintTouchScaleX = 1
 var paintTouchScaleY = 1
+// var paintTouchScaleX = 0.5
+// var paintTouchScaleY = 0.5
 
 function setColor(color) {
     t2.fillStyle = color
@@ -166,6 +176,8 @@ if (t2 == null) {
     alert("could not get canvas context")    
 }
 // alert(t2)
+// t2.translate(0.5, 0.5)
+// t2.scale(0.5, 0.5)
 var brushSize = 20
 
 var isDark = false

@@ -384,6 +384,7 @@ ontouchstart=onStart(event)
 </div>
 <div class=toolbar>
     <div class=square onclick="window.open(location.href)">dup tab</div>
+    <div class=square onclick="downloadFile()">Download</div>
     <div class=square onclick="saveWorkspace()">save workspace</div>
     <div class=square onclick="updateName()">update name</div>
     <div class=square onclick="location.href = proxyPath + '/login'">login</div>
@@ -1170,6 +1171,9 @@ function runEditorCommand(e) {
     case "s":
         // see also scriptLines
         scriptLinesWithOneLineScript(rest)
+        break
+    case "r":
+        scriptLinesWithOneLineScript(editorCommandText.value)
         break
     case "hl":
         searchText.value = getWordAtCursor().word; render();
@@ -4767,6 +4771,9 @@ function cachedSearchRegexp(str) {
     lastSearchRegexpText = str
     try {
         lastSearchRegexp = new RegExp(lastSearchRegexpText)   
+        
+        // Case insensitive
+        lastSearchRegexp = new RegExp(lastSearchRegexpText, 'i')   
     } catch (e) {
         lastSearchRegexpText = ""
         lastSearchRegexp = null 
@@ -4849,7 +4856,7 @@ function moveHomeEndAction() {
 }
 
 var overflowX = 0
-
+var isDragKeyboard = false
 var touchCount = 0
 function onStart(e) {
     touchCount = e.touches.length
@@ -5083,7 +5090,10 @@ function onStart(e) {
          //         fx.cursorColIndex = wordEndX
         var sr = fx.selectedRegions[0]
         if (sr) {
-            if (sr.startX == sr.stopX && sr.startY == sr.stopY && fx.lines[sr.startY] != "") {
+            // testing selectMode is char, meaning they didnt select in the margin
+            if (sr.startX == sr.stopX && sr.startY == sr.stopY && selectMode == "char") {
+                // New mode
+                isDragKeyboard = true
                 fx.selectedRegions = []
                 // should we return early here?
             }
@@ -5160,7 +5170,6 @@ function onStart(e) {
                 if (document.activeElement == theText) {
                     sendTerminal("\t")
                 } else {
-                    // marker lime
                     theText.focus()
                 }
                 return
@@ -6516,6 +6525,11 @@ function duplicateFile(f, cursorLineIndex, id="") {
     // when text to one file is added.
 }
 
+function downloadFile() {
+    window.open(proxyPath + "/saveload?fullpath=" + encodeURIComponent(fx.fullPath) + "&raw=1&download=1")
+    // log(proxyPath + "/saveload?fullpath=" + encodeURIComponent(fx.fullPath) + "&raw=1&download=1")
+}
+  
 // also see makeFile
 function fetchFile(fullPath, file, id="") {
     var isDir = false

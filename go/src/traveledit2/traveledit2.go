@@ -1167,6 +1167,7 @@ func main() {
 					if (newID != 0) {
 						w.Header().Set("X-ID", strconv.Itoa(newID))
 					}
+					
 					w.Write([]byte(strings.Join(fileNames, "\n")))
 					return
 				}
@@ -1196,6 +1197,12 @@ func main() {
 					newID := addFile(r.FormValue("id"), isDir, fullPath)
 					if (newID != 0) {
 						w.Header().Set("X-ID", strconv.Itoa(newID))
+					}
+					if (r.FormValue("download") == "1") {
+						parts := strings.Split(r.FormValue("fullpath"), "/")
+						theName:= parts[len(parts)-1]
+						w.Header().Set("Content-Type", `text/plain`)
+						w.Header().Set("Content-Disposition", `attachment; filename="`+theName+`"`)
 					}
 					w.Write(c)
 					return
