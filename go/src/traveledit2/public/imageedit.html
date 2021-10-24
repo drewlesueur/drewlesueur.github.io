@@ -56,6 +56,10 @@
     <div class=tool>Fill</div>
     <!-- tapping on edges will pan -->
 </div>
+<!--<div class=toolbar>
+    <div class=tool onclick=demoLine()>demo line</div>
+</div>
+-->
 <div class=toolbar>
     <div style="background-color: red;" class=tool onclick=setColor("red")></div>
     <div style="background-color: orange;" class=tool onclick=setColor("orange")></div>
@@ -75,10 +79,10 @@
     <div style="background-color: black;" class=tool onclick=setColor("black")></div>
 </div>
 <div class=toolbar>
-    <input oninput="setBrushSize(this.value)" style="width: 100%; height: 40px;" type=range min=0 max=100>
+    <input id=brushRangeEl oninput="setBrushSize(this.value)" style="width: 100%; height: 40px;" type=range min=0 max=100>
 </div>
 <div class=toolbar>
-    <input oninput="setBrushSize(this.value)" style="width: 100%; height: 40px;">
+    <input id=brushTextEl oninput="setBrushSize(this.value)" style="width: 100%; height: 40px;">
 </div>
 <div class=toolbar>
     <div class=tool onclick=toggleDark()>Light</div>
@@ -96,23 +100,24 @@ window.onerror = function(message, url, lineNumber, columnNumber, error) {
 // going to use my own zooming and translation
 // rendering will be series of shapes and lines, and text, etc
 //
-// var dpr = 1
-var dpr = 0.5
-// var dpr = 0.25
 
 var moveTouchScaleX = 2
 var moveTouchScaleY = 2
-// var paintTouchScaleX = 1.5
-// var paintTouchScaleY = 1.5
+
+// instead of solid numbers, make this a ratio?
 var paintTouchScaleX = 1
 var paintTouchScaleY = 1
-// var paintTouchScaleX = 0.5
-// var paintTouchScaleY = 0.5
+
 
 function setColor(color) {
+    brushColor = color
     t2.fillStyle = color
     t2.strokeStyle = color
+    render()
 }
+
+
+
 var mode
 var paintTimeoutMillis = 400
 function setMode(theMode) {
@@ -126,8 +131,17 @@ function setMode(theMode) {
         
         // draw a dot
         t2.beginPath()
+        // t2.arc(fx.cursorX, fx.cursorY, brushSize/2, 0, 2*Math.PI, false)
+        
         t2.arc(fx.cursorX, fx.cursorY, brushSize/2, 0, 2*Math.PI, false)
         t2.fill()
+        fx.currentShapeIndex += 1
+        fx.layers[fx.currentLayerIndex].shapes.push({
+            type: "line",
+            brushSize: brushSize,
+            brushColor: brushColor
+            points: [{x: x, y: y}]
+        })
         
     }
     render()
@@ -137,29 +151,8 @@ function setMode(theMode) {
 var canvasStyleWidth = innerWidth
 var canvasStyleHeight = innerWidth 
 
-// if (canvasStyleWidth > 375) {
-//     canvasStyleWidth = 375
-// }
-// if (canvasStyleHeight > 375) {
-//     canvasStyleHeight = 375
-// }
-
-c.width = canvasStyleWidth * dpr
-c.height = canvasStyleHeight * dpr
-// c.width = 2048
-// c.height = 2048
-
-
 c.style.width = canvasStyleWidth + "px"
 c.style.height = canvasStyleHeight + "px"
-
-
-c2.width = canvasStyleWidth * dpr
-c2.height = canvasStyleHeight * dpr
-// c2.width = 2048
-// c2.height = 2048
-
-
 c2.style.width = canvasStyleWidth + "px"
 c2.style.height = canvasStyleHeight + "px"
 
@@ -168,24 +161,21 @@ w.style.width = canvasStyleWidth + "px"
 w.style.height = (canvasStyleHeight + 100) + "px"
 w.ontouchstart = onStart
 
-var t = c.getContext("2d")
+var t
+var t2
 
-var t2 = c2.getContext("2d")
-// this can be null!
-if (t2 == null) {
-    alert("could not get canvas context")    
-}
-// alert(t2)
-// t2.translate(0.5, 0.5)
-// t2.scale(0.5, 0.5)
 var brushSize = 20
+var brushColor = "black"
 
 var isDark = false
 renderDark()
-var fx = makeFile()
+// var fx = makeFile(1024, 1024)
+var fx = makeFile(1024, 1024)
 
 function setBrushSize(theBrushsize) {
     brushSize = theBrushsize
+    brushTextEl.value = theBrushsize
+    brushRangeEl.value = theBrushsize
     t2.lineWidth = brushSize
     t2.lineCap = "round"
     render()
@@ -213,15 +203,30 @@ function toggleDark() {
     renderDark()
 }
 
-function makeFile() {
+function makeFile(width, height) {
+    c.width = width
+    c.height = height
+    c2.width = width
+    c2.height = height
+    t = c.getContext("2d")
+    if (t == null) {
+        alert("could not get canvas context for cursor")    
+    }
+    t2 = c2.getContext("2d")
+    if (t2 == null) {
+        alert("could not get canvas context for drawing")    
+    }
+    
     return {
-        width: 500,
-        height: 500,
+        width: width,
+        height: height,
         cursorX: 100,
         cursorY: 100,
         scale: 0,
         offsetX: 0,
         offsetY: 0,
+        currentLayerIndex: 0,
+        currentShapeIndex: -1,
         layers: [{
             shapes: [],
         }]
@@ -262,7 +267,13 @@ function render() {
     // t.fillRect(fx.cursorX, fx.cursorY, 10, 10)    
     t.beginPath()
     t.arc(fx.cursorX, fx.cursorY, brushSize, 0, 2*Math.PI, false)
+    // t.arc(fx.cursorX, fx.cursorY, brushSize/2, 0, 2*Math.PI, false)
     t.stroke()
+    
+    t.fillStyle = brushColor
+    t.beginPath()
+    t.arc(fx.cursorX, fx.cursorY, brushSize/2, 0, 2*Math.PI, false)
+    t.fill()
     lastRender = now          
 }
 
@@ -323,9 +334,22 @@ function onMove(e) {
     
     if (mode == "paint") {
         t2.beginPath()
-        t2.moveTo(oldCursorX, oldCursorY)
-        t2.lineTo(fx.cursorX, fx.cursorY)
+        // t2.moveTo(oldCursorX, oldCursorY)
+        // t2.lineTo(fx.cursorX, fx.cursorY)
+        
+        var x1 = Math.round(oldCursorX)
+        var x2 = Math.round(fx.cursorX)
+        var y1 = Math.round(oldCursorY)
+        var y2 = Math.round(fx.cursorY)
+        
+        t2.moveTo(x1, y1)
+        t2.lineTo(x2, y2)
         t2.stroke()
+        
+        fx.layers[fx.currentLayerIndex].shapes[fx.currentShapeIndex].push({
+            x: x2,    
+            y: y2,    
+        })
     }
     
     // fx.cursorX = fx.startCursorX + diffTouchX 
@@ -356,7 +380,11 @@ function ensureSign(sign, v) {
     if (sign > 0 && v < 0) return -v
     return v
 }
-
+function demoLine() {
+    t2.moveTo(0, 0)   
+    t2.lineTo(500, 500)   
+    t2.stroke()
+}
 setBrushSize(20)
 setMode("move")
 /*

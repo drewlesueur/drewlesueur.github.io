@@ -55,7 +55,6 @@ document.write(`
 }
 
 body.dark .toolbar div {
-    background-color: black;
     /* see renderDarkMode */
     color: rgba(255, 255, 200);
     border: 1px solid rgba(255, 255, 200);
@@ -67,7 +66,6 @@ body.dark .toolbar div.selected {
     border: 1px solid black;
 }
 body.light .toolbar div {
-    background-color: lightyellow;
     color: black;
     border: 1px solid black;
 }
@@ -307,7 +305,7 @@ ontouchstart=onStart(event)
     <div class=square onclick="osCopyText()">os copy</div>
     <div class=square onclick="osPasteText()">os paste</div>
     <div class=square onclick=reloadFile(fx)>reload</div>
-    <div id=darkModeButton class=square onclick="toggleCompactRender()">compact</div>
+    <div class=square onclick=runScript()>run script</div>
     <div class=square onclick=redo()>redo</div>
     <div class=square onclick=undo()>undo</div>
     <div class=square onclick=comment()>//</div>
@@ -377,7 +375,7 @@ ontouchstart=onStart(event)
     <div class=square onclick=doFormat()>format</div>
     <div class=square onclick="toggleSeeTabs()">see tabs</div>
     <div class=square onclick="diffFiles()">diff files</div>
-    <div class=square onclick=runScript()>run script</div>
+    <div id=darkModeButton class=square onclick="toggleCompactRender()">compact</div>
     <div class=square onclick="moveFileLeft()">move left</div>
     <div class=square onclick="moveFileRight()">move right</div>
     <div class=square onclick="stopServer()">stop server</div>
@@ -452,6 +450,12 @@ style="width:100%; height:100px;"
     <input type=Submit value=Upload>
 </form>
 <a href=/>
+<script>
+document.write(`
+<a href="`+proxyPath+`/tepublic/imageedit.html">Image Edit</a>
+<a href="`+proxyPath+`/tepublic2/">Public 2</a>
+`)
+</script>
 <div id=bottomPadding style="height: 100px;"></div>
 <div id=colorGetterEl style="width: 100px; height: 100px;"></div>
 </div>
@@ -1104,7 +1108,9 @@ function renderDarkMode() {
     updateClassForSelector("textarea", "light", "dark")
     // fontColor = "white"
     // fontColor = "rgba(100, 255, 100)"
-    fontColor = "rgba(255, 255, 200)"
+    // fontColor = "rgba(255, 255, 200)"
+    fontColor = "rgba(255, 255, 200, 1)"
+    
     lightFontColor = "rgba(255, 255, 255, 0.5)"
     veryLightFontColor = "rgba(255, 255, 255, 0.1)"
     render()
@@ -2147,8 +2153,9 @@ function copy() {
 
 function runScript() {
     var oldCopyBuffer = copyBuffer
-    copy()
-    var theScriptLines = copyBuffer
+    // copy()
+    // var theScriptLines = copyBuffer
+    var theScriptLines = getSelectedLines(fx).lines 
     // add return to the last non-empty line
     for (var i=theScriptLines.length-1; i>=0; i--) {
         if (theScriptLines[i].trim() != "") {
@@ -4362,7 +4369,9 @@ function renderInternal() {
         // t.fillStyle = "rgba(0, 255, 255, 0.15)"
         // more apparent highlight line
         if (isDark) {
-            t.fillStyle = "rgba(0, 128, 128, 0.55)"
+            // temp experiment with darker line
+            // t.fillStyle = "rgba(0, 128, 128, 0.55)"
+            t.fillStyle = "rgba(128, 128, 128, 0.55)"
         } else {
             t.fillStyle = "rgba(0, 255, 255, 0.55)"
         }
@@ -4790,7 +4799,7 @@ function cachedSearchRegexpGlobal(str) {
     }
     lastSearchRegexpGlobalText = str
     try {
-        lastSearchRegexpGlobal = new RegExp(lastSearchRegexpGlobalText, 'g')   
+        lastSearchRegexpGlobal = new RegExp(lastSearchRegexpGlobalText, 'gi')   
     } catch (e) {
         lastSearchRegexpGlobalText = ""
         lastSearchRegexpGlobal = null 
