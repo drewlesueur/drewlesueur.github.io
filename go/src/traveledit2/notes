@@ -1,4 +1,26 @@
+highlight multiple words with multiple colors!
+make it work across files
 
+
+when you paste in line, do we need to keep it selected?
+
+as files load the current cursor position jumps around
+
+Somehow 2 terminals got mixed!!!
+files[0].lines == files[1].lines
+true
+the lines point to the same thing
+$ 
+    {
+        "fullPath": "/teproxydev/terminal",
+        "ID": 279,
+        "fileMode": "terminal"
+    },
+    {
+        "fullPath": "/teproxydev/terminal",
+        "ID": 281,
+        "fileMode": "terminal"
+    },
 the word valueOf doesn't autocomplete, 
 
 bug: replacing text on first line is bugged

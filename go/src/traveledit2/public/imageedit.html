@@ -54,6 +54,7 @@
     <div class=tool>Brush</div>
     <div class=tool>Erase</div>
     <div class=tool>Fill</div>
+    <div class=tool onclick=redraw()>Redraw</div>
     <!-- tapping on edges will pan -->
 </div>
 <!--<div class=toolbar>
@@ -139,7 +140,7 @@ function setMode(theMode) {
         fx.layers[fx.currentLayerIndex].shapes.push({
             type: "line",
             brushSize: brushSize,
-            brushColor: brushColor
+            brushColor: brushColor,
             points: [{x: x, y: y}]
         })
         
@@ -346,7 +347,7 @@ function onMove(e) {
         t2.lineTo(x2, y2)
         t2.stroke()
         
-        fx.layers[fx.currentLayerIndex].shapes[fx.currentShapeIndex].push({
+        fx.layers[fx.currentLayerIndex].shapes[fx.currentShapeIndex].points.push({
             x: x2,    
             y: y2,    
         })
@@ -385,6 +386,40 @@ function demoLine() {
     t2.lineTo(500, 500)   
     t2.stroke()
 }
+
+function redraw() {
+    c2.width = c2.width
+    
+    for (var layerIndex = 0; layerIndex < fx.layers.length; layerIndex++) {
+        var layer = fx.layers[layerIndex]
+        for (var shapeIndex = 0; shapeIndex < layer.shapes.length; shapeIndex++) {
+            var shape = layer.shapes[shapeIndex]
+            // first the circle
+            var points = shape.points
+            t2.strokeStyle = shape.brushColor
+            t2.fillStyle = shape.brushColor
+            t2.lineCap = "round"
+            t2.lineWidth = shape.brushSize
+            if (shape.points.length == 1) {
+                t2.beginPath()
+                t2.arc(points[0].x, points[0].y, shape.brushSize/2, 0, 2*Math.PI, false)
+                t2.fill()
+            } else {
+                t2.beginPath()
+                t2.moveTo(points[0].x, ps)
+                for (var i=1; i<points.length; i++) {
+                    var point = points[i]
+                }
+                t2.lineTo(x2, y2)
+                t2.stroke()
+            }   
+        }    
+    }
+}
+
+
+
+
 setBrushSize(20)
 setMode("move")
 /*

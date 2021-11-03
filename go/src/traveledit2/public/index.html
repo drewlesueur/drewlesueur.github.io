@@ -412,6 +412,10 @@ ontouchstart=onStart(event)
     <input onchange="saveDiffs = saveDiffsCheckbox.checked" type=checkbox name=saveDiffsCheckbox id=saveDiffsCheckbox checked />
     save diffs
 </label>
+<label for=showFilesFlatFirstCheckbox>
+    <input onchange="showFilesFlatFirst = showFilesFlatFirstCheckbox.checked" type=checkbox name=showFilesFlatFirstCheckbox id=showFilesFlatFirstCheckbox checked />
+    flat file list
+</label>
 <br>
 <label for=serverViewCheckbox>
     <input onchange="serverViewFeature = serverViewCheckbox.checked" type=checkbox name=serverViewCheckbox id=serverViewCheckbox />
@@ -668,6 +672,7 @@ setFontVars()
 // https://vfoley.xyz/lesser-known-coding-fonts/
 // https://www.programmingfonts.org/#iosevka
 
+var showFilesFlatFirst = true
 
 var lastFile = fx
 // not using indexes so we can move files around without worrying about the indexes
@@ -989,6 +994,7 @@ function openAtCursor() {
         var basePath = parts.slice(0, -1).join("/")
         var fileName = basePath + "/" + path
     }
+    log("opening file from cursor")
     addFile(fileName)
 }
 
@@ -1138,12 +1144,14 @@ function runEditorCommand(e) {
     case "color":
         fx.color = rest
         // TODO: you could have a custom function that just sets the color
+        renderFileDropdown()
         saveWorkspace()
         break
     case "name":
         fx.name = rest
         // TODO: could you also call saveName?
         saveWorkspace()
+        renderFileDropdown()
         break
     case "copyurl":
         copyBuffer = [location.href]
@@ -3116,6 +3124,7 @@ function sendTerminal(payload) {
     // make sure we only have one of these going at a time 
     // also, binary payload?
     sendingTemrinal = true
+    log("sending with id: " + fx.ID)
     fetch(proxyPath + "/myterminalsend?id=" + fx.ID + "&payload=" + encodeURIComponent(payload), {
         cache: "no-cache"
     // }).then(r => {
@@ -3595,6 +3604,12 @@ var keyMaping = {
     "Shift": "", // we'd just send upercase letters
     "CapsLock": "",   
     "Backspace": "\b",
+    "Tab": "\t",
+    "Escape": "\x1b",
+    "ArrowUp": "\x1b[A",
+    "ArrowDown": "\x1b[B",
+    "ArrowLeft": "\x1b[D",
+    "ArrowRight": "\x1b[C",
 }
 function handleKeydown(e) {
     // TODO: this is where you could wrap or unwrap quotes, etc
@@ -3608,6 +3623,11 @@ function handleKeydown(e) {
             }
             mapped = String.fromCharCode(v)
         } else {
+            // For keyboard
+            if (e.key == "Control") {
+                ctrlDown = true
+                return
+            }
             mapped = keyMaping[e.key]
             if (typeof mapped == "undefined") {
                 mapped = e.key        
@@ -4378,6 +4398,7 @@ function renderInternal() {
         // go twice as wide as you need, for server rendering purposes
         t.fillRect(0, (fx.cursorLineIndex - fx.offsetY) * fontHeight, c.width*2, fontHeight)
     }
+    
 
     // render autocomplete word
     // the false is to see what it's like not rendering the "acWord"
@@ -4419,6 +4440,24 @@ function renderInternal() {
         minY = min(fx.cursorLineIndex, lastRenderCursorLineIndex) - fx.offsetY - 1   
         maxY = max(fx.cursorLineIndex, lastRenderCursorLineIndex) - fx.offsetY + 2    
     }
+    
+    // colors on file
+    if (fx.fileMode == "fileList") {
+        for (var y=minY; y < maxY; y++) {
+            var theLine = fx.lines[y + fx.offsetY] || ""
+            var theFileForColor = treeFilesShadow[y + fx.offsetY]
+            if (theFileForColor && theFileForColor.color) {
+                t.fillStyle = theFileForColor.color
+                var startBoxIndex = expandTabIndex(theLine, -1) - fx.offsetX
+                // t.fillText(chr, x*fontWidth, y*fontHeight)
+                // t.fillRect(startBoxIndex*fontWidth, y*fontHeight + (fontHeight/4), 2*fontWidth, fontHeight/2)
+                t.beginPath()
+                t.arc(startBoxIndex*fontWidth + (fontHeight/2), y*fontHeight + (fontHeight/2), fontHeight/3, 0, 2*Math.PI, false)
+                t.fill()
+            }
+        }
+    }
+    // t.fillText(chr, x*fontWidth, y*fontHeight)
     for (var y=minY; y < maxY; y++) {
         // show the end of the document
         // if (y + fx.offsetY >= fx.lines.length) {
@@ -5358,6 +5397,8 @@ function onStart(e) {
             
             if (fx.highlightText) {
                 nextHighlightText()    
+            } else if (searchText.value !== "") {
+                findDown()
             } else {
                 fx.cursorLineIndex += 1
                 if (fx.cursorLineIndex >= fx.lines.length) {
@@ -5451,6 +5492,8 @@ function onStart(e) {
             
             if (fx.highlightText) {
                 prevtHighlightText()    
+            } else if (searchText.value !== "") {
+                findUp()
             } else {
                 fx.cursorLineIndex -= 1
                 if (fx.cursorLineIndex < 0) {
@@ -6198,6 +6241,9 @@ function makeFile(fullPath, cursorLineIndex, contents) {
         selectedRegions: [],
         
         lastOffsetY: -1,
+        
+        // copy color from current file
+        color: window.fx ? fx.color : ''
     }
 }
 function addFileToList(file) {
@@ -6237,8 +6283,7 @@ function addFile(fullPath, preventSelect, id) {
             return
         }
     }
-    
-    var file = makeFile(fullPath, cursorLineIndex, "")
+    var file = makeFile(fullPath, cursorLineIndex, "") 
     file.ID = id
     addFileToList(file)
     if (!initialFileAdding) {
@@ -6308,7 +6353,20 @@ function renderFileDropdown() {
         button.innerText = theName.substr(0, 15)
         if (fx == file) {
             button.classList.add("selected")
-            
+        }
+        
+        if (file.color) {
+            var colorDiv = document.createElement("div")
+            colorDiv.style.width = "10px"
+            colorDiv.style.height = "10px"
+            colorDiv.style.backgroundColor = file.color
+            colorDiv.style.position = "absolute"
+            colorDiv.style.top = "2px"
+            colorDiv.style.right = "2px"
+            colorDiv.style.border = "none"
+            colorDiv.style.borderRadius = "5px"
+            button.style.position = "relative"
+            button.appendChild(colorDiv)
         }
         fileRow.appendChild(button)
         
@@ -6424,8 +6482,6 @@ function getLinesForFileList() {
     treeFiles = []
     treeFilesShadow = []
     
-    // var showFilesFlatFirst = false
-    var showFilesFlatFirst = true
     if (showFilesFlatFirst) {
         treeFilesShadow.push("initialSeparator")
         treeFiles.push("-") // blank line do you can paste on top
@@ -6504,6 +6560,8 @@ function duplicateFile(f, cursorLineIndex, id="") {
     if (f.fileMode == "terminal") {
         return
     }
+    // TODO: maybe a more efficient way,
+    // We copy all the lines here 
     var fc = JSON.parse(JSON.stringify(f))
     fc.fileToken = fileToken
     fc.uniqueID = getUniqueID()
@@ -6523,6 +6581,9 @@ function duplicateFile(f, cursorLineIndex, id="") {
     // copy everything but reference lines
     fc.lines = f.lines
     fc.undo = f.undo
+    if (window.fx) {
+        fc.color = fx.color
+    }
     addFileToList(fc)
     setCurrentFile(fc)
     if (cursorLineIndex != -1) {
