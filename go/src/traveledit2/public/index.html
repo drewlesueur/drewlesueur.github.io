@@ -317,7 +317,7 @@ ontouchstart=onStart(event)
     <div class=square onclick=addTerminalTab()>xterm</div>
     <div class=square onclick=clearLog()>clear log</div>
     <div class=square onclick=editEditorCommandText()>editor cmd</div>
-    <div class=square onclick="moveFileAllTheWayLeft()">move home</div>
+    <div class=square onclick=gotoDefinition()>goto def</div>
 </div>
 <!-- Stuff after here is after the fold -->
 <div class=toolbar>
@@ -381,7 +381,7 @@ ontouchstart=onStart(event)
     <div class=square onclick="stopServer()">stop server</div>
 </div>
 <div class=toolbar>
-    <div class=square onclick="window.open(location.href)">dup tab</div>
+    <div class=square onclick="moveFileAllTheWayLeft()">move home</div>
     <div class=square onclick="downloadFile()">Download</div>
     <div class=square onclick="saveWorkspace()">save workspace</div>
     <div class=square onclick="updateName()">update name</div>
@@ -1141,6 +1141,18 @@ function runEditorCommand(e) {
     var rest = parts.slice(1).join(" ")
     
     switch (cmd) {
+    case "ccol": // change color
+        var fromColor = parts[1]
+        var toColor = parts[2]
+        for (var i=0; i<files.length; i++) {
+            var theFile = files[i]
+            if (theFile.color == fromColor) {
+                theFile.color = toColor
+            }
+        }
+        renderFileDropdown()
+        saveWorkspace()
+        break
     case "color":
         fx.color = rest
         // TODO: you could have a custom function that just sets the color
@@ -1335,7 +1347,7 @@ var shellHelpers = [
     "grep -Rin '' --include=*.pm .",
     "grep -Rin '' --include=*.go .",
     "grep -Rin '' --include=*.php .",
-    "find . -name '**'",
+    "find . -iname '**'",
     "diff -y --width=240",
     "go test ./...",
     // a way to do `git add -p` non-interactively
@@ -2020,7 +2032,12 @@ function comment(prefix) {
             fx.fullPath.endsWith(".pl") ||
             fx.fullPath.endsWith(".env") 
         ) {
-            prefix = "#"
+            // Special case hack for sql script
+            if (fx.lines[fx.lines.length-1] == "EOD") {
+                prefix = "--"
+            } else {
+                prefix = "#"
+            }
         } else if (fx.fullPath.endsWith(".ini"))  {
             prefix = ";"
         } else {
@@ -5163,6 +5180,7 @@ function onStart(e) {
         if (!countedAsMoved && cursorType == "move") {
             if (fx.fileMode == "directory") {
                 // #filestuff
+                // openFile
                 clickItemInDirectory()
                 return
             }
@@ -5397,7 +5415,7 @@ function onStart(e) {
             
             if (fx.highlightText) {
                 nextHighlightText()    
-            } else if (searchText.value !== "") {
+            } else if (searchText.value !== "" && !fx.selectedRegions.length) {
                 findDown()
             } else {
                 fx.cursorLineIndex += 1
@@ -5492,7 +5510,7 @@ function onStart(e) {
             
             if (fx.highlightText) {
                 prevtHighlightText()    
-            } else if (searchText.value !== "") {
+            } else if (searchText.value !== "" && !fx.selectedRegions.length) {
                 findUp()
             } else {
                 fx.cursorLineIndex -= 1
@@ -5662,12 +5680,20 @@ function clickItemInDirectory() {
     } else {
         var newFullPath = prefix + "/" + addPath
     }
+    var color = fx.color
     var preventSelect = true
     if (fx.cursorColIndex != -5) {
         closeFile()
         preventSelect = false
     }
-    addFile(newFullPath, preventSelect)
+    var newFile = addFile(newFullPath, preventSelect)
+    if (newFile) {
+        // we do this because of the close, which doesn't always happen
+        newFile.color = color
+        // note, this call already happens above but we need to re-render it
+        //  because we set the color after the fact.
+        renderFileDropdown()
+    }
 }
 
 
@@ -6279,8 +6305,7 @@ function addFile(fullPath, preventSelect, id) {
     // then let it have a reference to the existing lines, like vim does.
     for (var i=0; i<files.length; i++) {
         if (files[i].fullPath == fullPath) {
-            duplicateFile(files[i], cursorLineIndex, id)
-            return
+            return duplicateFile(files[i], cursorLineIndex, id)
         }
     }
     var file = makeFile(fullPath, cursorLineIndex, "") 
@@ -6306,6 +6331,7 @@ function addFile(fullPath, preventSelect, id) {
     }).catch(e => {
         alert("Error loading file " + e)
     })
+    return file
 }
 
 function verifyLoadedMD5(f, md5String) {
@@ -6527,6 +6553,12 @@ function setCurrentFile(file) {
     if (!file) {
         return
     }
+    
+    if (fx == file) {
+        // go up a directory
+        addFile(fx.fullPath.split("/").slice(0, -1).join("/"))
+        return    
+    }
 
     // #filestuff
     // this check doesn't seem to work
@@ -6591,6 +6623,7 @@ function duplicateFile(f, cursorLineIndex, id="") {
         ensureCursorInScreen()
     }
     renderURL()
+    return fc
     // TODO: eventually, update cursor position
     // when text to one file is added.
 }
@@ -6802,6 +6835,46 @@ if (ust.has("dark")) {
     isDark = ust.get("dark") == "1"
 }
 
+
+function gotoDefinition() {
+    langServer({
+        jsonrpc: "2.0",
+        method: "textDocument/definition",
+        params: {
+            textDocument: {
+                uri: "file://" + fx.fullPath
+            },
+            position: {
+                line: fx.cursorLineIndex,
+                character: fx.cursorColIndex
+            } 
+            // workDoneToken:
+            // partialResultToken:
+        }
+    })
+}
+
+var jsonRPCID = 0
+function langServer(jsonRPC) {
+    jsonRPC.id = jsonRPCID++
+    var body = JSON.stringify(jsonRPC)
+    log(jsonRPC)
+    fetch(proxyPath + "/mylangserver",  {    
+        cache: "no-cache",
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json-rpc",
+            "Content-Length": body.length
+        },
+        body: body,
+    }).then(r => {
+        return r.json()
+    }).then(r => {
+        log(r)
+    }).catch(e => {
+        alert("error saving calling lang server: " + e)
+    })    
+}
 
 
 // make sure when selecting in the margin

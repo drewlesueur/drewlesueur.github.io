@@ -2,6 +2,7 @@ package main
 
 import "net/http"
 import "net/http/httptest"
+import "net/http/httputil"
 import "net/url"
 import "time"
 import "log"
@@ -952,7 +953,7 @@ func main() {
 				}
     		}
 			workspaceCond.Wait()
-			log.Println("done waiting")
+			// log.Println("done waiting")
 		}
 		
 		if !timedOut {
@@ -1269,6 +1270,17 @@ func main() {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(s)
 		}
+	})
+	
+	
+	
+    langServerURL, _ := url.Parse("http://localhost:12345/")
+	proxyToLangServer := &httputil.ReverseProxy{Director: func(r *http.Request) {
+		r.URL.Host = langServerURL.Host
+		r.URL.Scheme = "http"
+	}}
+	mux.HandleFunc("/mylangserver", func(w http.ResponseWriter, r *http.Request) {
+	    proxyToLangServer.ServeHTTP(w, r)
 	})
 
     var mainMux http.Handler = mux
