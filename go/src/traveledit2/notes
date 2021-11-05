@@ -1,5 +1,6 @@
+bug: potential for dangling splicedFiles.
 
-fuzzy file finder
+fuzzy file finder, ls -R
 
 make sure selected file is in view
 

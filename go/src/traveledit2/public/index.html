@@ -2652,8 +2652,8 @@ function pasteLines(copyBuffer, unselect, pasteBefore, fromTap) {
     render()
 }
 
-var cutFileIndexStart = -1
-var cutFileIndexStop = -1
+var splicedFiles = []
+
 var globalOldCopyBuffer = []
 var hasMovedSinceCut = true
 function del(preventCopy, preventDeleteWholeLine) {
@@ -2669,8 +2669,15 @@ function del(preventCopy, preventDeleteWholeLine) {
         // we use <= instead of just < because of the initial "-" at the beginning of the file list
         if (fx.fileMode == "fileList" && r.startY <= files.length && r.stopY <= files.length) {
             // we subtract 1 because of the initial "-" at the beginning
-            cutFileIndexStart = r.startY - 1
-            cutFileIndexStop = r.stopY - 1
+            var cutFileIndexStart = r.startY - 1
+            var cutFileIndexStop = r.stopY - 1
+            
+            splicedFiles = files.splice(cutFileIndexStart, (cutFileIndexStop - cutFileIndexStart)+1)
+            setLines(getLinesForFileList())
+            fx.selectedRegions = []
+            docChanged()
+            render()
+            return
         }
         
         if (r.startY == r.stopY) {
@@ -5186,21 +5193,15 @@ function onStart(e) {
             }
             // Clicking a file #clickfile
             if (fx.fileMode == "fileList") {
-                if (cutFileIndexStart != -1 && cutFileIndexStop != -1) {
-                    var subFiles = files.splice(cutFileIndexStart, (cutFileIndexStop - cutFileIndexStart)+1)
-                    log({
-                        start: cutFileIndexStart,
-                        stop: cutFileIndexStop,
-                        len: subFiles.length,
-                    })
-                    files.splice(fx.cursorLineIndex, 0, ...subFiles)
+                if (splicedFiles.length) {
+                    files.splice(fx.cursorLineIndex, 0, ...splicedFiles)
                     var prevCursorLineIndex = fx.cursorLineIndex
-                    seeFiles()
-                    seeFiles()
+                    setLines(getLinesForFileList())
                     saveWorkspace()
                     fx.cursorLineIndex = prevCursorLineIndex
                     updateCursorXY()
                     ensureCursorInScreen()
+                    splicedFiles = []
                     return    
                 }
                 var file = treeFilesShadow[fx.cursorLineIndex]
@@ -6531,8 +6532,8 @@ function seeFiles() {
         return
     }
     
-    cutFileIndexStart = -1
-    cutFileIndexStop = -1
+    splicedFiles = []
+    
     var contents = getLinesForFileList().join("\n")
     var f = makeFile("__", 0, contents)
     f.fileMode = "fileList"
