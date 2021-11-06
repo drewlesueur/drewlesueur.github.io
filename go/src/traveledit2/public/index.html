@@ -321,41 +321,6 @@ ontouchstart=onStart(event)
 </div>
 <!-- Stuff after here is after the fold -->
 <div class=toolbar>
-    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
-    <div class=longButton onclick="selectFont('Courier')">Courier</div>
-    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
-    <div class=longButton onclick="selectFont('IosevkaLucidaMedium')">Iosevka L Medium</div>
-    <div class=longButton onclick="selectFont('IosevkaLucidaSemiBold')">Iosevka L SemiBold</div>
-    <div class=longButton onclick="selectFont('IosevkaLucidaThin')">Iosevka L Thin</div>
-    <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
-    <div class=longButton onclick="selectFont('RobotoMono')">Roboto Mono</div>
-    <div class=longButton onclick="selectFont('CourierThin')">Courier Thin</div>
-    <div class=longButton onclick="selectFont('SFMonoThin')">SF Thin</div>
-    <div class=longButton onclick="selectFont('IosevkaThin')">Iosevka Thin</div>
-    <div class=longButton onclick="selectFont('Iosevka')">Iosevka</div>
-    <div class=longButton onclick="selectFont('IosevkaSlab')">Iosevka S</div>
-    <div class=longButton onclick="selectFont('XanhMono')">Xanh</div>
-    <div class=longButton onclick="selectFont('Inconsolata')">Inconsolata</div>
-    <div class=longButton onclick="selectFont('InconsolataThin')">Inconsolata Thin</div>
-    <div class=longButton onclick="selectFont('Courier New')">Courier New</div>
-    <div class=longButton onclick="selectFont('NanumGothicCoding')">Nanum GC</div>
-    <div class=longButton onclick="selectFont('GillSans')">Gill Sans</div>
-    <div class=longButton onclick="selectFont('AmericanTypewriter')">American T</div>
-</div>
-<div class=toolbar>
-    <div class=longButton onclick="fontScale = 0.9; updateFontScale()">0.9</div>
-    <div class=longButton onclick="fontScale = 1.0; updateFontScale()">1.0</div>
-    <div class=longButton onclick="fontScale = 1.1; updateFontScale()">1.1</div>
-    <div class=longButton onclick="fontScale = 1.15; updateFontScale()">1.15</div>
-    <div class=longButton onclick="fontScale = 1.2; updateFontScale()">1.2</div>
-    <div class=longButton onclick="fontScale = 1.3; updateFontScale()">1.3</div>
-    <div class=longButton onclick="fontScale = 1.4; updateFontScale()">1.4</div>
-    <div class=longButton onclick="fontScale = 1.5; updateFontScale()">1.5</div>
-    <div class=longButton onclick="fontScale = 1.6; updateFontScale()">1.6</div>
-    <div class=longButton onclick="fontScale = 1.7; updateFontScale()">1.7</div>
-    <div class=longButton onclick="fontScale = 2; updateFontScale()">2</div>
-</div>
-<div class=toolbar>
     <div class=square onclick="copyBuffer = [location.href]; osCopyText()">copy url</div>
     <div class=square onclick="copyString(fx.fullPath + ':' + (fx.cursorLineIndex + 1))">copy path</div>
     <div class=square onclick="showDiff()">show diff</div>
@@ -395,6 +360,72 @@ ontouchstart=onStart(event)
     <div class=square onclick="theText.focus()">insert</div>
     <div class=square onclick="newLine(null, false)">new line</div>
     -->
+</div>
+<div class=toolbar>
+    <select onclick="selectFont('')">
+    
+    
+    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
+    <div class=longButton onclick="selectFont('Courier')">Courier</div>
+    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
+    <div class=longButton onclick="selectFont('IosevkaLucidaMedium')">Iosevka L Medium</div>
+    <div class=longButton onclick="selectFont('IosevkaLucidaSemiBold')">Iosevka L SemiBold</div>
+    <div class=longButton onclick="selectFont('IosevkaLucidaThin')">Iosevka L Thin</div>
+    <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
+    <div class=longButton onclick="selectFont('RobotoMono')">Roboto Mono</div>
+    <div class=longButton onclick="selectFont('CourierThin')">Courier Thin</div>
+    <div class=longButton onclick="selectFont('SFMonoThin')">SF Thin</div>
+    <div class=longButton onclick="selectFont('IosevkaThin')">Iosevka Thin</div>
+    <div class=longButton onclick="selectFont('Iosevka')">Iosevka</div>
+    <div class=longButton onclick="selectFont('IosevkaSlab')">Iosevka S</div>
+    <div class=longButton onclick="selectFont('XanhMono')">Xanh</div>
+    <div class=longButton onclick="selectFont('Inconsolata')">Inconsolata</div>
+    <div class=longButton onclick="selectFont('InconsolataThin')">Inconsolata Thin</div>
+    <div class=longButton onclick="selectFont('Courier New')">Courier New</div>
+    <div class=longButton onclick="selectFont('NanumGothicCoding')">Nanum GC</div>
+    <div class=longButton onclick="selectFont('GillSans')">Gill Sans</div>
+    <div class=longButton onclick="selectFont('AmericanTypewriter')">American T</div>
+    </select>
+</div>
+<div class=toolbar>
+    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
+    <div class=longButton onclick="selectFont('Courier')">Courier</div>
+    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
+    <div class=longButton onclick="selectFont('IosevkaLucidaMedium')">Iosevka L Medium</div>
+    <div class=longButton onclick="selectFont('IosevkaLucidaSemiBold')">Iosevka L SemiBold</div>
+    <div class=longButton onclick="selectFont('IosevkaLucidaThin')">Iosevka L Thin</div>
+    <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
+    <div class=longButton onclick="selectFont('RobotoMono')">Roboto Mono</div>
+    <div class=longButton onclick="selectFont('CourierThin')">Courier Thin</div>
+    <div class=longButton onclick="selectFont('SFMonoThin')">SF Thin</div>
+    <div class=longButton onclick="selectFont('IosevkaThin')">Iosevka Thin</div>
+    <div class=longButton onclick="selectFont('Iosevka')">Iosevka</div>
+    <div class=longButton onclick="selectFont('IosevkaSlab')">Iosevka S</div>
+    <div class=longButton onclick="selectFont('XanhMono')">Xanh</div>
+    <div class=longButton onclick="selectFont('Inconsolata')">Inconsolata</div>
+    <div class=longButton onclick="selectFont('InconsolataThin')">Inconsolata Thin</div>
+    <div class=longButton onclick="selectFont('Courier New')">Courier New</div>
+    <div class=longButton onclick="selectFont('NanumGothicCoding')">Nanum GC</div>
+    <div class=longButton onclick="selectFont('GillSans')">Gill Sans</div>
+    <div class=longButton onclick="selectFont('AmericanTypewriter')">American T</div>
+</div>
+<div class=toolbar>
+    <div class=longButton onclick="fontScale = 0.4; updateFontScale()">0.4</div>
+    <div class=longButton onclick="fontScale = 0.5; updateFontScale()">0.5</div>
+    <div class=longButton onclick="fontScale = 0.6; updateFontScale()">0.6</div>
+    <div class=longButton onclick="fontScale = 0.7; updateFontScale()">0.7</div>
+    <div class=longButton onclick="fontScale = 0.8; updateFontScale()">0.8</div>
+    <div class=longButton onclick="fontScale = 0.9; updateFontScale()">0.9</div>
+    <div class=longButton onclick="fontScale = 1.0; updateFontScale()">1.0</div>
+    <div class=longButton onclick="fontScale = 1.1; updateFontScale()">1.1</div>
+    <div class=longButton onclick="fontScale = 1.15; updateFontScale()">1.15</div>
+    <div class=longButton onclick="fontScale = 1.2; updateFontScale()">1.2</div>
+    <div class=longButton onclick="fontScale = 1.3; updateFontScale()">1.3</div>
+    <div class=longButton onclick="fontScale = 1.4; updateFontScale()">1.4</div>
+    <div class=longButton onclick="fontScale = 1.5; updateFontScale()">1.5</div>
+    <div class=longButton onclick="fontScale = 1.6; updateFontScale()">1.6</div>
+    <div class=longButton onclick="fontScale = 1.7; updateFontScale()">1.7</div>
+    <div class=longButton onclick="fontScale = 2; updateFontScale()">2</div>
 </div>
 <label for=allowPollingCheckbox>
     <input onchange="allowPolling = allowPollingCheckbox.checked" type=checkbox name=allowPollingCheckbox id=allowPollingCheckbox checked />
@@ -498,7 +529,7 @@ for (var i=0; i<toolbars.length; i++) {
 }
 c.style.width = innerWidth + "px"
 c.width = innerWidth * 3    
-
+var highlightText = ""
 
 
 
@@ -1204,20 +1235,20 @@ function runEditorCommand(e) {
     case "hl":
         searchText.value = getWordAtCursor().word; render();
         break
-    case "h":
-        // if (!rest && fx.selectedRegions.length) {
-        //     rest = getSelectedLines(fx, false).lines[0]
-        // }
-        if (!rest) {
-            rest = copyBuffer[0]
-        }
-        fx.highlightText = rest;
-        saveWorkspace()
-        break
-    case "hx":
-        fx.highlightText = "";
-        saveWorkspace()
-        break
+    // case "h":
+    //     // if (!rest && fx.selectedRegions.length) {
+    //     //     rest = getSelectedLines(fx, false).lines[0]
+    //     // }
+    //     if (!rest) {
+    //         rest = copyBuffer[0]
+    //     }
+    //     fx.highlightText = rest;
+    //     saveWorkspace()
+    //     break
+    // case "hx":
+    //     fx.highlightText = "";
+    //     saveWorkspace()
+    //     break
     case "fontscale":
         fontScale = rest - 0
         updateFontScale()
@@ -1787,20 +1818,24 @@ function findDownForm(e) {
 
 
 function nextHighlightText() {
-    if (!fx.highlightText) {
+    // if (!fx.highlightText) {
+    if (!highlightText) {
         return
     }
     var prevSearchText = searchText.value
-    searchText.value = fx.highlightText
+    // searchText.value = fx.highlightText
+    searchText.value = highlightText
     findDown()
     searchText.value = prevSearchText
 }
 function prevtHighlightText() {
-    if (!fx.highlightText) {
+    // if (!fx.highlightText) {
+    if (!highlightText) {
         return
     }
     var prevSearchText = searchText.value
-    searchText.value = fx.highlightText
+    // searchText.value = fx.highlightText
+    searchText.value = highlightText
     findUp()
     searchText.value = prevSearchText
 }
@@ -3829,7 +3864,12 @@ function fillStyleIndex(f) {
       return f
   }
   return fillStyleMap[f]
-} 
+}
+
+ 
+  
+   
+     
 var mockCanvasContext = {
     commands: [],
     lastFillStyle: "black",
@@ -3842,11 +3882,7 @@ var mockCanvasContext = {
     lastX: -9999,
     lastWasString: false,
     lastWasStringIndex: -1,
-    fillRect: function(x, y, w, h) {
-      if (this.fillStyle == "rgba(255, 0, 0, 0.5)") {
-          // hack for not rendering red ghost cursor
-          return
-      }
+    checkFillStyle: function() {
       if (this.lastFillStyle != this.fillStyle) {
           this.lastFillStyle = this.fillStyle
           var fsi = fillStyleIndex(this.fillStyle)
@@ -3856,6 +3892,24 @@ var mockCanvasContext = {
               this.commands.push([2, fsi])    
           }
       }
+        
+    },
+    beginPath: function() {
+        this.commands.push(10)    
+    },
+    arc: function(x, y, startAngle, endAngle, counterClockwise) {
+        this.commands.push([11, x, y, startAngle, endAngle, counterClockwise])    
+    },
+    fill: function() {
+        this.checkFillStyle()
+        this.commands.push(12)    
+    },
+    fillRect: function(x, y, w, h) {
+      if (this.fillStyle == "rgba(255, 0, 0, 0.5)") {
+          // hack for not rendering red ghost cursor
+          return
+      }
+      this.checkFillStyle()
       this.commands.push([1, r(x), r(y), r(w), r(h)])    
     },
     fillText: function(str, x, y) {
@@ -3868,7 +3922,6 @@ var mockCanvasContext = {
           } else {
               this.commands.push([2, fsi])    
           }
-          // this.commands.push([2, (this.fillStyle)])    
       }
       if (this.lastFont != this.font) {
           this.lastWasString = false    
@@ -4114,7 +4167,6 @@ function render() {
     //     // TODO: consider not setting this every render
     //     saveButton.innerText = "run"
     // }
-    // marker aquamarine setting text
     
     if (!inEdit) {
         // TODO: an idea is to not do this in the render step at all
@@ -4546,15 +4598,18 @@ function renderInternal() {
         // Per file highlights
         var highlightStartSearch = 0
         var matchLength = 0
-        if (theLine && fx.highlightText) {
+        // if (theLine && fx.highlightText) {
+        if (theLine && highlightText) {
             // max 20 highlights per line
             for (var _i=0; _i<20; _i++) {
                 if (fx.fileMode == "directory") {
-                    var pos = theLine.toLowerCase().indexOf(fx.highlightText.toLowerCase(), highlightStartSearch)
+                    // var pos = theLine.toLowerCase().indexOf(fx.highlightText.toLowerCase(), highlightStartSearch)
+                    var pos = theLine.toLowerCase().indexOf(highlightText.toLowerCase(), highlightStartSearch)
                     if (pos == -1) {
                         break
                     }
-                    matchLength = fx.highlightText.length
+                    // matchLength = fx.highlightText.length
+                    matchLength = highlightText.length
                     highlightStartSearch = pos + matchLength
                 } else {
                     if (useRegexSearch) {
@@ -4566,26 +4621,20 @@ function renderInternal() {
                         pos = highlightStartSearch + theMatch.index  
                         highlightStartSearch = pos + matchLength 
                     } else {
-                        var pos = theLine.indexOf(fx.highlightText, highlightStartSearch)
+                        // var pos = theLine.indexOf(fx.highlightText, highlightStartSearch)
+                        var pos = theLine.indexOf(highlightText, highlightStartSearch)
                         if (pos == -1) {
                             break
                         }
-                        matchLength = fx.highlightText.length
+                        // matchLength = fx.highlightText.length
+                        matchLength = highlightText.length
                         highlightStartSearch = pos + matchLength
                     }
                 }
                 // lime
                 if (isDark) {
-                    // t.fillStyle = "blue"
-                    // t.fillStyle = "rgba(0,0,255,0.7)"
-                    // t.fillStyle = "orange"
-                    // t.strokeStyle = "magenta"
                     t.fillStyle = "deeppink"
                 } else {
-                    // t.fillStyle = "yellow"
-                    // t.fillStyle = "rgba(255,255,0,0.7)"
-                    // t.fillStyle = "orange"
-                    // t.strokeStyle = "magenta"
                     t.fillStyle = "deeppink"
                 }
                 
@@ -4884,7 +4933,7 @@ function min(a, b) {
 function max(a, b) {
     return a > b ? a : b
 }
-
+// marker seagreen
 function moveHomeEndAction() {
     var theLine = fx.lines[fx.cursorLineIndex] || ""
     switch (moveHomeEndDirection) {
@@ -4892,8 +4941,8 @@ function moveHomeEndAction() {
            // TODO: jump to markers once you add that feature?
            // make an implicit marker of where you last were?
            var oldSearchText = searchText.value
-           // searchText.value = "// mar"+"ker "
-           searchText.value = " mar"+"ker "
+           searchText.value = "// mar"+"ker "
+           // searchText.value = " mar"+"ker "
            var found = findUp()
            searchText.value = oldSearchText
            if (!found) {
@@ -4903,8 +4952,8 @@ function moveHomeEndAction() {
        case "down":
            // TODO: jump to markers
            var oldSearchText = searchText.value
-           // searchText.value = "// mar"+"ker "
-           searchText.value = " mar"+"ker "
+           searchText.value = "// mar"+"ker "
+           // searchText.value = " mar"+"ker "
            var found = findDown()
            searchText.value = oldSearchText
            if (!found) {
@@ -5414,7 +5463,8 @@ function onStart(e) {
             moveHomeEndDirection = "down"
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
             
-            if (fx.highlightText) {
+            // if (fx.highlightText) {
+            if (highlightText) {
                 nextHighlightText()    
             } else if (searchText.value !== "" && !fx.selectedRegions.length) {
                 findDown()
@@ -5509,7 +5559,8 @@ function onStart(e) {
             moveHomeEndDirection = "up"
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
             
-            if (fx.highlightText) {
+            // if (fx.highlightText) {
+            if (highlightText) {
                 prevtHighlightText()    
             } else if (searchText.value !== "" && !fx.selectedRegions.length) {
                 findUp()
@@ -5730,7 +5781,6 @@ function fuzzyMatch(fuzzyWord, word) {
 }
 var fuzzyAutocomplete = true
 
-// marker orange
 var shouldAutocompleteLine = false
 // NEW FIND WORD
 var acWord = null
@@ -5941,7 +5991,7 @@ function acWordToggle(recursive) {
     }
     acWord.toggleCount += 1
 }
-// marker orange
+
 var inACPlop = false
 function acPlop(buff) {
     if (buff[0].length > 0){
@@ -5986,7 +6036,7 @@ function acPlop(buff) {
         acWord.stopX = expandTabIndex(lastCopyBufferLine, lastCopyBufferLine.length, null, null, "nocache")
         acWord.stopXNonFuzzy = acWord.stopX
     }
-    // marker aquamarine autocomplete
+    
     if (!acWord.autocompleteLine) {
         fx.cursorColIndex = acWord.stopX
     }
@@ -6404,7 +6454,6 @@ function renderFileDropdown() {
 var treeFiles = []
 var fileTree = {}
 var treeFilesShadow = []
-// marker green
 function treeToLines(theTree, path, indent, kPrefix) {
     var theKeys = Object.keys(theTree)
     theKeys.sort()
@@ -6505,7 +6554,6 @@ function getLinesForFileList() {
            curTree = childTree 
         }
     }
-    // marker lime
     treeFiles = []
     treeFilesShadow = []
     
@@ -6764,7 +6812,7 @@ fetch(proxyPath + "/myworkspace", {
             addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), false, serverFile.ID)
         }
         fx.color = serverFile.Color
-        fx.highlightText = serverFile.HighlightText
+        // fx.highlightText = serverFile.HighlightText
     }
     initialFileAdding = false
     if (workspace.FontName) {
@@ -6814,7 +6862,7 @@ function saveWorkspace() {
             "LineNumber": f.cursorLineIndex + 1,
             "CWD": f.shellCWD,
             "Color": f.color,
-            "HighlightText": f.highlightText,
+            // "HighlightText": f.highlightText,
         })
     }
     fetch(proxyPath + "/mysaveworkspace", {    
@@ -6876,6 +6924,10 @@ function langServer(jsonRPC) {
         alert("error saving calling lang server: " + e)
     })    
 }
+
+ 	 
+
+
 
 
 // make sure when selecting in the margin

@@ -183,6 +183,15 @@ var cmds = {
         // whatever line number is
         t.fillStyle = "brown"  
     },
+    10: function() {
+        t.beginPath()
+    },
+    11: function(a) {
+        t.arc(a[0], a[1], a[2], a[3], a[4])
+    },
+    12: function() {
+        t.fill()
+    },
 }
 function render(v, file, search) {
     infoEl.innerText = `file:   ${file}\nsearch: ${search}`

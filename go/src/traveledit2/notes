@@ -1,3 +1,12 @@
+
+remove the goto line feature of search and
+make it part if editor command
+
+make a hacky gotodef
+linux job viewer?!
+server files using existing ssh connection?
+
+
 bug: potential for dangling splicedFiles.
 
 fuzzy file finder, ls -R
