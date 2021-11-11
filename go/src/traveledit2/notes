@@ -1,6 +1,5 @@
 
 do graphs
-
 fancy autocomplete in shell/ mode
 convert from cmd
 
@@ -36,7 +35,7 @@ Somehow 2 terminals got mixed!!!
 files[0].lines == files[1].lines
 true
 the lines point to the same thing
-$ 
+$
     {
         "fullPath": "/teproxydev/terminal",
         "ID": 279,

@@ -4694,19 +4694,18 @@ function renderInternal() {
 
                 var startHighlightPos = expandTabIndex(theLine, pos, y + fx.offsetY)
                 var startFillHighlight = (startHighlightPos - fx.offsetX) * fontWidth
-                var highlightLength = (expandTabIndex(theLine, pos+matchLength, y + fx.offsetY)-startHighlightPos) * fontWidth
-                    log([
-                    "hl", startFillHighlight,
-                    y * fontHeight,
-                    highlightLength,
-                    fontHeight
-                    ])
-                t.fillRect(
-                    startFillHighlight,
-                    y * fontHeight,
-                    highlightLength,
-                    fontHeight
-                )
+                var highlightLengthChars = (expandTabIndex(theLine, pos+matchLength, y + fx.offsetY)-startHighlightPos)
+                var highlightLength = highlightLengthChars * fontWidth
+                if ((y + fx.offsetY == fx.cursorLineIndex) && (startHighlightPos + highlightLengthChars == fx.cursorColIndex)) {
+                    // Don't annoy with warning when they are typing
+                } else {
+                    t.fillRect(
+                        startFillHighlight,
+                        y * fontHeight,
+                        highlightLength,
+                        fontHeight
+                    )
+                }
             }
         }
 
