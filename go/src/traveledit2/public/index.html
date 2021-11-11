@@ -1249,6 +1249,8 @@ function runEditorCommand(e) {
         break
     case "r":
         scriptLinesWithOneLineScript(editorCommandText.value)
+    case "l":
+        scriptLinesWithOneLineScript(editorCommandText.value)
         break
     case "hl":
         searchText.value = getWordAtCursor().word; render();
@@ -2337,7 +2339,9 @@ function scriptLinesWithOneLineScript(oneLineScript) {
     } else if (s.slice(0, 2) == "l ") {
         // l w w x n r - $a $b $c $d
         var parts = s.split(" - ")
-        s = `ll(x,"${parts[0].slice(2)}", "${parts.slice(1).join(" - ")}")`
+        // s = `ll(x,"${parts[0].slice(2)}", ${parts.slice(1).join(" - ")}")`
+        s = `ll(x,"${parts[0].slice(2)}", ` + "`" + parts.slice(1).join(" - ") + "`" + `)`
+        log("the script is: " + s)
     }
     var theScriptLines = [s]
     // This next part mostly copy-pasted from scriptLines function
