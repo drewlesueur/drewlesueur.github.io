@@ -158,7 +158,7 @@ opacity: 0.5;
         oninput="inputEditorCommandText()"
         onblur="blurEditorCommandText()"
     >
-    
+
     <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
 <form onsubmit="findDownForm(event)">
@@ -170,7 +170,7 @@ opacity: 0.5;
     onfocus=handleSearchFocusBefore()
     xonblur=handleBlur()
     >
-    
+
     <input class=fullWidth type=text id=searchText
         style="display: none;
         font: 16px Courier;
@@ -181,7 +181,7 @@ opacity: 0.5;
         oninput="inputSearchText()"
         onblur="blurSearchText()"
     >
-    
+
     <input id=searchTextAfter class=fullWidth type=text
     style="
     font: 8px Courier;
@@ -191,7 +191,7 @@ opacity: 0.5;
     onfocus=handleSearchFocusAfter()
     xonblur=handleBlur()
     >
-    
+
     <input class=dark type=submit style="opacity: 0.01; position: absolute; left: -999px;" value="here">
 </form>
 
@@ -296,7 +296,7 @@ ontouchstart=onStart(event)
     <div id=findDownButton class=square onclick=findDown()>find down</div>
     <div id=clearSearchButton class=square onclick=clearSearch()>clear search</div>
     <div class=square onclick=editSearch()>edit search</div>
-    
+
     <div id=saveButton class=square onclick=saveWrapper()>save</div>
     <div class=square onclick=seeFiles()>files</div>
     <div class=square onclick=closeFile()>close</div>
@@ -364,8 +364,8 @@ ontouchstart=onStart(event)
 </div>
 <div class=toolbar>
     <select onclick="selectFont('')">
-    
-    
+
+
     <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
     <div class=longButton onclick="selectFont('Courier')">Courier</div>
     <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
@@ -515,7 +515,7 @@ var t = c.getContext("2d")
 var preventRender = true
 // var saveDiffs = false
 var saveDiffs = true
-var totalViewBytesSent = 0 
+var totalViewBytesSent = 0
 var totalViewRequests = 0
 var saveEveryMS = 3000
 var lastWord = ""
@@ -526,12 +526,12 @@ var compactRender = false
 var agressiveRender = false
 
 var toolbars = document.querySelectorAll(".fullWidth")
-for (var i=0; i<toolbars.length; i++) {        
+for (var i=0; i<toolbars.length; i++) {
     var toolbar = toolbars[i]
     toolbar.style.width = innerWidth + "px"
 }
 c.style.width = innerWidth + "px"
-c.width = innerWidth * 3    
+c.width = innerWidth * 3
 var highlightText = ""
 
 
@@ -779,7 +779,7 @@ var touchScaleX = 2 // was 3 for a while, then 2 for a while
 
 var lastAction = "move" // move or type
 var lastSearchDirForSameTerm = "" // up or down or ""
-var lastSearchMatchLength = 0 
+var lastSearchMatchLength = 0
 var hasMovedSinceNewLine = false
 var inEdit = false
 var copyBuffer = []
@@ -848,7 +848,7 @@ function showDiff() {
     f3.fileMode = "file"
     f3.cursorLineIndex = 0
     addFileToList(f3)
-    
+
     // For now we don't load in the third party diff algorithm
     // var oldContents = fx.undo.lastSavedLines.join("\n")
     // var newContents = fx.lines.join("\n")
@@ -860,7 +860,7 @@ function showDiff() {
     // f4.cursorLineIndex = 0
     // addFileToList(f4)
     // setCurrentFile(f4)
-    
+
     setCurrentFile(f3)
     updateCursorXY()
     ensureCursorInScreen()
@@ -872,13 +872,13 @@ function simpleDiffOld3(aLines, bLines, showSame) {
     var bLastMatched = -1
     var ai = -1
     var bi = -1
-    
+
     // TODO: you can handle a bit better when it gets to the end for one?
     // NOTE: this is my experimenting with diff. likely not fastest or most
     // efficient. For example I don't get largest common substring.
     // max 20000 line diff
     // this has large issues, see scratch5
-    // one thing we can do to improve is another pass where we optimize this output. 
+    // one thing we can do to improve is another pass where we optimize this output.
     // or just implement the Myers diff algorithm and compare speed
     var ret = []
     lastMatched = true
@@ -889,15 +889,15 @@ function simpleDiffOld3(aLines, bLines, showSame) {
         if (ai >= aLines.length && bi >= bLines.length) {
             break
         }
-        var aLine = aLines[ai]    
+        var aLine = aLines[ai]
         for (var b=bLastMatched+1; b<=bi; b++) {
-            var bLine = bLines[b]    
+            var bLine = bLines[b]
             if (aLine != bLine) {
                 continue
             }
             if (!lastMatched) {
                // use a hash for this?
-               var trimmed = (aLine || "").trim()   
+               var trimmed = (aLine || "").trim()
                if (trimmed == "") {
                    continue
                }
@@ -927,25 +927,25 @@ function simpleDiffOld3(aLines, bLines, showSame) {
             for (var b2=bLastMatched+1; b2<b; b2++) {
                 ret.push("+" + bLines[b2])
             }
-            aLastMatched = ai    
-            bLastMatched = b  
+            aLastMatched = ai
+            bLastMatched = b
             bi = b
             if (showSame) {
                 ret.push(" " + aLines[ai])
             }
             continue outerLoop
         }
-        
-        var bLine = bLines[bi]    
+
+        var bLine = bLines[bi]
         for (var a=aLastMatched+1; a<=ai-1; a++) {
-            var aLine = aLines[a]    
+            var aLine = aLines[a]
             // if (aLine == bLine) {
             if (aLine != bLine) {
                 continue
             }
             if (!lastMatched) {
                // use a hash for this?
-               var trimmed = (aLine || "").trim()   
+               var trimmed = (aLine || "").trim()
                if (trimmed == "") {
                    continue
                }
@@ -978,18 +978,18 @@ function simpleDiffOld3(aLines, bLines, showSame) {
             if (showSame) {
                 ret.push(" " + bLines[bi])
             }
-            aLastMatched = a    
-            bLastMatched = bi  
+            aLastMatched = a
+            bLastMatched = bi
             ai = a
             continue outerLoop
         }
-        
+
         lastMatched = false
     }
     if (i == 200000) {
         alert("likely a bug with diff code")
     }
-    
+
     // any left over
     if (!showSame && (aLastMatched+1<aLines.length || bLastMatched+1<bLines.length)) {
         ret.push("@@ -" + (aLastMatched+2) + " @@")
@@ -1018,13 +1018,13 @@ function getAtCursor() {
         // log(line.charAt(i) + " " + line.charCodeAt(i))
         if (line.charCodeAt(i) <= 32) {
             break
-        }   
+        }
     }
     i += 1
     for (var j=strIndex+1; j<line.length; j++) {
         if (line.charCodeAt(j) <= 32) {
             break
-        }   
+        }
     }
     return line.slice(i, j)
 }
@@ -1034,7 +1034,7 @@ function openAtCursor() {
     if (fx.fileMode == "shell") {
         var fileName = trimPrefix(fx.shellCWD, rootLocation) + "/" + path
     } else if (fx.fileMode == "terminal") {
-        // TODO: how do we know what the cwd is? 
+        // TODO: how do we know what the cwd is?
         // isn't there a way to get the cwd of a running process?
     } else if (path.startsWith("/")) {
         var fileName = path
@@ -1058,10 +1058,10 @@ function addSpace() {
     }
     var line = fx.lines[fx.cursorLineIndex]
     updateLine(-1, line.slice(0, u(fx.cursorColIndex)) + " " + line.slice(u(fx.cursorColIndex)))
-    fx.cursorColIndex += 1 
+    fx.cursorColIndex += 1
     updateCursorXY()
     docChanged()
-    render()   
+    render()
 }
 
 function backspace() {
@@ -1070,24 +1070,24 @@ function backspace() {
     }
     var line = fx.lines[fx.cursorLineIndex]
     if (fx.cursorColIndex == 0) {
-    
+
         return
     }
     // fx.lines[fx.cursorLineIndex] = line.slice(0, u(fx.cursorColIndex) - 1) + line.slice(u(fx.cursorColIndex))
     updateLine(fx.cursorLineIndex, line.slice(0, u(fx.cursorColIndex) - 1) + line.slice(u(fx.cursorColIndex)))
-    fx.cursorColIndex = expandTabIndex(line, u(fx.cursorColIndex - 1)) 
+    fx.cursorColIndex = expandTabIndex(line, u(fx.cursorColIndex - 1))
     docChanged()
     updateCursorXY()
-    render()   
+    render()
 }
 function selectFont(fontName) {
     currentFont = fonts[fontName] || fonts["Courier"]
     if (currentFont.url) {
         var font
         if (currentFont.descriptors) {
-            font = new FontFace(fontName, "url(" + currentFont.url + ")")    
+            font = new FontFace(fontName, "url(" + currentFont.url + ")")
         } else {
-            font = new FontFace(fontName, "url(" + currentFont.url + ")", currentFont.descriptors)    
+            font = new FontFace(fontName, "url(" + currentFont.url + ")", currentFont.descriptors)
         }
         font.load().then(function(loaded){
             document.fonts.add(loaded)
@@ -1165,7 +1165,7 @@ function renderDarkMode() {
     // fontColor = "rgba(100, 255, 100)"
     // fontColor = "rgba(255, 255, 200)"
     fontColor = "rgba(255, 255, 200, 1)"
-    
+
     lightFontColor = "rgba(255, 255, 255, 0.5)"
     veryLightFontColor = "rgba(255, 255, 255, 0.1)"
     render()
@@ -1188,7 +1188,7 @@ function runEditorCommand(e) {
     }
     var cmd = parts[0]
     var rest = parts.slice(1).join(" ")
-    
+
     switch (cmd) {
     case "ccol": // change color
         var fromColor = parts[1]
@@ -1361,7 +1361,7 @@ function closeFile() {
             }
             fx.lines = getLinesForFileList()
             // TODO?: to the useUnicode stuff here and related places
-            // or maybe don't show unicode in file list? 
+            // or maybe don't show unicode in file list?
             render()
             renderFileDropdown()
             renderURL()
@@ -1413,15 +1413,15 @@ var shellHelpers = [
 
 function getDefaultCWD(f) {
     // TODO: check again the proxyPath stuff here
-    // it might be old and not used. 
+    // it might be old and not used.
     if (f.shellCWD) {
         return f.shellCWD
     }
-    
+
     if (f.fileMode == "directory") {
         return rootLocation + trimPrefix(f.fullPath, proxyPath)
     }
-    
+
     if (f.fileMode == "file") {
         var parts = trimPrefix(f.fullPath, proxyPath).split("/")
         parts = parts.slice(0, parts.length - 1)
@@ -1430,7 +1430,7 @@ function getDefaultCWD(f) {
 }
 
 function addCmdTab(id=0, cwd="", name="") {
-    // I think this /cmd isn't hit on the server 
+    // I think this /cmd isn't hit on the server
     // I think we need a special endpoint for serving files and not just /
     var file = makeFile(proxyPath + "/cmd", 0, shellHelpers.join("\n"))
     file.fileMode = "shell"
@@ -1439,7 +1439,7 @@ function addCmdTab(id=0, cwd="", name="") {
     }
     file.name = name
     if (!cwd) {
-        cwd = getDefaultCWD(fx) 
+        cwd = getDefaultCWD(fx)
     }
     file.shellCWD = cwd
     addFileToList(file, false)
@@ -1477,7 +1477,7 @@ function addExistingTerminalTab(id, name, cwd) {
     fx.cursorLineIndex = fx.lines.length - 1
     updateCursorXY()
     if (!isPollingTerminal) {
-        pollTerminals()    
+        pollTerminals()
     }
     //theText.focus()
 }
@@ -1489,7 +1489,7 @@ function normalizeFullPath(fullPath) {
     var newParts = []
     var parts = fullPath.split("/")
     for (var i=0; i<parts.length; i++) {
-        var part = parts[i]        
+        var part = parts[i]
         if (part == ".") {
             continue
         }
@@ -1517,9 +1517,9 @@ function renderURL() {
             return "__TERMINAL__:" + f.ID
         }
         return f.fullPath.slice(1) + ":" + (f.cursorLineIndex + 1)
-        
+
     }).join(",")
-    theNewPath += "?dark=" + (isDark ? "1" : "0") 
+    theNewPath += "?dark=" + (isDark ? "1" : "0")
     history.replaceState({}, "", theNewPath)
 }
 
@@ -1571,17 +1571,17 @@ function saveUndo(preventUndo) {
     //       pro: Less memory, theoretically allows more undos
     //.      con: more cpu usage calcing the diff
     //.      con: more complicated to implement
-    //.  3. make setters for any modification of the document (instead of just manual array modification) 
+    //.  3. make setters for any modification of the document (instead of just manual array modification)
     //.     in those setters we'd manually create diffs without diffing the whole document.
     //.     pro: less cpu and less memory all around
     //.     pro: would cause us to wrangle the document changes into simple functions
     //.          and we could reuse some logic for screen share
-    //.     con: also complicated to implementwould have to 
+    //.     con: also complicated to implementwould have to
     //.     con: would have to go through all changes to fx.lines and update code (that actually could be a good thing)
-    //.     con: in first 2 it might be easier to not make every single change cause an undo point 
+    //.     con: in first 2 it might be easier to not make every single change cause an undo point
     //.          for example we currently don't want every letter typed to be an undo point. we currently undo at the line level
     //.          (see calls to docChanged)
-    //. 
+    //.
     var currentContents = fx.lines.join("\n")
     if (currentContents == fx.undo.stack[fx.undo.index]) {
         return
@@ -1613,7 +1613,7 @@ function updateLineFile(file, index, value) {
     if (index == -1) {
         index = file.cursorLineIndex
     }
-    
+
     var theLine = value
     if (useUnicode) {
         theLine = new String(value)
@@ -1630,7 +1630,7 @@ function updateLine(index, value) {
 var emptyArray = []
 function getCachedGraphemes(theLine, index, file, nocache) {
     if (theLine.length == 0) {
-         return emptyArray  
+         return emptyArray
     }
     if (theLine.cachedGraphemes) {
         return theLine.cachedGraphemes
@@ -1646,7 +1646,7 @@ function getCachedGraphemes(theLine, index, file, nocache) {
         index = file.cursorLineIndex
     }
     theLine = new String(theLine) // removes tabCache
-    theLine.cachedGraphemes = graphemes 
+    theLine.cachedGraphemes = graphemes
     // try {
         if (index < file.lines.length) {
             file.lines[index] = theLine
@@ -1729,7 +1729,7 @@ function getCharClass(a) {
     if (a >= 48 && a <= 57) {
         return "num"
     }
-    return a 
+    return a
 }
 function findNextCharClass(theLine, index) {
     var currClass = getCharClass(theLine.charCodeAt(index))
@@ -1742,8 +1742,8 @@ function findNextCharClass(theLine, index) {
             }
             return i
         }
-    }  
-    return theLine.length 
+    }
+    return theLine.length
 }
 function findPrevCharClass(theLine, index) {
     var currClass = getCharClass(theLine.charCodeAt(index))
@@ -1761,7 +1761,7 @@ function findPrevCharClass(theLine, index) {
     return 0
 }
 function isWordyChar(c) {
-    return isWordy(c.charCodeAt(0))    
+    return isWordy(c.charCodeAt(0))
 }
 // check for A-Za-z0-9_
 function isWordy(a) {
@@ -1770,7 +1770,7 @@ function isWordy(a) {
         (a >= 97 && a <= 122) || // a-z
         (a >= 48 && a <= 57) ||  // 0-9
         (a == 95)            ||    // _
-        
+
         // note: I kind of don't like how we depend on fx in this func, hmm
         ((fx.fileMode == "shell" || fx.fileMode == "terminal") && a == 46) || // .
         ((fx.fileMode == "shell" || fx.fileMode == "terminal") && a == 45) // -
@@ -1780,7 +1780,7 @@ function isRegularWord(theLine) {
     // a little regex could replace this :)
     for (var cI=0; cI<theLine.length; cI++) {
        if (!isWordy(theLine.charCodeAt(cI))) {
-         return false   
+         return false
        }
     }
     return true
@@ -1830,7 +1830,7 @@ function findDownForm(e) {
     if (fx.fileMode == "directory" && document.activeElement == searchText) {
         clickItemInDirectory()
         searchText.select()
-        return   
+        return
     }
     findDown()
     return false
@@ -1870,11 +1870,11 @@ function findDown(searchDir, wrap, startTop) {
         ensureCursorInScreen()
         return
     }
-    
+
     var startY = fx.cursorLineIndex
     if (startTop) {
        startY = 0
-    } 
+    }
     if (document.activeElement != searchText && searchText.value == "") {
         if (fx.selectedRegions.length) {
             searchText.value = getSelectedLines(fx, false).lines[0]
@@ -1895,15 +1895,15 @@ function findDown(searchDir, wrap, startTop) {
         if (!startTop && i == fx.cursorLineIndex) {
             var startX = u(fx.cursorColIndex)
             if (!searchDir && lastSearchDirForSameTerm == "down") {
-                startX = u(fx.cursorColIndex + lastSearchMatchLength)   
+                startX = u(fx.cursorColIndex + lastSearchMatchLength)
             }
-            lastSearchDirForSameTerm = "down" 
+            lastSearchDirForSameTerm = "down"
             lineToSearch = lineToSearch.substr(startX)
         }
         var pos = -1
         if (false && document.activeElement == searchText) {
             pos = lineToSearch.toLowerCase().indexOf(searchText.value.toLowerCase())
-            lastSearchMatchLength = searchText.value.length 
+            lastSearchMatchLength = searchText.value.length
         } else {
             if (useRegexSearch) {
                 var theMatch = lineToSearch.match(cachedSearchRegexp(searchText.value))
@@ -1911,7 +1911,7 @@ function findDown(searchDir, wrap, startTop) {
                     pos = -1
                 } else {
                     pos = theMatch.index
-                    lastSearchMatchLength = theMatch[0].length 
+                    lastSearchMatchLength = theMatch[0].length
                 }
             } else {
                 pos = lineToSearch.indexOf(searchText.value)
@@ -1925,16 +1925,16 @@ function findDown(searchDir, wrap, startTop) {
             }
             fx.cursorLineIndex = i
             fx.cursorColIndex = expandTabIndex(originalLineToSearch, pos, i, fx)
-            
+
             updateCursorXY()
             ensureCursorInScreen()
-            
+
             render()
             return true
         }
     }
     if (wrap) {
-        findDown(searchDir, false, true)   
+        findDown(searchDir, false, true)
         return
     }
     render()
@@ -1975,7 +1975,7 @@ function findUp() {
     hasMovedSinceNewLine = true
     acWord = null
     if (searchText.value.slice(0, 1) == ":" && (searchText.value.slice(1) - 0) == searchText.value.slice(1)) {
-        fx.cursorLineIndex = searchText.value.slice(1) - 1 
+        fx.cursorLineIndex = searchText.value.slice(1) - 1
         ensureCursorInScreen()
     }
     if (searchText.value == "") {
@@ -1986,7 +1986,7 @@ function findUp() {
         }
         if (searchText.value == "") {
             // navBack()
-            prevtHighlightText() 
+            prevtHighlightText()
             return
             // searchText.value = "// mar"+"ker"
             searchText.value = " mar"+"ker"
@@ -2003,23 +2003,23 @@ function findUp() {
         var pos = -1
         if (false && document.activeElement == searchText) {
             pos = reverse(lineToSearch.toLowerCase()).indexOf(reverse(searchText.value.toLowerCase()))
-            lastSearchMatchLength = searchText.value 
+            lastSearchMatchLength = searchText.value
         } else {
             if (useRegexSearch) {
                 var theMatches = lineToSearch.matchAll(cachedSearchRegexpGlobal(searchText.value))
                 var theMatch  = null
                 for (theMatch of theMatches) {
-                    // This lets theMatch var be the last one (or none)    
+                    // This lets theMatch var be the last one (or none)
                 }
                 if (theMatch == null) {
                     pos = -1
                 } else {
                     pos = theMatch.index
-                    lastSearchMatchLength = theMatch[0].length 
+                    lastSearchMatchLength = theMatch[0].length
                 }
             } else {
                 pos = reverse(lineToSearch).indexOf(reverse(searchText.value))
-                lastSearchMatchLength = searchText.value 
+                lastSearchMatchLength = searchText.value
             }
         }
         if (pos != -1) {
@@ -2051,7 +2051,7 @@ function clearSearch() {
 
 function updateCursorXY(file) {
     if (file != fx) {
-        file = fx    
+        file = fx
     }
     cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
     cursorY = (fx.cursorLineIndex - fx.offsetY) * fontHeight
@@ -2075,17 +2075,17 @@ function dedent() {
 function comment(prefix) {
     var theLine
     if (fx.selectedRegions.length > 0) {
-        theLine = fx.lines[fx.selectedRegions[0].startY] 
+        theLine = fx.lines[fx.selectedRegions[0].startY]
     } else {
         theLine = fx.lines[fx.cursorLineIndex]
     }
-    
+
     if (!prefix) {
         if (
             fx.fullPath.endsWith(".sh") ||
             fx.fullPath.endsWith(".pm") ||
             fx.fullPath.endsWith(".pl") ||
-            fx.fullPath.endsWith(".env") 
+            fx.fullPath.endsWith(".env")
         ) {
             // Special case hack for sql script
             if (fx.lines[fx.lines.length-1] == "EOD") {
@@ -2099,7 +2099,7 @@ function comment(prefix) {
             prefix = "//"
         }
     }
-    
+
     if (theLine.trim().startsWith(prefix)) {
         stripPrefixes([prefix+" ", prefix])
     } else {
@@ -2148,7 +2148,7 @@ function stripPrefixes(prefixes) {
         for (var y=r.startY; y<=r.stopY; y++) {
             // fx.lines[y] = stripPrefixesInner(fx.lines[y], prefixes)
             updateLine(y, stripPrefixesInner(fx.lines[y], prefixes))
-            
+
         }
     } else {
         var line = fx.lines[fx.cursorLineIndex]
@@ -2183,7 +2183,7 @@ function stripPrefixesInner(line, prefixes) {
 }
 
 function copyString(s) {
-    copyBuffer = s.split("\n")    
+    copyBuffer = s.split("\n")
     copyEl.value = s
 }
 function copy() {
@@ -2212,16 +2212,16 @@ function copy() {
 
     var copyBufferString = copyBuffer.join("\n")
     copyEl.value = copyBufferString
-    
+
     // I think this is not working because it's on a touchmove event?
     // And not a simple on like onclick
     // navigator.clipboard.writeText(copyBufferString).then(function() {
-    //    alert("copied") 
+    //    alert("copied")
     // }, function(e) {
-    //    alert("not copied: " + e) 
+    //    alert("not copied: " + e)
     // })
-    
-    
+
+
     // copyEl.setSelectionRange(0, copyEl.value.length)
     // var range = document.createRange()
     // range.selectNodeContents(copyEl)
@@ -2235,13 +2235,13 @@ function runScript() {
     var oldCopyBuffer = copyBuffer
     // copy()
     // var theScriptLines = copyBuffer
-    var theScriptLines = getSelectedLines(fx).lines 
+    var theScriptLines = getSelectedLines(fx).lines
     // add return to the last non-empty line
     for (var i=theScriptLines.length-1; i>=0; i--) {
         if (theScriptLines[i].trim() != "") {
             theScriptLines[i] = "return " + theScriptLines[i]
             break
-        }            
+        }
     }
     var code = theScriptLines.join("\n")
     var f = new Function(code)
@@ -2254,9 +2254,9 @@ function runScript() {
 
 function diffFiles() {
     // second-most-recent file
-    var aLines = getSelectedLines(lastFile).lines    
-    var bLines = getSelectedLines(fx).lines    
-    
+    var aLines = getSelectedLines(lastFile).lines
+    var bLines = getSelectedLines(fx).lines
+
     var start = Date.now()
     var contents = simpleDiffOld3(aLines, bLines, false).join("\n")
     log("diff3: " + (Date.now()-start))
@@ -2264,7 +2264,7 @@ function diffFiles() {
     f3.fileMode = "file"
     f3.cursorLineIndex = 0
     addFileToList(f3)
-    
+
     // var oldContents = aLines.join("\n")
     // var newContents = bLines.join("\n")
     // var start = Date.now()
@@ -2276,7 +2276,7 @@ function diffFiles() {
     // f4.cursorLineIndex = 0
     // addFileToList(f4)
     // setCurrentFile(f4)
-    
+
     setCurrentFile(f3)
     updateCursorXY()
     ensureCursorInScreen()
@@ -2289,7 +2289,7 @@ function getSelectedLines(f, shouldDeleteSelected) {
     var oldPreventRender = preventRender
     var oldCopyBuffer = copyBuffer
     var oldFx = fx
-    
+
     // mutate
     // Setting the global fx because functions like del() and copy depend on it
     // We could instrad have extra functions that allow you to pass in
@@ -2309,17 +2309,17 @@ function getSelectedLines(f, shouldDeleteSelected) {
         }
     } else {
         // if nothing is selected, let's deal with all the lines
-        // note that we don't yet support shouldDeleteSelected here. 
+        // note that we don't yet support shouldDeleteSelected here.
         copyBuffer = fx.lines.slice() // slice here acts as a copy. Do we need a copy? doing it to be safe
         isWholeFile = true
     }
     theLines = copyBuffer
-    
+
     // restore
     copyBuffer = oldCopyBuffer
     preventRender = oldPreventRender
     fx = oldFx
-    
+
     return {
         lines: theLines,
         isWholeFile: isWholeFile,
@@ -2328,7 +2328,7 @@ function getSelectedLines(f, shouldDeleteSelected) {
 function scriptLinesWithOneLineScript(oneLineScript) {
     var oldPreventRender = preventRender
     preventRender = true
-    
+
     var _t = getSelectedLines(fx, true)
     var linesToProcess = _t.lines
     var isWholeFile = _t.isWholeFile
@@ -2351,7 +2351,7 @@ function scriptLinesWithOneLineScript(oneLineScript) {
             if (theScriptLines[i].trim() != "") {
                 theScriptLines[i] = "return " + theScriptLines[i]
                 break
-            }            
+            }
         }
         var funcBody = theScriptLines.join("\n")
         var f = function(x) {
@@ -2361,7 +2361,7 @@ function scriptLinesWithOneLineScript(oneLineScript) {
             line = f(line)
             f = new Function("x", funcBody)
         } catch (e) {
-            alert(e)  
+            alert(e)
         }
         var retLines = []
         for (var i=0; i<linesToProcess.length; i++) {
@@ -2369,39 +2369,39 @@ function scriptLinesWithOneLineScript(oneLineScript) {
             try {
                 line = f(line)
             } catch (e) {
-                alert(e)  
+                alert(e)
             }
             retLines.push(line)
-        }    
+        }
     }
     if (isWholeFile) {
-        setLines(retLines) 
+        setLines(retLines)
         docChanged()
     } else {
         pasteLines(retLines, false, false)
     }
-    
+
     preventRender = oldPreventRender
     render()
 }
 function scriptLines() {
     var oldPreventRender = preventRender
     preventRender = true
-    
+
     // second-most-recent file
     var _t = getSelectedLines(lastFile, true)
     var linesToProcess = _t.lines
     var isWholeFile = _t.isWholeFile
-    
+
     var theScriptLines = getSelectedLines(fx, false).lines
-    
+
     if (theScriptLines.length) {
         // add return to the last non-empty line
         for (var i=theScriptLines.length-1; i>=0; i--) {
             if (theScriptLines[i].trim() != "") {
                 theScriptLines[i] = "return " + theScriptLines[i]
                 break
-            }            
+            }
         }
         var funcBody = theScriptLines.join("\n")
         var f = function(x) {
@@ -2411,7 +2411,7 @@ function scriptLines() {
             line = f(line)
             f = new Function("x", funcBody)
         } catch (e) {
-            alert(e)  
+            alert(e)
         }
         var retLines = []
         for (var i=0; i<linesToProcess.length; i++) {
@@ -2419,19 +2419,19 @@ function scriptLines() {
             try {
                 line = f(line)
             } catch (e) {
-                alert(e)  
+                alert(e)
             }
             retLines.push(line)
-        }    
+        }
     }
     setCurrentFile(lastFile) // second-most-recent file
     if (isWholeFile) {
-        setLines(retLines) 
+        setLines(retLines)
         docChanged()
     } else {
         pasteLines(retLines, false, false)
     }
-    
+
     preventRender = oldPreventRender
     render()
 }
@@ -2440,12 +2440,12 @@ function scriptLines() {
 
 function regexer(r) {
     return function(c, line, index) {
-       return r.test(c)    
+       return r.test(c)
     }
 }
 function notRegexer(r) {
     return function(c, line, index) {
-       return (line.length == index) || !r.test(c)    
+       return (line.length == index) || !r.test(c)
     }
 }
 function ll(line, script, replacement) {
@@ -2460,13 +2460,13 @@ function ll(line, script, replacement) {
     matchVars = "abcdefghijklmnoqrs"
     var findCurrentOrNext = function(capture, rs, re, process) {
         var start = -1
-        
+
         // need to go past the end, this <=
         for (index = index; index <= line.length; index++) {
             if (start == -1) {
                 // you could do fewer checks if you manage more state
                 if (rs(line[index], line, index) && (index == 0 || !rs(line[index-1], line, index))) {
-                    start = index    
+                    start = index
                 }
             } else {
                 if (re(line[index], line, index)) {
@@ -2474,11 +2474,11 @@ function ll(line, script, replacement) {
                     if (!capture) {
                         break
                     }
-                    var v = line.slice(start, index) 
+                    var v = line.slice(start, index)
                     if (process) {
-                       v = process(v)    
+                       v = process(v)
                     }
-                    vars[matchVars[matchIndex]] = v 
+                    vars[matchVars[matchIndex]] = v
                     varsArray.push(v)
                     matchIndex++
                     break
@@ -2508,20 +2508,20 @@ function ll(line, script, replacement) {
               if (index == line.length) {
                   return true
               }
-              return false     
+              return false
             })
             break
         // you could use closures to things like capture strings with escaping?
         }
     }
     if (typeof replacement ==  "function") {
-        return replacement.apply(null, varsArray)    
+        return replacement.apply(null, varsArray)
     } else {
         return replacement.replace(/\$[a-z\$]/g, function(match) {
-            return vars[match[1]]      
-        }) 
+            return vars[match[1]]
+        })
     }
-    
+
 }
 /*
 r = ll(
@@ -2539,19 +2539,19 @@ r
 NaN
 303
 
-number is -34.2 and 400.123 === forever young 
+number is -34.2 and 400.123 === forever young
 $b is $a and $c === $d
-number is -34.2 and 400.123 === forever young 
+number is -34.2 and 400.123 === forever young
 */
 
 
 function setCanvasHeight(h) {
     canvasHeight = h
-    
+
     // these 2 lines are new
     c.height = canvasHeight
     c.style.height = (canvasHeight/3)+"px"
-     
+
     maxLines = Math.floor(canvasHeight / fontHeight)
 }
 function setCanvasHeightAccordingly() {
@@ -2560,7 +2560,7 @@ function setCanvasHeightAccordingly() {
         var statusElHeight = 200
         statusEl.style.height = statusElHeight + "px"
         logEl.style.height = statusElHeight + "px"
-        heightReduction = statusElHeight * 3       
+        heightReduction = statusElHeight * 3
     }
     if (document.activeElement == theText || document.activeElement == searchText) {
         if (fx.fileMode == "terminal") {
@@ -2570,11 +2570,11 @@ function setCanvasHeightAccordingly() {
         }
     } else {
        if (fx && fx.fileMode == "shell") {
-           setCanvasHeight(canvasHeightShell - heightReduction)   
+           setCanvasHeight(canvasHeightShell - heightReduction)
        } else if (fx && fx.fileMode == "terminal") {
-           setCanvasHeight(canvasHeightTerminal - heightReduction)   
+           setCanvasHeight(canvasHeightTerminal - heightReduction)
        } else {
-           setCanvasHeight(canvasHeightFull - heightReduction)   
+           setCanvasHeight(canvasHeightFull - heightReduction)
        }
     }
     render()
@@ -2604,15 +2604,15 @@ function readySameCommitAsBefore() {
     runQuickShellCommand("git log -1", function(err, result) {
         if (err) {
             return
-        }    
+        }
         // commit 7567b8aed34738da36b23d67b3053f3b6a30e13e
         // Author: Drew LeSueur <drewalex@gmail.com>
         // Date:   Mon Oct 4 19:24:54 2021 -0700
-        // 
+        //
         //     remove navBack and navForward features, wasnt using them
-        
+
         if (result.indexOf("\r") != -1) {
-            alert("you got cr!")    
+            alert("you got cr!")
         }
         var lines = result.split("\n")
         if (lines.length < 5) {
@@ -2622,7 +2622,7 @@ function readySameCommitAsBefore() {
         var author = lines[1].substr("Author:".length).trim()
         var message = lines[4].trim()
         insertText(["git commit -m '"+bashEscapeSingleQuote(message)+"' --author '"+bashEscapeSingleQuote(author)+"'"], 0, 15)
-        
+
     })
 }
 
@@ -2668,7 +2668,7 @@ function pasteLines(copyBuffer, unselect, pasteBefore, fromTap) {
                 copyBuffer[0] +
                 fx.lines[fx.cursorLineIndex].slice(u(fx.cursorColIndex))
             )
-            
+
             // #alternateTap
             if (!unselect) {
                 var theLine = fx.lines[fx.cursorLineIndex] || ""
@@ -2691,7 +2691,7 @@ function pasteLines(copyBuffer, unselect, pasteBefore, fromTap) {
             // fx.lines.splice(fx.cursorLineIndex+1, 0, ...copyBuffer.slice(1))
             lastLine = copyBuffer[copyBuffer.length-1] + line.slice(u(fx.cursorColIndex))
             fx.lines.splice(fx.cursorLineIndex+1, 0, ...copyBuffer.slice(1, -1), lastLine)
-            
+
             // #alternateTap
             if (!unselect) {
                 var lastCopyBufferLine = copyBuffer[copyBuffer.length - 1]
@@ -2716,19 +2716,19 @@ var hasMovedSinceCut = true
 function del(preventCopy, preventDeleteWholeLine) {
     globalOldCopyBuffer = copyBuffer
     hasMovedSinceCut = false
-    
-    
+
+
     if (fx.selectedRegions.length>0) {
         var r = fx.selectedRegions[0]
-        
+
         // kind of a hacky way to allow moving around
-        // of files in the file list 
+        // of files in the file list
         // we use <= instead of just < because of the initial "-" at the beginning of the file list
         if (fx.fileMode == "fileList" && r.startY <= files.length && r.stopY <= files.length) {
             // we subtract 1 because of the initial "-" at the beginning
             var cutFileIndexStart = r.startY - 1
             var cutFileIndexStop = r.stopY - 1
-            
+
             splicedFiles = files.splice(cutFileIndexStart, (cutFileIndexStop - cutFileIndexStart)+1)
             setLines(getLinesForFileList())
             fx.selectedRegions = []
@@ -2736,7 +2736,7 @@ function del(preventCopy, preventDeleteWholeLine) {
             render()
             return
         }
-        
+
         if (r.startY == r.stopY) {
             if (!preventDeleteWholeLine && r.startX == 0 && unExpandTabIndex(fx.lines[r.startY], r.stopX, r.startY) == fx.lines[r.startY].length) {
                 selectMode = "line"
@@ -2802,7 +2802,7 @@ function del(preventCopy, preventDeleteWholeLine) {
         }
         fx.cursorLineIndex = r.startY
         fx.cursorColIndex = r.startX
-        
+
         // if full lines then move cursor up once to paste
         if (fullLines) {
             fx.cursorColIndex = -5
@@ -2854,7 +2854,7 @@ function insertLine(closeCurly, oMode) {
     var prevChar = theLine[u(fx.cursorColIndex - 1)]
     var nextChar = theLine[u(fx.cursorColIndex)]
     var strIndex = theText.selectionStart
-    
+
     // if they are at the beginning, or there is an auto-closer before us
     // then we don't want oMode
     // otherwise oMode is like typing o in vim
@@ -2973,7 +2973,7 @@ function runShellCommand(line) {
             ])
             paste(true)
             fx.cursorLineIndex = fx.lines.length - 2
-            
+
             fx.cursorColIndex = 0
             updateCursorXY()
             ensureCursorInScreen()
@@ -2996,7 +2996,7 @@ function runShellCommand(line) {
             // second to last item is cwd
             myFx.shellCWD = copyBuffer[copyBuffer.length - 2]
             // let's restyle the pwd after we grab it
-            
+
             // TODO: maybe come up with something more elegant than this paste dance
             copyBuffer[copyBuffer.length - 2] = myFx.shellCWD
                 .split("/")
@@ -3052,8 +3052,8 @@ function pollTerminals() {
         // log("result: " + JSON.stringify(r, "", "    "))
         for (var id in r) {
             var termInfo = r[id]
-            var file = files.find(f => f.ID == id)    
-            var lineLengthBeforeChange = file.lines.length 
+            var file = files.find(f => f.ID == id)
+            var lineLengthBeforeChange = file.lines.length
             if (!file) {
                 // TODO: this can happen if we get the response for
                 // the poll before we even have the ID
@@ -3068,7 +3068,7 @@ function pollTerminals() {
             var strToProcess = atob(termInfo.Base64)
             // simple parsing for now
             // log("term"+JSON.stringify(strToProcess))
-            
+
             // TODO: what if the chunk we get ends on a control character.
             // Maybe we need to preserve the parseState to the file object.
             var parseState = "literal"
@@ -3086,7 +3086,7 @@ function pollTerminals() {
                             // file.lines.push("")
                             // do nothing for now
                         } else if (strToProcess[i] == "\b") {
-                            // copied from another part of this code // == 8    
+                            // copied from another part of this code // == 8
                             var theLine = file.lines[file.cursorLineIndex]
                             if (theLine.length == 0) {
                                 file.lines.splice(file.cursorLineIndex, 1)
@@ -3100,7 +3100,7 @@ function pollTerminals() {
                             } else {
                                 // file.lines[file.lines.length-1] = theLine.slice(0, -1)
                                 updateLineFile(file, file.lines.length-1, theLine.slice(0, -1))
-                            } 
+                            }
                         } else if (strToProcess[i] == "\x1b") { // escape
                             parseState = "ESC"
                         } else if (strToProcess[i] == "\x07") { // bell
@@ -3110,7 +3110,7 @@ function pollTerminals() {
                             // file.lines[file.lines.length-1] += strToProcess[i]
                             updateLineFile(file, file.lines.length-1, file.lines[file.lines.length-1] + strToProcess[i])
                         }
-                        break;    
+                        break;
                     case "ESC":
                         switch (theChr) {
                             case "[":
@@ -3119,40 +3119,40 @@ function pollTerminals() {
                                 break;
                             default:
                                 parseState = "literal" // for now
-                            
+
                         }
                         break;
                     case "CSI":
                         switch (theChr) {
                             case "0":
-                                controlValues[controlValues.length-1] += theChr 
+                                controlValues[controlValues.length-1] += theChr
                                 break;
                             case "1":
-                                controlValues[controlValues.length-1] += theChr 
+                                controlValues[controlValues.length-1] += theChr
                                 break;
                             case "2":
-                                controlValues[controlValues.length-1] += theChr 
+                                controlValues[controlValues.length-1] += theChr
                                 break;
                             case "3":
-                                controlValues[controlValues.length-1] += theChr 
+                                controlValues[controlValues.length-1] += theChr
                                 break;
                             case "4":
-                                controlValues[controlValues.length-1] += theChr 
+                                controlValues[controlValues.length-1] += theChr
                                 break;
                             case "5":
-                                controlValues[controlValues.length-1] += theChr 
+                                controlValues[controlValues.length-1] += theChr
                                 break;
                             case "6":
-                                controlValues[controlValues.length-1] += theChr 
+                                controlValues[controlValues.length-1] += theChr
                                 break;
                             case "7":
-                                controlValues[controlValues.length-1] += theChr 
+                                controlValues[controlValues.length-1] += theChr
                                 break;
                             case "8":
-                                controlValues[controlValues.length-1] += theChr 
+                                controlValues[controlValues.length-1] += theChr
                                 break;
                             case "9":
-                                controlValues[controlValues.length-1] += theChr 
+                                controlValues[controlValues.length-1] += theChr
                                 break;
                             case ";":
                                 controlValues.push("")
@@ -3167,14 +3167,14 @@ function pollTerminals() {
                                 // uncomment to debug
                                 // file.lines[file.lines.length - 1] += " <ESC[" + controlValues.join(";") + theChr + "> "
                                 // updateLineFile(file, file.lines.length - 1, file.lines[file.lines.length - 1] + " <ESC[" + controlValues.join(";") + theChr + "> ")
-                                
+
                                 parseState = "literal" // for now
-                            
+
                         }
                         break;
                 }
             }
-            
+
             // don't move the cursor if they are looking up higher in the file
             if (file.cursorLineIndex >= (lineLengthBeforeChange - 1)) {
                 file.cursorLineIndex = file.lines.length - 1
@@ -3202,7 +3202,7 @@ function sendTerminal(payload) {
         return
     }
     // big TODO (#todoterminal)...  serialize, consider debounce.
-    // make sure we only have one of these going at a time 
+    // make sure we only have one of these going at a time
     // also, binary payload?
     sendingTemrinal = true
     log("sending with id: " + fx.ID)
@@ -3232,7 +3232,7 @@ function openTerminal() {
         return
     }
     if (!isPollingTerminal) {
-        pollTerminals()    
+        pollTerminals()
     }
     var myFx = fx // in case the scope changes
     fetch(proxyPath + "/myterminalopen?cwd="+encodeURIComponent(fx.shellCWD), {
@@ -3299,32 +3299,32 @@ function toggleTabStop() {
     switch (globalTabStop) {
         case 2:
             globalTabStop = 4
-            break;    
+            break;
         case 4:
             globalTabStop = 8
-            break;    
+            break;
         case 8:
             globalTabStop = 16
-            break;    
+            break;
         case 16:
             globalTabStop = 32
-            break;    
+            break;
         case 32:
             globalTabStop = 2
-            break;    
+            break;
     }
-    toggleTabStopButton.innerText = globalTabStop + " tabs" 
+    toggleTabStopButton.innerText = globalTabStop + " tabs"
     render()
 }
 var shouldSeeTabs = false
 function toggleSeeTabs() {
     shouldSeeTabs = !shouldSeeTabs
-    render()    
+    render()
 }
 
 var eqCount = 0
 function eq(a, b, message) {
-    eqCount++    
+    eqCount++
     if (a != b) {
         alert("unequal at number " + eqCount + ".\ngot: " + b + "\nwant: " + a + "\nmessage: " + message )
         window.close()
@@ -3339,7 +3339,7 @@ function unExpandTabIndexNoCache(theLine, start) {
 // go from graphical index to string index, at graphical index
 function unExpandTabIndex(theLine, start, index, file, nocache) {
     var tabStop = globalTabStop
-    
+
     if (useUnicode) {
         var actualStringIndex = 0
         var expandedIndex = 0
@@ -3358,24 +3358,24 @@ function unExpandTabIndex(theLine, start, index, file, nocache) {
             // ab••••••y
             var grapheme = expandedLine[i]
             if (grapheme == "\t") {
-                // newExpandedIndex = expandedIndex + (tabStop - ((expandedIndex) % tabStop)) + 1   
-                newExpandedIndex = expandedIndex + (tabStop - ((expandedIndex) % tabStop))   
+                // newExpandedIndex = expandedIndex + (tabStop - ((expandedIndex) % tabStop)) + 1
+                newExpandedIndex = expandedIndex + (tabStop - ((expandedIndex) % tabStop))
                 newActualStringIndex = actualStringIndex + 1
             } else {
                 newExpandedIndex = expandedIndex + 1
                 newActualStringIndex = actualStringIndex + grapheme.length
             }
             if (newExpandedIndex > start) {
-                return actualStringIndex    
+                return actualStringIndex
             }
             expandedIndex = newExpandedIndex
             actualStringIndex = newActualStringIndex
             i++
         }
-        
+
         return newActualStringIndex
     }
-    
+
     var lastTabPos = -1
     var netSpacesAdded = 0
     var expandedLineLength = 0
@@ -3420,14 +3420,14 @@ function expandTabIndex(theLine, start, index, file, nocache) {
         var err = new Error()
         log(err.stack)
     }
-    
+
     if (start == -1) {
         start = theLine.length
     } else {
         theLine = theLine.slice(0, start)
     }
     var tabStop = globalTabStop
-    
+
     if (useUnicode) {
         var actualStringIndex = 0
         var expandedIndex = 0
@@ -3439,7 +3439,7 @@ function expandTabIndex(theLine, start, index, file, nocache) {
             expandedLineLength = expandedLine.length
         } else {
             if (start == 0) {
-                expandedLineLength = 0   
+                expandedLineLength = 0
             } else {
                 var actualLength = 0
                 for (var j=0; j<expandedLine.length;j++) {
@@ -3463,7 +3463,7 @@ function expandTabIndex(theLine, start, index, file, nocache) {
             // ab••y
             var grapheme = expandedLine[i]
             if (grapheme == "\t") {
-                newExpandedIndex = expandedIndex + (tabStop - ((expandedIndex) % tabStop))   
+                newExpandedIndex = expandedIndex + (tabStop - ((expandedIndex) % tabStop))
                 newActualStringIndex = actualStringIndex + 1
             } else {
                 newExpandedIndex = expandedIndex + 1
@@ -3475,9 +3475,9 @@ function expandTabIndex(theLine, start, index, file, nocache) {
         }
         return expandedIndex
     }
-    
-    
-    
+
+
+
     var expandedLineLength = 0
     var lastTabPos = -1
     var netSpacesAdded = 0
@@ -3551,14 +3551,14 @@ function handleBlur() {
     //topPadding.style.height = "100px"
     //window.scrollTo(0, 0)
     //setTimeout(() => {window.scrollTo(0,100)}, 100)
-    
+
     // handle the case where when you collapse the keyboard on iPad
     // it triggers a blur event, but it's still the activeElement
     if (document.activeElement == theText) {
         theText.blur()
         return
     }
-    
+
     if (dirtyInput) {
         saveUndo()
         dirtyInput = false
@@ -3621,7 +3621,7 @@ function save() {
             break
         }
         fx.savingVersion = fx.version
-        var toSave = fx.lines.join("\n") 
+        var toSave = fx.lines.join("\n")
         var toSaveHash = md5(toSave)
         var fetchPromise
         if (saveDiffs) {
@@ -3683,7 +3683,7 @@ var ctrlDown = false
 var keyMaping = {
     "Enter": "\r", // need to include \n too?
     "Shift": "", // we'd just send upercase letters
-    "CapsLock": "",   
+    "CapsLock": "",
     "Backspace": "\b",
     "Tab": "\t",
     "Escape": "\x1b",
@@ -3711,21 +3711,21 @@ function handleKeydown(e) {
             }
             mapped = keyMaping[e.key]
             if (typeof mapped == "undefined") {
-                mapped = e.key        
+                mapped = e.key
             }
         }
-        
+
         if (mapped === "") {
             return
         }
         sendTerminal(mapped)
-        
+
         ctrlDown = false
         e.stopPropagation()
         e.preventDefault()
         return false
     }
-    
+
     wasWasDelete = wasDelete
     wasDelete = e.keyCode == 8
     // 8 means backspace
@@ -3734,7 +3734,7 @@ function handleKeydown(e) {
         var theLine = fx.lines[fx.cursorLineIndex]
 
         fx.lines.splice(fx.cursorLineIndex, 1)
-        
+
         fx.cursorLineIndex -= 1
         var prevLine = fx.lines[fx.cursorLineIndex]
         // fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex] + theLine
@@ -3748,9 +3748,9 @@ function handleKeydown(e) {
         setSelectionRangeForText(prevLine.length, prevLine.length)
         return true // could be false too?
     }
-    
+
     if (document.activeElement == theText && fx.selectedRegions.length) {
-        e.preventDefault()    
+        e.preventDefault()
         var closer = closingMap[e.key]
         if (!closer) {
             return false
@@ -3761,18 +3761,18 @@ function handleKeydown(e) {
         }
         var selectedRegion = JSON.parse(JSON.stringify(fx.selectedRegions[0]))
         // for now only deal with singe line
-        var oldCopyBuffer = copyBuffer 
-        
+        var oldCopyBuffer = copyBuffer
+
         del(false, true)
         var part = copyBuffer[0]
         if (!part) {
             return false
         }
         if (part.slice(0, 1) == e.key && part.slice(-1) == closer) {
-            copyBuffer = [part.slice(1,-1)]    
+            copyBuffer = [part.slice(1,-1)]
             selectedRegion.stopX -= 2
         } else {
-            copyBuffer = [e.key + part + closer]    
+            copyBuffer = [e.key + part + closer]
             selectedRegion.stopX += 2
         }
         paste()
@@ -3807,8 +3807,8 @@ function saveLine() {
     var theLine = updateLine(-1, theText.value)
     // fx.cursorColIndex = expandTabIndex(theText.value, theText.selectionStart)
     fx.cursorColIndex = expandTabIndex(theLine, theText.selectionStart)
-    
-    
+
+
     // Note: handle newline portion too.
 
     // doing for to be able to break
@@ -3821,7 +3821,7 @@ function saveLine() {
             if (lastTyped == "'" && secondLastTyped != " " && secondLastTyped != "" && secondLastTyped != ",") {
                 break
             }
-            
+
             if (lastTyped == "<" && theText.value.substring(0, theText.selectionStart - 1).trim() != "") {
                 break
             }
@@ -3830,7 +3830,7 @@ function saveLine() {
             if (mainClosers.indexOf(lastTyped) != -1 && nextChar != "" && nextChar != " " && nextChar != "," && mainClosersEnd.indexOf(nextChar) == -1) {
                 break
             }
-            // renderTheText sets theText.value 
+            // renderTheText sets theText.value
             // theText.value =
             renderTheText(
                 theText.value.slice(0, theText.selectionStart) +
@@ -3888,10 +3888,10 @@ function fillStyleIndex(f) {
   return fillStyleMap[f]
 }
 
- 
-  
-   
-     
+
+
+
+
 var mockCanvasContext = {
     commands: [],
     lastFillStyle: "black",
@@ -3909,22 +3909,22 @@ var mockCanvasContext = {
           this.lastFillStyle = this.fillStyle
           var fsi = fillStyleIndex(this.fillStyle)
           if (fsi <= 2) {
-              this.commands.push(fsi + 7)    
+              this.commands.push(fsi + 7)
           } else {
-              this.commands.push([2, fsi])    
+              this.commands.push([2, fsi])
           }
       }
-        
+
     },
     beginPath: function() {
-        this.commands.push(10)    
+        this.commands.push(10)
     },
     arc: function(x, y, startAngle, endAngle, counterClockwise) {
-        this.commands.push([11, x, y, startAngle, endAngle, counterClockwise])    
+        this.commands.push([11, x, y, startAngle, endAngle, counterClockwise])
     },
     fill: function() {
         this.checkFillStyle()
-        this.commands.push(12)    
+        this.commands.push(12)
     },
     fillRect: function(x, y, w, h) {
       if (this.fillStyle == "rgba(255, 0, 0, 0.5)") {
@@ -3932,34 +3932,34 @@ var mockCanvasContext = {
           return
       }
       this.checkFillStyle()
-      this.commands.push([1, r(x), r(y), r(w), r(h)])    
+      this.commands.push([1, r(x), r(y), r(w), r(h)])
     },
     fillText: function(str, x, y) {
       if (this.lastFillStyle != this.fillStyle)  {
-          this.lastWasString = false    
+          this.lastWasString = false
           this.lastFillStyle = this.fillStyle
           var fsi = fillStyleIndex(this.fillStyle)
           if (fsi <= 2) {
-              this.commands.push(fsi + 7)    
+              this.commands.push(fsi + 7)
           } else {
-              this.commands.push([2, fsi])    
+              this.commands.push([2, fsi])
           }
       }
       if (this.lastFont != this.font) {
-          this.lastWasString = false    
+          this.lastWasString = false
           this.lastFont = this.font
-          this.commands.push([3, this.font])    
+          this.commands.push([3, this.font])
       }
       if (this.lastTextBaseline != this.textBaseline) {
-          this.lastWasString = false    
+          this.lastWasString = false
           this.lastTextBaseline = this.textBaseline
-          this.commands.push([4, this.textBaseline])    
+          this.commands.push([4, this.textBaseline])
       }
       if (rH(y) == this.lastY) {
           if (this.lastWasString) {
               if ((rW(x) - this.lastX) == 1) {
                 // you really only care about isNumeric for the first one after?
-                // so you could do one more optimization. 
+                // so you could do one more optimization.
                 if (!isNumeric(str)) {
                     this.commands[this.lastWasStringIndex] += (str)
                 } else {
@@ -3968,23 +3968,23 @@ var mockCanvasContext = {
               } else {
                 this.commands[this.lastWasStringIndex] += (" " + str + rW(x))
               }
-              this.lastX = rW(x)    
+              this.lastX = rW(x)
               return
           }
           this.commands.push(str + rW(x))
-          this.lastWasString = true    
-          this.lastWasStringIndex = this.commands.length - 1    
-          // this.commands.push([str + r(x)])    
-          // this.commands.push([str, r(x)])    
-          // this.commands.push([0, str, r(x)])    
+          this.lastWasString = true
+          this.lastWasStringIndex = this.commands.length - 1
+          // this.commands.push([str + r(x)])
+          // this.commands.push([str, r(x)])
+          // this.commands.push([0, str, r(x)])
       } else {
-          this.lastWasString = false    
+          this.lastWasString = false
           // this.commands.push([str+r(x), r(y)])
           this.commands.push([str, rW(x), rH(y)])
           // this.commands.push([0, str, r(x), r(y)])
-          this.lastY = rH(y)    
+          this.lastY = rH(y)
       }
-      this.lastX = rW(x)    
+      this.lastX = rW(x)
     },
 }
 // var serverViewFeature = true
@@ -4000,7 +4000,7 @@ function sendViewToServer() {
    //    use some sort of compression, but each screen is basically the whole current frame
    //    pro: super simple to implement
    //    con: sending the whole screen every change is heavy.
-   // 2. like option 1 but have 3 layers - 
+   // 2. like option 1 but have 3 layers -
    //      current line,
    //     everything but the current line,
    //     the cursor position
@@ -4020,7 +4020,7 @@ function sendViewToServer() {
    //    con: having to not miss any messages on the client.
    //    con: how to handle when screenshare clients refresh page?
    //         would server have to keep track of document state?
-   //         ah, maybe every few saves the server has to resnapshot the whole document? 
+   //         ah, maybe every few saves the server has to resnapshot the whole document?
    //         then diffs would be from most recent server snapshot
    //         there's a lot I haven't thought through with this option.
    // 5. like option 3 but just send the diff of the simple rendered screen.
@@ -4031,7 +4031,7 @@ function sendViewToServer() {
    //    pro: still only dealing with current screen
    //    con: not as fluid as a more advanced solution
    // I am starting to like option 5
-   // 6. thinking more about 4. 
+   // 6. thinking more about 4.
    if (sendingViewToServer) {
        shouldSendViewToServer = true
        return
@@ -4041,14 +4041,14 @@ function sendViewToServer() {
        // this optimization might not be as big as I thought
        return
    }
-   
+
    totalViewBytesSent += viewBodyToSend.length
-   totalViewRequests += 1 
+   totalViewRequests += 1
    // try {
    //     ws.send(viewBodyToSend)
    // // you could wait to make sure you server got it before sending again.
    // } catch (e) {
-   //      log(e) 
+   //      log(e)
    // }
    // return
 
@@ -4078,7 +4078,7 @@ function sendViewToServer() {
            sendViewToServer()
        }
    })
-      
+
 }
 var renderURLTimeout
 var waitingRender = false
@@ -4100,14 +4100,14 @@ function render() {
     if (preventRender) {
         return
     }
-    
+
     // Now that file names contain line numbers
     // let's render the url nore frequently
     clearTimeout(renderURLTimeout)
     renderURLTimeout = setTimeout(function () {
         renderURL()
     }, 1000)
-    
+
     var timeSinceRender = Date.now() - lastRender
     if (timeSinceRender < maxFrameRate) {
         if (!waitingRender) {
@@ -4129,14 +4129,14 @@ function render() {
         return
     }
     lastRender = Date.now()
-    
+
 
     var start = Date.now()
     var shouldSetIt = false
     if (fx == lastRenderFx && lastRenderOffsetY == fx.offsetY && lastRenderOffsetX == fx.offsetX) {
         if (lastRenderFullScreenForSet) {
-            minY = min(fx.cursorLineIndex, lastRenderCursorLineIndex) - fx.offsetY - 1   
-            maxY = max(fx.cursorLineIndex, lastRenderCursorLineIndex) - fx.offsetY + 2    
+            minY = min(fx.cursorLineIndex, lastRenderCursorLineIndex) - fx.offsetY - 1
+            maxY = max(fx.cursorLineIndex, lastRenderCursorLineIndex) - fx.offsetY + 2
             t.clearRect(0, minY * fontHeight, c.width, (maxY - minY) * fontHeight)
         } else {
             c.width = c.width // one way to clear
@@ -4163,9 +4163,9 @@ function render() {
         theStatus.shouldAutocompleteLine = shouldAutocompleteLine
         theStatus.lastWord = lastWord
         theStatus.lastCleared = lastCleared
-        theStatus.totalViewRequests = totalViewRequests 
-        theStatus.totalViewBytesSent = totalViewBytesSent 
-        theStatus.overflowX = overflowX 
+        theStatus.totalViewRequests = totalViewRequests
+        theStatus.totalViewBytesSent = totalViewBytesSent
+        theStatus.overflowX = overflowX
         // theStatus.acWord = acWord
         statusEl.innerText = JSON.stringify(theStatus, null, "    ")
     }
@@ -4189,13 +4189,13 @@ function render() {
     //     // TODO: consider not setting this every render
     //     saveButton.innerText = "run"
     // }
-    
+
     if (!inEdit) {
         // TODO: an idea is to not do this in the render step at all
         // but do it whenever we change cursorLineIndex or cursorColIndex
         // maybe use a setter for that to manage it better
         // this may be more efficient too.
-        
+
         if (fx.selectedRegions.length) {
             if (agressiveRender || (touchCount == 0)) {
                 // we comment this out because on iPad the "lines selected" part can make it in to the actual text of the document
@@ -4209,12 +4209,12 @@ function render() {
                 renderTheText(cursorLine)
             }
         }
-        
+
         // I don't think we need to do this part
         // theTextBefore.value = fx.lines[fx.cursorLineIndex - 1] || ""
         // theTextAfter.value = fx.lines[fx.cursorLineIndex + 1] || ""
-        
-        
+
+
         // set the selection range back to what it was
         // if it needs to be changed, some functions will change it
         // after the call to render.
@@ -4229,9 +4229,9 @@ function render() {
             }
         }
     }
-    
-    
-    
+
+
+
     if (serverViewFeature) {
         // this render bock was recently moved into the serverViewFeature conditional
         var timeSinceServerRender = Date.now() - lastServerRender
@@ -4252,7 +4252,7 @@ function render() {
             return
         }
         lastServerRender = Date.now()
-        
+
         // server rendering
         var oldOffsetX = fx.offsetX
         var oldMaxCols = maxCols
@@ -4265,11 +4265,11 @@ function render() {
         if (maxLines < 32) {
             maxLines = 32
         }
-        
+
         // 5 for the line number margin
         var section = Math.floor((fx.cursorColIndex + 5) / maxCols)
         fx.offsetX = (section * maxCols) - 5
-        
+
         t = mockCanvasContext
         mockCanvasContext.lastFillStyle = "black",
         mockCanvasContext.fillStyle = "black",
@@ -4278,17 +4278,17 @@ function render() {
         mockCanvasContext.lastTextBaseline = "",
         mockCanvasContext.textBaseline = "",
         mockCanvasContext.commands = [[5, fontWidth.toFixed(2)-0, fontHeight.toFixed(2)-0, maxCols, maxLines, isDark ? 1 : 0]]
-        
+
         // var start = Date.now()
         renderInternal()
-        
+
         fx.offsetX = oldOffsetX
         maxCols = oldMaxCols
         maxLines = oldMaxLines
         t = oldT
         sendViewToServer()
     }
-    
+
     lastRenderFx = fx
     lastRenderOffsetY = fx.offsetY
     lastRenderOffsetX = fx.offsetX
@@ -4297,7 +4297,7 @@ function render() {
 
 // this is a workaround for iphone 12 mini issue where dom is slow
 // and we can't blindly update it in the render loop
-// TODO: you can make shell and terminal faster too. 
+// TODO: you can make shell and terminal faster too.
 var renderedSaveRed = false
 function renderSaves() {
     if (!fx) {
@@ -4370,16 +4370,16 @@ function compactWord(word, theLine, startSpacesLength, index, prevWord) {
     if (replacement) {
       return replacement
     }
-    
+
     if (word - 0 == word) {
         return word
     }
-    
+
     return word.slice(0,1)
 }
 function compactSpace(spaces, index) {
     return spaces
-    
+
     if (fx.cursorLineIndex == index && fx.cursorColIndex >= 0) {
         return spaces
     }
@@ -4395,69 +4395,69 @@ function compactLine(theLine, index) {
     }
     // if (theLine.length + marginLeft <= maxCols) {
     //     ret.compactedLine = theLine
-    //     return ret    
+    //     return ret
     // }
-    
-    
+
+
     var currentToken = ""
     var state="start"
     var startSpaces = ""
     var prevWord = ""
     for (var i = 0; i < theLine.length; i++) {
-        var chr = theLine[i]    
+        var chr = theLine[i]
         if (state == "start") {
             if (chr == " ") {
                 currentToken = chr
-                state = "startSpace"    
+                state = "startSpace"
             } else if (isWordyChar(chr)) {
                 currentToken = chr
                 state = "inWord"
             } else {
                 state = "endThing"
                 ret.compactedLine += chr
-            }   
+            }
         } else if (state == "startSpace") {
             if (chr == " ") {
                 currentToken += chr
             } else if (isWordyChar(chr)) {
-                startSpaces = compactSpace(currentToken, index) 
-                ret.compactedLine += startSpaces 
+                startSpaces = compactSpace(currentToken, index)
+                ret.compactedLine += startSpaces
                 currentToken = chr
                 state = "inWord"
             } else {
-                startSpaces = compactSpace(currentToken, index) 
-                ret.compactedLine += startSpaces 
+                startSpaces = compactSpace(currentToken, index)
+                ret.compactedLine += startSpaces
                 state = "endThing"
                 ret.compactedLine += chr
-            }   
+            }
         } else if (state == "inWord") {
             if (isWordyChar(chr)) {
                 currentToken += chr
             } else {
                 ret.compactedLine += compactWord(currentToken, theLine, startSpaces.length, index, prevWord)
                 prevWord = currentToken
-                ret.compactedLine += chr 
+                ret.compactedLine += chr
                 state = "endThing"
-            }   
+            }
         } else if (state == "endThing") {
             if (isWordyChar(chr)) {
                 state = "inWord"
                 currentToken = chr
             } else {
-                ret.compactedLine += chr 
-            }   
+                ret.compactedLine += chr
+            }
         }
     }
     if (state == "inWord") {
         ret.compactedLine += compactWord(currentToken, theLine, startSpaces.length, index, prevWord)
-        prevWord = currentToken 
-    }    
+        prevWord = currentToken
+    }
     return ret
 }
 
 
 var renderDuration = 0
-var renderCount = 0   
+var renderCount = 0
 var rendersInLastSecond = 0
 function renderInternal() {
     var startRenderTime = Date.now()
@@ -4480,7 +4480,7 @@ function renderInternal() {
             }
         }
     }
-    
+
     // draw line where your cursor is for help with finding
     var highlightLine = true
     if (highlightLine) {
@@ -4496,7 +4496,7 @@ function renderInternal() {
         // go twice as wide as you need, for server rendering purposes
         t.fillRect(0, (fx.cursorLineIndex - fx.offsetY) * fontHeight, c.width*2, fontHeight)
     }
-    
+
 
     // render autocomplete word
     // the false is to see what it's like not rendering the "acWord"
@@ -4517,7 +4517,7 @@ function renderInternal() {
             }
         }
     }
-    
+
     t.font = fontCSS
     t.textBaseline = "top"
     var r = fx.selectedRegions[0]
@@ -4532,13 +4532,13 @@ function renderInternal() {
 
     // Note, we tried doing an extra loop for line numbers first so we change colors less
     //but didn't seem like it improved things
-    var minY = 0 
-    var maxY = maxLines 
+    var minY = 0
+    var maxY = maxLines
     if (lastRenderFullScreenForSet && fx == lastRenderFx && lastRenderOffsetY == fx.offsetY && lastRenderOffsetX == fx.offsetX) {
-        minY = min(fx.cursorLineIndex, lastRenderCursorLineIndex) - fx.offsetY - 1   
-        maxY = max(fx.cursorLineIndex, lastRenderCursorLineIndex) - fx.offsetY + 2    
+        minY = min(fx.cursorLineIndex, lastRenderCursorLineIndex) - fx.offsetY - 1
+        maxY = max(fx.cursorLineIndex, lastRenderCursorLineIndex) - fx.offsetY + 2
     }
-    
+
     // colors on file
     if (fx.fileMode == "fileList") {
         for (var y=minY; y < maxY; y++) {
@@ -4581,11 +4581,11 @@ function renderInternal() {
                     if (useRegexSearch) {
                         var theMatch = theLine.substr(highlightStartSearch).match(cachedSearchRegexp(searchText.value))
                         if (theMatch == null) {
-                            break    
+                            break
                         }
                         matchLength = theMatch[0].length
-                        pos = highlightStartSearch + theMatch.index  
-                        highlightStartSearch = pos + matchLength 
+                        pos = highlightStartSearch + theMatch.index
+                        highlightStartSearch = pos + matchLength
                     } else {
                         var pos = theLine.indexOf(searchText.value, highlightStartSearch)
                         if (pos == -1) {
@@ -4603,7 +4603,7 @@ function renderInternal() {
                     // t.fillStyle = "yellow"
                     t.fillStyle = "rgba(255,255,0,0.7)"
                 }
-                
+
                 // TODO: expanding the same line, we could come up with optimization for that
                 var startHighlightPos = expandTabIndex(theLine, pos, y + fx.offsetY)
                 var startFillHighlight = (startHighlightPos - fx.offsetX) * fontWidth
@@ -4616,7 +4616,7 @@ function renderInternal() {
                 )
             }
         }
-        
+
         // Per file highlights
         var highlightStartSearch = 0
         var matchLength = 0
@@ -4637,11 +4637,11 @@ function renderInternal() {
                     if (useRegexSearch) {
                         var theMatch = theLine.substr(highlightStartSearch).match(cachedSearchRegexp(highlightText))
                         if (theMatch == null) {
-                            break    
+                            break
                         }
                         matchLength = theMatch[0].length
-                        pos = highlightStartSearch + theMatch.index  
-                        highlightStartSearch = pos + matchLength 
+                        pos = highlightStartSearch + theMatch.index
+                        highlightStartSearch = pos + matchLength
                     } else {
                         // var pos = theLine.indexOf(fx.highlightText, highlightStartSearch)
                         var pos = theLine.indexOf(highlightText, highlightStartSearch)
@@ -4659,7 +4659,7 @@ function renderInternal() {
                 } else {
                     t.fillStyle = "deeppink"
                 }
-                
+
                 // TODO: expanding the same line, we could come up with optimization for that
                 var startHighlightPos = expandTabIndex(theLine, pos, y + fx.offsetY)
                 var startFillHighlight = (startHighlightPos - fx.offsetX) * fontWidth
@@ -4673,25 +4673,25 @@ function renderInternal() {
                 )
             }
         }
-        
+
         // Trailing whitespace
         var highlightStartSearch = 0
         var matchLength = 0
-        if (theLine) {   
+        if (theLine) {
             for (var _i=0; _i<1; _i++) { // Loop so we can break
                 var theMatch = theLine.match(trailingWhitespaceRegexp)
                 if (theMatch == null) {
-                    break    
+                    break
                 }
                 matchLength = theMatch[0].length
-                pos = highlightStartSearch + theMatch.index  
+                pos = highlightStartSearch + theMatch.index
                 // lime
                 if (isDark) {
                     t.fillStyle = "salmon"
                 } else {
                     t.fillStyle = "salmon"
                 }
-                
+
                 var startHighlightPos = expandTabIndex(theLine, pos, y + fx.offsetY)
                 var startFillHighlight = (startHighlightPos - fx.offsetX) * fontWidth
                 var highlightLength = (expandTabIndex(theLine, pos+matchLength, y + fx.offsetY)-startHighlightPos) * fontWidth
@@ -4715,13 +4715,13 @@ function renderInternal() {
                 var lineNumber = (y+fx.offsetY+1).toString().padStart(4, " ")
                 if (fx.offsetX < -1) {
                     // Line numbers
-                    
+
                     if (fx.lines[y + fx.offsetY] != "" && fx.lines[y + fx.offsetY - 1] == fx.lines[y + fx.offsetY]) {
                         // handy feature to see if lines are same
                         t.fillStyle = "lime"
                     } else {
                         t.fillStyle = "brown"
-                    } 
+                    }
                     for (var i=0; i<-fx.offsetX-1; i++) {
                         var lineNumberIndex = fx.offsetX + marginLeft + i
                         var lineNoChr = lineNumber.charAt(lineNumberIndex)
@@ -4733,7 +4733,7 @@ function renderInternal() {
             }
         }
         // TODO: set variable for line.trim()
-        var textFillStyle 
+        var textFillStyle
         // the actual text
         var commentLine = false
         // TODO: maybe pull some of this out of the loop
@@ -4743,7 +4743,7 @@ function renderInternal() {
                 return cachedTrim
             }
             cachedTrim = theLine.trim()
-            return cachedTrim    
+            return cachedTrim
         }
         if (fx.fileMode != "terminal") {
             if (theLine.startsWith("+")) {
@@ -4771,14 +4771,14 @@ function renderInternal() {
                         return (0.3 * r) + (.59 * g) + (.11 * b)
                     })
                     if (grayed < 128) {
-                        textFillStyle = "white"    
+                        textFillStyle = "white"
                     } else {
-                        textFillStyle = "black"    
+                        textFillStyle = "black"
                     }
                     knownContrastingColors[t.fillStyle] = textFillStyle
                 }
                 t.fillStyle = oldFillStyle
-                
+
             } else if (trim().startsWith("//") || trim().startsWith("#")) {
                 commentLine = true
                 // comments are gray
@@ -4805,27 +4805,27 @@ function renderInternal() {
         if (compactRender && !commentLine) {
             var lineAndInfo = compactLine(theLine, y + fx.offsetY)
             theNewLine = lineAndInfo.compactedLine
-            
+
             if (theNewLine != theLine) {
                 textFillStyle = isDark ? "lime" : "green"
             }
-            
+
             theLine = theNewLine
         }
-        
+
         // expandedLine = [...expandedLine]
         if (useUnicode) {
             // you could render inline here
-            
+
             if (theLine.tabCache) {
-                expandedLine = theLine.tabCache    
+                expandedLine = theLine.tabCache
             } else if (theLine == "") {
                 expandedLine = []
             } else {
                 expandedLine = getCachedGraphemes(theLine, y + fx.offsetY)
                 expandedLine = expandedLine.slice() // copy it
                 var i = 0
-                
+
                 // TODO: you can potentially also cache this part
                 while (true) {
                     i++
@@ -4839,14 +4839,14 @@ function renderInternal() {
                     }
                     var numberOfSpaces = tabStop - ((tabPos) % tabStop) -1
                     // TODO: you can used cached repeated \t array
-                    
+
                     expandedLine.splice(tabPos, 0, ...("\t".repeat(numberOfSpaces).split("")))
                     afterLastTabPos = tabPos + numberOfSpaces + 1
                 }
                 if ((y + fx.offsetY) < fx.lines.length) {
                     fx.lines[y + fx.offsetY].tabCache = expandedLine
                 }
-                
+
             }
         } else {
             // TODO: you can potentially also cache this part
@@ -4863,14 +4863,14 @@ function renderInternal() {
                 afterLastTabPos = tabPos + 1
             }
         }
-        
+
         // one option is to draw the whole line in one go
         // likely more optimal, wouln't have to do the unicode stuff
         // but harder to know wrangle width of the font?
         var extraY = 0
         for (var x=0; x < maxCols; x++) {
             if ((x+fx.offsetX) >= expandedLine.length) {
-                break    
+                break
             }
             var chr = expandedLine[x+fx.offsetX] || ""
             if (chr == "\t") {
@@ -4880,7 +4880,7 @@ function renderInternal() {
                 }
             } else if (chr != "" && chr != " ") {
                 t.fillStyle = textFillStyle
-                
+
                 if (useUnicode) {
                     if (chr.length > 1) {
                         t.font = fontCSSEmoji
@@ -4917,11 +4917,11 @@ function renderInternal() {
     var xPos = (fx.cursorColIndex - fx.offsetX) * fontWidth
     t.fillRect(xPos, yPos, 4, fontHeight)
     cursorLine = fx.lines[fx.cursorLineIndex] || ""
-    
+
     var duration = Date.now() - startRenderTime
     // TODO: audit render for performance
     // also, we are calling it too much, cut down on number of times we call it
-    
+
     renderCount += 1
     renderDuration += duration
     rendersInLastSecond += 1
@@ -4942,7 +4942,7 @@ false && setInterval(function() {
 }, 1000)
 
 // simple cache for regexp so we don't need to recompile in render loop
-// also so I don't have to keep track of whenever searchText.value is set (although maybe consider doing it that way in another pass) 
+// also so I don't have to keep track of whenever searchText.value is set (although maybe consider doing it that way in another pass)
 var lastSearchRegexpText = ""
 var lastSearchRegexp = null
 function cachedSearchRegexp(str) {
@@ -4951,13 +4951,13 @@ function cachedSearchRegexp(str) {
     }
     lastSearchRegexpText = str
     try {
-        lastSearchRegexp = new RegExp(lastSearchRegexpText)   
-        
+        lastSearchRegexp = new RegExp(lastSearchRegexpText)
+
         // Case insensitive
-        lastSearchRegexp = new RegExp(lastSearchRegexpText, 'i')   
+        lastSearchRegexp = new RegExp(lastSearchRegexpText, 'i')
     } catch (e) {
         lastSearchRegexpText = ""
-        lastSearchRegexp = null 
+        lastSearchRegexp = null
     }
     return lastSearchRegexp
 }
@@ -4971,10 +4971,10 @@ function cachedSearchRegexpGlobal(str) {
     }
     lastSearchRegexpGlobalText = str
     try {
-        lastSearchRegexpGlobal = new RegExp(lastSearchRegexpGlobalText, 'gi')   
+        lastSearchRegexpGlobal = new RegExp(lastSearchRegexpGlobalText, 'gi')
     } catch (e) {
         lastSearchRegexpGlobalText = ""
-        lastSearchRegexpGlobal = null 
+        lastSearchRegexpGlobal = null
     }
     return lastSearchRegexpGlobal
 }
@@ -5074,10 +5074,10 @@ function onStart(e) {
             render()
         }
     }
-    
+
     var hasSwitchedFile = false
     var startCursorColIndex = fx.cursorColIndex
-    
+
     var onMove = function(e) {
         lastAction = "move"
         lastSearchDirForSameTerm = ""
@@ -5107,9 +5107,9 @@ function onStart(e) {
         var signX = diffLastTouchX < 0 ? -1: 1
         var signY = diffLastTouchY < 0 ? -1 : 1
         thePow = firstMove ? 1 : 2
-        
+
         // other attempt at #snappingCursor
-        // var charBefore = fx.lines[fx.cursorLineIndex][u(fx.cursorColIndex)-1] || "" 
+        // var charBefore = fx.lines[fx.cursorLineIndex][u(fx.cursorColIndex)-1] || ""
         // var charAfter = fx.lines[fx.cursorLineIndex][u(fx.cursorColIndex)]  || ""
         // var oldTouchScaleX = touchScaleX
         // // if (((charBefore != charAfter) && (!isWordy(charBefore.charAt(0))) || !isWordy(charAfter.charAt(0))) || fx.cursorColIndex == 0 || fx.cursorColIndex == expandTabIndex(fx.lines[fx.cursorLineIndex], -1)) {
@@ -5122,9 +5122,9 @@ function onStart(e) {
             cursorX = cursorX + ensureSign(signX, Math.round(Math.pow(diffLastTouchX, thePow)*touchScaleX))
         }
         // touchScaleX = oldTouchScaleX
-        
-        
-        
+
+
+
         cursorY = cursorY + ensureSign(signY, Math.round(Math.pow(diffLastTouchY, thePow)*touchScaleY))
         lastTouchX = e.touches[0].pageX
         lastTouchY = e.touches[0].pageY
@@ -5165,7 +5165,7 @@ function onStart(e) {
                 overflowX += -marginLeft - fx.offsetX
                 fx.offsetX = -marginLeft
             }
-            
+
             // attempt 1 at swiping left to do an action
             // log("theoffsetx: " + fx.offsetX)
             // if (!hasSwitchedFile && !changedY && startCursorColIndex == -marginLeft && prevOffsetX < -20) {
@@ -5174,14 +5174,14 @@ function onStart(e) {
             //     // moveFileAllTheWayLeft()
             //     // saveWorkspace()
             // }
-            
+
             // attempt 2 at swiping left to do an action
             if (overflowX > 75 && !hasSwitchedFile && startCursorColIndex == -marginLeft) {
                 hasSwitchedFile = true
                 // seeFiles()
                 moveFileAllTheWayLeft()
                 saveWorkspace()
-                overflowX = 0    
+                overflowX = 0
             }
         }
         var oldCursorLineIndex = fx.cursorLineIndex
@@ -5191,7 +5191,7 @@ function onStart(e) {
             saveUndo()
             dirtyInput = false
         }
-        
+
         // TODO: this so we can get into full line autocomplete mode
         // by scrolling into an empty line and starting to type
         // wondering if this is optimal enough.
@@ -5199,15 +5199,15 @@ function onStart(e) {
         if (_line.trim() == "") {
             hasMovedSinceNewLine = false
         }
-        var oldCursorColIndex = fx.cursorColIndex   
+        var oldCursorColIndex = fx.cursorColIndex
         fx.cursorColIndex = Math.round(cursorX/fontWidth) + fx.offsetX
-        
+
         // #snappingCursor try 3
         // this was the best of the 3
         if (false && oldCursorColIndex != fx.cursorColIndex) {
             var theIndex =  u(oldCursorColIndex)
             var theLine = fx.lines[fx.cursorLineIndex] || ""
-            // var theChar = theLine.charCodeAt(theIndex)  
+            // var theChar = theLine.charCodeAt(theIndex)
             if (signX == -1 && theIndex > 0 && theIndex < theLine.length) {
                 fx.cursorColIndex = expandTabIndex(theLine, findPrevCharClass(theLine, theIndex-1))
                 updateCursorXY()
@@ -5216,7 +5216,7 @@ function onStart(e) {
                 updateCursorXY()
             }
         }
-        
+
         firstMove = false
         if (cursorType == "select") {
             overflowX = 0
@@ -5236,7 +5236,7 @@ function onStart(e) {
         //     var theLine = fx.lines[fx.cursorLineIndex] || ""
         //     var wordStartX = expandTabIndex(theLine, w.start)
         //     var wordEndX = expandTabIndex(theLine, w.end)
-        //     var percentInWord = (fx.cursorColIndex - wordStartX) / (wordEndX - wordStartX)    
+        //     var percentInWord = (fx.cursorColIndex - wordStartX) / (wordEndX - wordStartX)
         //     log([signX, percentInWord.toFixed(2)])
         //     if (signX == 1 && percentInWord >= .5 && fx.cursorColIndex != wordEndX) { // movedRight
         //         fx.cursorColIndex = wordEndX
@@ -5246,17 +5246,17 @@ function onStart(e) {
         //         updateCursorXY()
         //     }
         // }
-        
-        
+
+
         render()
         // See comment in render asking if we need to do this here too
-        // this optimization was for Nokia 1.4, 
+        // this optimization was for Nokia 1.4,
     	if (agressiveRender || (touchCount == 0 && document.activeElement == theText)) {
             if (document.activeElement == theText) {
                 setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
             }
         }
-        
+
         return false
     }
     var onEnd = function(e) {
@@ -5267,7 +5267,7 @@ function onStart(e) {
         if (e.touches.length != 0) {
             return
         }
-        
+
          //         fx.cursorColIndex = wordEndX
         var sr = fx.selectedRegions[0]
         if (sr) {
@@ -5279,7 +5279,7 @@ function onStart(e) {
                 // should we return early here?
             }
         }
-        
+
         document.body.removeEventListener("touchmove", onMove)
         moveListenerCount = max(moveListenerCount-1, 0)
         document.body.removeEventListener("touchend", onEnd)
@@ -5311,7 +5311,7 @@ function onStart(e) {
                     updateCursorXY()
                     ensureCursorInScreen()
                     splicedFiles = []
-                    return    
+                    return
                 }
                 var file = treeFilesShadow[fx.cursorLineIndex]
                 if (file.fileToken == fileToken) {
@@ -5328,14 +5328,14 @@ function onStart(e) {
                 addFile(file)
                 return
             }
-            
+
 
             if (fx.cursorColIndex == -5) {
                 // since we are in the margin, let's force it
                 // to paste line-style.
                 if (fx.fileMode == "terminal") {
                     sendTerminal(copyBuffer.join("\r"))
-                    return   
+                    return
                 }
                 selectMode = "line"
                 paste(false, false, true)
@@ -5407,8 +5407,8 @@ function onStart(e) {
                     updateCursorXY()
                     render()
                 }
-                
-                // This part for moving the cursor where you tapped (if you want that feature) 
+
+                // This part for moving the cursor where you tapped (if you want that feature)
                 // if (false) {
                 if (false) {
                     var bbox = c.getBoundingClientRect()
@@ -5416,17 +5416,17 @@ function onStart(e) {
                     var pointY = startTouchY - bbox.top
                     fx.cursorColIndex = Math.round(
                         ((pointX * 3)/fontWidth) + fx.offsetX
-                    )  
+                    )
                     fx.cursorLineIndex = Math.round(
                         ((pointY * 3)/fontHeight) + fx.offsetY
                     )
-                    updateCursorXY()  
+                    updateCursorXY()
                 }
-                
+
                 if (true) {
                     // the handleFocusIn function will do some
                     // processing
-                    
+
                     theText.focus()
                 }
             }
@@ -5491,7 +5491,7 @@ function onStart(e) {
         endListenerCount = max(endListenerCount-1, 0)
         render()
     }
-    
+
     var onEndForEdges = function(e) {
         overflowX = 0
         touchCount = e.touches.length
@@ -5522,10 +5522,10 @@ function onStart(e) {
         if (startTouchY - bbox.top < (bbox.height/3)) {
             moveHomeEndDirection = "down"
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
-            
+
             // if (fx.highlightText) {
             if (highlightText) {
-                nextHighlightText()    
+                nextHighlightText()
             } else if (searchText.value !== "" && !fx.selectedRegions.length) {
                 findDown()
             } else {
@@ -5538,7 +5538,7 @@ function onStart(e) {
                     fx.selectedRegions[0].stopY += 1
                     if (fx.selectedRegions[0].stopY > fx.lines.length - 1) { // stopY is inclusive I think, stopX isn't
                         fx.selectedRegions[0].stopY = fx.lines.length - 1
-                    }    
+                    }
                     var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
                     fx.selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length, fx.selectedRegions[0].stopY)
                 } else if (document.activeElement != theText) {
@@ -5558,12 +5558,12 @@ function onStart(e) {
                     fileIndex = files.length - 1
                 }
             } else {
-                fileIndex = 0    
+                fileIndex = 0
             }
             if (fileIndex == -1) {
-                seeFiles()        
+                seeFiles()
             } else {
-                setCurrentFile(files[fileIndex])    
+                setCurrentFile(files[fileIndex])
             }
         } else if (fx.selectedRegions.length) {
             fx.selectedRegions[0].stopX += 1
@@ -5571,7 +5571,7 @@ function onStart(e) {
             var expandedIndex = expandTabIndex(theLine, theLine.length, fx.selectedRegions[0].stopY)
             if (fx.selectedRegions[0].stopX > expandedIndex) {
                 fx.selectedRegions[0].stopX = expandedIndex
-            }    
+            }
         } else if (fx.fileMode == "fileList" || fx.fileMode == "directory") {
             fx.cursorLineIndex += 1
             if (fx.cursorLineIndex >= fx.lines.length) {
@@ -5618,10 +5618,10 @@ function onStart(e) {
         if (startTouchY - bbox.top < (bbox.height/3)) {
             moveHomeEndDirection = "up"
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
-            
+
             // if (fx.highlightText) {
             if (highlightText) {
-                prevtHighlightText()    
+                prevtHighlightText()
             } else if (searchText.value !== "" && !fx.selectedRegions.length) {
                 findUp()
             } else {
@@ -5634,7 +5634,7 @@ function onStart(e) {
                     fx.selectedRegions[0].stopY -= 1
                     if (fx.selectedRegions[0].stopY < fx.selectedRegions[0].startY) {
                         fx.selectedRegions[0].stopY = fx.selectedRegions[0].startY
-                    }    
+                    }
                     var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
                     fx.selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length, fx.selectedRegions[0].stopY)
                 } else if (document.activeElement != theText) {
@@ -5654,18 +5654,18 @@ function onStart(e) {
                     fileIndex = files.length - 1
                 }
             } else {
-                fileIndex = 0    
+                fileIndex = 0
             }
             if (fileIndex == -1) {
-                seeFiles()        
+                seeFiles()
             } else {
-                setCurrentFile(files[fileIndex])    
+                setCurrentFile(files[fileIndex])
             }
         } else if (fx.selectedRegions.length) {
             fx.selectedRegions[0].stopX -= 1
             if (fx.selectedRegions[0].stopX < 0) {
                 fx.selectedRegions[0].stopY = 0
-            }    
+            }
         } else if (fx.fileMode == "fileList" || fx.fileMode == "directory") {
             fx.cursorLineIndex -= 1
             if (fx.cursorLineIndex < 0) {
@@ -5699,7 +5699,7 @@ function onStart(e) {
                     // fx.cursorColIndex += fx.offsetX - origOffsetX
                     fx.cursorColIndex -= 1
                     if (fx.cursorColIndex < -5) {
-                         fx.cursorColIndex = -5    
+                         fx.cursorColIndex = -5
                     }
                 }
             }
@@ -5736,13 +5736,13 @@ function onStart(e) {
         }
 
         var bbox = c.getBoundingClientRect()
-        
+
         if (startTouchY - bbox.top < navTouchSize) {
             if (document.activeElement == theText && !acWord) {
                shouldAutocompleteLine = true
             } else if (false) { // commenting out the page down feature
                 var origOffsetY = fx.offsetY
-                fx.offsetY -= Math.round(maxLines/2) 
+                fx.offsetY -= Math.round(maxLines/2)
                 if (fx.offsetY <= 0) {
                     fx.offsetY = 0
                 }
@@ -5757,7 +5757,7 @@ function onStart(e) {
             if (document.activeElement == theText) {
             } else {
                 var origOffsetY = fx.offsetY
-                fx.offsetY += Math.round(maxLines/2) 
+                fx.offsetY += Math.round(maxLines/2)
                 if (fx.offsetY >= lines.length - 10) {
                     fx.offsetY = lines.length - 10
                 }
@@ -5814,7 +5814,7 @@ function clickItemInDirectory() {
 // fuzzyMatch("fzy", "fuzzy")
 // true
 function fuzzyMatch(fuzzyWord, word) {
-    
+
     if (!word) {
         return false
     }
@@ -5826,7 +5826,7 @@ function fuzzyMatch(fuzzyWord, word) {
         // prevent against long base64 values from matching
         return false
     }
-    
+
     fuzzyWord = fuzzyWord.toLowerCase()
     word = word.toLowerCase()
     var lastMatch = -1
@@ -5853,8 +5853,8 @@ function acWordToggle(recursive) {
             if (shouldAutocompleteLine) {
                 w = {
                     // do we need statrt and end
-                    word: (fx.lines[fx.cursorLineIndex] || "").trim() 
-                }  
+                    word: (fx.lines[fx.cursorLineIndex] || "").trim()
+                }
             } else {
                 w = getWordBeforeCursor()
             }
@@ -5872,13 +5872,13 @@ function acWordToggle(recursive) {
             //if (theLine.substring(0, w.start)
             acWord.prefix = w.word
             acWord.word = w.word
-            
+
             // fuzzy
             acWord.startXNonFuzzy = fx.cursorColIndex
             acWord.stopXNonFuzzy = fx.cursorColIndex
             acWord.startX = expandTabIndex(theLine, w.start)
             acWord.stopX = expandTabIndex(theLine, w.end)
-            
+
             // to prevent autocomplet in the middle
             // of a word from getting that compound word.
             var _w = getWordAtCursor()
@@ -5892,7 +5892,7 @@ function acWordToggle(recursive) {
             if (shouldAutocompleteLine) {
                 acWord.autocompleteLine = true
             }
-            shouldAutocompleteLine = false 
+            shouldAutocompleteLine = false
         } else {
             acWord.startX = expandTabIndex(theLine, w.start)
             acWord.stopX = expandTabIndex(theLine, w.end)
@@ -5939,16 +5939,16 @@ function acWordToggle(recursive) {
                 acWord.findDirection = !acWord.findDirection
                 if (acWord.fileIndex >= files.length) {
                     //alert("allDone")
-                    
+
                     if (acWord.autocompleteLine || !fuzzyAutocomplete) {
                         acPlop([""])
-                    } else {                   
+                    } else {
                         acPlop([acWord.prefix])
                     }
                     // not going to cycle to turn on shouldAutocompleteLine
                     // if (!acWord.autocompleteLine) {
                     //    shouldAutocompleteLine = true
-                    // } 
+                    // }
                     if (acWord.autocompleteLine && !acWord.hasPlopped && !recursive) {
                         acWord = null
                         acWordToggle(true)
@@ -6000,7 +6000,7 @@ function acWordToggle(recursive) {
             }
 
             // here we have found a word
-            
+
             if (acWord.autocompleteLine || !fuzzyAutocomplete) {
                 acPlop([trimPrefix(found, acWord.prefix)])
             } else {
@@ -6009,7 +6009,7 @@ function acWordToggle(recursive) {
             }
             break loopBlock
         }
-        
+
         // here we have no prefix, not autocompleting
         if (!acWord.clearedWord && acWord.word != "") {
             acWord.clearedWord = true
@@ -6017,26 +6017,26 @@ function acWordToggle(recursive) {
             acPlop([""])
             break loopBlock
         }
-        
+
         if (!acWord.pastedLastTyped && lastWord && lastWord != acWord.word) {
             acWord.pastedLastTyped = true
             acPlop([lastWord])
             break loopBlock
         }
-        
+
         if (!acWord.pasteLastCleared && lastCleared && lastCleared != acWord.word) {
             acWord.pasteLastCleared = true
             acPlop([lastCleared])
             break loopBlock
         }
-        
+
 
         if (!acWord.pastedCopyBufferInLine && copyBuffer.length) {
             acWord.pastedCopyBufferInLine = true
             acPlop(copyBuffer)
             break loopBlock
         }
-        
+
         // if (!acWord.pastedCutBufferInLine && cutBuffer.length) {
         //     acWord.pastedCutBufferInLine = true
         //     acPlop(cutBuffer)
@@ -6068,12 +6068,12 @@ function acPlop(buff) {
     var oldCutBuffer = cutBuffer
     copyBuffer = buff
     var oldSelectMode = selectMode
-    
+
     var acWordStartX = acWord.startX
     var acWordStopX = acWord.stopX
     if (acWord.autocompleteLine || !fuzzyAutocomplete) {
-        acWordStartX = acWord.startXNonFuzzy    
-        acWordStopX = acWord.stopXNonFuzzy    
+        acWordStartX = acWord.startXNonFuzzy
+        acWordStopX = acWord.stopXNonFuzzy
     }
     fx.selectedRegions = [{
         startX: acWordStartX,
@@ -6096,7 +6096,7 @@ function acPlop(buff) {
         acWord.stopX = expandTabIndex(lastCopyBufferLine, lastCopyBufferLine.length, null, null, "nocache")
         acWord.stopXNonFuzzy = acWord.stopX
     }
-    
+
     if (!acWord.autocompleteLine) {
         fx.cursorColIndex = acWord.stopX
     }
@@ -6129,7 +6129,7 @@ function acFindUp() {
                 // Also make sure it's not a regular word
                 // because we would have seen it in the non autocompleteLine flow.
                 if (isRegularWord(trimmedLine)) {
-                    continue   
+                    continue
                 }
                 // the start and end don't matter
                 var seen = acWord.seen[trimmedLine]
@@ -6148,7 +6148,7 @@ function acFindUp() {
             }
             var seen = acWord.seen[w.word]
             if (!seen && w.word != "" &&
-                
+
                 // fuzzy
                 (acWord.prefix == "" || (w.word != acWord.prefix && isAutocompleteMatch(acWord.prefix, w.word))))
             {
@@ -6167,8 +6167,8 @@ function isAutocompleteMatch(prefix, word) {
     if (fuzzyAutocomplete) {
         return fuzzyMatch(prefix, word)
     } else {
-        return word.startsWith(prefix)   
-    }    
+        return word.startsWith(prefix)
+    }
 }
 
 function acFindDown() {
@@ -6182,7 +6182,7 @@ function acFindDown() {
                 // Also make sure it's not a regular word
                 // because we would have seen it in the non autocompleteLine flow.
                 if (isRegularWord(trimmedLine)) {
-                    continue   
+                    continue
                 }
                 // the start and end don't matter
                 var seen = acWord.seen[trimmedLine]
@@ -6219,7 +6219,7 @@ function acFindDown() {
 // END NEW FIND WORD
 function doFormat() {
     if (!confirm("format code?")) {
-        return 
+        return
     }
     setLines(simpleFormat(fx.lines))
     docChanged()
@@ -6289,13 +6289,13 @@ function selectFileRow(e) {
         return
     }
     var index = e.target.getAttribute("data-index")
-    
+
     selectFileIndex(index)
 }
 function selectFileIndex(index) {
     var file = files[index]
     // put it at the beginning.
-    
+
     if (reorderFiles) {
         files.splice(index, 1)
         files.unshift(file)
@@ -6307,12 +6307,12 @@ function moveFileAllTheWayLeft() {
     var theIndex = files.indexOf(fx)
     if (theIndex == -1) {
         return
-    } 
+    }
     if (theIndex == 0) {
         return
-    } 
-    files.splice(theIndex, 1)   
-    files.splice(0, 0, fx)   
+    }
+    files.splice(theIndex, 1)
+    files.splice(0, 0, fx)
     render()
     renderFileDropdown()
 }
@@ -6320,12 +6320,12 @@ function moveFileLeft() {
     var theIndex = files.indexOf(fx)
     if (theIndex == -1) {
         return
-    } 
+    }
     if (theIndex == 0) {
         return
-    } 
-    files.splice(theIndex, 1)   
-    files.splice(theIndex - 1, 0, fx)   
+    }
+    files.splice(theIndex, 1)
+    files.splice(theIndex - 1, 0, fx)
     render()
     renderFileDropdown()
 }
@@ -6333,12 +6333,12 @@ function moveFileRight() {
     var theIndex = files.indexOf(fx)
     if (theIndex == -1) {
         return
-    } 
+    }
     if (theIndex == files.length - 1) {
         return
-    } 
-    files.splice(theIndex, 1)   
-    files.splice(theIndex+1, 0, fx)   
+    }
+    files.splice(theIndex, 1)
+    files.splice(theIndex+1, 0, fx)
     render()
     renderFileDropdown()
 }
@@ -6359,7 +6359,7 @@ function makeFile(fullPath, cursorLineIndex, contents) {
         name: "",
         undo: {
             index: 0,
-            stack: [contents],   
+            stack: [contents],
             xStack: [0],
             yStack: [0],
             lastSavedLines: JSON.parse(JSON.stringify(theLines)),
@@ -6379,9 +6379,9 @@ function makeFile(fullPath, cursorLineIndex, contents) {
         uniqueID: getUniqueID(),
         fileToken: fileToken,
         selectedRegions: [],
-        
+
         lastOffsetY: -1,
-        
+
         // copy color from current file
         color: window.fx ? fx.color : ''
     }
@@ -6401,19 +6401,19 @@ function addFileToList(file) {
     renderFileDropdown()
 }
 function addFile(fullPath, preventSelect, id) {
-    
+
     fullPath = normalizeFullPath(fullPath)
     if (fullPath == "") {
         return
     }
-    
+
     // adding file to list beforehand to preserve order
-    
+
     var cursorLineIndex = 0
     var parts = fullPath.split(":")
     fullPath = parts[0]
     if (parts.length > 1) {
-        cursorLineIndex = (parts[1] - 1) || 0   
+        cursorLineIndex = (parts[1] - 1) || 0
     }
     // If the file is already in the list of open files.
     // then let it have a reference to the existing lines, like vim does.
@@ -6422,7 +6422,7 @@ function addFile(fullPath, preventSelect, id) {
             return duplicateFile(files[i], cursorLineIndex, id)
         }
     }
-    var file = makeFile(fullPath, cursorLineIndex, "") 
+    var file = makeFile(fullPath, cursorLineIndex, "")
     file.ID = id
     addFileToList(file)
     if (!initialFileAdding) {
@@ -6455,7 +6455,7 @@ function verifyLoadedMD5(f, md5String) {
     if (md5String != f.undo.lastSavedHash) {
         log(`md5s don't match ${f.fullPath} ${md5String}; ${f.undo.lastSavedHash}`)
     }
-    
+
 }
 
 function renderFileDropdown() {
@@ -6494,7 +6494,7 @@ function renderFileDropdown() {
         if (fx == file) {
             button.classList.add("selected")
         }
-        
+
         if (file.color) {
             var colorDiv = document.createElement("div")
             colorDiv.style.width = "10px"
@@ -6509,7 +6509,7 @@ function renderFileDropdown() {
             button.appendChild(colorDiv)
         }
         fileRow.appendChild(button)
-        
+
     }
     renderSaves()
 
@@ -6523,7 +6523,7 @@ function treeToLines(theTree, path, indent, kPrefix) {
     // for (var k in theTree) {
     for (var ki = 0; ki < theKeys.length; ki++ ) {
         var k = theKeys[ki]
-        
+
         var childKeys = Object.keys(theTree[k])
         // Do I need this?
         childKeys.sort()
@@ -6538,7 +6538,7 @@ function treeToLines(theTree, path, indent, kPrefix) {
             }
             continue
         }
- 
+
         kPrefix = ""
         if (theTree[k].fileToken == fileToken) {
             if (theTree[k].fileMode == "file") {
@@ -6565,17 +6565,17 @@ function treeToLines(theTree, path, indent, kPrefix) {
 
 function getLinesForFileList() {
     fileTree = {}
-    
+
     // reset the index
     for (var i=0; i<files.length; i++) {
         // tmpIndex should only be used in this function
         files[i].tmpIndex = i
     }
-    
+
     // doing the slice so we don't mutate the original array
     var sortedFiles = files.slice().sort(function(f1, f2) {
         if (f1.fileMode == "shell") {
-            // TODO: should we set the fullPath for shell to be the CWD?  
+            // TODO: should we set the fullPath for shell to be the CWD?
             return (f1.shellCWD + f1.tmpIndex) > (f2.shellCWD + f2.tmpIndex)
         } else if (f1.fileMode == "terminal") {
             // #todoterminal: how get the cwd of the process (/proc/fd) ?
@@ -6584,7 +6584,7 @@ function getLinesForFileList() {
             return (f1.fullPath + f1.tmpIndex) > (f2.fullPath + f2.tmpIndex)
         }
     })
-    
+
     // taking advantage of sorted order here
     for (var fileI=0; fileI<sortedFiles.length; fileI++) {
         var f = sortedFiles[fileI]
@@ -6598,13 +6598,13 @@ function getLinesForFileList() {
             parts = ["(terminal)", (f.tmpIndex+"").padStart(2, "0") + ": " + (f.name || "")]
         }
         // var parts = (f.fullPath).split("/")
-        var curTree = fileTree 
+        var curTree = fileTree
         for (var partI=0; partI<parts.length; partI++) {
            var part = parts[partI]
            if (part == "") {
               continue
            }
-           
+
            var childTree = curTree[part]
            if (!childTree) {
               if (partI == parts.length-1) {
@@ -6614,12 +6614,12 @@ function getLinesForFileList() {
               }
               curTree[part] = childTree
            }
-           curTree = childTree 
+           curTree = childTree
         }
     }
     treeFiles = []
     treeFilesShadow = []
-    
+
     if (showFilesFlatFirst) {
         treeFilesShadow.push("initialSeparator")
         treeFiles.push("-") // blank line do you can paste on top
@@ -6632,7 +6632,7 @@ function getLinesForFileList() {
         treeFiles.push("-")
         treeFilesShadow.push("treeSeparator")
     }
-    
+
     treeToLines(fileTree, "", "", "")
     return treeFiles
 }
@@ -6642,9 +6642,9 @@ function seeFiles() {
         setCurrentFile(lastFile)
         return
     }
-    
+
     splicedFiles = []
-    
+
     var contents = getLinesForFileList().join("\n")
     var f = makeFile("__", 0, contents)
     f.fileMode = "fileList"
@@ -6665,11 +6665,11 @@ function setCurrentFile(file) {
     if (!file) {
         return
     }
-    
+
     if (fx == file) {
         // go up a directory
         addFile(fx.fullPath.split("/").slice(0, -1).join("/"))
-        return    
+        return
     }
 
     // #filestuff
@@ -6705,12 +6705,12 @@ function duplicateFile(f, cursorLineIndex, id="") {
         return
     }
     // TODO: maybe a more efficient way,
-    // We copy all the lines here 
+    // We copy all the lines here
     var fc = JSON.parse(JSON.stringify(f))
     fc.fileToken = fileToken
     fc.uniqueID = getUniqueID()
     fc.ID = id
-    
+
     if (id == "") {
         fetch(proxyPath + "/duplfile?idtodup="+f.ID+"&id="+id, {
             cache: "no-cache"
@@ -6744,7 +6744,7 @@ function downloadFile() {
     window.open(proxyPath + "/saveload?fullpath=" + encodeURIComponent(fx.fullPath) + "&raw=1&download=1")
     // log(proxyPath + "/saveload?fullpath=" + encodeURIComponent(fx.fullPath) + "&raw=1&download=1")
 }
-  
+
 // also see makeFile
 function fetchFile(fullPath, file, id="") {
     var isDir = false
@@ -6757,7 +6757,7 @@ function fetchFile(fullPath, file, id="") {
         if (r.headers.get("X-Is-Dir") == "1") {
             isDir = true
         }
-        
+
         // only gets id if new file
         if (r.headers.get("X-ID")) {
             file.ID = r.headers.get("X-ID") - 0
@@ -6792,7 +6792,7 @@ function reloadAll() {
     for (var i=0; i<files.length; i++) {
         var theFile = files[i]
         if (!seen[theFile.fullPath]) {
-            reloadFile(theFile)    
+            reloadFile(theFile)
         }
         seen[theFile.fullPath] = true
     }
@@ -6814,7 +6814,7 @@ function reloadFile(theFile) {
     }).catch(e => {
         alert("Error loading file " + e)
     })
-    
+
 }
 
 var inDebugView = false
@@ -6864,7 +6864,7 @@ fetch(proxyPath + "/myworkspace", {
 }).then(r => {
     return r.json()
 }).then(workspace => {
-    
+
     for (var serverFile of workspace.Files) {
         // TODO: fix inconsistent file naming #inconsistentFileNaming
         if (serverFile.Type == "terminal") {
@@ -6889,7 +6889,7 @@ fetch(proxyPath + "/myworkspace", {
     if (workspace.DarkMode != isDark) {
         toggleDarkMode()
     }
-    
+
     preventRender = false
     render()
     renderDarkMode()
@@ -6912,7 +6912,7 @@ function saveWorkspace() {
         DarkMode: isDark,
         FontName: currentFont.fontName,
         FontScale: fontScale,
-        Files: [] 
+        Files: []
     }
     for (var i = 0; i < files.length; i++) {
         var f = files[i]
@@ -6928,7 +6928,7 @@ function saveWorkspace() {
             // "HighlightText": f.highlightText,
         })
     }
-    fetch(proxyPath + "/mysaveworkspace", {    
+    fetch(proxyPath + "/mysaveworkspace", {
         cache: "no-cache",
         method: "POST",
         body: JSON.stringify(tmpWorkspace),
@@ -6959,7 +6959,7 @@ function gotoDefinition() {
             position: {
                 line: fx.cursorLineIndex,
                 character: fx.cursorColIndex
-            } 
+            }
             // workDoneToken:
             // partialResultToken:
         }
@@ -6971,7 +6971,7 @@ function langServer(jsonRPC) {
     jsonRPC.id = jsonRPCID++
     var body = JSON.stringify(jsonRPC)
     log(jsonRPC)
-    fetch(proxyPath + "/mylangserver",  {    
+    fetch(proxyPath + "/mylangserver",  {
         cache: "no-cache",
         method: "POST",
         headers: {
@@ -6985,10 +6985,10 @@ function langServer(jsonRPC) {
         log(r)
     }).catch(e => {
         alert("error saving calling lang server: " + e)
-    })    
+    })
 }
 
- 	 
+
 
 
 
