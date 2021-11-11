@@ -1,4 +1,12 @@
 
+do graphs
+
+fancy autocomplete in shell/ mode
+convert from cmd
+
+Highlight trailing whitespace in red (For other code reviewers)
+
+hitting "undo" when there is nothing to undo bugs out
 remove the goto line feature of search and
 make it part if editor command
 

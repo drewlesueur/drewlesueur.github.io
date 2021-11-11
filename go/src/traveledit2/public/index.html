@@ -58,7 +58,7 @@ body.dark .toolbar div {
     /* see renderDarkMode */
     color: rgba(255, 255, 200);
     border: 1px solid rgba(255, 255, 200);
-    opacity: 0.7;
+    --opacity: 0.7;
 }
 body.dark .toolbar div.selected {
     background-color: gray;
@@ -333,6 +333,7 @@ ontouchstart=onStart(event)
     <div class=square onclick=doEval()>eval</div>
     <div class=square onclick="reloadAll()">reload all</div>
     <div class=square onclick="comment('--')">--</div>
+    <div class=square onclick="clearTrailingWhitespace()">&times; tr whitespace</div>
     <div class=square onclick="searchText.value = getWordAtCursor().word; render();">highlight word</div>
     <div id=toggleTabStopButton class=square onclick="toggleTabStop()">tabs</div>
 </div>
@@ -389,6 +390,8 @@ ontouchstart=onStart(event)
 </div>
 <div class=toolbar>
     <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
+    <div class=longButton onclick="selectFont('SourceCodePro')">Source Code Pro</div>
+    <div class=longButton onclick="selectFont('InputMono')">Input Mono</div>
     <div class=longButton onclick="selectFont('Courier')">Courier</div>
     <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
     <div class=longButton onclick="selectFont('IosevkaLucidaMedium')">Iosevka L Medium</div>
@@ -587,6 +590,21 @@ var fonts = {
         fontWidthPre: 15,
         fontSize: 30,
         fontName: "SFMono",
+    },
+    "SourceCodePro": {
+        fontHeightPre: 36,
+        fontWidthPre: 18,
+        fontSize: 30,
+        fontName: "SourceCodePro",
+        // url: "https://fonts.gstatic.com/s/sourcecodepro/v14/HI_QiYsKILxRpg3hIP6sJ7fM7PqlONvUlMIFxGC8.woff2"
+        url: "https://fonts.gstatic.com/s/sourcecodepro/v14/HI_SiYsKILxRpg3hIP6sJ7fM7PqlPevWnsUnxg.woff2"
+    },
+    "InputMono": {
+        fontHeightPre: 36,
+        fontWidthPre: 18,
+        fontSize: 30,
+        fontName: "InputMono",
+        url: proxyPath + "/tepublic/input_mono/input_mono.ttf"
     },
     "RobotoMono": {
         fontHeightPre: 36,
@@ -4613,7 +4631,7 @@ function renderInternal() {
                     highlightStartSearch = pos + matchLength
                 } else {
                     if (useRegexSearch) {
-                        var theMatch = theLine.substr(highlightStartSearch).match(cachedSearchRegexp(fx.highlightText))
+                        var theMatch = theLine.substr(highlightStartSearch).match(cachedSearchRegexp(highlightText))
                         if (theMatch == null) {
                             break    
                         }
@@ -4644,6 +4662,42 @@ function renderInternal() {
                 var highlightLength = (expandTabIndex(theLine, pos+matchLength, y + fx.offsetY)-startHighlightPos) * fontWidth
                 t.fillRect(
                 // t.strokeRect(
+                    startFillHighlight,
+                    y * fontHeight,
+                    highlightLength,
+                    fontHeight
+                )
+            }
+        }
+        
+        // Trailing whitespace
+        var highlightStartSearch = 0
+        var matchLength = 0
+        if (theLine) {   
+            for (var _i=0; _i<1; _i++) { // Loop so we can break
+                var theMatch = theLine.match(trailingWhitespaceRegexp)
+                if (theMatch == null) {
+                    break    
+                }
+                matchLength = theMatch[0].length
+                pos = highlightStartSearch + theMatch.index  
+                // lime
+                if (isDark) {
+                    t.fillStyle = "salmon"
+                } else {
+                    t.fillStyle = "salmon"
+                }
+                
+                var startHighlightPos = expandTabIndex(theLine, pos, y + fx.offsetY)
+                var startFillHighlight = (startHighlightPos - fx.offsetX) * fontWidth
+                var highlightLength = (expandTabIndex(theLine, pos+matchLength, y + fx.offsetY)-startHighlightPos) * fontWidth
+                    log([
+                    "hl", startFillHighlight,
+                    y * fontHeight,
+                    highlightLength,
+                    fontHeight
+                    ])
+                t.fillRect(
                     startFillHighlight,
                     y * fontHeight,
                     highlightLength,
@@ -4873,6 +4927,8 @@ function renderInternal() {
         renderDuration = 0
     }
 }
+
+var trailingWhitespaceRegexp = /\s+$/
 
 false && setInterval(function() {
     if (rendersInLastSecond > 0) {
@@ -6164,6 +6220,9 @@ function doFormat() {
     setLines(simpleFormat(fx.lines))
     docChanged()
     render()
+}
+function clearTrailingWhitespace() {
+        scriptLinesWithOneLineScript(`x.replace(/\\s+$/, "")`)
 }
 function simpleFormat(lines) {
     // this will work as long as every indent
