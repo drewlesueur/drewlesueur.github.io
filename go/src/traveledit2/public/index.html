@@ -4503,6 +4503,20 @@ function compactLine(theLine, index) {
     return ret
 }
 
+var notSpace = /[^\s]/
+function skipLeadingSace(line, startX, offsetX, y, file) {
+    var adjustedStart = unExpandTabIndex(line, startX, y, file)
+    var newStartX = startX
+    var match = line.match(notSpace)
+    if (match) {
+        var letterStart = match.index
+        // log({letterStart: letterStart})
+        if (adjustedStart < letterStart) {
+            newStartX = expandTabIndex(line, letterStart, y)
+        }
+    }
+    return [newStartX-offsetX, newStartX-startX]
+}
 
 var renderDuration = 0
 var renderCount = 0
@@ -4529,24 +4543,46 @@ function renderInternal() {
             }
         }
     }
-    
+
     // the highlighted areas
     var underlineOffset = (fontHeight) - (1/6/2 * fontHeight)
     var underlineHeight = fontHeight/6
     for (var i=0; i<fx.highlightRanges.length;i++) {
         // TODO: don't highlight leading whitespa e
+        // TODO: look into caching emd result of boxes
+
+        // var r = fx.highlightRanges[i]
+        // t.fillStyle = r.BackgroundColor
+        // for (var y=r.StartY-fx.offsetY; y<=r.StopY-fx.offsetY; y++) {
+        //     var line = fx.lines[y + fx.offsetY] || ""
+        //     if (r.StartY == r.StopY) {
+        //         t.fillRect((r.StartX-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, (r.StopX-r.StartX)*fontWidth, underlineHeight)
+        //     } else if (y==r.StartY-fx.offsetY) {
+        //         t.fillRect((r.StartX-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, (expandTabIndex(line, line.length, y + fx.offsetY)-r.StartX)*fontWidth, underlineHeight)
+        //     } else if (y==r.StopY-fx.offsetY) {
+        //         t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, r.StopX*fontWidth, underlineHeight)
+        //     } else {
+        //         t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, expandTabIndex(line, line.length, y + fx.offsetY)*fontWidth, underlineHeight)
+        //     }
+        // }
+        
+        // TODO, we could look into expanding tab indexes in one flow? instead of 2 individually?
         var r = fx.highlightRanges[i]
         t.fillStyle = r.BackgroundColor
         for (var y=r.StartY-fx.offsetY; y<=r.StopY-fx.offsetY; y++) {
             var line = fx.lines[y + fx.offsetY] || ""
             if (r.StartY == r.StopY) {
-                t.fillRect((r.StartX-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, (r.StopX-r.StartX)*fontWidth, underlineHeight)
+                var [newStartX, adjustment] = skipLeadingSace(line, r.StartX, fx.offsetX, y + fx.offsetY, fx)
+                t.fillRect(newStartX*fontWidth, y*fontHeight + underlineOffset, (r.StopX-r.StartX-adjustment)*fontWidth, underlineHeight)
             } else if (y==r.StartY-fx.offsetY) {
-                t.fillRect((r.StartX-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, (expandTabIndex(line, line.length, y + fx.offsetY)-r.StartX)*fontWidth, underlineHeight)
+                var [newStartX, adjustment] = skipLeadingSace(line, r.StartX, fx.offsetX, y + fx.offsetY, fx)
+                t.fillRect(newStartX*fontWidth, y*fontHeight + underlineOffset, (expandTabIndex(line, line.length, y + fx.offsetY)-r.StartX-adjustment)*fontWidth, underlineHeight)
             } else if (y==r.StopY-fx.offsetY) {
-                t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, r.StopX*fontWidth, underlineHeight)
+                var [newStartX, adjustment] = skipLeadingSace(line, 0, fx.offsetX, y + fx.offsetY, fx)
+                t.fillRect(newStartX*fontWidth, y*fontHeight + underlineOffset, (r.StopX-adjustment)*fontWidth, underlineHeight)
             } else {
-                t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, expandTabIndex(line, line.length, y + fx.offsetY)*fontWidth, underlineHeight)
+                var [newStartX, adjustment] = skipLeadingSace(line, 0, fx.offsetX, y + fx.offsetY, fx)
+                t.fillRect(newStartX*fontWidth, y*fontHeight + underlineOffset, (expandTabIndex(line, line.length, y + fx.offsetY)-adjustment)*fontWidth, underlineHeight)
             }
         }
     }

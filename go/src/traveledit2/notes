@@ -1,5 +1,6 @@
 pqbd
 
+laces where we aren't caching calls to unExpandTabIndex or expandTabIndex
 fuzzy autocomplete a line
 does autocompleting full line take into account leading space
 ability to highlight sections in conjunction with "word" color combos.?
