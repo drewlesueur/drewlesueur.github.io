@@ -356,6 +356,9 @@ ontouchstart=onStart(event)
     <div class=square onclick="location.reload()">refresh</div>
 </div>
 <div class=toolbar>
+    <div class=square onclick="moveFileAllTheWayLeft()">hi</div>
+</div>
+<div class=toolbar>
     <!--<div class=square onclick=addSpace()>space</div>
     <div class=square onclick=backspace()>backspace</div>
     <div class=square onclick="theText.focus()">insert</div>
@@ -518,7 +521,7 @@ for (var i=0; i<toolbars.length; i++) {
 }
 c.style.width = innerWidth + "px"
 c.width = innerWidth * 3
-var highlightText = ""
+var highlightText = "" // deprecated
 var highlightMatchesSingleRegExp
 var highlightMatches = []
 
@@ -1279,6 +1282,26 @@ function runEditorCommand(e) {
         break
     case "hl":
         searchText.value = getWordAtCursor().word; render();
+        break
+    case "h":
+        if (fx.selectedRegions.length == 0) {
+            break
+        }
+        var r = fx.selectedRegions[0]
+        fx.highlightRanges.push({
+            StartY: r.startY,
+            StartX: r.startX,
+            StopY: r.stopY,
+            StopX: r.stopX,
+            BackgroundColor: rest || "deeppink"
+        })
+        saveWorkspace()
+        render()
+        break
+    case "hx":
+        fx.highlightRanges = []
+        saveWorkspace()
+        render()
         break
     // case "h":
     //     // if (!rest && fx.selectedRegions.length) {
@@ -4486,6 +4509,7 @@ var renderCount = 0
 var rendersInLastSecond = 0
 function renderInternal() {
     var startRenderTime = Date.now()
+
     // the selected areas
     for (var i=0; i<fx.selectedRegions.length;i++) {
         // todo: normalize region start and stop
@@ -4502,6 +4526,27 @@ function renderInternal() {
                 t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight, r.stopX*fontWidth, fontHeight)
             } else {
                 t.fillRect((0-fx.offsetX)*fontWidth  , y*fontHeight, expandTabIndex(line, line.length, y + fx.offsetY)*fontWidth, fontHeight)
+            }
+        }
+    }
+    
+    // the highlighted areas
+    var underlineOffset = (fontHeight) - (1/6/2 * fontHeight)
+    var underlineHeight = fontHeight/6
+    for (var i=0; i<fx.highlightRanges.length;i++) {
+        // TODO: don't highlight leading whitespa e
+        var r = fx.highlightRanges[i]
+        t.fillStyle = r.BackgroundColor
+        for (var y=r.StartY-fx.offsetY; y<=r.StopY-fx.offsetY; y++) {
+            var line = fx.lines[y + fx.offsetY] || ""
+            if (r.StartY == r.StopY) {
+                t.fillRect((r.StartX-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, (r.StopX-r.StartX)*fontWidth, underlineHeight)
+            } else if (y==r.StartY-fx.offsetY) {
+                t.fillRect((r.StartX-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, (expandTabIndex(line, line.length, y + fx.offsetY)-r.StartX)*fontWidth, underlineHeight)
+            } else if (y==r.StopY-fx.offsetY) {
+                t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, r.StopX*fontWidth, underlineHeight)
+            } else {
+                t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, expandTabIndex(line, line.length, y + fx.offsetY)*fontWidth, underlineHeight)
             }
         }
     }
@@ -4642,22 +4687,10 @@ function renderInternal() {
             }
         }
 
-        // Per file highlights
-        var highlightStartSearch = 0
-        var matchLength = 0
-        // if (theLine && fx.highlightText) {
         if (theLine && highlightMatchesSingleRegExp) {
             // TODO: regular search can benefit from this matchAll business
             // TODO: you can cache the line and the end result of the matches!
             var matches = theLine.matchAll(highlightMatchesSingleRegExp)
-            // log([...matches].map(function (x) {
-            //     return {
-            //         arr: x,
-            //         index: x.index,
-            //         length: x.length,
-            //         input: x.input
-            //     }
-            // }))
             for (const match of matches) {
                 // first non null index - 1 (first index is total match)
                 var _regI
@@ -4665,7 +4698,6 @@ function renderInternal() {
                 for (_regI=1; _regI < match.length; _regI++) {
                     var captureItem = match[_regI]
                     if (captureItem) {
-                        // log(["captureItem", captureItem])
                         _regLen = captureItem.length
                         break
                     }
@@ -4676,7 +4708,6 @@ function renderInternal() {
                 // TODO: expanding the same line, we could come up with optimization for that
                 var startHighlightPos = expandTabIndex(theLine, match.index, y + fx.offsetY)
                 var startFillHighlight = (startHighlightPos - fx.offsetX) * fontWidth
-                // var highlightLengthChars = (expandTabIndex(theLine, match.index+match.length, y + fx.offsetY)-startHighlightPos)
                 var highlightLengthChars = (expandTabIndex(theLine, match.index+_regLen, y + fx.offsetY)-startHighlightPos)
                 var highlightLength = highlightLengthChars * fontWidth
 
@@ -4690,7 +4721,7 @@ function renderInternal() {
                 t.fillRect(
                     startFillHighlight,
                     // (y * fontHeight) + (5/6 * fontHeight),
-                    (y * fontHeight) + (fontHeight),
+                    (y * fontHeight) + (fontHeight) - (1/6/2 * fontHeight),
                     highlightLength,
                     fontHeight/6
                 )
@@ -6900,7 +6931,7 @@ fetch(proxyPath + "/myworkspace", {
             addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), false, serverFile.ID)
         }
         fx.color = serverFile.Color
-        // fx.highlightText = serverFile.HighlightText
+        fx.highlightRanges = serverFile.HighlightRanges
     }
     initialFileAdding = false
     if (workspace.FontName) {
@@ -6914,6 +6945,8 @@ fetch(proxyPath + "/myworkspace", {
     if (workspace.DarkMode != isDark) {
         toggleDarkMode()
     }
+    log("initial====")
+    log(workspace.HighlightMatches)
     if (workspace.HighlightMatches) {
         highlightMatches = workspace.HighlightMatches
         processHighlightMatches()

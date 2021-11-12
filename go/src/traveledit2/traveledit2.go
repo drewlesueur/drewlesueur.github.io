@@ -516,6 +516,7 @@ func main() {
 					FontScale: tmpW.FontScale,
 					FontName:  tmpW.FontName,
 					DarkMode:  tmpW.DarkMode,
+					HighlightMatches:  tmpW.HighlightMatches,
 				}
 				for _, f := range tmpW.Files {
 					if f.Type == "file" {
