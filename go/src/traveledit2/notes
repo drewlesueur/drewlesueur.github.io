@@ -1,5 +1,7 @@
 pqbd
 
+fuzzy autocomplete a line
+does autocompleting full line take into account leading space
 ability to highlight sections in conjunction with "word" color combos.?
 
 fonts
@@ -16,6 +18,7 @@ Codelia
 https://fonts.ilovetypography.com/category/monospace?page=1
 https://fonts.adobe.com/fonts?browse_mode=default&cc=true&filters=cl:ms&max_styles=26&min_styles=1&page=4
 https://realdougwilson.com/writing/coding-with-character
+https://typographica.org/on-typography/typewriter-typeface-the-legacy-of-the-writing-machine-in-type-design/
 
 do graphs
 fancy autocomplete in shell/ mode

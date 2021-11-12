@@ -228,6 +228,25 @@ func parseFirstNumber(s string) int {
 	return n
 }
 
+type HighlightMatch struct {
+	Regex           string
+	BackgroundColor string
+	TextColor       string
+	UnderlineColor  string
+}
+
+type HighlightRange struct {
+	StartY int
+	StartX int
+
+	StopY int // inclusive
+	StopX int // exclusive
+
+	BackgroundColor string
+	TextColor       string
+	UnderlineColor  string
+}
+
 // Will these die when the server restarts?
 // I think not.
 // Interesting how we have different fields for separate File types
@@ -240,8 +259,9 @@ type File struct {
 	LineNumber int
 
 	// CSS color
-	Color         string
-	HighlightText string
+	Color           string
+	HighlightText   string // deprecated
+	HighlightRanges []*HighlightRange
 
 	// fields for remotefile
 	LocalTmpPath string // temorary file
@@ -265,6 +285,8 @@ type Workspace struct {
 	DarkMode  bool
 	FontName  string
 	FontScale float64
+
+	HighlightMatches []*HighlightMatch
 }
 
 func (w *Workspace) GetFile(id int) (*File, bool) {
@@ -300,14 +322,15 @@ func workspaceView(w *Workspace) map[string]interface{} {
 	files := []map[string]interface{}{}
 	for _, f := range workspace.Files {
 		files = append(files, map[string]interface{}{
-			"ID":            f.ID,
-			"Name":          f.Name,
-			"Type":          f.Type,
-			"FullPath":      f.FullPath,
-			"LineNumber":    f.LineNumber,
-			"CWD":           f.CWD,
-			"Color":         f.Color,
-			"HighlightText": f.HighlightText,
+			"ID":              f.ID,
+			"Name":            f.Name,
+			"Type":            f.Type,
+			"FullPath":        f.FullPath,
+			"LineNumber":      f.LineNumber,
+			"CWD":             f.CWD,
+			"Color":           f.Color,
+			"HighlightText":   f.HighlightText,
+			"HighlightRanges": f.HighlightRanges,
 		})
 	}
 	workspaceRet := map[string]interface{}{
@@ -315,6 +338,7 @@ func workspaceView(w *Workspace) map[string]interface{} {
 		"DarkMode":  workspace.DarkMode,
 		"FontName":  workspace.FontName,
 		"FontScale": workspace.FontScale,
+		"HighlightMatches": workspace.HighlightMatches,
 		"Files":     files,
 	}
 	return workspaceRet
@@ -518,6 +542,7 @@ func main() {
 					addedFile.Name = f.Name
 					addedFile.Color = f.Color
 					addedFile.HighlightText = f.HighlightText
+					addedFile.HighlightRanges = f.HighlightRanges
 				}
 
 				workspaces = append(workspaces, workspace)
@@ -902,6 +927,7 @@ func main() {
 				f.Name = fc.Name
 				f.Color = fc.Color
 				f.HighlightText = fc.HighlightText
+				f.HighlightRanges = fc.HighlightRanges
 				newFiles = append(newFiles, f)
 			}
 		}
@@ -913,6 +939,7 @@ func main() {
 		workspace.DarkMode = tmpWorkspace.DarkMode
 		workspace.FontName = tmpWorkspace.FontName
 		workspace.FontScale = tmpWorkspace.FontScale
+		workspace.HighlightMatches = tmpWorkspace.HighlightMatches
 
 		// now write to file
 		workspaceViews := []map[string]interface{}{}

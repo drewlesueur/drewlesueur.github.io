@@ -324,6 +324,7 @@ ontouchstart=onStart(event)
     <div class=square onclick="copyBuffer = [location.href]; osCopyText()">copy url</div>
     <div class=square onclick="copyString(fx.fullPath + ':' + (fx.cursorLineIndex + 1))">copy path</div>
     <div class=square onclick="showDiff()">show diff</div>
+    <div class=square onclick="setHighlightMatches()">set highlight</div>
     <div id=darkModeButton class=square onclick="toggleDarkMode()">light</div>
     <div class=square onclick=openAtCursor()>open</div>
     <div class=square onclick=scriptLines()>script lines</div>
@@ -350,7 +351,6 @@ ontouchstart=onStart(event)
     <div class=square onclick="moveFileAllTheWayLeft()">move home</div>
     <div class=square onclick="downloadFile()">Download</div>
     <div class=square onclick="saveWorkspace()">save workspace</div>
-    <div class=square onclick="updateName()">update name</div>
     <div class=square onclick="location.href = proxyPath + '/login'">login</div>
     <div class=square onclick=urlAtCursor()>visit</div>
     <div class=square onclick="location.reload()">refresh</div>
@@ -519,6 +519,8 @@ for (var i=0; i<toolbars.length; i++) {
 c.style.width = innerWidth + "px"
 c.width = innerWidth * 3
 var highlightText = ""
+var highlightMatchesSingleRegExp
+var highlightMatches = []
 
 
 
@@ -1861,24 +1863,24 @@ function findDownForm(e) {
 
 
 function nextHighlightText() {
-    // if (!fx.highlightText) {
-    if (!highlightText) {
+    if (!highlightMatchesSingleRegExp) {
         return
     }
+    log(highlightMatchesSingleRegExp.toString())
     var prevSearchText = searchText.value
     // searchText.value = fx.highlightText
-    searchText.value = highlightText
+    searchText.value = highlightMatchesSingleRegExp.toString().slice(1, -2)
     findDown()
     searchText.value = prevSearchText
 }
 function prevtHighlightText() {
-    // if (!fx.highlightText) {
-    if (!highlightText) {
+    if (!highlightMatchesSingleRegExp) {
         return
     }
+    log(highlightMatchesSingleRegExp.toString())
     var prevSearchText = searchText.value
     // searchText.value = fx.highlightText
-    searchText.value = highlightText
+    searchText.value = highlightMatchesSingleRegExp.toString().slice(1, -2)
     findUp()
     searchText.value = prevSearchText
 }
@@ -4644,57 +4646,56 @@ function renderInternal() {
         var highlightStartSearch = 0
         var matchLength = 0
         // if (theLine && fx.highlightText) {
-        if (theLine && highlightText) {
-            // max 20 highlights per line
-            for (var _i=0; _i<20; _i++) {
-                if (fx.fileMode == "directory") {
-                    // var pos = theLine.toLowerCase().indexOf(fx.highlightText.toLowerCase(), highlightStartSearch)
-                    var pos = theLine.toLowerCase().indexOf(highlightText.toLowerCase(), highlightStartSearch)
-                    if (pos == -1) {
+        if (theLine && highlightMatchesSingleRegExp) {
+            // TODO: regular search can benefit from this matchAll business
+            // TODO: you can cache the line and the end result of the matches!
+            var matches = theLine.matchAll(highlightMatchesSingleRegExp)
+            // log([...matches].map(function (x) {
+            //     return {
+            //         arr: x,
+            //         index: x.index,
+            //         length: x.length,
+            //         input: x.input
+            //     }
+            // }))
+            for (const match of matches) {
+                // first non null index - 1 (first index is total match)
+                var _regI
+                var _regLen
+                for (_regI=1; _regI < match.length; _regI++) {
+                    var captureItem = match[_regI]
+                    if (captureItem) {
+                        // log(["captureItem", captureItem])
+                        _regLen = captureItem.length
                         break
                     }
-                    // matchLength = fx.highlightText.length
-                    matchLength = highlightText.length
-                    highlightStartSearch = pos + matchLength
-                } else {
-                    if (useRegexSearch) {
-                        var theMatch = theLine.substr(highlightStartSearch).match(cachedSearchRegexp(highlightText))
-                        if (theMatch == null) {
-                            break
-                        }
-                        matchLength = theMatch[0].length
-                        pos = highlightStartSearch + theMatch.index
-                        highlightStartSearch = pos + matchLength
-                    } else {
-                        // var pos = theLine.indexOf(fx.highlightText, highlightStartSearch)
-                        var pos = theLine.indexOf(highlightText, highlightStartSearch)
-                        if (pos == -1) {
-                            break
-                        }
-                        // matchLength = fx.highlightText.length
-                        matchLength = highlightText.length
-                        highlightStartSearch = pos + matchLength
-                    }
                 }
-                // lime
-                if (isDark) {
-                    t.fillStyle = "deeppink"
-                } else {
-                    t.fillStyle = "deeppink"
-                }
+                _regI -= 1 // because first item is full match then capture groups
+
 
                 // TODO: expanding the same line, we could come up with optimization for that
-                var startHighlightPos = expandTabIndex(theLine, pos, y + fx.offsetY)
+                var startHighlightPos = expandTabIndex(theLine, match.index, y + fx.offsetY)
                 var startFillHighlight = (startHighlightPos - fx.offsetX) * fontWidth
-                var highlightLength = (expandTabIndex(theLine, pos+matchLength, y + fx.offsetY)-startHighlightPos) * fontWidth
+                // var highlightLengthChars = (expandTabIndex(theLine, match.index+match.length, y + fx.offsetY)-startHighlightPos)
+                var highlightLengthChars = (expandTabIndex(theLine, match.index+_regLen, y + fx.offsetY)-startHighlightPos)
+                var highlightLength = highlightLengthChars * fontWidth
+
+                t.fillStyle = highlightMatches[_regI].BackgroundColor
+                // t.fillRect(
+                //     startFillHighlight,
+                //     y * fontHeight,
+                //     highlightLength,
+                //     fontHeight
+                // )
                 t.fillRect(
-                // t.strokeRect(
                     startFillHighlight,
-                    y * fontHeight,
+                    // (y * fontHeight) + (5/6 * fontHeight),
+                    (y * fontHeight) + (fontHeight),
                     highlightLength,
-                    fontHeight
+                    fontHeight/6
                 )
             }
+
         }
 
         // Trailing whitespace
@@ -5546,7 +5547,7 @@ function onStart(e) {
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
 
             // if (fx.highlightText) {
-            if (highlightText) {
+            if (highlightMatchesSingleRegExp) {
                 nextHighlightText()
             } else if (searchText.value !== "" && !fx.selectedRegions.length) {
                 findDown()
@@ -5642,7 +5643,7 @@ function onStart(e) {
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
 
             // if (fx.highlightText) {
-            if (highlightText) {
+            if (highlightMatchesSingleRegExp) {
                 prevtHighlightText()
             } else if (searchText.value !== "" && !fx.selectedRegions.length) {
                 findUp()
@@ -6405,7 +6406,8 @@ function makeFile(fullPath, cursorLineIndex, contents) {
         lastOffsetY: -1,
 
         // copy color from current file
-        color: window.fx ? fx.color : ''
+        color: window.fx ? fx.color : '',
+        highlightRanges: []
     }
 }
 function addFileToList(file) {
@@ -6881,6 +6883,7 @@ var initialFileAdding = false
 // add exising files
 // TODO: you should hydrate this in the first pageload.
 // and maybe at least hydrate the first file.
+// #loadWorkspace
 fetch(proxyPath + "/myworkspace", {
     cache: "no-cache"
 }).then(r => {
@@ -6911,6 +6914,10 @@ fetch(proxyPath + "/myworkspace", {
     if (workspace.DarkMode != isDark) {
         toggleDarkMode()
     }
+    if (workspace.HighlightMatches) {
+        highlightMatches = workspace.HighlightMatches
+        processHighlightMatches()
+    }
 
     preventRender = false
     render()
@@ -6920,20 +6927,12 @@ fetch(proxyPath + "/myworkspace", {
 })
 
 
-function updateName() {
-    var name = prompt("Name:")
-    if (!name) {
-        return
-    }
-    fx.name = name
-    // TODO: could you also call saveName?
-    saveWorkspace()
-}
 function saveWorkspace() {
     var tmpWorkspace = {
         DarkMode: isDark,
         FontName: currentFont.fontName,
         FontScale: fontScale,
+        HighlightMatches: highlightMatches,
         Files: []
     }
     for (var i = 0; i < files.length; i++) {
@@ -6947,6 +6946,7 @@ function saveWorkspace() {
             "LineNumber": f.cursorLineIndex + 1,
             "CWD": f.shellCWD,
             "Color": f.color,
+            "HighlightRanges": f.highlightRanges,
             // "HighlightText": f.highlightText,
         })
     }
@@ -6962,6 +6962,75 @@ function saveWorkspace() {
     })
 }
 
+function setHighlightMatches() {
+    var lines = getSelectedLines(fx, false).lines
+    highlightMatches = []
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i]
+        if (line.startsWith("#") || line.startsWith("//") || line.trim() == "") {
+            continue
+        }
+        var parts = line.split(" ")
+        highlightMatches.push({
+            Regex: parts[0],
+            BackgroundColor: parts[1] || "hotpink",
+            TextColor: parts[2] || "",
+            UnderlineColor: parts[3] || ""
+        })
+    }
+    processHighlightMatches()
+    saveWorkspace()
+}
+
+function processHighlightMatches() {
+    // turn into one big regexp
+    // var r = /(foo)|(bar)|(baz)/g
+    // var matches = "hello baz and foo".matchAll(r)
+    // var ret = JSON.stringify([...matches].map(function (x) {
+    //     return {
+    //         arr: x,
+    //         index: x.index,
+    //         length: x.length,
+    //         input: x.input
+    //     }
+    // }), "","    ")
+    // ret
+    // [
+    //     {
+    //         "arr": [
+    //             "baz",
+    //             null,
+    //             null,
+    //             "baz"
+    //         ],
+    //         "index": 6,
+    //         "length": 4,
+    //         "input": "hello baz and foo"
+    //     },
+    //     {
+    //         "arr": [
+    //             "foo",
+    //             "foo",
+    //             null,
+    //             null
+    //         ],
+    //         "index": 14,
+    //         "length": 4,
+    //         "input": "hello baz and foo"
+    //     }
+    // ]
+    if (highlightMatches.length == 0) {
+        highlightMatchesSingleRegExp = null
+        return
+    }
+    var regStrs = []
+    for (var i = 0; i < highlightMatches.length; i++) {
+        var h = highlightMatches[i]
+        regStrs.push("("+h.Regex+")")
+    }
+    highlightMatchesSingleRegExp = new RegExp(regStrs.join("|"), "g")
+}
+
 
 
 var ust = new URLSearchParams(window.location.search)
@@ -6969,8 +7038,24 @@ if (ust.has("dark")) {
     isDark = ust.get("dark") == "1"
 }
 
-
 function gotoDefinition() {
+    var word = getWordAtCursor().word
+    if (!word) {
+        return
+    }
+    duplicateFile(fx, -1)
+    fx.color = "hotpink"
+    var oldSearchText = searchText.value
+    if (fx.fullPath.endsWith(".html")) {
+        searchText.value = "function " + word
+        fx.cursorLineIndex = 0
+        fx.cursorColIndex = 0
+        findDown()
+        searchText.value = oldSearchText
+    }
+}
+
+function gotoDefinition_experimental() {
     langServer({
         jsonrpc: "2.0",
         method: "textDocument/definition",
