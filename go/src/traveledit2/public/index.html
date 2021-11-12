@@ -1299,7 +1299,17 @@ function runEditorCommand(e) {
         render()
         break
     case "hx":
-        fx.highlightRanges = []
+        highlightRanges = []
+        for (var i=0; i<fx.highlightRanges.length; i++) {
+            var r = fx.highlightRanges[i]
+            log([fx.cursorLineIndex, r])
+            if (fx.cursorLineIndex >= r.StartY && fx.cursorLineIndex <= r.StopY) {
+                // skip
+            } else {
+                highlightRanges.push(r)
+            }
+        }
+        fx.highlightRanges = highlightRanges
         saveWorkspace()
         render()
         break
