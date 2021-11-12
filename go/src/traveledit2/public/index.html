@@ -364,33 +364,16 @@ ontouchstart=onStart(event)
 </div>
 <div class=toolbar>
     <select onclick="selectFont('')">
-
-
-    <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
-    <div class=longButton onclick="selectFont('Courier')">Courier</div>
-    <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
-    <div class=longButton onclick="selectFont('IosevkaLucidaMedium')">Iosevka L Medium</div>
-    <div class=longButton onclick="selectFont('IosevkaLucidaSemiBold')">Iosevka L SemiBold</div>
-    <div class=longButton onclick="selectFont('IosevkaLucidaThin')">Iosevka L Thin</div>
-    <div class=longButton onclick="selectFont('SFMono')">SF Mono</div>
-    <div class=longButton onclick="selectFont('RobotoMono')">Roboto Mono</div>
-    <div class=longButton onclick="selectFont('CourierThin')">Courier Thin</div>
-    <div class=longButton onclick="selectFont('SFMonoThin')">SF Thin</div>
-    <div class=longButton onclick="selectFont('IosevkaThin')">Iosevka Thin</div>
-    <div class=longButton onclick="selectFont('Iosevka')">Iosevka</div>
-    <div class=longButton onclick="selectFont('IosevkaSlab')">Iosevka S</div>
-    <div class=longButton onclick="selectFont('XanhMono')">Xanh</div>
-    <div class=longButton onclick="selectFont('Inconsolata')">Inconsolata</div>
-    <div class=longButton onclick="selectFont('InconsolataThin')">Inconsolata Thin</div>
-    <div class=longButton onclick="selectFont('Courier New')">Courier New</div>
-    <div class=longButton onclick="selectFont('NanumGothicCoding')">Nanum GC</div>
-    <div class=longButton onclick="selectFont('GillSans')">Gill Sans</div>
-    <div class=longButton onclick="selectFont('AmericanTypewriter')">American T</div>
     </select>
 </div>
 <div class=toolbar>
     <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
+    <div class=longButton onclick="selectFont('VictorMono')">Victor Mono</div>
+    <div class=longButton onclick="selectFont('VictorMonoMedium')">Victor Mono M</div>
+    <div class=longButton onclick="selectFont('VictorMonoSemiBold')">Victor Semi Bold</div>
+    <div class=longButton onclick="selectFont('AnonymousPro')">Anonymous Pro</div>
     <div class=longButton onclick="selectFont('SourceCodePro')">Source Code Pro</div>
+    <div class=longButton onclick="selectFont('InputMonoLucida')">Input Mono L</div>
     <div class=longButton onclick="selectFont('InputMono')">Input Mono</div>
     <div class=longButton onclick="selectFont('Courier')">Courier</div>
     <div class=longButton onclick="selectFont('IosevkaLucida')">Iosevka L</div>
@@ -429,6 +412,9 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="fontScale = 1.6; updateFontScale()">1.6</div>
     <div class=longButton onclick="fontScale = 1.7; updateFontScale()">1.7</div>
     <div class=longButton onclick="fontScale = 2; updateFontScale()">2</div>
+    <div class=longButton onclick="fontScale = 3; updateFontScale()">3</div>
+    <div class=longButton onclick="fontScale = 4; updateFontScale()">4</div>
+    <div class=longButton onclick="fontScale = 5; updateFontScale()">5</div>
 </div>
 <label for=allowPollingCheckbox>
     <input onchange="allowPolling = allowPollingCheckbox.checked" type=checkbox name=allowPollingCheckbox id=allowPollingCheckbox checked />
@@ -599,12 +585,49 @@ var fonts = {
         // url: "https://fonts.gstatic.com/s/sourcecodepro/v14/HI_QiYsKILxRpg3hIP6sJ7fM7PqlONvUlMIFxGC8.woff2"
         url: "https://fonts.gstatic.com/s/sourcecodepro/v14/HI_SiYsKILxRpg3hIP6sJ7fM7PqlPevWnsUnxg.woff2"
     },
-    "InputMono": {
+    "InputMonoLucida": {
         fontHeightPre: 36,
         fontWidthPre: 18,
         fontSize: 30,
+        fontName: "InputMonoLucida",
+        url: proxyPath + "/tepublic/input_mono/input_mono_lucida.ttf"
+    },
+    "InputMono": {
+        fontHeightPre: 36,
+        fontWidthPre: 18.5,
+        fontSize: 30,
         fontName: "InputMono",
         url: proxyPath + "/tepublic/input_mono/input_mono.ttf"
+    },
+    "AnonymousPro": {
+        fontHeightPre: 36,
+        fontWidthPre: 17,
+        fontSize: 30,
+        fontName: "AnonymousPro",
+        url: "https://fonts.gstatic.com/s/anonymouspro/v14/rP2Bp2a15UIB7Un-bOeISG3pHls29QP-4Ks.woff2"
+    },
+    "VictorMono": {
+        fontHeightPre: 36,
+        fontWidthPre: 18,
+        fontSize: 30,
+        fontName: "VictorMono",
+        url: proxyPath + "/tepublic/victor_mono/victor_mono.ttf"
+    },
+    "VictorMonoMedium": {
+        fontHeightPre: 36,
+        // fontWidthPre: 17,
+        fontWidthPre: 17.5,
+        fontSize: 30,
+        fontName: "VictorMonoMedium",
+        url: proxyPath + "/tepublic/victor_mono/victor_mono_medium.ttf"
+    },
+    "VictorMonoSemiBold": {
+        fontHeightPre: 36,
+        // fontWidthPre: 17,
+        fontWidthPre: 17.5,
+        fontSize: 30,
+        fontName: "VictorMonoSemiBold",
+        url: proxyPath + "/tepublic/victor_mono/victor_mono_semibold.ttf"
     },
     "RobotoMono": {
         fontHeightPre: 36,
@@ -4677,7 +4700,7 @@ function renderInternal() {
         // Trailing whitespace
         var highlightStartSearch = 0
         var matchLength = 0
-        if (theLine) {
+        if (fx.fileMode == "file" && theLine) {
             for (var _i=0; _i<1; _i++) { // Loop so we can break
                 var theMatch = theLine.match(trailingWhitespaceRegexp)
                 if (theMatch == null) {
@@ -4992,7 +5015,7 @@ function min(a, b) {
 function max(a, b) {
     return a > b ? a : b
 }
-// marker seagreen
+
 function moveHomeEndAction() {
     var theLine = fx.lines[fx.cursorLineIndex] || ""
     switch (moveHomeEndDirection) {
@@ -6988,6 +7011,10 @@ function langServer(jsonRPC) {
 }
 
 
+// let acl = new Accelerometer({frequency: 60});
+// acl.addEventListener('reading', () => {
+//    log
+// });
 
 
 

@@ -1,9 +1,27 @@
+pqbd
+
+ability to highlight sections in conjunction with "word" color combos.?
+
+fonts
+GT pressura mono
+codelia
+martha
+Bergen mono
+coding-fonts.css-tricks.com
+programmingfonts.com
+Operator vs Cascadia Code
+Try Input Mono Narrow
+Codelia
+
+https://fonts.ilovetypography.com/category/monospace?page=1
+https://fonts.adobe.com/fonts?browse_mode=default&cc=true&filters=cl:ms&max_styles=26&min_styles=1&page=4
+https://realdougwilson.com/writing/coding-with-character
 
 do graphs
 fancy autocomplete in shell/ mode
 convert from cmd
 
-Highlight trailing whitespace in red (For other code reviewers)
+[done] Highlight trailing whitespace in red (For other code reviewers)
 
 hitting "undo" when there is nothing to undo bugs out
 remove the goto line feature of search and
