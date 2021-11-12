@@ -2696,6 +2696,7 @@ function pasteLines(copyBuffer, unselect, pasteBefore, fromTap) {
             theOffset2 = -1
         }
         fx.lines.splice(fx.cursorLineIndex + theOffset, 0, ...copyBuffer)
+        adjustHighlightRanges(fx.cursorLineIndex + theOffset, copyBuffer.length)
         var stopY = fx.cursorLineIndex + copyBuffer.length + theOffset2
         var lastLine = fx.lines[stopY] || ""
         if (!unselect) {
@@ -2739,6 +2740,7 @@ function pasteLines(copyBuffer, unselect, pasteBefore, fromTap) {
             // fx.lines.splice(fx.cursorLineIndex+1, 0, ...copyBuffer.slice(1))
             lastLine = copyBuffer[copyBuffer.length-1] + line.slice(u(fx.cursorColIndex))
             fx.lines.splice(fx.cursorLineIndex+1, 0, ...copyBuffer.slice(1, -1), lastLine)
+            adjustHighlightRanges(fx.cursorLineIndex+1, copyBuffer.length-1)
 
             // #alternateTap
             if (!unselect) {
@@ -2793,6 +2795,7 @@ function del(preventCopy, preventDeleteWholeLine) {
                     // cutBuffer = [fx.lines[r.startY]]
                 }
                 fx.lines.splice(r.startY, 1)
+                adjustHighlightRanges(r.startY, -1)
                 fx.selectedRegions = []
                 if (r.startY > 0) {
                     // subtract 1 so we can paste right afer
@@ -2843,9 +2846,11 @@ function del(preventCopy, preventDeleteWholeLine) {
             unExpandSlice(fx.lines[r.stopY], r.stopX, -1, r.stopY)
         )
         fx.lines.splice(r.startY + 1, r.stopY-r.startY)
+        adjustHighlightRanges(r.startY+1, -(r.stopY-r.startY))
         if (!preventDeleteWholeLine) {
             if (fx.lines[r.startY] == "") {
                 fx.lines.splice(r.startY, 1)
+                adjustHighlightRanges(r.startY, -1)
             }
         }
         fx.cursorLineIndex = r.startY
@@ -2874,6 +2879,7 @@ function del(preventCopy, preventDeleteWholeLine) {
         copyBuffer = [fx.lines[fx.cursorLineIndex]]
     }
     fx.lines.splice(fx.cursorLineIndex, 1)
+    adjustHighlightRanges(fx.cursorLineIndex, -1)
     docChanged()
     render()
 }
@@ -2889,6 +2895,51 @@ function getIndent(line) {
     }
     return theIndent
 }
+
+function adjustHighlightRanges(index, linesAddedCount, file) {
+    // splice adds before
+
+    if (!file) {
+        file = fx
+    }
+    if (!file) {
+        return
+    }
+    if (!file.highlightRanges) {
+        return
+    }
+    for (var i=0; i<file.highlightRanges.length; i++) {
+        var r = file.highlightRanges[i]
+        // This single condition works well enough for now
+        if (true || linesAddedCount >= 0) {
+            if (index <= r.StartY) {
+                r.StartY += linesAddedCount
+                r.StopY += linesAddedCount
+            } else if (index <= r.StopY) {
+                r.StopY += linesAddedCount
+            } else if (index > r.stopY) {
+                // nothing
+            }
+        } else {
+           // this is buggy needs plenty of fixes
+           // what about undo???
+           // var stopIndex = index - linesAddedCount
+           // if (index <= r.StartY && stopIndex <= r.StartY) {
+           // } else if (index <= r.StartY && stopIndex <= r.StopY) {
+           //     var hlLinesRemoved = stopIndex - r.StartY
+           //     r.StartY += hlLinesRemoved
+           //     r.StopY += hlLinesRemoved
+           // } else if (index > r.StartY && stopIndex <= r.StopY) {
+           //     r.StopY += linesAddedCount
+           // } else if (index <= r.Stopy && stopIndex > r.StopY) {
+           //     var hlLinesRemoved = stopIndex - r.Stopy
+           //     r.StopY += hlLinesRemoved
+           // }
+        }
+    }
+}
+
+
 function insertLine(closeCurly, oMode) {
     if (fx.fileMode == "directory") {
         clickItemInDirectory()
@@ -2917,9 +2968,11 @@ function insertLine(closeCurly, oMode) {
         theIndent = max(theIndent, theNextIndent)
     }
     fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent + theLine.substr(strIndex))
+    adjustHighlightRanges(fx.cursorLineIndex + 1, 1)
     if (closeCurly && (prevChar in closingMap) && (nextChar == closingMap[prevChar])) {
         theIndent += "    "
         fx.lines.splice(fx.cursorLineIndex + 1, 0, theIndent)
+        adjustHighlightRanges(fx.cursorLineIndex + 1, 1)
     }
     // fx.lines[fx.cursorLineIndex] = theLine.substr(0, strIndex)
     updateLine(fx.cursorLineIndex, theLine.substr(0, strIndex))
@@ -3138,6 +3191,7 @@ function pollTerminals() {
                             var theLine = file.lines[file.cursorLineIndex]
                             if (theLine.length == 0) {
                                 file.lines.splice(file.cursorLineIndex, 1)
+                                adjustHighlightRanges(file.cursorLineIndex, -1, file)
                                 file.cursorLineIndex -= 1
                                 var prevLine = file.lines[file.cursorLineIndex]
                                 // file.lines[file.cursorLineIndex] = file.lines[file.cursorLineIndex] + theLine
@@ -3782,6 +3836,7 @@ function handleKeydown(e) {
         var theLine = fx.lines[fx.cursorLineIndex]
 
         fx.lines.splice(fx.cursorLineIndex, 1)
+        adjustHighlightRanges(fx.cursorLineIndex, -1)
 
         fx.cursorLineIndex -= 1
         var prevLine = fx.lines[fx.cursorLineIndex]
@@ -4547,42 +4602,52 @@ function renderInternal() {
     // the highlighted areas
     var underlineOffset = (fontHeight) - (1/6/2 * fontHeight)
     var underlineHeight = fontHeight/6
-    for (var i=0; i<fx.highlightRanges.length;i++) {
-        // TODO: don't highlight leading whitespa e
-        // TODO: look into caching emd result of boxes
 
-        // var r = fx.highlightRanges[i]
-        // t.fillStyle = r.BackgroundColor
-        // for (var y=r.StartY-fx.offsetY; y<=r.StopY-fx.offsetY; y++) {
-        //     var line = fx.lines[y + fx.offsetY] || ""
-        //     if (r.StartY == r.StopY) {
-        //         t.fillRect((r.StartX-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, (r.StopX-r.StartX)*fontWidth, underlineHeight)
-        //     } else if (y==r.StartY-fx.offsetY) {
-        //         t.fillRect((r.StartX-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, (expandTabIndex(line, line.length, y + fx.offsetY)-r.StartX)*fontWidth, underlineHeight)
-        //     } else if (y==r.StopY-fx.offsetY) {
-        //         t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, r.StopX*fontWidth, underlineHeight)
-        //     } else {
-        //         t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, expandTabIndex(line, line.length, y + fx.offsetY)*fontWidth, underlineHeight)
-        //     }
-        // }
-        
-        // TODO, we could look into expanding tab indexes in one flow? instead of 2 individually?
-        var r = fx.highlightRanges[i]
-        t.fillStyle = r.BackgroundColor
-        for (var y=r.StartY-fx.offsetY; y<=r.StopY-fx.offsetY; y++) {
-            var line = fx.lines[y + fx.offsetY] || ""
-            if (r.StartY == r.StopY) {
-                var [newStartX, adjustment] = skipLeadingSace(line, r.StartX, fx.offsetX, y + fx.offsetY, fx)
-                t.fillRect(newStartX*fontWidth, y*fontHeight + underlineOffset, (r.StopX-r.StartX-adjustment)*fontWidth, underlineHeight)
-            } else if (y==r.StartY-fx.offsetY) {
-                var [newStartX, adjustment] = skipLeadingSace(line, r.StartX, fx.offsetX, y + fx.offsetY, fx)
-                t.fillRect(newStartX*fontWidth, y*fontHeight + underlineOffset, (expandTabIndex(line, line.length, y + fx.offsetY)-r.StartX-adjustment)*fontWidth, underlineHeight)
-            } else if (y==r.StopY-fx.offsetY) {
-                var [newStartX, adjustment] = skipLeadingSace(line, 0, fx.offsetX, y + fx.offsetY, fx)
-                t.fillRect(newStartX*fontWidth, y*fontHeight + underlineOffset, (r.StopX-adjustment)*fontWidth, underlineHeight)
-            } else {
-                var [newStartX, adjustment] = skipLeadingSace(line, 0, fx.offsetX, y + fx.offsetY, fx)
-                t.fillRect(newStartX*fontWidth, y*fontHeight + underlineOffset, (expandTabIndex(line, line.length, y + fx.offsetY)-adjustment)*fontWidth, underlineHeight)
+    if (fx.highlightRanges) {
+        for (var i=0; i<fx.highlightRanges.length;i++) {
+            // TODO: don't highlight leading whitespa e
+            // TODO: look into caching emd result of boxes
+
+            // var r = fx.highlightRanges[i]
+            // t.fillStyle = r.BackgroundColor
+            // for (var y=r.StartY-fx.offsetY; y<=r.StopY-fx.offsetY; y++) {
+            //     var line = fx.lines[y + fx.offsetY] || ""
+            //     if (r.StartY == r.StopY) {
+            //         t.fillRect((r.StartX-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, (r.StopX-r.StartX)*fontWidth, underlineHeight)
+            //     } else if (y==r.StartY-fx.offsetY) {
+            //         t.fillRect((r.StartX-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, (expandTabIndex(line, line.length, y + fx.offsetY)-r.StartX)*fontWidth, underlineHeight)
+            //     } else if (y==r.StopY-fx.offsetY) {
+            //         t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, r.StopX*fontWidth, underlineHeight)
+            //     } else {
+            //         t.fillRect((0-fx.offsetX)*fontWidth, y*fontHeight + underlineOffset, expandTabIndex(line, line.length, y + fx.offsetY)*fontWidth, underlineHeight)
+            //     }
+            // }
+
+            // TODO, we could look into expanding tab indexes in one flow? instead of 2 individually?
+            var r = fx.highlightRanges[i]
+            t.fillStyle = r.BackgroundColor
+            for (var y=r.StartY-fx.offsetY; y<=r.StopY-fx.offsetY; y++) {
+                // You could even get more granular
+                if (r.StopY < fx.offsetY) {
+                    break
+                }
+                if (r.StartY > (fx.offsetY+maxLines)) {
+                    break
+                }
+                var line = fx.lines[y + fx.offsetY] || ""
+                if (r.StartY == r.StopY) {
+                    var [newStartX, adjustment] = skipLeadingSace(line, r.StartX, fx.offsetX, y + fx.offsetY, fx)
+                    t.fillRect(newStartX*fontWidth, y*fontHeight + underlineOffset, (r.StopX-r.StartX-adjustment)*fontWidth, underlineHeight)
+                } else if (y==r.StartY-fx.offsetY) {
+                    var [newStartX, adjustment] = skipLeadingSace(line, r.StartX, fx.offsetX, y + fx.offsetY, fx)
+                    t.fillRect(newStartX*fontWidth, y*fontHeight + underlineOffset, (expandTabIndex(line, line.length, y + fx.offsetY)-r.StartX-adjustment)*fontWidth, underlineHeight)
+                } else if (y==r.StopY-fx.offsetY) {
+                    var [newStartX, adjustment] = skipLeadingSace(line, 0, fx.offsetX, y + fx.offsetY, fx)
+                    t.fillRect(newStartX*fontWidth, y*fontHeight + underlineOffset, (r.StopX-adjustment)*fontWidth, underlineHeight)
+                } else {
+                    var [newStartX, adjustment] = skipLeadingSace(line, 0, fx.offsetX, y + fx.offsetY, fx)
+                    t.fillRect(newStartX*fontWidth, y*fontHeight + underlineOffset, (expandTabIndex(line, line.length, y + fx.offsetY)-adjustment)*fontWidth, underlineHeight)
+                }
             }
         }
     }
@@ -6981,8 +7046,6 @@ fetch(proxyPath + "/myworkspace", {
     if (workspace.DarkMode != isDark) {
         toggleDarkMode()
     }
-    log("initial====")
-    log(workspace.HighlightMatches)
     if (workspace.HighlightMatches) {
         highlightMatches = workspace.HighlightMatches
         processHighlightMatches()
@@ -7035,6 +7098,10 @@ function setHighlightMatches() {
     var lines = getSelectedLines(fx, false).lines
     highlightMatches = []
     for (var i = 0; i < lines.length; i++) {
+        // reasonable limit
+        if (i > 50) {
+            break
+        }
         var line = lines[i]
         if (line.startsWith("#") || line.startsWith("//") || line.trim() == "") {
             continue
@@ -7097,7 +7164,11 @@ function processHighlightMatches() {
         var h = highlightMatches[i]
         regStrs.push("("+h.Regex+")")
     }
-    highlightMatchesSingleRegExp = new RegExp(regStrs.join("|"), "g")
+    try {
+        highlightMatchesSingleRegExp = new RegExp(regStrs.join("|"), "g")
+    } catch (e) {
+        highlightMatchesSingleRegExp = null
+    }
 }
 
 
