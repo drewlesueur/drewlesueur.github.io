@@ -21,31 +21,33 @@ import "strconv"
 import "crypto/md5"
 import "github.com/NYTimes/gziphandler"
 import "github.com/creack/pty"
+
 // import "github.com/gorilla/websocket"
 
 type SaveResponse struct {
 	Saved bool   `json:"saved"`
 	Error string `json:"error"`
 }
+
 func PretendBasicAuth(r *http.Request) (string, string, bool) {
-    cookie, err := r.Cookie("pretendba")
-    if err != nil {
-        return "", "", false
-    }
-    cookieDecoded , err := url.QueryUnescape(cookie.Value)
-    if err != nil {
-        return "", "", false
-    }
-    cookieBytes, err := base64.StdEncoding.DecodeString(cookieDecoded)
-    if err != nil {
-        return "", "", false
-    }
-    parts := strings.Split(string(cookieBytes), ":")
-    if len(parts) != 2 {
-        return "", "", false
-    }
-    return parts[0], parts[1], true 
-     
+	cookie, err := r.Cookie("pretendba")
+	if err != nil {
+		return "", "", false
+	}
+	cookieDecoded, err := url.QueryUnescape(cookie.Value)
+	if err != nil {
+		return "", "", false
+	}
+	cookieBytes, err := base64.StdEncoding.DecodeString(cookieDecoded)
+	if err != nil {
+		return "", "", false
+	}
+	parts := strings.Split(string(cookieBytes), ":")
+	if len(parts) != 2 {
+		return "", "", false
+	}
+	return parts[0], parts[1], true
+
 }
 func BasicAuth(handler http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -54,16 +56,16 @@ func BasicAuth(handler http.Handler) http.HandlerFunc {
 		if user == "" || pass == "" {
 			log.Fatal("BASICUSER or BASICPASS environment variables not set")
 		}
-        if r.URL.Path == "/login" {
-            handler.ServeHTTP(w, r)
-            return
-        }
-		
+		if r.URL.Path == "/login" {
+			handler.ServeHTTP(w, r)
+			return
+		}
+
 		if os.Getenv("SCREENSHARENOAUTH") == "1" {
-		    if r.URL.Path == "/screenshare" || r.URL.Path == "/view" {
+			if r.URL.Path == "/screenshare" || r.URL.Path == "/view" {
 				handler.ServeHTTP(w, r)
 				return
-		    }
+			}
 		}
 
 		// if r.URL.Path == "/wsrender" {
@@ -75,9 +77,9 @@ func BasicAuth(handler http.Handler) http.HandlerFunc {
 		//rUser, rPass, ok := r.BasicAuth()
 		rUser, rPass, ok := PretendBasicAuth(r)
 		if !ok || subtle.ConstantTimeCompare([]byte(rUser), []byte(user)) != 1 || subtle.ConstantTimeCompare([]byte(rPass), []byte(pass)) != 1 {
-            http.Redirect(w, r, *proxyPath + "/login", 302)
-            return
-            // below here is basic auth stuff           
+			http.Redirect(w, r, *proxyPath+"/login", 302)
+			return
+			// below here is basic auth stuff
 			log.Printf("unauthorized: %s", r.URL.Path)
 			w.Header().Set("WWW-Authenticate", `Basic realm="Hi. Please log in."`)
 			w.WriteHeader(401)
@@ -91,7 +93,7 @@ func BasicAuth(handler http.Handler) http.HandlerFunc {
 func logAndErr(w http.ResponseWriter, message string, args ...interface{}) {
 	theLog := fmt.Sprintf(message, args...)
 	ret := map[string]string{
-	    "error": theLog, 
+		"error": theLog,
 	}
 	b, _ := json.Marshal(ret)
 	log.Println(theLog)
@@ -100,130 +102,130 @@ func logAndErr(w http.ResponseWriter, message string, args ...interface{}) {
 
 // Index: foo
 // ===================================================================
-// --- foo	
-// +++ foo	
+// --- foo
+// +++ foo
 // @@ -63,1 +63,1 @@
-// -    // formats   
-// +    // Here's what it looks like   
-// 
+// -    // formats
+// +    // Here's what it looks like
+//
 
 // @@ -63 @@
-// -    // formats   
+// -    // formats
 // -}
 // -
-// +    // Here's what it looks like   
+// +    // Here's what it looks like
 // +}
 // +
 func applyDiff(oldContents, diff string) (string, error) {
-    // There is likely a much more optimized way of applying diff --
-    // Maybe dealing with the lines in-place and keeping track of index adjustments
-    
-    // Doesn't handle issues related to new line at end of file
-    oldLines := strings.Split(oldContents, "\n")
-    diffLines := strings.Split(diff, "\n")
-    
-    lineI := -1
-    diffI := -1
-    state := "want@"
-    newContentsSlice := []string{}
-    nextDiffIndex := -1
-    for i := 0; i < 20000; i++ {
-       if state == "want@" {
-           diffI++ 
-           if diffI >= len(diffLines) {
-               state = "doneDiff"
-               continue
-           }
-           if !strings.HasPrefix(diffLines[diffI], "@@") {
-               continue
-           }
-           nextDiffIndex = parseFirstNumber(diffLines[diffI]) - 1
-           // log.Printf("FIRST NUMBER IS %d", nextDiffIndex)
-           state = "getToNextIndex"
-       } else if state == "getToNextIndex" {
-           lineI++       
-           if lineI >= len(oldLines) {
-               break   
-           }
-           
-           // this case only happens on first pass? or of there are adjacent chinks?
-           if lineI == nextDiffIndex {
-               lineI -= 1
-               state = "in@"
-               continue    
-           } 
-           newContentsSlice = append(newContentsSlice, oldLines[lineI])   
-           // -1 works because chunks can't be adjacent?
-           if lineI == nextDiffIndex - 1 { 
-               state = "in@"
-               // if diffI >= len(diffLines) {
-               //     state = "doneDiff"
-               //     continue
-               // }
-           }
-       } else if state == "in@" {
-           diffI++ 
-           if diffI >= len(diffLines) {
-               state = "doneDiff"
-               continue
-           }
-           if strings.HasPrefix(diffLines[diffI], "-") {
-               lineI++       
-               if lineI >= len(oldLines) {
-                   break   
-               }
-               // don't add   
-               // you could check that the removed lines match
-               // possibly optimize diff to not include the line removed, just the "-"?
-           }  else if strings.HasPrefix(diffLines[diffI], "+") {
-               newContentsSlice = append(newContentsSlice, diffLines[diffI][1:])   
-           }  else if strings.HasPrefix(diffLines[diffI], "@@") {
-               nextDiffIndex = parseFirstNumber(diffLines[diffI]) - 1
-               state = "getToNextIndex"
-           }  else {
-               lineI++       
-               if lineI >= len(oldLines) {
-                   break   
-               }
-               // you could check that the lines match
-               newContentsSlice = append(newContentsSlice, oldLines[lineI])   
-           }
-       } else if state == "doneDiff" {
-           lineI++       
-           if lineI >= len(oldLines) {
-               break   
-           }
-           newContentsSlice = append(newContentsSlice, oldLines[lineI])   
-       }
-    }
-    if state == "want@" {
-        return oldContents, nil
-    }
-    return strings.Join(newContentsSlice, "\n"), nil
+	// There is likely a much more optimized way of applying diff --
+	// Maybe dealing with the lines in-place and keeping track of index adjustments
+
+	// Doesn't handle issues related to new line at end of file
+	oldLines := strings.Split(oldContents, "\n")
+	diffLines := strings.Split(diff, "\n")
+
+	lineI := -1
+	diffI := -1
+	state := "want@"
+	newContentsSlice := []string{}
+	nextDiffIndex := -1
+	for i := 0; i < 20000; i++ {
+		if state == "want@" {
+			diffI++
+			if diffI >= len(diffLines) {
+				state = "doneDiff"
+				continue
+			}
+			if !strings.HasPrefix(diffLines[diffI], "@@") {
+				continue
+			}
+			nextDiffIndex = parseFirstNumber(diffLines[diffI]) - 1
+			// log.Printf("FIRST NUMBER IS %d", nextDiffIndex)
+			state = "getToNextIndex"
+		} else if state == "getToNextIndex" {
+			lineI++
+			if lineI >= len(oldLines) {
+				break
+			}
+
+			// this case only happens on first pass? or of there are adjacent chinks?
+			if lineI == nextDiffIndex {
+				lineI -= 1
+				state = "in@"
+				continue
+			}
+			newContentsSlice = append(newContentsSlice, oldLines[lineI])
+			// -1 works because chunks can't be adjacent?
+			if lineI == nextDiffIndex-1 {
+				state = "in@"
+				// if diffI >= len(diffLines) {
+				//     state = "doneDiff"
+				//     continue
+				// }
+			}
+		} else if state == "in@" {
+			diffI++
+			if diffI >= len(diffLines) {
+				state = "doneDiff"
+				continue
+			}
+			if strings.HasPrefix(diffLines[diffI], "-") {
+				lineI++
+				if lineI >= len(oldLines) {
+					break
+				}
+				// don't add
+				// you could check that the removed lines match
+				// possibly optimize diff to not include the line removed, just the "-"?
+			} else if strings.HasPrefix(diffLines[diffI], "+") {
+				newContentsSlice = append(newContentsSlice, diffLines[diffI][1:])
+			} else if strings.HasPrefix(diffLines[diffI], "@@") {
+				nextDiffIndex = parseFirstNumber(diffLines[diffI]) - 1
+				state = "getToNextIndex"
+			} else {
+				lineI++
+				if lineI >= len(oldLines) {
+					break
+				}
+				// you could check that the lines match
+				newContentsSlice = append(newContentsSlice, oldLines[lineI])
+			}
+		} else if state == "doneDiff" {
+			lineI++
+			if lineI >= len(oldLines) {
+				break
+			}
+			newContentsSlice = append(newContentsSlice, oldLines[lineI])
+		}
+	}
+	if state == "want@" {
+		return oldContents, nil
+	}
+	return strings.Join(newContentsSlice, "\n"), nil
 }
 
 func parseFirstNumber(s string) int {
-    numb := ""
-    inNumber := false
-    for _, c := range s {
-        if inNumber {
-            if c >= 48 && c <= 57 {
-                numb += string(c)
-            } else {
-                break
-            }
-        } else {
-            if c >= 48 && c <= 57 {
-                numb += string(c)
-                inNumber = true
-            }
-        }
-    }
-    if len(numb) > 10 {
-        numb = numb[0:10]
-    }
-    n, _ := strconv.Atoi(numb)
-    return n
+	numb := ""
+	inNumber := false
+	for _, c := range s {
+		if inNumber {
+			if c >= 48 && c <= 57 {
+				numb += string(c)
+			} else {
+				break
+			}
+		} else {
+			if c >= 48 && c <= 57 {
+				numb += string(c)
+				inNumber = true
+			}
+		}
+	}
+	if len(numb) > 10 {
+		numb = numb[0:10]
+	}
+	n, _ := strconv.Atoi(numb)
+	return n
 }
 
 // Will these die when the server restarts?
@@ -231,61 +233,62 @@ func parseFirstNumber(s string) int {
 // Interesting how we have different fields for separate File types
 // Maybe I could have ised an interface
 // But also maybe would be cool if Go had sum types
-type File struct{
-    ID int
-    Type string // terminal, file, directory, remotefile, shell(semi interactive)
-    FullPath string
-    LineNumber int
-    
-    // CSS color
-    Color string
-    HighlightText string
-    
-    // fields for remotefile
-    LocalTmpPath string // temorary file
-    Remote string // like user@host
-    
-    // fields for shell
-    CWD string
-    LastCommand string
-    
-    // fields for terminal
-    Cmd *exec.Cmd
-    Pty *os.File
-    ReadBuffer []byte
-    Closed bool
-    Name string
+type File struct {
+	ID         int
+	Type       string // terminal, file, directory, remotefile, shell(semi interactive)
+	FullPath   string
+	LineNumber int
+
+	// CSS color
+	Color         string
+	HighlightText string
+
+	// fields for remotefile
+	LocalTmpPath string // temorary file
+	Remote       string // like user@host
+
+	// fields for shell
+	CWD         string
+	LastCommand string
+
+	// fields for terminal
+	Cmd        *exec.Cmd
+	Pty        *os.File
+	ReadBuffer []byte
+	Closed     bool
+	Name       string
 }
 
 type Workspace struct {
-    Files []*File
-    Name string
-    DarkMode bool
-    FontName string
-    FontScale float64
+	Files     []*File
+	Name      string
+	DarkMode  bool
+	FontName  string
+	FontScale float64
 }
+
 func (w *Workspace) GetFile(id int) (*File, bool) {
-    for _, f := range w.Files {
-        if id == f.ID {
-            return f, true
-        }     
-    }
-    return nil, false    
+	for _, f := range w.Files {
+		if id == f.ID {
+			return f, true
+		}
+	}
+	return nil, false
 }
-func (w *Workspace) RemoveFile(id int) () {
-    for i, f := range w.Files {
-        if id == f.ID {
-            // w.Files = append(w.Files[0:i], w.Files[i+1:]...)
-            // https://github.com/golang/go/wiki/SliceTricks
-            copy(w.Files[i:], w.Files[i+1:])
-            w.Files[len(w.Files)-1] = nil
-            w.Files = w.Files[0:len(w.Files)-1]
-            // I think even with the copy it won't shrink the original array size
-            // I think we'd have to copy to a whole new slice for that
-            // why
-            break
-        }     
-    }
+func (w *Workspace) RemoveFile(id int) {
+	for i, f := range w.Files {
+		if id == f.ID {
+			// w.Files = append(w.Files[0:i], w.Files[i+1:]...)
+			// https://github.com/golang/go/wiki/SliceTricks
+			copy(w.Files[i:], w.Files[i+1:])
+			w.Files[len(w.Files)-1] = nil
+			w.Files = w.Files[0 : len(w.Files)-1]
+			// I think even with the copy it won't shrink the original array size
+			// I think we'd have to copy to a whole new slice for that
+			// why
+			break
+		}
+	}
 }
 
 // workspaceView is a function that returns a json marshallable version of a
@@ -293,247 +296,245 @@ func (w *Workspace) RemoveFile(id int) () {
 // we could maybe just serialize the raw workspace?
 // or create a toJSON func? but this works
 func workspaceView(w *Workspace) map[string]interface{} {
-    // workspaceMu lock needs to be held when calling this function
-    files := []map[string]interface{}{}  
-    for _, f := range workspace.Files {
-        files = append(files, map[string]interface{}{
-            "ID": f.ID,
-            "Name": f.Name,
-            "Type": f.Type,
-            "FullPath": f.FullPath,
-            "LineNumber": f.LineNumber,
-            "CWD": f.CWD,
-            "Color": f.Color,
-            "HighlightText": f.HighlightText,
-        })
-    }
-    workspaceRet := map[string]interface{}{
-        "Name": workspace.Name,
-        "DarkMode": workspace.DarkMode,
-        "FontName": workspace.FontName,
-        "FontScale": workspace.FontScale,
-        "Files": files,
-    }
-    return workspaceRet
+	// workspaceMu lock needs to be held when calling this function
+	files := []map[string]interface{}{}
+	for _, f := range workspace.Files {
+		files = append(files, map[string]interface{}{
+			"ID":            f.ID,
+			"Name":          f.Name,
+			"Type":          f.Type,
+			"FullPath":      f.FullPath,
+			"LineNumber":    f.LineNumber,
+			"CWD":           f.CWD,
+			"Color":         f.Color,
+			"HighlightText": f.HighlightText,
+		})
+	}
+	workspaceRet := map[string]interface{}{
+		"Name":      workspace.Name,
+		"DarkMode":  workspace.DarkMode,
+		"FontName":  workspace.FontName,
+		"FontScale": workspace.FontScale,
+		"Files":     files,
+	}
+	return workspaceRet
 }
 func runShellCommand(id string, cmdString string, cwd string, w http.ResponseWriter) {
-    workspaceMu.Lock()
-    
-    ID, _ := strconv.Atoi(id)
-    if cmdString == "" {
-    	cmdString = ":"
-    }
-    
-    // add the cwd so the client can remember it
-    cmdString = "cd " + cwd + ";\n" + cmdString + ";\necho ''; pwd"
-    
-    log.Printf("the command we want is: %s", cmdString)
-    cmd := exec.Command("bash", "-c", cmdString)
-    var f *File
-    if ID == 0 {
-        lastFileID++
-        f = &File{
-            Type: "shell",
-            // FullPath: "(shell)/???",
-            ID: lastFileID,
-            CWD: cwd,
-        }
-        workspace.Files = append(workspace.Files, f)
-    } else if t, ok := workspace.GetFile(ID); ok {
-        f = t   
-    } else {
-    	workspaceMu.Unlock()
-    	logAndErr(w, "no bash session found: %d", ID) 
-    	return
-    }
-    // log.Printf("the file is %+v", f)
-    // curious this case?
-    if f.Cmd != nil && f.Cmd.Process != nil {
-        // close the last process if there is one
-        f.Cmd.Process.Kill()
-    }
-    f.Cmd = cmd
-    workspaceMu.Unlock()
-    
-    ret, err := cmd.CombinedOutput()
-    if err != nil {
-    	logAndErr(w, "error running command: %s: %v", cmdString, err) 
-    	return
-    }
-    
-    lines := strings.Split(string(ret), "\n")
-    if len(lines) >= 2 {
-    	workspaceMu.Lock()
-    	f.CWD = lines[len(lines)-2]
-    	workspaceMu.Unlock()
-    }
-    
-    log.Printf("the combined output of the command is: %s", string(ret))
-    if ID == 0 {
-        w.Header().Set("X-ID", strconv.Itoa(f.ID))
-    }
-    w.Write(ret)
+	workspaceMu.Lock()
+
+	ID, _ := strconv.Atoi(id)
+	if cmdString == "" {
+		cmdString = ":"
+	}
+
+	// add the cwd so the client can remember it
+	cmdString = "cd " + cwd + ";\n" + cmdString + ";\necho ''; pwd"
+
+	log.Printf("the command we want is: %s", cmdString)
+	cmd := exec.Command("bash", "-c", cmdString)
+	var f *File
+	if ID == 0 {
+		lastFileID++
+		f = &File{
+			Type: "shell",
+			// FullPath: "(shell)/???",
+			ID:  lastFileID,
+			CWD: cwd,
+		}
+		workspace.Files = append(workspace.Files, f)
+	} else if t, ok := workspace.GetFile(ID); ok {
+		f = t
+	} else {
+		workspaceMu.Unlock()
+		logAndErr(w, "no bash session found: %d", ID)
+		return
+	}
+	// log.Printf("the file is %+v", f)
+	// curious this case?
+	if f.Cmd != nil && f.Cmd.Process != nil {
+		// close the last process if there is one
+		f.Cmd.Process.Kill()
+	}
+	f.Cmd = cmd
+	workspaceMu.Unlock()
+
+	ret, err := cmd.CombinedOutput()
+	if err != nil {
+		logAndErr(w, "error running command: %s: %v", cmdString, err)
+		return
+	}
+
+	lines := strings.Split(string(ret), "\n")
+	if len(lines) >= 2 {
+		workspaceMu.Lock()
+		f.CWD = lines[len(lines)-2]
+		workspaceMu.Unlock()
+	}
+
+	log.Printf("the combined output of the command is: %s", string(ret))
+	if ID == 0 {
+		w.Header().Set("X-ID", strconv.Itoa(f.ID))
+	}
+	w.Write(ret)
 }
 func openTerminal(cwd string, w http.ResponseWriter) {
-    log.Println("my terminal open!")
-    lastFileID++
-    // TODO: configurable shell, login shell (-l)?
+	log.Println("my terminal open!")
+	lastFileID++
+	// TODO: configurable shell, login shell (-l)?
 	cmd := exec.Command("bash", "-l")
 	// cmd := exec.Command("bash")
 	// cmd := exec.Command("zsh", "-l")
 	cmd.Dir = cwd
-    
+
 	f, err := pty.Start(cmd)
-    if err != nil {
-		logAndErr(w, "starting pty: %s: %v", cwd, err) 
+	if err != nil {
+		logAndErr(w, "starting pty: %s: %v", cwd, err)
 		return
-    }
-    // append the pid to a file for debugging
-    pidF, err := os.OpenFile("pid.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-    if err != nil {
-		logAndErr(w, "opening pid file for logging: %s: %v", cwd, err) 
+	}
+	// append the pid to a file for debugging
+	pidF, err := os.OpenFile("pid.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		logAndErr(w, "opening pid file for logging: %s: %v", cwd, err)
 		f.Close()
 		return
-    }
-    if _, err := pidF.WriteString(strconv.Itoa(cmd.Process.Pid) + " " + time.Now().Format("2006-01-02 15:04:05") + "\n"); err != nil {
-		logAndErr(w, "writing pid: %s: %v", cwd, err) 
+	}
+	if _, err := pidF.WriteString(strconv.Itoa(cmd.Process.Pid) + " " + time.Now().Format("2006-01-02 15:04:05") + "\n"); err != nil {
+		logAndErr(w, "writing pid: %s: %v", cwd, err)
 		f.Close()
 		return
-    }
-    file := &File{
-        Type: "terminal",
-        // FullPath: "(terminal)/???",
-        Cmd: cmd,
-        ID: lastFileID,
-        CWD: cwd,
-        Pty: f,       
-    }
-    workspaceMu.Lock()
-    workspace.Files = append(workspace.Files, file)
-    workspaceMu.Unlock()
-    
-    // in a go func, continually read from the pty and write to buffer
-    go func() {
-        for {
-            log.Println("a loop!")
-            // TODO: reuse buffer?
-            b := make([]byte, 1024)
-    	    n, err := file.Pty.Read(b)
-    	    // if err != nil && err != io.EOF {
-    	    if err != nil {
-    	        workspaceMu.Lock()
-    	        log.Printf("error reading terminal: %v", err) // could be just EOF
-    	        file.Pty.Close()
-    	        file.Closed = true
-    	        workspaceCond.Broadcast()
-    	        workspaceMu.Unlock()
-    	        break
-    	    }
-    	    if n == 0 {
-    	        continue
-    	    }
-            workspaceMu.Lock()
-            file.ReadBuffer = append(file.ReadBuffer, b[0:n]...)
-            
-            // little protection from runaway
-            if len(file.ReadBuffer) > 5000000 {
-                file.ReadBuffer = nil    
-            }
-            log.Printf("<==========")
-            log.Printf("%s", string(file.ReadBuffer))
-            log.Printf("==========>")
-            workspaceCond.Broadcast()
-            workspaceMu.Unlock()
-            // should we put this before the unlock?
-    	}
-    }()
-    
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "ID": lastFileID,
-    })
+	}
+	file := &File{
+		Type: "terminal",
+		// FullPath: "(terminal)/???",
+		Cmd: cmd,
+		ID:  lastFileID,
+		CWD: cwd,
+		Pty: f,
+	}
+	workspaceMu.Lock()
+	workspace.Files = append(workspace.Files, file)
+	workspaceMu.Unlock()
+
+	// in a go func, continually read from the pty and write to buffer
+	go func() {
+		for {
+			log.Println("a loop!")
+			// TODO: reuse buffer?
+			b := make([]byte, 1024)
+			n, err := file.Pty.Read(b)
+			// if err != nil && err != io.EOF {
+			if err != nil {
+				workspaceMu.Lock()
+				log.Printf("error reading terminal: %v", err) // could be just EOF
+				file.Pty.Close()
+				file.Closed = true
+				workspaceCond.Broadcast()
+				workspaceMu.Unlock()
+				break
+			}
+			if n == 0 {
+				continue
+			}
+			workspaceMu.Lock()
+			file.ReadBuffer = append(file.ReadBuffer, b[0:n]...)
+
+			// little protection from runaway
+			if len(file.ReadBuffer) > 5000000 {
+				file.ReadBuffer = nil
+			}
+			log.Printf("<==========")
+			log.Printf("%s", string(file.ReadBuffer))
+			log.Printf("==========>")
+			workspaceCond.Broadcast()
+			workspaceMu.Unlock()
+			// should we put this before the unlock?
+		}
+	}()
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"ID": lastFileID,
+	})
 }
-
-
-
 
 var workspaces []*Workspace
 var workspace *Workspace
-type TerminalResponse struct{
-    Base64 string    
-    // CWD ?? so we can keep track of directory changes
-    Error string `json:",omitempty"`
-    Closed bool `json:",omitempty"`
+
+type TerminalResponse struct {
+	Base64 string
+	// CWD ?? so we can keep track of directory changes
+	Error  string `json:",omitempty"`
+	Closed bool   `json:",omitempty"`
 }
+
 var lastFileID = 0
 var workspaceMu sync.Mutex
 var workspaceCond *sync.Cond
 
 var proxyPath *string
+
 func main() {
-    // TODO: #wschange save workspace to file so ot persists
-    // TODO: secial path prefix for saving/loading files not just /
-    
-    
-    
-    // read in the existing workspaces
-    workspacesJSON, err := ioutil.ReadFile("./workspaces.json")
+	// TODO: #wschange save workspace to file so ot persists
+	// TODO: secial path prefix for saving/loading files not just /
+
+	// read in the existing workspaces
+	workspacesJSON, err := ioutil.ReadFile("./workspaces.json")
 	if err != nil {
 		log.Printf("could not read workspaces.json: %v", err)
 	} else {
-	    var tmpWorkspaces []*Workspace
-	    err := json.Unmarshal(workspacesJSON, &tmpWorkspaces)
-	    if err != nil {
+		var tmpWorkspaces []*Workspace
+		err := json.Unmarshal(workspacesJSON, &tmpWorkspaces)
+		if err != nil {
 			log.Printf("could not parse workspaces.json: %v", err)
-	    } else {
-	        // reload the workspace
-	        for _, tmpW := range tmpWorkspaces {
-	            workspace = &Workspace{
-	                FontScale: tmpW.FontScale,
-	                FontName: tmpW.FontName,
-	                DarkMode: tmpW.DarkMode,
-	            }
-	            for _, f := range tmpW.Files {
-	                if f.Type == "file" {
-	                    // TODO: I think you might not be taking into account *location
-	                    // maybe I shoulf remove that feature and always make it /
-	                    
-	                    // also for the addFile portion you might just be able to set thr file
-	                    // instrad of calling addFile
-	                    // it's the shell and terminal types that need to start a process
-	                    addFile("", false, f.FullPath)
-	                } else if f.Type == "directory" {
-	                    addFile("", true, f.FullPath)
-	                } else if f.Type == "terminal" {
-	                    openTerminal(f.CWD, httptest.NewRecorder()) // being lazy with ResponseRecorder for now
-	                } else if f.Type == "shell" {
-	                    runShellCommand("", "", f.CWD, httptest.NewRecorder()) // being lazy with ResponseRecorder for now
-	                }    
-	            	// update the editable props too
-	            	// the way I am doing it here is a little kludgy
-	            	// sort of retrofitting the existing code to recreate the files.
-	            	// (See httptest.NewRecorder for example)
-	            	addedFile := workspace.Files[len(workspace.Files)-1]
-	            	addedFile.LineNumber = f.LineNumber
-        		    addedFile.Name = f.Name
-        		    addedFile.Color = f.Color
-        	        addedFile.HighlightText = f.HighlightText
-	            }
-	            
-	            workspaces = append(workspaces, workspace)
-	        }
-	        
-	        // TODO: you could remember the lst workspace
-	        if len(workspaces) > 0 {
-	        	workspace = workspaces[0]
-	        }
-	    }
+		} else {
+			// reload the workspace
+			for _, tmpW := range tmpWorkspaces {
+				workspace = &Workspace{
+					FontScale: tmpW.FontScale,
+					FontName:  tmpW.FontName,
+					DarkMode:  tmpW.DarkMode,
+				}
+				for _, f := range tmpW.Files {
+					if f.Type == "file" {
+						// TODO: I think you might not be taking into account *location
+						// maybe I shoulf remove that feature and always make it /
+
+						// also for the addFile portion you might just be able to set thr file
+						// instrad of calling addFile
+						// it's the shell and terminal types that need to start a process
+						addFile("", false, f.FullPath)
+					} else if f.Type == "directory" {
+						addFile("", true, f.FullPath)
+					} else if f.Type == "terminal" {
+						openTerminal(f.CWD, httptest.NewRecorder()) // being lazy with ResponseRecorder for now
+					} else if f.Type == "shell" {
+						runShellCommand("", "", f.CWD, httptest.NewRecorder()) // being lazy with ResponseRecorder for now
+					}
+					// update the editable props too
+					// the way I am doing it here is a little kludgy
+					// sort of retrofitting the existing code to recreate the files.
+					// (See httptest.NewRecorder for example)
+					addedFile := workspace.Files[len(workspace.Files)-1]
+					addedFile.LineNumber = f.LineNumber
+					addedFile.Name = f.Name
+					addedFile.Color = f.Color
+					addedFile.HighlightText = f.HighlightText
+				}
+
+				workspaces = append(workspaces, workspace)
+			}
+
+			// TODO: you could remember the lst workspace
+			if len(workspaces) > 0 {
+				workspace = workspaces[0]
+			}
+		}
 	}
 
-    if workspace == nil {
-        workspace = &Workspace{}
-        workspaces = []*Workspace{workspace}
-        addFile("", true, "/")
-    }
+	if workspace == nil {
+		workspace = &Workspace{}
+		workspaces = []*Workspace{workspace}
+		addFile("", true, "/")
+	}
 	serverAddress := flag.String("addr", "localhost:8000", "serverAddress to listen on")
 	indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
 	screenshareFile := flag.String("screensharefile", "./public/view.html", "path to view html file")
@@ -572,12 +573,12 @@ func main() {
 	var viewSearch string
 	var viewMu sync.Mutex
 	viewCond := sync.NewCond(&viewMu)
-	
+
 	workspaceCond = sync.NewCond(&workspaceMu)
-	
-	// trying to use a single mutex for multiple shells? 
+
+	// trying to use a single mutex for multiple shells?
 	// TODO: serialize and de-serialize the state
-	
+
 	go func() {
 		for range time.NewTicker(1 * time.Second).C {
 			viewCond.Broadcast()
@@ -589,11 +590,11 @@ func main() {
 	fs := http.FileServer(http.Dir("./public"))
 	mux.Handle("/tepublic/", http.StripPrefix("/tepublic/", fs))
 
-    publicPath2 := os.Getenv("PUBLICPATH")
-    if publicPath2 != "" {
-        fs2 := http.FileServer(http.Dir(publicPath2))
-        mux.Handle("/tepublic2/", http.StripPrefix("/tepublic2/", fs2))
-    }
+	publicPath2 := os.Getenv("PUBLICPATH")
+	if publicPath2 != "" {
+		fs2 := http.FileServer(http.Dir(publicPath2))
+		mux.Handle("/tepublic2/", http.StripPrefix("/tepublic2/", fs2))
+	}
 
 	mux.HandleFunc("/yo", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./public/yo.html")
@@ -647,7 +648,7 @@ func main() {
 		viewSearch = r.Header.Get("X-Search")
 		viewCond.Broadcast()
 	})
-	
+
 	// Not using the websockets anymore
 	// but still cool to see the code, and we might add it back
 	// upgrader := websocket.Upgrader{
@@ -683,7 +684,7 @@ func main() {
 	// 		viewMu.Unlock()
 	// 	}
 	// })
-// 
+	//
 	// mux.HandleFunc("/wsview", func(w http.ResponseWriter, r *http.Request) {
 	// 	c, err := upgrader.Upgrade(w, r, nil)
 	// 	if err != nil {
@@ -729,18 +730,18 @@ func main() {
 	// 			goto breakOut
 	// 		}
 	// 		// you could wait to make sure client got it before continuing the loop
-// 
+	//
 	// 	finish:
 	// 		viewMu.Unlock()
 	// 		continue
-// 
+	//
 	// 	breakOut:
 	// 		viewMu.Unlock()
 	// 		break
-// 
+	//
 	// 	}
 	// })
-	
+
 	mux.HandleFunc("/view", func(w http.ResponseWriter, r *http.Request) {
 		clientViewCounter, _ := strconv.Atoi(r.FormValue("viewCounter"))
 
@@ -822,230 +823,229 @@ func main() {
 			newF.Close()
 		}
 	})
-	
+
 	// #wschange myterminalname
 	mux.HandleFunc("/myname", func(w http.ResponseWriter, r *http.Request) {
-	    // load existing terminal sessions.
-	    workspaceMu.Lock()    
-	    defer workspaceMu.Unlock()
-	    idStr := r.FormValue("id")
-	    name := r.FormValue("name")
-	    id, err := strconv.Atoi(idStr)
-	    if err != nil {
-	        logAndErr(w, "invalid terminal id")
-	        return
-	    }
-	    t, ok := workspace.GetFile(id)
-	    if !ok {
-	        logAndErr(w, "not found")
-	        return
-	    }
-	    t.Name = name
-	    json.NewEncoder(w).Encode(map[string]interface{}{
-	        "success": true,
-	    }) 
+		// load existing terminal sessions.
+		workspaceMu.Lock()
+		defer workspaceMu.Unlock()
+		idStr := r.FormValue("id")
+		name := r.FormValue("name")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			logAndErr(w, "invalid terminal id")
+			return
+		}
+		t, ok := workspace.GetFile(id)
+		if !ok {
+			logAndErr(w, "not found")
+			return
+		}
+		t.Name = name
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+		})
 	})
-	
+
 	mux.HandleFunc("/mycolor", func(w http.ResponseWriter, r *http.Request) {
-	    // load existing terminal sessions.
-	    workspaceMu.Lock()    
-	    defer workspaceMu.Unlock()
-	    idStr := r.FormValue("id")
-	    color := r.FormValue("color")
-	    id, err := strconv.Atoi(idStr)
-	    if err != nil {
-	        logAndErr(w, "invalid terminal id")
-	        return
-	    }
-	    t, ok := workspace.GetFile(id)
-	    if !ok {
-	        logAndErr(w, "not found")
-	        return
-	    }
-	    t.Color = color
-	    json.NewEncoder(w).Encode(map[string]interface{}{
-	        "success": true,
-	    }) 
+		// load existing terminal sessions.
+		workspaceMu.Lock()
+		defer workspaceMu.Unlock()
+		idStr := r.FormValue("id")
+		color := r.FormValue("color")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			logAndErr(w, "invalid terminal id")
+			return
+		}
+		t, ok := workspace.GetFile(id)
+		if !ok {
+			logAndErr(w, "not found")
+			return
+		}
+		t.Color = color
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+		})
 	})
-	
+
 	// #wschange this replaced myterminals, now is an array not map
 	mux.HandleFunc("/myworkspace", func(w http.ResponseWriter, r *http.Request) {
-    	workspaceMu.Lock()    
-    	defer workspaceMu.Unlock()
-	    workspaceRet := workspaceView(workspace)
-	    json.NewEncoder(w).Encode(workspaceRet)
+		workspaceMu.Lock()
+		defer workspaceMu.Unlock()
+		workspaceRet := workspaceView(workspace)
+		json.NewEncoder(w).Encode(workspaceRet)
 	})
 	// #wschange this replaced myterminals, now is an array not map
 	mux.HandleFunc("/mysaveworkspace", func(w http.ResponseWriter, r *http.Request) {
-	    // load existing terminal sessions.
-	    workspaceMu.Lock()    
-	    defer workspaceMu.Unlock()
-	    
-	    
-	    tmpWorkspace := Workspace{}
-	    err := json.NewDecoder(r.Body).Decode(&tmpWorkspace)
-	    if err != nil {
-	        logAndErr(w, "parsing for mysaveworkspace: %v", err)    
-	        return
-	    }
-	    filesByID := map[int]*File{}
-	    for _, f := range workspace.Files {
-	        filesByID[f.ID] = f
-	    }
-	    
-	    newFiles := []*File{}
-	    for _, fc := range tmpWorkspace.Files {
-	         if f, ok := filesByID[fc.ID]; ok {
-	             delete(filesByID, fc.ID)
-        	 	 // Let's update the editable foelds while we are at it.
-	             f.LineNumber = fc.LineNumber
-        		 f.Name = fc.Name
-        	     f.Color = fc.Color
-        		 f.HighlightText = fc.HighlightText
-	             newFiles = append(newFiles, f)
-	         }
-	    }
-	    // if we missed any add them at the end
-	    for _, f := range filesByID {
-             newFiles = append(newFiles, f)
-	    }
-	    workspace.Files = newFiles
-	    workspace.DarkMode = tmpWorkspace.DarkMode
-	    workspace.FontName = tmpWorkspace.FontName
-	    workspace.FontScale = tmpWorkspace.FontScale
-	    
-	    // now write to file
-	    workspaceViews := []map[string]interface{}{}
-	    for _, w := range workspaces {
-	        workspaceViews = append(workspaceViews, workspaceView(w))
-	    }
-        jsonBytes, err := json.MarshalIndent(workspaceViews, "", "    ")
-	    if err != nil {
-	        logAndErr(w, "marshalling for mysaveworkspace: %v", err)    
-	        return
-	    }
-	    err = ioutil.WriteFile("workspaces.json", jsonBytes, 0644)
-	    if err != nil {
-	        logAndErr(w, "saving workspaces.json: %v", err)    
-	        return
-	    }
+		// load existing terminal sessions.
+		workspaceMu.Lock()
+		defer workspaceMu.Unlock()
+
+		tmpWorkspace := Workspace{}
+		err := json.NewDecoder(r.Body).Decode(&tmpWorkspace)
+		if err != nil {
+			logAndErr(w, "parsing for mysaveworkspace: %v", err)
+			return
+		}
+		filesByID := map[int]*File{}
+		for _, f := range workspace.Files {
+			filesByID[f.ID] = f
+		}
+
+		newFiles := []*File{}
+		for _, fc := range tmpWorkspace.Files {
+			if f, ok := filesByID[fc.ID]; ok {
+				delete(filesByID, fc.ID)
+				// Let's update the editable foelds while we are at it.
+				f.LineNumber = fc.LineNumber
+				f.Name = fc.Name
+				f.Color = fc.Color
+				f.HighlightText = fc.HighlightText
+				newFiles = append(newFiles, f)
+			}
+		}
+		// if we missed any add them at the end
+		for _, f := range filesByID {
+			newFiles = append(newFiles, f)
+		}
+		workspace.Files = newFiles
+		workspace.DarkMode = tmpWorkspace.DarkMode
+		workspace.FontName = tmpWorkspace.FontName
+		workspace.FontScale = tmpWorkspace.FontScale
+
+		// now write to file
+		workspaceViews := []map[string]interface{}{}
+		for _, w := range workspaces {
+			workspaceViews = append(workspaceViews, workspaceView(w))
+		}
+		jsonBytes, err := json.MarshalIndent(workspaceViews, "", "    ")
+		if err != nil {
+			logAndErr(w, "marshalling for mysaveworkspace: %v", err)
+			return
+		}
+		err = ioutil.WriteFile("workspaces.json", jsonBytes, 0644)
+		if err != nil {
+			logAndErr(w, "saving workspaces.json: %v", err)
+			return
+		}
 	})
 	mux.HandleFunc("/myterminalpoll", func(w http.ResponseWriter, r *http.Request) {
-	    workspaceMu.Lock()    
-	    defer workspaceMu.Unlock()
-	    ret := map[int]TerminalResponse{}
-	    timedOut := false
-	    startWait := time.Now()
-    WaitLoop:
+		workspaceMu.Lock()
+		defer workspaceMu.Unlock()
+		ret := map[int]TerminalResponse{}
+		timedOut := false
+		startWait := time.Now()
+	WaitLoop:
 		for {
 			if time.Since(startWait) > (10 * time.Second) {
 				timedOut = true
 				break
 			}
-			
+
 			// If multiple clients were to need to connect to the terminals
 			// then we'd have to have a "stream-like" data structure for ReadBuffer
 			// and also would need the client to keep track of where it was
-    		for _, t := range workspace.Files {
-    		    // only "terminal" files will have a ReadBuffer
-				if len(t.ReadBuffer) > 0 { 
+			for _, t := range workspace.Files {
+				// only "terminal" files will have a ReadBuffer
+				if len(t.ReadBuffer) > 0 {
 					break WaitLoop
 				}
-    		}
+			}
 			workspaceCond.Wait()
 			// log.Println("done waiting")
 		}
-		
+
 		if !timedOut {
-    		for _, t := range workspace.Files {
-    		    tResp := TerminalResponse{} 
-    		    if t.Closed {
-    		        // we only delete it after the client gets it
-    		        // maybe have a timeout and cleanup later?
-    		        // or actually maybe delete it right away when it's closed
-    		        // and then keepntrack of closed ids to send?
-    		        workspace.RemoveFile(t.ID)
-    		    } else {
-    		        if len(t.ReadBuffer) == 0 {
-    		            continue
-    		        }
-    		    }
-    		    tResp.Base64 = base64.StdEncoding.EncodeToString(t.ReadBuffer)
-    		    tResp.Closed = t.Closed
-    		    t.ReadBuffer = []byte{}
-    		    ret[t.ID] = tResp
-    		}
+			for _, t := range workspace.Files {
+				tResp := TerminalResponse{}
+				if t.Closed {
+					// we only delete it after the client gets it
+					// maybe have a timeout and cleanup later?
+					// or actually maybe delete it right away when it's closed
+					// and then keepntrack of closed ids to send?
+					workspace.RemoveFile(t.ID)
+				} else {
+					if len(t.ReadBuffer) == 0 {
+						continue
+					}
+				}
+				tResp.Base64 = base64.StdEncoding.EncodeToString(t.ReadBuffer)
+				tResp.Closed = t.Closed
+				t.ReadBuffer = []byte{}
+				ret[t.ID] = tResp
+			}
 		}
-	    json.NewEncoder(w).Encode(ret)
+		json.NewEncoder(w).Encode(ret)
 	})
 	mux.HandleFunc("/myterminalopen", func(w http.ResponseWriter, r *http.Request) {
 		cwd := r.FormValue("cwd")
 		openTerminal(cwd, w)
 	})
 	mux.HandleFunc("/myterminalsend", func(w http.ResponseWriter, r *http.Request) {
-	    // TODO: do consider an rwlock
-	    // creak/pty example shows reading and writing in separate goroutines
-	    workspaceMu.Lock()    
-	    defer workspaceMu.Unlock()
-	    
+		// TODO: do consider an rwlock
+		// creak/pty example shows reading and writing in separate goroutines
+		workspaceMu.Lock()
+		defer workspaceMu.Unlock()
+
 		ID, err := strconv.Atoi(r.FormValue("id"))
 		if err != nil {
-			logAndErr(w, "invalid id: %s: %v", r.FormValue("id"), err) 
+			logAndErr(w, "invalid id: %s: %v", r.FormValue("id"), err)
 			return
 		}
-		
-	    if f, ok := workspace.GetFile(ID); ok {
-	    	payloadBytes := []byte(r.FormValue("payload"))
-	    	n, err := f.Pty.Write(payloadBytes)
-	    	if err != nil {
-				logAndErr(w, "wriring pty: %d: %v", ID, err) 
+
+		if f, ok := workspace.GetFile(ID); ok {
+			payloadBytes := []byte(r.FormValue("payload"))
+			n, err := f.Pty.Write(payloadBytes)
+			if err != nil {
+				logAndErr(w, "wriring pty: %d: %v", ID, err)
 				return
-	    	}
-	    	if n != len(payloadBytes) {
-				logAndErr(w, "wriring pty: not enough bytes written") 
+			}
+			if n != len(payloadBytes) {
+				logAndErr(w, "wriring pty: not enough bytes written")
 				return
-	    	}
-	    }
+			}
+		}
 	})
-	
+
 	// #wschange myterminalclose
 	mux.HandleFunc("/myclose", func(w http.ResponseWriter, r *http.Request) {
-	    workspaceMu.Lock()    
-	    defer workspaceMu.Unlock()
-	    
+		workspaceMu.Lock()
+		defer workspaceMu.Unlock()
+
 		ID, err := strconv.Atoi(r.FormValue("id"))
 		if err != nil {
-			logAndErr(w, "invalid id: %s: %v", r.FormValue("id"), err) 
+			logAndErr(w, "invalid id: %s: %v", r.FormValue("id"), err)
 			return
 		}
-		
-	    if t, ok := workspace.GetFile(ID); ok {
-	    	if t.Type == "file" || t.Type == "directory" {
-	    	    workspace.RemoveFile(ID)
-	    	    return
-	    	}
-	    	
-	    	if t.Type == "shell" {
-	    	    workspace.RemoveFile(ID)
-	    	    err := t.Cmd.Process.Kill()
-	    		if err != nil {
-					logAndErr(w, "closing pty: %d: %v", ID, err) 
-					return
-	    		}
-	    	    return
-	    	}
-	    	
-	    	// TODO remotefile
-	    	
-	    	workspace.RemoveFile(ID)
-	    	err := t.Pty.Close()
-	    	if err != nil {
-				logAndErr(w, "closing pty: %d: %v", ID, err) 
+
+		if t, ok := workspace.GetFile(ID); ok {
+			if t.Type == "file" || t.Type == "directory" {
+				workspace.RemoveFile(ID)
 				return
-	    	}
-	    }
+			}
+
+			if t.Type == "shell" {
+				workspace.RemoveFile(ID)
+				err := t.Cmd.Process.Kill()
+				if err != nil {
+					logAndErr(w, "closing pty: %d: %v", ID, err)
+					return
+				}
+				return
+			}
+
+			// TODO remotefile
+
+			workspace.RemoveFile(ID)
+			err := t.Pty.Close()
+			if err != nil {
+				logAndErr(w, "closing pty: %d: %v", ID, err)
+				return
+			}
+		}
 	})
-	
+
 	mux.HandleFunc("/myquickshell", func(w http.ResponseWriter, r *http.Request) {
 		cwd := r.FormValue("cwd") // current working directory
 		cmdString := r.FormValue("cmd")
@@ -1053,7 +1053,7 @@ func main() {
 		cmd.Dir = cwd
 		ret, err := cmd.CombinedOutput()
 		if err != nil {
-			logAndErr(w, "myquickshell error running command: %s: %v", cmdString, err) 
+			logAndErr(w, "myquickshell error running command: %s: %v", cmdString, err)
 			return
 		}
 		w.Write(ret)
@@ -1063,9 +1063,9 @@ func main() {
 		runShellCommand(r.FormValue("id"), r.FormValue("cmd"), r.FormValue("cwd"), w)
 	})
 	mux.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
-	    os.Exit(1)    
+		os.Exit(1)
 	})
-	
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// TODO #wschange: you could hydrate the original files list.
 
@@ -1086,7 +1086,7 @@ func main() {
 		// 	htmlString = strings.Replace(htmlString, "// FIRSTFILEMD5 GOES HERE", `var firstFileMD5 = "`+md5String+`"`, 1)
 		// }
 		// htmlString = strings.Replace(htmlString, "// ROOTLOCATION GOES HERE", "var rootLocation = \""+*location+"\"", 1)
-		
+
 		if *proxyPath != "" {
 			replaceProxyPath := "var proxyPath = \"" + *proxyPath + "\""
 			htmlString = strings.Replace(htmlString, "// PROXYPATH GOES HERE", replaceProxyPath, 1)
@@ -1095,13 +1095,13 @@ func main() {
 
 		// This content lines has to be the last one.
 		// htmlString = strings.Replace(htmlString, "// LINES GO HERE", "var lines = "+contentLinesJSONString, 1)
-		
+
 		// TODO: when shell mode is disabled, don't do this part.
 		log.Printf("yea I set rootLocation to be: %s", *location)
 		if r.FormValue("src") != "1" {
 			w.Header().Set("Content-Type", "text/html")
 		}
-		
+
 		// save the file to list of files
 		// addFile(r, isDir, fullPath)
 		ioutil.WriteFile("tmp", []byte(htmlString), 0777)
@@ -1114,17 +1114,17 @@ func main() {
 		defer workspaceMu.Unlock()
 		f, _ := workspace.GetFile(IDToDup)
 		if f == nil {
-		    return
+			return
 		}
 		f2 := *f // copy
-	    
-	    if ID == 0 {
-            lastFileID++
-            f2.ID = lastFileID
-		    w.Header().Set("X-ID", strconv.Itoa(f2.ID))
+
+		if ID == 0 {
+			lastFileID++
+			f2.ID = lastFileID
+			w.Header().Set("X-ID", strconv.Itoa(f2.ID))
 			workspace.Files = append(workspace.Files, &f2)
-	    } else {
-	    }
+		} else {
+		}
 		// add to end for now
 	})
 	mux.HandleFunc("/saveload", func(w http.ResponseWriter, r *http.Request) {
@@ -1165,10 +1165,10 @@ func main() {
 
 				if r.FormValue("raw") == "1" {
 					newID := addFile(r.FormValue("id"), isDir, fullPath)
-					if (newID != 0) {
+					if newID != 0 {
 						w.Header().Set("X-ID", strconv.Itoa(newID))
 					}
-					
+
 					w.Write([]byte(strings.Join(fileNames, "\n")))
 					return
 				}
@@ -1184,24 +1184,22 @@ func main() {
 				}
 				c = c2
 
-
-			    m := md5.New()
-			    if _, err = m.Write(c); err != nil {
+				m := md5.New()
+				if _, err = m.Write(c); err != nil {
 					logAndErr(w, "couldn't md5 file: %v", err)
-			        return
-			    }
-			    md5String = fmt.Sprintf("%x", m.Sum(nil))
+					return
+				}
+				md5String = fmt.Sprintf("%x", m.Sum(nil))
 				w.Header().Set("X-MD5", md5String)
-
 
 				if r.FormValue("raw") == "1" {
 					newID := addFile(r.FormValue("id"), isDir, fullPath)
-					if (newID != 0) {
+					if newID != 0 {
 						w.Header().Set("X-ID", strconv.Itoa(newID))
 					}
-					if (r.FormValue("download") == "1") {
+					if r.FormValue("download") == "1" {
 						parts := strings.Split(r.FormValue("fullpath"), "/")
-						theName:= parts[len(parts)-1]
+						theName := parts[len(parts)-1]
 						w.Header().Set("Content-Type", `text/plain`)
 						w.Header().Set("Content-Disposition", `attachment; filename="`+theName+`"`)
 					}
@@ -1209,7 +1207,7 @@ func main() {
 					return
 				}
 			}
-			
+
 		} else if r.Method == "POST" {
 			thePath := r.FormValue("fullpath")
 			theFilePath := combinePath(*location, thePath)
@@ -1218,37 +1216,37 @@ func main() {
 			oldmd5 := r.FormValue("oldmd5")
 			newmd5 := r.FormValue("newmd5")
 			if diff != "" && oldmd5 != "" && newmd5 != "" {
-			    oldBytes, err := ioutil.ReadFile(theFilePath)
-			    if err != nil {
+				oldBytes, err := ioutil.ReadFile(theFilePath)
+				if err != nil {
 					logAndErr(w, "couldn't open file: %v", err)
-			        return
-			    }
-			    oldH := md5.New()
-			    if _, err = oldH.Write(oldBytes); err != nil {
+					return
+				}
+				oldH := md5.New()
+				if _, err = oldH.Write(oldBytes); err != nil {
 					logAndErr(w, "couldn't md5 old bytes: %v", err)
-			        return
-			    }
-			    expectedOldMD5 := fmt.Sprintf("%x", oldH.Sum(nil))
-			    if expectedOldMD5 != oldmd5 {
+					return
+				}
+				expectedOldMD5 := fmt.Sprintf("%x", oldH.Sum(nil))
+				if expectedOldMD5 != oldmd5 {
 					logAndErr(w, "couldn't hex old bytes: %s != %s", expectedOldMD5, oldmd5)
-			    	return
-			    } 
-			    content, err = applyDiff(string(oldBytes), diff)
-			    if err != nil {
+					return
+				}
+				content, err = applyDiff(string(oldBytes), diff)
+				if err != nil {
 					logAndErr(w, "couldn't apply diff: %v", err)
-			    	return
-			    }
-			    newBytes := []byte(content)
-			    newH := md5.New()
-			    if _, err = newH.Write(newBytes); err != nil {
+					return
+				}
+				newBytes := []byte(content)
+				newH := md5.New()
+				if _, err = newH.Write(newBytes); err != nil {
 					logAndErr(w, "couldn't md5 new bytes: %v", err)
-			        return
-			    }
-			    expectedNewMD5 := fmt.Sprintf("%x", newH.Sum(nil))
-			    if expectedNewMD5 != newmd5 {
+					return
+				}
+				expectedNewMD5 := fmt.Sprintf("%x", newH.Sum(nil))
+				if expectedNewMD5 != newmd5 {
 					logAndErr(w, "hash doesn't match: %v", err)
-			    	return
-			    } 
+					return
+				}
 			} else {
 				content = r.FormValue("content")
 				// added this because once when I was traveling and
@@ -1271,22 +1269,20 @@ func main() {
 			json.NewEncoder(w).Encode(s)
 		}
 	})
-	
-	
-	
-    langServerURL, _ := url.Parse("http://localhost:12345/")
+
+	langServerURL, _ := url.Parse("http://localhost:12345/")
 	proxyToLangServer := &httputil.ReverseProxy{Director: func(r *http.Request) {
 		r.URL.Host = langServerURL.Host
 		r.URL.Scheme = "http"
 	}}
 	mux.HandleFunc("/mylangserver", func(w http.ResponseWriter, r *http.Request) {
-	    proxyToLangServer.ServeHTTP(w, r)
+		proxyToLangServer.ServeHTTP(w, r)
 	})
 
-    var mainMux http.Handler = mux
-    if os.Getenv("NOGZIP") != "1" {
-        mainMux = gziphandler.GzipHandler(mux)
-    }
+	var mainMux http.Handler = mux
+	if os.Getenv("NOGZIP") != "1" {
+		mainMux = gziphandler.GzipHandler(mux)
+	}
 	if os.Getenv("NOBASICAUTH") == "" {
 		mainMux = BasicAuth(mainMux)
 	}
@@ -1366,37 +1362,37 @@ func addFile(id string, isDir bool, fullPath string) int {
 	if id == "" {
 		workspaceMu.Lock()
 		lastFileID++
-    	f := &File{
-    		FullPath: fullPath,
-    	    ID: lastFileID,
-    	}
-    	if isDir {
-    	    f.Type = "directory"
-    	} else {
-    	    f.Type = "file"
-    	}
-		workspace.Files = append(workspace.Files, f) 
+		f := &File{
+			FullPath: fullPath,
+			ID:       lastFileID,
+		}
+		if isDir {
+			f.Type = "directory"
+		} else {
+			f.Type = "file"
+		}
+		workspace.Files = append(workspace.Files, f)
 		workspaceMu.Unlock()
 		return f.ID
 	}
-	return 0 
+	return 0
 }
 
 func logJSON(v interface{}) {
-    b, err := json.MarshalIndent(v, "", "    ")    
-    if err != nil {
-        log.Printf("error logging json: %v", err)
-    }
-    log.Printf(string(b))
+	b, err := json.MarshalIndent(v, "", "    ")
+	if err != nil {
+		log.Printf("error logging json: %v", err)
+	}
+	log.Printf(string(b))
 }
 
 func combinePath(a, b string) string {
-    if (!strings.HasSuffix(a, "/")){
-        a = a + "/"
-    }
-    if (strings.HasPrefix(b, "/")) {
-        b = b[1:]
-    }
-    
-    return a + b
+	if !strings.HasSuffix(a, "/") {
+		a = a + "/"
+	}
+	if strings.HasPrefix(b, "/") {
+		b = b[1:]
+	}
+
+	return a + b
 }
