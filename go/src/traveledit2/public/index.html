@@ -358,7 +358,7 @@ They get changed later on.
     <div class=square onclick="saveWorkspace()">save workspace</div>
     <div class=square onclick="location.href = proxyPath + '/login'">login</div>
     <div class=square onclick=urlAtCursor()>visit</div>
-    <div class=square onclick="location.reload()">refresh</div>
+    <div class=square onclick="doRefresh()">refresh</div>
 </div>
 <div class=toolbar>
     <div class=square onclick="moveFileAllTheWayLeft()">hi</div>
@@ -880,7 +880,11 @@ function osPasteText() {
         alert("not copied: " + e)
     })
 }
-
+function doRefresh() {
+    saveWorkspace().then(function() {
+        location.reload()
+    })
+}
 function addIframe(url, id, name, cwd) {
     // var f = makeFile(url, 0, "")
     var f = makeFile(url, 0, "")
@@ -900,11 +904,11 @@ function addIframe(url, id, name, cwd) {
     var iframeWrapper = document.createElement("div")
     var iframe = document.createElement("iframe")
     iframe.src = url
+    iframe.currentElement = document.createElement("div")
     iframe.onload = function() {
         f.fullPath = iframe.src
         saveWorkspace()
-
-        iframe.contentWindow.open = function(url) {
+        var openFunction = function(url) {
             // TODO add ? and #
             if (url.startsWith("https://") || url.startsWith("http://")) {
                 parent.addIframe(url)
@@ -918,6 +922,57 @@ function addIframe(url, id, name, cwd) {
                 parent.addIframe(finalURL)
             }
         }
+
+        iframe.contentWindow.open = openFunction
+        var handleClick = function(e) {
+            alert("clicked")
+            e.preventDefault()
+            openFunction(e.currentTarget.getAttribute("data-te-href"))
+            return false
+        }
+
+        // hacky
+        var replaceLinks = function() {
+            var aTags = iframe.contentWindow.document.querySelectorAll("a")
+            for (let i=0; i<aTags.length; i++) {
+                let aTag = aTags[i]
+                if (aTag.hasAttribute("target")) {
+                    let href = aTag.getAttribute("href")
+                    aTag.onclick = handleClick
+                    aTag.removeAttribute("href")
+                    aTag.setAttribute("data-te-href", href)
+                    aTag.style.border = "1px solid hotpink"
+                }
+            }
+        }
+        // var replaceLinks = function() {
+        //     var aTags = iframe.contentWindow.document.querySelectorAll("a")
+        //     for (let i=0; i<aTags.length; i++) {
+        //         let aTag = aTags[i]
+        //         if (aTag.hasAttribute("target")) {
+        //             let href = aTag.getAttribute("href")
+        //             aTag.onclick = function(e) {
+        //                 alert("clicked")
+        //                 e.preventDefault()
+        //                 openFunction(href)
+        //                 return false
+        //             }
+        //             aTag.removeAttribute("href")
+        //             aTag.style.border = "1px solid hotpink"
+        //         }
+        //     }
+        // }
+        replaceLinks()
+
+        const config = { attributes: false, childList: true, subtree: true };
+        const callback = function(mutationsList, observer) {
+            log("changed")
+            replaceLinks()
+        };
+        const observer = new MutationObserver(callback);
+        observer.observe(iframe.contentWindow.document.body, config);
+
+
     }
     iframe.onerror = function() {
         window.open(iframe.src)
@@ -3015,45 +3070,52 @@ function getIndent(line) {
     return theIndent
 }
 
-function adjustHighlightRanges(index, linesAddedCount, file) {
+function adjustHighlightRanges(index, linesAddedCount, theFile) {
     // splice adds before
 
-    if (!file) {
-        file = fx
+    if (!theFile) {
+        theFile = fx
     }
-    if (!file) {
+    if (!theFile) {
         return
     }
-    if (!file.highlightRanges) {
+    if (!theFile.highlightRanges) {
         return
     }
-    for (var i=0; i<file.highlightRanges.length; i++) {
-        var r = file.highlightRanges[i]
-        // This single condition works well enough for now
-        if (true || linesAddedCount >= 0) {
-            if (index <= r.StartY) {
-                r.StartY += linesAddedCount
-                r.StopY += linesAddedCount
-            } else if (index <= r.StopY) {
-                r.StopY += linesAddedCount
-            } else if (index > r.stopY) {
-                // nothing
+
+    for (var fileI=0; fileI<files.length; fileI++) {
+        var file = files[fileI]
+        if (file.lines != theFile.lines) { // same lines, same file
+            continue
+        }
+        for (var i=0; i<file.highlightRanges.length; i++) {
+            var r = file.highlightRanges[i]
+            // This single condition works well enough for now
+            if (true || linesAddedCount >= 0) {
+                if (index <= r.StartY) {
+                    r.StartY += linesAddedCount
+                    r.StopY += linesAddedCount
+                } else if (index <= r.StopY) {
+                    r.StopY += linesAddedCount
+                } else if (index > r.stopY) {
+                    // nothing
+                }
+            } else {
+               // this is buggy needs plenty of fixes
+               // what about undo???
+               // var stopIndex = index - linesAddedCount
+               // if (index <= r.StartY && stopIndex <= r.StartY) {
+               // } else if (index <= r.StartY && stopIndex <= r.StopY) {
+               //     var hlLinesRemoved = stopIndex - r.StartY
+               //     r.StartY += hlLinesRemoved
+               //     r.StopY += hlLinesRemoved
+               // } else if (index > r.StartY && stopIndex <= r.StopY) {
+               //     r.StopY += linesAddedCount
+               // } else if (index <= r.Stopy && stopIndex > r.StopY) {
+               //     var hlLinesRemoved = stopIndex - r.Stopy
+               //     r.StopY += hlLinesRemoved
+               // }
             }
-        } else {
-           // this is buggy needs plenty of fixes
-           // what about undo???
-           // var stopIndex = index - linesAddedCount
-           // if (index <= r.StartY && stopIndex <= r.StartY) {
-           // } else if (index <= r.StartY && stopIndex <= r.StopY) {
-           //     var hlLinesRemoved = stopIndex - r.StartY
-           //     r.StartY += hlLinesRemoved
-           //     r.StopY += hlLinesRemoved
-           // } else if (index > r.StartY && stopIndex <= r.StopY) {
-           //     r.StopY += linesAddedCount
-           // } else if (index <= r.Stopy && stopIndex > r.StopY) {
-           //     var hlLinesRemoved = stopIndex - r.Stopy
-           //     r.StopY += hlLinesRemoved
-           // }
         }
     }
 }
@@ -4390,6 +4452,11 @@ function render() {
         if (fx.iframe) {
             theStatus.iframeCursorX = fx.iframeCursorX
             theStatus.iframeCursorY = fx.iframeCursorY
+            if (fx.currentElement) {
+                theStatus.element = fx.currentElement.toString()
+                theStatus.tagName = fx.currentElement.tagName
+                theStatus.id = fx.currentElement.id
+            }
         }
         // theStatus.acWord = acWord
         statusEl.innerText = JSON.stringify(theStatus, null, "    ")
@@ -5441,7 +5508,6 @@ function onStart(e) {
                 fx.iframeCursorY = 0
                 var wantScrollTop = fx.iframeWrapper.scrollTop + extendY
                 if (wantScrollTop < 0) {
-                    log({wst: wantScrollTop})
                     var oldScrollTop = fx.iframeWrapper.scrollTop
                     fx.iframeWrapper.scrollTop = 0
                     fx.iframe.contentWindow.scrollTo(fx.iframe.contentWindow.scrollX, fx.iframe.contentWindow.scrollY + wantScrollTop - (oldScrollTop - 0) - oldScrollTop)
@@ -5472,6 +5538,9 @@ function onStart(e) {
                 //     iframeOverflowX = 0
                 // }
             }
+
+            // show element?
+            fx.currentElement = fx.iframe.contentWindow.document.elementFromPoint(fx.iframeCursorX + fx.iframeWrapper.scrollLeft, fx.iframeCursorY + fx.iframeWrapper.scrollTop);
         }
 
         var changedY = false
@@ -5761,6 +5830,10 @@ function onStart(e) {
                     el.dispatchEvent(new MouseEvent('mousedown', mouseEventInfo));
                     el.dispatchEvent(new MouseEvent('mouseup', mouseEventInfo));
                     el.dispatchEvent(new MouseEvent('click', mouseEventInfo));
+
+                    if (el.tagName == "INPUT") {
+                        el.focus()
+                    }
                 } else {
                     if (fx.cursorLineIndex >= fx.lines.length) {
                         fx.cursorLineIndex = fx.lines.length - 1
@@ -6730,7 +6803,8 @@ function makeFile(fullPath, cursorLineIndex, contents) {
         cursorLineIndex: cursorLineIndex,
         // cursorColIndex: 0,
         cursorColIndex: -marginLeft,
-        offsetY: cursorLineIndex, // you could get smarter about this
+        // offsetY: cursorLineIndex, // you could get smarter about this
+        offsetY: max(cursorLineIndex - Math.floor(maxLines/2), 0), // you can still clean this up a bit, not sure if maxLines is ready?
         offsetX: 0,
         fileMode: "file",
         shellCWD: "",
@@ -7058,7 +7132,10 @@ function setCurrentFile(file) {
     if (fx.fileMode == "iframe") {
         // c.style.display = "none"
         fx.iframeWrapper.style.display = "block"
+        iframeCursor.style.display = "block"
         // c.style.display = "block"
+    } else {
+        iframeCursor.style.display = "none"
     }
     if (lastFile && lastFile.iframe) {
         lastFile.iframeWrapper.style.display = "none"
@@ -7103,6 +7180,7 @@ function duplicateFile(f, cursorLineIndex, id="") {
     setCurrentFile(fc)
     if (cursorLineIndex != -1) {
         fc.cursorLineIndex = cursorLineIndex
+        fc.offsetY = max(cursorLineIndex - Math.floor(maxLines/2), 0)
         ensureCursorInScreen()
     }
     renderURL()
@@ -7287,7 +7365,7 @@ fetch(proxyPath + "/myworkspace", {
 })
 
 
-function saveWorkspace() {
+function saveWorkspace(cb) {
     var tmpWorkspace = {
         DarkMode: isDark,
         FontName: currentFont.fontName,
@@ -7310,7 +7388,7 @@ function saveWorkspace() {
             // "HighlightText": f.highlightText,
         })
     }
-    fetch(proxyPath + "/mysaveworkspace", {
+    return fetch(proxyPath + "/mysaveworkspace", {
         cache: "no-cache",
         method: "POST",
         body: JSON.stringify(tmpWorkspace),
