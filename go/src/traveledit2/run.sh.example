@@ -1,0 +1,16 @@
+#!/bin/bash
+
+GO111MODULE=off \
+GOPATH=$(pwd)/../.. \
+BASICUSER=user1 \
+BASICPASS=somepw \
+SCREENSHARENOAUTH= \
+PUBLICPATH="../../../public" \
+go run traveledit2.go \
+-location=/ \
+-proxypath=/yourproxypath \
+-proxypathtrimmed=false \
+-addr=:8080
+
+
+

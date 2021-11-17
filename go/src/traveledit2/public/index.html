@@ -364,7 +364,7 @@ They get changed later on.
     <div class=square onclick="doRefresh()">refresh</div>
 </div>
 <div class=toolbar>
-    <div class=square onclick="moveFileAllTheWayLeft()">hi</div>
+    <div class=square onclick="fx.iframe.contentWindow.reload()">refresh iframe</div>
 </div>
 <div class=toolbar>
     <!--<div class=square onclick=addSpace()>space</div>
@@ -888,6 +888,22 @@ function doRefresh() {
         location.reload()
     })
 }
+
+function getAbsoluteURL(baseURL, newURL) {
+    baseURLParsed = new URL(baseURL)
+    // TODO add ? and #
+    if (newURL.startsWith("https://") || newURL.startsWith("http://")) {
+        return newURL
+    } else if (newURL.startsWith("//")) {
+        return baseURLParsed.protocol + newURL
+    } else if (newURL.startsWith("/")) {
+        return baseURLParsed.origin + newURL
+    } else {
+        var pathPart = baseURLParsed.pathname.split("/").slice(0, -1).join("/")
+        var finalURL = baseURLParsed.origin + pathPart + "/" + newURL
+        return finalURL
+    }
+}
 function addIframe(url, id, name, cwd) {
     // var f = makeFile(url, 0, "")
     var f = makeFile(url, 0, "")
@@ -919,17 +935,19 @@ function addIframe(url, id, name, cwd) {
         saveWorkspace()
         var openFunction = function(url) {
             // TODO add ? and #
-            if (url.startsWith("https://") || url.startsWith("http://")) {
-                parent.addIframe(url)
-            } else if (url.startsWith("//")) {
-                parent.addIframe(iframe.contentWindow.location.protocol + url)
-            } else if (url.startsWith("/")) {
-                parent.addIframe(iframe.contentWindow.location.origin + url)
-            } else {
-                var pathPart = iframe.contentWindow.location.pathname.split("/").slice(0, -1).join("/")
-                var finalURL = iframe.contentWindow.location.origin + pathPart + "/" + url
-                parent.addIframe(finalURL)
-            }
+            // if (url.startsWith("https://") || url.startsWith("http://")) {
+            //     parent.addIframe(url)
+            // } else if (url.startsWith("//")) {
+            //     parent.addIframe(iframe.contentWindow.location.protocol + url)
+            // } else if (url.startsWith("/")) {
+            //     parent.addIframe(iframe.contentWindow.location.origin + url)
+            // } else {
+            //     var pathPart = iframe.contentWindow.location.pathname.split("/").slice(0, -1).join("/")
+            //     var finalURL = iframe.contentWindow.location.origin + pathPart + "/" + url
+            //     parent.addIframe(finalURL)
+            // }
+            var finalURL = getAbsoluteURL(iframe.contentWindow.location, url)
+            parent.addIframe(finalURL)
         }
 
         iframe.contentWindow.open = openFunction
@@ -938,6 +956,18 @@ function addIframe(url, id, name, cwd) {
             openFunction(e.currentTarget.getAttribute("data-te-href"))
             return false
         }
+
+        var oldSubmit = iframe.contentWindow.HTMLFormElement.prototype.submit
+        iframe.contentWindow.HTMLFormElement.prototype.submit = function() {
+            var newIframe = addIframe("about:blank")
+            this.removeAttribute("target")
+            this.action = getAbsoluteURL(iframe.contentWindow.location, this.action)
+            newIframe.iframe.contentWindow.document.body.appendChild(this)
+            oldSubmit.call(this)
+            this.teModified = true
+            return false
+        }
+
 
         // hacky
         var replaceLinks = function() {
@@ -952,13 +982,23 @@ function addIframe(url, id, name, cwd) {
                     aTag.style.border = "1px solid hotpink"
                 }
             }
+            // var formTags = iframe.contentWindow.document.querySelectorAll("form")
+            // for (let i=0; i<formTags.length; i++) {
+            //     let formTag = formTags[i]
+            //     if (formTag.hasAttribute("target") && !formTag.hasAttribute("onsubmit")) { // TODO: better handling
+            //         let action = formTag.getAttribute("action")
+            //         formTag.onsubmit = handleSubmit
+            //         formTag.removeAttribute("target")
+            //         formTag.style.border = "1px solid lime"
+            //     }
+            // }
         }
         replaceLinks()
 
         const config = { attributes: false, childList: true, subtree: true };
         const callback = function(mutationsList, observer) {
             // log("changed")
-            // TODO: debounce
+            // TODO: only change the modified ones, also you may need to look at attribute changes
             replaceLinks()
         };
         const observer = new MutationObserver(callback);
@@ -1005,6 +1045,7 @@ function addIframe(url, id, name, cwd) {
         })
 
     }
+    return f
 }
 
 function showDiff() {
@@ -6239,14 +6280,14 @@ function seeEl(el, body) {
     if (!el) {
         return null
     }
-    
+
     return {
         tagName: el.tagName,
         id: el.id,
         className: el.className,
         isBody: el == body,
         tostring: el.toString()
-        
+
     }
 }
 
@@ -6986,7 +7027,7 @@ function renderFileDropdown() {
         // button.className = "square"
         button.setAttribute("data-index", fileI)
         var theName = ""
-        if (file.fileMode == "terminal" && file.name) {
+        if (file.name) {
             theName = file.name
         } else {
             var parts = file.fullPath.split("/")
