@@ -246,6 +246,8 @@ They get changed later on.
     ontouchstart=onStart(event)
     ></canvas>
     <div id="iframeContainer" style="position:absolute; top:0; left:0;">
+        <div id="iframeCursor" style="z-index:100; position:absolute; top:0; left:0; border-radius: 5px; border: 1px solid black; width: 10px; height: 10px; background-color: white;">
+        </div>
     </div>
 </div>
 <div class="toolbar hidden" id=terminalToolbar1 style="--display: none">
@@ -926,7 +928,7 @@ function addIframe(url, id, name, cwd) {
     // iframeWrapper.style.left = navTouchSize + "px"
     iframeWrapper.style.width = (innerWidth - (navTouchSize)) + "px"
     iframeWrapper.style.left = (navTouchSize/2) + "px"
-    iframeWrapper.style.height = (canvasHeightFull*.75/3) + "px"
+    iframeWrapper.style.height = (canvasHeightFull*.5/3) + "px"
     iframeWrapper.style.display = "none"
     iframeWrapper.style.overflow = "scroll"
     iframe.style.border = "none"
@@ -935,7 +937,7 @@ function addIframe(url, id, name, cwd) {
 
 
     iframe.style.width = "1200px"
-    iframe.style.height = "20000px"
+    iframe.style.height = "1000px"
     iframeWrapper.appendChild(iframe)
     iframeContainer.appendChild(iframeWrapper)
     f.iframe = iframe
@@ -1383,6 +1385,10 @@ function runEditorCommand(e) {
             break
         }
         var r = fx.selectedRegions[0]
+        if (!fx.highlightRanges) {
+            // TODO: Figure out why this is
+            fx.highlightRanges = []
+        }
         fx.highlightRanges.push({
             StartY: r.startY,
             StartX: r.startX,
@@ -4695,6 +4701,12 @@ var rendersInLastSecond = 0
 function renderInternal() {
     var startRenderTime = Date.now()
 
+    if (fx.iframe) {
+        iframeCursor.style.top = (fx.iframeCursorY-5) + "px"
+        iframeCursor.style.left = ((navTouchSize/2) +fx.iframeCursorX-5) + "px"
+        return
+    }
+
     // the selected areas
     for (var i=0; i<fx.selectedRegions.length;i++) {
         // todo: normalize region start and stop
@@ -5308,6 +5320,7 @@ function moveHomeEndAction() {
 }
 
 var overflowX = 0
+var iframeOverflowX = 0
 var isDragKeyboard = false
 var touchCount = 0
 function onStart(e) {
@@ -5347,6 +5360,7 @@ function onStart(e) {
     }
 
     var hasSwitchedFile = false
+    var hasNavedBack = false
     var startCursorColIndex = fx.cursorColIndex
 
     var onMove = function(e) {
@@ -5406,60 +5420,58 @@ function onStart(e) {
         lastTouchX = e.touches[0].pageX
         lastTouchY = e.touches[0].pageY
 
-
         if (fx.iframe) {
-            // if (cursorY > maxHeight) {
-            //     var extendY = cursorY - maxHeight
-            //     cursorY = maxHeight
-            //     fx.offsetY += Math.ceil(extendY/fontHeight)
-            //     if (fx.offsetY > fx.lines.length - 10) fx.offsetY = fx.lines.length - 10
-            //     changedY = true
-            // } else if (cursorY < 0) {
-            //     var extendY = cursorY
-            //     cursorY = 0
-            //     fx.offsetY += Math.floor(extendY/fontHeight)
-            //     changedY = true
-            //     if (fx.offsetY < 0) fx.offsetY = 0
-            // }
-// 
-            // // log("startCursorColIndex: " + startCursorColIndex)
-            // var maxWidth = (maxCols -1) * fontWidth
-            // //var maxWidth = canvasWidth
-            // if (cursorX > maxWidth) {
-            //     var extendX = cursorX - maxWidth
-            //     cursorX = maxWidth
-            //     // if (!changedY) fx.offsetX += Math.round(extendX/fontWidth)
-            //     if (!changedY) fx.offsetX += Math.ceil(extendX/fontWidth)
-            // } else if (cursorX < 0) {
-            //     var extendX = cursorX
-            //     cursorX = 0
-            //     // if (!changedY) fx.offsetX += Math.round(extendX/fontWidth)
-            //     if (!changedY) fx.offsetX += Math.floor(extendX/fontWidth)
-// 
-            //     var prevOffsetX = fx.offsetX
-            //     if (fx.offsetX < -marginLeft) {
-            //         overflowX += -marginLeft - fx.offsetX
-            //         fx.offsetX = -marginLeft
-            //     }
-// 
-            //     // attempt 1 at swiping left to do an action
-            //     // log("theoffsetx: " + fx.offsetX)
-            //     // if (!hasSwitchedFile && !changedY && startCursorColIndex == -marginLeft && prevOffsetX < -20) {
-            //     //     hasSwitchedFile = true
-            //     //     seeFiles()
-            //     //     // moveFileAllTheWayLeft()
-            //     //     // saveWorkspace()
-            //     // }
-// 
-            //     // attempt 2 at swiping left to do an action
-            //     if (overflowX > 75 && !hasSwitchedFile && startCursorColIndex == -marginLeft) {
-            //         hasSwitchedFile = true
-            //         // seeFiles()
-            //         moveFileAllTheWayLeft()
-            //         saveWorkspace()
-            //         overflowX = 0
-            //     }
-            // }
+            // TODO! cache the clientHeights? like globally even?
+            var iframeChangedY = false
+            if (fx.iframeCursorY > fx.iframeWrapper.clientHeight) {
+                var extendY = fx.iframeCursorY - fx.iframeWrapper.clientHeight
+                fx.iframeCursorY = fx.iframeWrapper.clientHeight
+                var wantScrollTop = fx.iframeWrapper.scrollTop + extendY
+                if (wantScrollTop > fx.iframe.clientHeight - fx.iframeWrapper.clientHeight) {
+                    var oldScrollTop = fx.iframeWrapper.scrollTop
+                    fx.iframeWrapper.scrollTop = fx.iframe.clientHeight - fx.iframeWrapper.clientHeight
+                    // fx.iframe.contentWindow.scrollY += wantScrollTop - (oldScrollTop - fx.iframeWrapper.scrollTop)
+                    fx.iframe.contentWindow.scrollTo(fx.iframe.contentWindow.scrollX, fx.iframe.contentWindow.scrollY + wantScrollTop - (oldScrollTop - fx.iframeWrapper.scrollTop) - oldScrollTop)
+                } else {
+                    fx.iframeWrapper.scrollTop = wantScrollTop
+                }
+                iframeChangedY = true
+            } else if (fx.iframeCursorY < 0) {
+                var extendY = fx.iframeCursorY
+                fx.iframeCursorY = 0
+                var wantScrollTop = fx.iframeWrapper.scrollTop + extendY
+                if (wantScrollTop < 0) {
+                    log({wst: wantScrollTop})
+                    var oldScrollTop = fx.iframeWrapper.scrollTop
+                    fx.iframeWrapper.scrollTop = 0
+                    fx.iframe.contentWindow.scrollTo(fx.iframe.contentWindow.scrollX, fx.iframe.contentWindow.scrollY + wantScrollTop - (oldScrollTop - 0) - oldScrollTop)
+                } else {
+                    fx.iframeWrapper.scrollTop = wantScrollTop
+                }
+                iframeChangedY = true
+            }
+
+            if (fx.iframeCursorX > fx.iframeWrapper.clientWidth) {
+                var extendX = fx.iframeCursorX - fx.iframeWrapper.clientWidth
+                fx.iframeCursorX = fx.iframeWrapper.clientWidth
+                if (!iframeChangedY) fx.iframeWrapper.scrollLeft += extendX
+            } else if (fx.iframeCursorX < 0) {
+                var extendX = fx.iframeCursorX
+                fx.iframeCursorX = 0
+                if (!iframeChangedY) fx.iframeWrapper.scrollLeft += extendX
+
+                // if (fx.iframeWrapper.scrollLeft < 0) {
+                //     iframeOverflowX += -marginLeft - fx.iframeWrapper.scrollLeft
+                //     fx.iframeWrapper.scrollLeft = -marginLeft
+                // }
+                // // TODO: come back to startcursorcolindex
+                // if (iframeOverflowX > 75 && !hasNavedBack && startCursorColIndex == -marginLeft) {
+                //     hasNavedBack = true
+                //     fx.iframe.contentWindow.history.back()
+                //     saveWorkspace()
+                //     iframeOverflowX = 0
+                // }
+            }
         }
 
         var changedY = false
@@ -5735,32 +5747,48 @@ function onStart(e) {
                     acWordToggle()
                 }
             } else {
-                if (fx.cursorLineIndex >= fx.lines.length) {
-                    fx.cursorLineIndex = fx.lines.length - 1
-                    updateCursorXY()
-                    render()
-                }
+                if (fx.iframe) {
+                    var mouseEventInfo = {
+                        view: window,
+                        bubbles: true,
+                        cancelable: true,
+                        screenX: fx.iframeCursorX + fx.iframeWrapper.scrollLeft,
+                        screenY: fx.iframeCursorY + fx.iframeWrapper.scrollTop,
+                    }
+                    var el = fx.iframe.contentWindow.document.elementFromPoint(fx.iframeCursorX + fx.iframeWrapper.scrollLeft, fx.iframeCursorY + fx.iframeWrapper.scrollTop);
+                    el.dispatchEvent(new MouseEvent('mouseenter', mouseEventInfo));
+                    el.dispatchEvent(new MouseEvent('mouseover', mouseEventInfo));
+                    el.dispatchEvent(new MouseEvent('mousedown', mouseEventInfo));
+                    el.dispatchEvent(new MouseEvent('mouseup', mouseEventInfo));
+                    el.dispatchEvent(new MouseEvent('click', mouseEventInfo));
+                } else {
+                    if (fx.cursorLineIndex >= fx.lines.length) {
+                        fx.cursorLineIndex = fx.lines.length - 1
+                        updateCursorXY()
+                        render()
+                    }
 
-                // This part for moving the cursor where you tapped (if you want that feature)
-                // if (false) {
-                if (false) {
-                    var bbox = c.getBoundingClientRect()
-                    var pointX = startTouchX - bbox.left
-                    var pointY = startTouchY - bbox.top
-                    fx.cursorColIndex = Math.round(
-                        ((pointX * 3)/fontWidth) + fx.offsetX
-                    )
-                    fx.cursorLineIndex = Math.round(
-                        ((pointY * 3)/fontHeight) + fx.offsetY
-                    )
-                    updateCursorXY()
-                }
+                    // This part for moving the cursor where you tapped (if you want that feature)
+                    // if (false) {
+                    if (false) {
+                        var bbox = c.getBoundingClientRect()
+                        var pointX = startTouchX - bbox.left
+                        var pointY = startTouchY - bbox.top
+                        fx.cursorColIndex = Math.round(
+                            ((pointX * 3)/fontWidth) + fx.offsetX
+                        )
+                        fx.cursorLineIndex = Math.round(
+                            ((pointY * 3)/fontHeight) + fx.offsetY
+                        )
+                        updateCursorXY()
+                    }
 
-                if (true) {
-                    // the handleFocusIn function will do some
-                    // processing
+                    if (true) {
+                        // the handleFocusIn function will do some
+                        // processing
 
-                    theText.focus()
+                        theText.focus()
+                    }
                 }
             }
         }
