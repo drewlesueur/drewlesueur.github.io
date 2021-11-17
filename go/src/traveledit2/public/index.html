@@ -5,7 +5,10 @@
 var proxyPath = ""
 // PROXYPATH GOES HERE
 </script>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--<meta name="viewport" content="width=device-width, initial-scale=1">
+-->
+
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
 <meta name="apple-mobile-web-app-title" content="Editor">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -906,6 +909,12 @@ function addIframe(url, id, name, cwd) {
     iframe.src = url
     iframe.currentElement = document.createElement("div")
     iframe.onload = function() {
+        // iframe.contentWindow.document.body.style.transform = "scale(.75)"
+        // iframe.contentWindow.document.body.style.transformOrigin = "top left"
+        // iframe.style.transform = "scale(.75)"
+        // iframe.style.transformOrigin = "top left"
+        // iframe.style.width = (1200 * .75) + "px"
+        // iframe.style.height = (1000 * .75)+"px"
         f.fullPath = iframe.src
         saveWorkspace()
         var openFunction = function(url) {
@@ -925,7 +934,6 @@ function addIframe(url, id, name, cwd) {
 
         iframe.contentWindow.open = openFunction
         var handleClick = function(e) {
-            alert("clicked")
             e.preventDefault()
             openFunction(e.currentTarget.getAttribute("data-te-href"))
             return false
@@ -936,7 +944,7 @@ function addIframe(url, id, name, cwd) {
             var aTags = iframe.contentWindow.document.querySelectorAll("a")
             for (let i=0; i<aTags.length; i++) {
                 let aTag = aTags[i]
-                if (aTag.hasAttribute("target")) {
+                if (aTag.hasAttribute("target") && !aTag.hasAttribute("onclick")) { // TODO: better handling
                     let href = aTag.getAttribute("href")
                     aTag.onclick = handleClick
                     aTag.removeAttribute("href")
@@ -945,28 +953,12 @@ function addIframe(url, id, name, cwd) {
                 }
             }
         }
-        // var replaceLinks = function() {
-        //     var aTags = iframe.contentWindow.document.querySelectorAll("a")
-        //     for (let i=0; i<aTags.length; i++) {
-        //         let aTag = aTags[i]
-        //         if (aTag.hasAttribute("target")) {
-        //             let href = aTag.getAttribute("href")
-        //             aTag.onclick = function(e) {
-        //                 alert("clicked")
-        //                 e.preventDefault()
-        //                 openFunction(href)
-        //                 return false
-        //             }
-        //             aTag.removeAttribute("href")
-        //             aTag.style.border = "1px solid hotpink"
-        //         }
-        //     }
-        // }
         replaceLinks()
 
         const config = { attributes: false, childList: true, subtree: true };
         const callback = function(mutationsList, observer) {
-            log("changed")
+            // log("changed")
+            // TODO: debounce
             replaceLinks()
         };
         const observer = new MutationObserver(callback);
@@ -983,7 +975,7 @@ function addIframe(url, id, name, cwd) {
     // iframeWrapper.style.left = navTouchSize + "px"
     iframeWrapper.style.width = (innerWidth - (navTouchSize)) + "px"
     iframeWrapper.style.left = (navTouchSize/2) + "px"
-    iframeWrapper.style.height = (canvasHeightFull*.5/3) + "px"
+    iframeWrapper.style.height = (canvasHeightFull*.7/3) + "px"
     iframeWrapper.style.display = "none"
     iframeWrapper.style.overflow = "scroll"
     iframe.style.border = "none"
@@ -1022,8 +1014,8 @@ function showDiff() {
     var f3 = makeFile("__diffOld3", 0, contents)
     f3.fileMode = "file"
     f3.cursorLineIndex = 0
-    addFileToList(f)
-    setCurrentFile(f)
+    addFileToList(f3)
+    setCurrentFile(f3)
 
     // For now we don't load in the third party diff algorithm
     // var oldContents = fx.undo.lastSavedLines.join("\n")
@@ -4452,10 +4444,16 @@ function render() {
         if (fx.iframe) {
             theStatus.iframeCursorX = fx.iframeCursorX
             theStatus.iframeCursorY = fx.iframeCursorY
+            theStatus.iframeWLeft = fx.iframeWrapper.scrollLeft
+            theStatus.iframeWTop = fx.iframeWrapper.scrollTop
             if (fx.currentElement) {
                 theStatus.element = fx.currentElement.toString()
                 theStatus.tagName = fx.currentElement.tagName
                 theStatus.id = fx.currentElement.id
+            } else {
+                theStatus.element = ""
+                theStatus.tagName = ""
+                theStatus.id = ""
             }
         }
         // theStatus.acWord = acWord
@@ -5498,7 +5496,19 @@ function onStart(e) {
                     var oldScrollTop = fx.iframeWrapper.scrollTop
                     fx.iframeWrapper.scrollTop = fx.iframe.clientHeight - fx.iframeWrapper.clientHeight
                     // fx.iframe.contentWindow.scrollY += wantScrollTop - (oldScrollTop - fx.iframeWrapper.scrollTop)
-                    fx.iframe.contentWindow.scrollTo(fx.iframe.contentWindow.scrollX, fx.iframe.contentWindow.scrollY + wantScrollTop - (oldScrollTop - fx.iframeWrapper.scrollTop) - oldScrollTop)
+                    // var n
+                    // subtract one because at the edge it doesn't get an element?
+                    var el = fx.iframe.contentWindow.document.elementFromPoint(fx.iframeCursorX + fx.iframeWrapper.scrollLeft, fx.iframeCursorY + fx.iframeWrapper.scrollTop - 1);
+                    var nextScrollableElement = getNextScrollableElement(el, fx.iframe.contentWindow.document.body)
+                    // log({
+                    //     el: seeEl(el, fx.iframe.contentWindow.document.body),
+                    //     n: seeEl(nextScrollableElement, fx.iframe.contentWindow.document.body),
+                    // })
+                    if (nextScrollableElement == fx.iframe.contentWindow.document.body) {
+                        fx.iframe.contentWindow.scrollTo(fx.iframe.contentWindow.scrollX, fx.iframe.contentWindow.scrollY + wantScrollTop - (oldScrollTop - fx.iframeWrapper.scrollTop) - oldScrollTop)
+                    } else {
+                        nextScrollableElement.scrollTop = nextScrollableElement.scrollTop + wantScrollTop - (oldScrollTop - fx.iframeWrapper.scrollTop) - oldScrollTop
+                    }
                 } else {
                     fx.iframeWrapper.scrollTop = wantScrollTop
                 }
@@ -5510,7 +5520,17 @@ function onStart(e) {
                 if (wantScrollTop < 0) {
                     var oldScrollTop = fx.iframeWrapper.scrollTop
                     fx.iframeWrapper.scrollTop = 0
-                    fx.iframe.contentWindow.scrollTo(fx.iframe.contentWindow.scrollX, fx.iframe.contentWindow.scrollY + wantScrollTop - (oldScrollTop - 0) - oldScrollTop)
+                    var el = fx.iframe.contentWindow.document.elementFromPoint(fx.iframeCursorX + fx.iframeWrapper.scrollLeft, fx.iframeCursorY + fx.iframeWrapper.scrollTop + 1);
+                    var nextScrollableElement = getNextScrollableElementUp(el, fx.iframe.contentWindow.document.body)
+                    // log({
+                    //     el: seeEl(el, fx.iframe.contentWindow.document.body),
+                    //     n: seeEl(nextScrollableElement, fx.iframe.contentWindow.document.body),
+                    // })
+                    if (nextScrollableElement == fx.iframe.contentWindow.document.body) {
+                        fx.iframe.contentWindow.scrollTo(fx.iframe.contentWindow.scrollX, fx.iframe.contentWindow.scrollY + wantScrollTop - (oldScrollTop - 0) - oldScrollTop)
+                    } else {
+                        nextScrollableElement.scrollTop = nextScrollableElement.scrollTop + wantScrollTop - (oldScrollTop - 0) - oldScrollTop
+                    }
                 } else {
                     fx.iframeWrapper.scrollTop = wantScrollTop
                 }
@@ -5540,7 +5560,11 @@ function onStart(e) {
             }
 
             // show element?
-            fx.currentElement = fx.iframe.contentWindow.document.elementFromPoint(fx.iframeCursorX + fx.iframeWrapper.scrollLeft, fx.iframeCursorY + fx.iframeWrapper.scrollTop);
+            // fx.currentElement = fx.iframe.contentWindow.document.elementFromPoint(Math.round(fx.iframeCursorX + fx.iframeWrapper.scrollLeft), Math.round(fx.iframeCursorY + fx.iframeWrapper.scrollTop));
+            var el = fx.iframe.contentWindow.document.elementFromPoint((fx.iframeCursorX + fx.iframeWrapper.scrollLeft), (fx.iframeCursorY + fx.iframeWrapper.scrollTop));
+            if (el) {
+                fx.currentElement = el
+            }
         }
 
         var changedY = false
@@ -6209,6 +6233,48 @@ function onStart(e) {
         endListenerCount += 1
     }
     render()
+}
+
+function seeEl(el, body) {
+    if (!el) {
+        return null
+    }
+    
+    return {
+        tagName: el.tagName,
+        id: el.id,
+        className: el.className,
+        isBody: el == body,
+        tostring: el.toString()
+        
+    }
+}
+
+function getNextScrollableElement(el, body) {
+    if (!el) {
+        return body
+    }
+    if (el == body) {
+        return body
+    }
+    if (el.scrollHeight > el.clientHeight && el.scrollTop < el.scrollHeight - el.clientHeight) {
+        return el
+    }
+
+    return getNextScrollableElement(el.parentElement, body)
+}
+function getNextScrollableElementUp(el, body) {
+    if (!el) {
+        return body
+    }
+    if (el == body) {
+        return body
+    }
+    if (el.scrollHeight > el.clientHeight && el.scrollTop > 0) {
+        return el
+    }
+
+    return getNextScrollableElementUp(el.parentElement, body)
 }
 function clickItemInDirectory() {
     var prefix = fx.fullPath
