@@ -300,6 +300,7 @@ func (w *Workspace) GetFile(id int) (*File, bool) {
 func (w *Workspace) RemoveFile(id int) {
 	for i, f := range w.Files {
 		if id == f.ID {
+		    log.Printf("removed file: %d", id)
 			// w.Files = append(w.Files[0:i], w.Files[i+1:]...)
 			// https://github.com/golang/go/wiki/SliceTricks
 			copy(w.Files[i:], w.Files[i+1:])
@@ -526,9 +527,11 @@ func main() {
 						// also for the addFile portion you might just be able to set thr file
 						// instrad of calling addFile
 						// it's the shell and terminal types that need to start a process
-						addFile("", false, f.FullPath)
+						addFile("", "file", f.FullPath)
 					} else if f.Type == "directory" {
-						addFile("", true, f.FullPath)
+						addFile("", "directory", f.FullPath)
+					} else if f.Type == "iframe" {
+						addFile("", "iframe", f.FullPath)
 					} else if f.Type == "terminal" {
 						openTerminal(f.CWD, httptest.NewRecorder()) // being lazy with ResponseRecorder for now
 					} else if f.Type == "shell" {
@@ -559,7 +562,7 @@ func main() {
 	if workspace == nil {
 		workspace = &Workspace{}
 		workspaces = []*Workspace{workspace}
-		addFile("", true, "/")
+		addFile("", "directory", "/")
 	}
 	serverAddress := flag.String("addr", "localhost:8000", "serverAddress to listen on")
 	indexFile := flag.String("indexfile", "./public/index.html", "path to index html file")
@@ -1036,6 +1039,11 @@ func main() {
 		}
 	})
 
+	mux.HandleFunc("/myaddfile", func(w http.ResponseWriter, r *http.Request) {
+	    // only used for iframe for now, other typed handled their own way
+	    newID := addFile("", r.FormValue("fileType"), r.FormValue("fullPath"))
+		w.Header().Set("X-ID", strconv.Itoa(newID))
+	})
 	// #wschange myterminalclose
 	mux.HandleFunc("/myclose", func(w http.ResponseWriter, r *http.Request) {
 		workspaceMu.Lock()
@@ -1048,13 +1056,9 @@ func main() {
 		}
 
 		if t, ok := workspace.GetFile(ID); ok {
-			if t.Type == "file" || t.Type == "directory" {
-				workspace.RemoveFile(ID)
-				return
-			}
+			workspace.RemoveFile(ID)
 
 			if t.Type == "shell" {
-				workspace.RemoveFile(ID)
 				err := t.Cmd.Process.Kill()
 				if err != nil {
 					logAndErr(w, "closing pty: %d: %v", ID, err)
@@ -1064,13 +1068,13 @@ func main() {
 			}
 
 			// TODO remotefile
-
-			workspace.RemoveFile(ID)
-			err := t.Pty.Close()
-			if err != nil {
-				logAndErr(w, "closing pty: %d: %v", ID, err)
-				return
-			}
+            if t.Type == "terminal" {
+			    err := t.Pty.Close()
+			    if err != nil {
+			    	logAndErr(w, "closing pty: %d: %v", ID, err)
+			    	return
+			    }
+            }
 		}
 	})
 
@@ -1176,9 +1180,9 @@ func main() {
 				return
 			}
 			md5String := ""
-			isDir := false
+			fileType := "file"
 			if fileInfo.IsDir() {
-				isDir = true
+				fileType = "directory"
 				files, err := ioutil.ReadDir(fullPath)
 				if err != nil {
 					logAndErr(w, "could not read files: %v", err)
@@ -1192,7 +1196,7 @@ func main() {
 				w.Header().Set("X-Is-Dir", "1")
 
 				if r.FormValue("raw") == "1" {
-					newID := addFile(r.FormValue("id"), isDir, fullPath)
+					newID := addFile(r.FormValue("id"), fileType, fullPath)
 					if newID != 0 {
 						w.Header().Set("X-ID", strconv.Itoa(newID))
 					}
@@ -1221,7 +1225,7 @@ func main() {
 				w.Header().Set("X-MD5", md5String)
 
 				if r.FormValue("raw") == "1" {
-					newID := addFile(r.FormValue("id"), isDir, fullPath)
+					newID := addFile(r.FormValue("id"), fileType, fullPath)
 					if newID != 0 {
 						w.Header().Set("X-ID", strconv.Itoa(newID))
 					}
@@ -1386,18 +1390,14 @@ func main() {
 
 }
 
-func addFile(id string, isDir bool, fullPath string) int {
+func addFile(id string, fileType string, fullPath string) int {
 	if id == "" {
 		workspaceMu.Lock()
 		lastFileID++
 		f := &File{
 			FullPath: fullPath,
 			ID:       lastFileID,
-		}
-		if isDir {
-			f.Type = "directory"
-		} else {
-			f.Type = "file"
+			Type:     fileType,
 		}
 		workspace.Files = append(workspace.Files, f)
 		workspaceMu.Unlock()

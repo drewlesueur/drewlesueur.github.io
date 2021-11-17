@@ -1,5 +1,6 @@
 pqbd
 
+xdebug? or other debuggers?
 
 preserve highlight when cutting?
 laces where we aren't caching calls to unExpandTabIndex or expandTabIndex

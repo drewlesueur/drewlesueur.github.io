@@ -5,7 +5,7 @@
 var proxyPath = ""
 // PROXYPATH GOES HERE
 </script>
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, max-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-title" content="Editor">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -239,12 +239,15 @@ See canvasHeightFull
 The width and height here are placeholders
 They get changed later on.
 -->
-<canvas id=c width=99 height=99
-style="width: 375px; height:10px;
-display: block;"
-ontouchstart=onStart(event)
-></canvas>
-
+<div id=canvasWrapper style="position: relative;">
+    <canvas id=c width=99 height=99
+    style="width: 375px; height:10px;
+    display: block;"
+    ontouchstart=onStart(event)
+    ></canvas>
+    <div id="iframeContainer" style="position:absolute; top:0; left:0;">
+    </div>
+</div>
 <div class="toolbar hidden" id=terminalToolbar1 style="--display: none">
     <div class=square ontouchstart='sendTerminal("\x1b"); event.preventDefault()'>esc</div>
     <div class=square ontouchstart='ctrlDown = true; event.preventDefault()'>ctrl</div>
@@ -375,6 +378,7 @@ ontouchstart=onStart(event)
     <div class=longButton onclick="selectFont('VictorMonoMedium')">Victor Mono M</div>
     <div class=longButton onclick="selectFont('VictorMonoSemiBold')">Victor Semi Bold</div>
     <div class=longButton onclick="selectFont('AnonymousPro')">Anonymous Pro</div>
+    <div class=longButton onclick="selectFont('AnonymousProBold')">Anonymous Pro Bold</div>
     <div class=longButton onclick="selectFont('SourceCodePro')">Source Code Pro</div>
     <div class=longButton onclick="selectFont('InputMonoLucida')">Input Mono L</div>
     <div class=longButton onclick="selectFont('InputMono')">Input Mono</div>
@@ -610,6 +614,13 @@ var fonts = {
         fontSize: 30,
         fontName: "AnonymousPro",
         url: "https://fonts.gstatic.com/s/anonymouspro/v14/rP2Bp2a15UIB7Un-bOeISG3pHls29QP-4Ks.woff2"
+    },
+    "AnonymousProBold": {
+        fontHeightPre: 36,
+        fontWidthPre: 17,
+        fontSize: 30,
+        fontName: "AnonymousProBold",
+        url: "https://fonts.gstatic.com/s/anonymouspro/v14/rP2cp2a15UIB7Un-bOeISG3pFuAT4C7c7YGx0Ks.woff2"
     },
     "VictorMono": {
         fontHeightPre: 36,
@@ -868,6 +879,85 @@ function osPasteText() {
     })
 }
 
+function addIframe(url, id, name, cwd) {
+    // var f = makeFile(url, 0, "")
+    var f = makeFile(url, 0, "")
+    f.fileMode = "iframe"
+
+    if (id) {
+        f.ID = id
+    }
+    if (cwd) {
+        f.shellCWD = cwd
+    }
+    if (name) {
+        f.name = name
+    }
+    f.iframeCursorX = 0
+    f.iframeCursorY = 0
+    var iframeWrapper = document.createElement("div")
+    var iframe = document.createElement("iframe")
+    iframe.src = url
+    iframe.onload = function() {
+        f.fullPath = iframe.src
+        saveWorkspace()
+
+        iframe.contentWindow.open = function(url) {
+            // TODO add ? and #
+            if (url.startsWith("https://") || url.startsWith("http://")) {
+                parent.addIframe(url)
+            } else if (url.startsWith("//")) {
+                parent.addIframe(iframe.contentWindow.location.protocol + url)
+            } else if (url.startsWith("/")) {
+                parent.addIframe(iframe.contentWindow.location.origin + url)
+            } else {
+                var pathPart = iframe.contentWindow.location.pathname.split("/").slice(0, -1).join("/")
+                var finalURL = iframe.contentWindow.location.origin + pathPart + "/" + url
+                parent.addIframe(finalURL)
+            }
+        }
+    }
+    iframe.onerror = function() {
+        window.open(iframe.src)
+    }
+    iframeWrapper.style.position = "absolute"
+    // Go for half the size
+    // iframeWrapper.style.width = (innerWidth - (navTouchSize*2)) + "px"
+    // iframeWrapper.style.left = navTouchSize + "px"
+    iframeWrapper.style.width = (innerWidth - (navTouchSize)) + "px"
+    iframeWrapper.style.left = (navTouchSize/2) + "px"
+    iframeWrapper.style.height = (canvasHeightFull*.75/3) + "px"
+    iframeWrapper.style.display = "none"
+    iframeWrapper.style.overflow = "scroll"
+    iframe.style.border = "none"
+    iframe.style.backgroundColor = "white"
+
+
+
+    iframe.style.width = "1200px"
+    iframe.style.height = "20000px"
+    iframeWrapper.appendChild(iframe)
+    iframeContainer.appendChild(iframeWrapper)
+    f.iframe = iframe
+    f.iframeWrapper = iframeWrapper
+    addFileToList(f)
+    setCurrentFile(f)
+
+    // TODO: in future can we handle the id creation on the client side for less overhead?
+    if (!id) {
+        fetch(proxyPath + "/myaddfile?fileType=iframe&fullPath="+encodeURIComponent(url), {
+            cache: "no-cache"
+        }).then(r => {
+            if (r.headers.get("X-ID")) {
+                f.ID = r.headers.get("X-ID") - 0
+            }
+        }).catch(e => {
+            alert("Error adding iframe " + e)
+        })
+
+    }
+}
+
 function showDiff() {
     var start = Date.now()
     var contents = simpleDiffOld3(fx.undo.lastSavedLines, fx.lines, false).join("\n")
@@ -875,7 +965,8 @@ function showDiff() {
     var f3 = makeFile("__diffOld3", 0, contents)
     f3.fileMode = "file"
     f3.cursorLineIndex = 0
-    addFileToList(f3)
+    addFileToList(f)
+    setCurrentFile(f)
 
     // For now we don't load in the third party diff algorithm
     // var oldContents = fx.undo.lastSavedLines.join("\n")
@@ -1270,6 +1361,10 @@ function runEditorCommand(e) {
         paste()
         copyBuffer = oldCopyBuffer
         break
+    case "e":
+        var resp = eval(rest)
+        alert(resp)
+        break
     case "script":
     case "s":
         // see also scriptLines
@@ -1429,6 +1524,9 @@ function closeFile() {
         fx.lines = getLinesForFileList()
     } else {
         var myFx = fx // in case it changes
+        if (fx.iframeWrapper) {
+            fx.iframeWrapper.remove()
+        }
         var indexToClose = files.indexOf(myFx)
         if (indexToClose != -1) {
             files.splice(indexToClose, 1)
@@ -1906,7 +2004,7 @@ function nextHighlightText() {
     findDown()
     searchText.value = prevSearchText
 }
-function prevtHighlightText() {
+function prevHighlightText() {
     if (!highlightMatchesSingleRegExp) {
         return
     }
@@ -2044,7 +2142,7 @@ function findUp() {
         }
         if (searchText.value == "") {
             // navBack()
-            prevtHighlightText()
+            prevHighlightText()
             return
             // searchText.value = "// mar"+"ker"
             searchText.value = " mar"+"ker"
@@ -2291,9 +2389,14 @@ function copy() {
 
 function runScript() {
     var oldCopyBuffer = copyBuffer
-    // copy()
-    // var theScriptLines = copyBuffer
-    var theScriptLines = getSelectedLines(fx).lines
+    // going to try to default to single line. In most cases it's what we want?
+    var theScriptLines
+    if (fx.selectedRegions.length) {
+        theScriptLines = getSelectedLines(fx).lines
+    } else {
+        theScriptLines = [fx.lines[fx.cursorLineIndex]]
+    }
+
     // add return to the last non-empty line
     for (var i=theScriptLines.length-1; i>=0; i--) {
         if (theScriptLines[i].trim() != "") {
@@ -4273,12 +4376,15 @@ function render() {
             " " + (r ? `s:${r.startX},${r.startY}:${r.stopX},${r.stopY}` : "s:--") +
             " " + selectMode
             // theStatus.fileTree = fileTree
-        theStatus.shouldAutocompleteLine = shouldAutocompleteLine
         theStatus.lastWord = lastWord
         theStatus.lastCleared = lastCleared
         theStatus.totalViewRequests = totalViewRequests
         theStatus.totalViewBytesSent = totalViewBytesSent
         theStatus.overflowX = overflowX
+        if (fx.iframe) {
+            theStatus.iframeCursorX = fx.iframeCursorX
+            theStatus.iframeCursorY = fx.iframeCursorY
+        }
         // theStatus.acWord = acWord
         statusEl.innerText = JSON.stringify(theStatus, null, "    ")
     }
@@ -5284,15 +5390,77 @@ function onStart(e) {
         //     touchScaleX = touchScaleX / 10
         // }
         if (!lockX) {
-            cursorX = cursorX + ensureSign(signX, Math.round(Math.pow(diffLastTouchX, thePow)*touchScaleX))
+            var toAddX = ensureSign(signX, Math.round(Math.pow(diffLastTouchX, thePow)*touchScaleX))
+            cursorX = cursorX + toAddX
+            if (fx.iframe) {
+                fx.iframeCursorX += toAddX/3
+            }
         }
         // touchScaleX = oldTouchScaleX
 
-
-
-        cursorY = cursorY + ensureSign(signY, Math.round(Math.pow(diffLastTouchY, thePow)*touchScaleY))
+        var toAddY = ensureSign(signY, Math.round(Math.pow(diffLastTouchY, thePow)*touchScaleY))
+        cursorY = cursorY + toAddY
+        if (fx.iframe) {
+            fx.iframeCursorY += toAddY/3
+        }
         lastTouchX = e.touches[0].pageX
         lastTouchY = e.touches[0].pageY
+
+
+        if (fx.iframe) {
+            // if (cursorY > maxHeight) {
+            //     var extendY = cursorY - maxHeight
+            //     cursorY = maxHeight
+            //     fx.offsetY += Math.ceil(extendY/fontHeight)
+            //     if (fx.offsetY > fx.lines.length - 10) fx.offsetY = fx.lines.length - 10
+            //     changedY = true
+            // } else if (cursorY < 0) {
+            //     var extendY = cursorY
+            //     cursorY = 0
+            //     fx.offsetY += Math.floor(extendY/fontHeight)
+            //     changedY = true
+            //     if (fx.offsetY < 0) fx.offsetY = 0
+            // }
+// 
+            // // log("startCursorColIndex: " + startCursorColIndex)
+            // var maxWidth = (maxCols -1) * fontWidth
+            // //var maxWidth = canvasWidth
+            // if (cursorX > maxWidth) {
+            //     var extendX = cursorX - maxWidth
+            //     cursorX = maxWidth
+            //     // if (!changedY) fx.offsetX += Math.round(extendX/fontWidth)
+            //     if (!changedY) fx.offsetX += Math.ceil(extendX/fontWidth)
+            // } else if (cursorX < 0) {
+            //     var extendX = cursorX
+            //     cursorX = 0
+            //     // if (!changedY) fx.offsetX += Math.round(extendX/fontWidth)
+            //     if (!changedY) fx.offsetX += Math.floor(extendX/fontWidth)
+// 
+            //     var prevOffsetX = fx.offsetX
+            //     if (fx.offsetX < -marginLeft) {
+            //         overflowX += -marginLeft - fx.offsetX
+            //         fx.offsetX = -marginLeft
+            //     }
+// 
+            //     // attempt 1 at swiping left to do an action
+            //     // log("theoffsetx: " + fx.offsetX)
+            //     // if (!hasSwitchedFile && !changedY && startCursorColIndex == -marginLeft && prevOffsetX < -20) {
+            //     //     hasSwitchedFile = true
+            //     //     seeFiles()
+            //     //     // moveFileAllTheWayLeft()
+            //     //     // saveWorkspace()
+            //     // }
+// 
+            //     // attempt 2 at swiping left to do an action
+            //     if (overflowX > 75 && !hasSwitchedFile && startCursorColIndex == -marginLeft) {
+            //         hasSwitchedFile = true
+            //         // seeFiles()
+            //         moveFileAllTheWayLeft()
+            //         saveWorkspace()
+            //         overflowX = 0
+            //     }
+            // }
+        }
 
         var changedY = false
         //var maxHeight = canvasHeight
@@ -5689,7 +5857,7 @@ function onStart(e) {
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
 
             // if (fx.highlightText) {
-            if (highlightMatchesSingleRegExp) {
+            if (false && highlightMatchesSingleRegExp) {
                 nextHighlightText()
             } else if (searchText.value !== "" && !fx.selectedRegions.length) {
                 findDown()
@@ -5785,8 +5953,8 @@ function onStart(e) {
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
 
             // if (fx.highlightText) {
-            if (highlightMatchesSingleRegExp) {
-                prevtHighlightText()
+            if (false && highlightMatchesSingleRegExp) {
+                prevHighlightText()
             } else if (searchText.value !== "" && !fx.selectedRegions.length) {
                 findUp()
             } else {
@@ -6858,6 +7026,15 @@ function setCurrentFile(file) {
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.add("hidden")
     }
+
+    if (fx.fileMode == "iframe") {
+        // c.style.display = "none"
+        fx.iframeWrapper.style.display = "block"
+        // c.style.display = "block"
+    }
+    if (lastFile && lastFile.iframe) {
+        lastFile.iframeWrapper.style.display = "none"
+    }
     setCanvasHeightAccordingly()
     updateCursorXY()
     searchText.setAttribute("placeholder", fx.fullPath + " (search)")
@@ -6907,7 +7084,18 @@ function duplicateFile(f, cursorLineIndex, id="") {
 }
 
 function downloadFile() {
-    window.open(proxyPath + "/saveload?fullpath=" + encodeURIComponent(fx.fullPath) + "&raw=1&download=1")
+    var newFullPath = fx.fullPath
+    if (fx.fileMode == "directory") {
+        // see also clickItemInDirectory
+        var prefix = fx.fullPath
+        // To prevent leading double slash #duplicatelogic?
+        if (prefix == "/") {
+            prefix = ""
+        }
+        var addPath = fx.lines[fx.cursorLineIndex]
+        newFullPath = prefix + "/" + addPath
+    }
+    window.open(proxyPath + "/saveload?fullpath=" + encodeURIComponent(newFullPath) + "&raw=1&download=1")
     // log(proxyPath + "/saveload?fullpath=" + encodeURIComponent(fx.fullPath) + "&raw=1&download=1")
 }
 
@@ -7038,6 +7226,8 @@ fetch(proxyPath + "/myworkspace", {
             addExistingTerminalTab(serverFile.ID, serverFile.Name, serverFile.CWD)
         } else if (serverFile.Type == "shell") {
             addCmdTab(serverFile.ID, serverFile.CWD, serverFile.Name)
+        } else if (serverFile.Type == "iframe") {
+            addIframe(serverFile.FullPath, serverFile.ID, serverFile.Name, serverFile.CWD)
         } else {
             addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), false, serverFile.ID)
         }
@@ -7118,10 +7308,11 @@ function setHighlightMatches() {
         }
         var parts = line.split(" ")
         highlightMatches.push({
-            Regex: parts[0],
-            BackgroundColor: parts[1] || "hotpink",
-            TextColor: parts[2] || "",
-            UnderlineColor: parts[3] || ""
+            Regex: parts.slice(0, -1).join(" "),
+            // TODO: Change this on the back and frontend to Color.
+            BackgroundColor: parts[parts.length-1] || "hotpink",
+            // TextColor: parts[2] || "",
+            // UnderlineColor: parts[3] || ""
         })
     }
     processHighlightMatches()
