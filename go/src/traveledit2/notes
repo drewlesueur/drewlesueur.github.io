@@ -1,5 +1,10 @@
 pqbd
- button for quick scratch file
+
+rethink the navigation of files being at the bottom now
+rethink marker/highlightRanges/highlightMatches/search navigation (and even where you last were?)
+rethink the bottom navigation, now that you are trying to make it more consistent
+
+button for quick scratch file
 voice coding with microphone (need new text box?)
 A quick way to replace words kind of like I had it before
 

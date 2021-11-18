@@ -253,6 +253,8 @@ They get changed later on.
         </div>
     </div>
 </div>
+<div class="toolbar xhidden" id=fileRow onclick=selectFileRow(event)>
+</div>
 <div class="toolbar hidden" id=terminalToolbar1 style="--display: none">
     <div class=square ontouchstart='sendTerminal("\x1b"); event.preventDefault()'>esc</div>
     <div class=square ontouchstart='ctrlDown = true; event.preventDefault()'>ctrl</div>
@@ -297,8 +299,7 @@ They get changed later on.
     <div class=square onclick='runShellCommand("git log -p -3")'>log -p -3</div>
 </div>
 <!--<div class="toolbar xhidden" id=fileRow ontouchstart=selectFileRow(event)>-->
-<div class="toolbar xhidden" id=fileRow onclick=selectFileRow(event)>
-</div>
+<!--Select file row was here-->
 <div class=toolbar>
     <div id=findUpButton class=square onclick=findUp()>find up</div>
     <div id=findDownButton class=square onclick=findDown()>find down</div>
@@ -803,12 +804,21 @@ if (screen.width == 744 && screen.height == 1133) {
 }
 
 c.height = canvasHeightFull
-var canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*1)
+// var canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*1)
+// TODO: clean this special case up. changed so files always show. bit now it needs 2 rows
+var canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*2)
 
 // 34 button height plus 1px*2 margin
 // 2 rows of new buttons for shell
-var canvasHeightShell = canvasHeightFull - ((36*3) * 2)
-var canvasHeightTerminal = canvasHeightFull - ((36*3) * 1)
+// var canvasHeightShell = canvasHeightFull - ((36*3) * 2)
+// var canvasHeightTerminal = canvasHeightFull - ((36*3) * 1)
+// var canvasHeightIframe = canvasHeightFull + ((36*3) * 2)
+
+// experiment with keeping height
+var canvasHeightShell = canvasHeightFull
+var canvasHeightTerminal = canvasHeightFull
+var canvasHeightIframe = canvasHeightFull
+
 var maxLines = 0
 var maxCols = 0
 var canvasHeight = 0
@@ -1018,12 +1028,12 @@ function addIframe(url, id, name, cwd) {
         window.open(iframe.src)
     }
     iframeWrapper.style.position = "absolute"
-    iframeWrapper.style.width = (innerWidth - (navTouchSize*2)) + "px"
-    iframeWrapper.style.left = navTouchSize + "px"
-    // Go for half the size
-    // iframeWrapper.style.width = (innerWidth - (navTouchSize)) + "px"
-    // iframeWrapper.style.left = (navTouchSize/2) + "px"
-    iframeWrapper.style.height = (canvasHeightFull*.7/3) + "px"
+    // iframeWrapper.style.width = (innerWidth - (navTouchSize*2)) + "px"
+    // iframeWrapper.style.left = navTouchSize + "px"
+
+    iframeWrapper.style.width = (innerWidth) + "px"
+
+    iframeWrapper.style.height = (canvasHeightIframe*.7/3) + "px"
     iframeWrapper.style.display = "none"
     iframeWrapper.style.overflow = "scroll"
     iframe.style.border = "none"
@@ -2836,6 +2846,8 @@ function setCanvasHeightAccordingly() {
            setCanvasHeight(canvasHeightShell - heightReduction)
        } else if (fx && fx.fileMode == "terminal") {
            setCanvasHeight(canvasHeightTerminal - heightReduction)
+       } else if (fx && fx.fileMode == "iframe") {
+           setCanvasHeight(canvasHeightIframe - heightReduction)
        } else {
            setCanvasHeight(canvasHeightFull - heightReduction)
        }
@@ -4820,8 +4832,8 @@ function renderInternal() {
 
     if (fx.iframe) {
         iframeCursor.style.top = (fx.iframeCursorY-5) + "px"
-        iframeCursor.style.left = ((navTouchSize) +fx.iframeCursorX-5) + "px"
-        // iframeCursor.style.left = ((navTouchSize/2) +fx.iframeCursorX-5) + "px"
+        // iframeCursor.style.left = ((navTouchSize) +fx.iframeCursorX-5) + "px"
+        iframeCursor.style.left = (fx.iframeCursorX-5) + "px"
         return
     }
 
@@ -5151,33 +5163,41 @@ function renderInternal() {
                 textFillStyle = isDark ? "lime" : "green"
             } else if (theLine.startsWith("-")){
                 textFillStyle = "red"
-            } else if (trim().startsWith("// mar"+"ker ") || trim().startsWith("# mar"+"ker ")) {
+            // } else if (trim().startsWith("// mar"+"ker ") || trim().startsWith("# mar"+"ker ")) {
+            } else if (trim().endsWith("mar"+"ker")) {
                 // do a fill rect of the color that comes after
                 // Not using save and restore because my mock canvas doesn't support it
                 var oldFillStyle = t.fillStyle
                 // var theFillStyle = trimPrefix(theLine.trim(), "// mar"+"ker ").split(" ")[0]
-                var theFillStyle = trimPrefix(trimPrefix(trim(), "// mar"+"ker "), "# mar"+"ker ").split(" ")[0]
+                // var theFillStyle = trimPrefix(trimPrefix(trim(), "// mar"+"ker "), "# mar"+"ker ").split(" ")[0]
+                // TODO: faster snagging of the color
+                var theParts = trim().split(" ")
+                theFillStyle = theParts[theParts.length - 2]
                 t.fillStyle = theFillStyle
                 // go twice as wide as you need, for server rendering purposes
-                t.fillRect(0, y * fontHeight, c.width*2, fontHeight)
+                // t.fillRect(0, y * fontHeight, c.width*2, fontHeight)
+
+                var [newStartX, adjustment] = skipLeadingSace(theLine, 0, fx.offsetX, y + fx.offsetY, fx) // red marker
+                t.fillRect(newStartX*fontWidth, y*fontHeight + underlineOffset, (expandTabIndex(theLine, -1, y+fx.offsetY)-adjustment)*fontWidth, underlineHeight) // red marker
+
                 textFillStyle = fontColor
-                if (knownContrastingColors[t.fillStyle]) {
-                    textFillStyle = knownContrastingColors[t.fillStyle]
-                } else {
-                    colorGetterEl.style.backgroundColor = t.fillStyle
-                    // I think the t.fillStyle gets normalized as #RRGGBB, so you could have used that.
-                    var rgbColor = window.getComputedStyle(colorGetterEl).backgroundColor
-                    var grayed = ll(rgbColor, "n n n", function(r, g, b) {
-                        // googled this
-                        return (0.3 * r) + (.59 * g) + (.11 * b)
-                    })
-                    if (grayed < 128) {
-                        textFillStyle = "white"
-                    } else {
-                        textFillStyle = "black"
-                    }
-                    knownContrastingColors[t.fillStyle] = textFillStyle
-                }
+                // if (knownContrastingColors[t.fillStyle]) {
+                //     textFillStyle = knownContrastingColors[t.fillStyle]
+                // } else {
+                //     colorGetterEl.style.backgroundColor = t.fillStyle
+                //     // I think the t.fillStyle gets normalized as #RRGGBB, so you could have used that.
+                //     var rgbColor = window.getComputedStyle(colorGetterEl).backgroundColor
+                //     var grayed = ll(rgbColor, "n n n", function(r, g, b) {
+                //         // googled this
+                //         return (0.3 * r) + (.59 * g) + (.11 * b)
+                //     })
+                //     if (grayed < 128) {
+                //         textFillStyle = "white"
+                //     } else {
+                //         textFillStyle = "black"
+                //     }
+                //     knownContrastingColors[t.fillStyle] = textFillStyle
+                // }
                 t.fillStyle = oldFillStyle
 
             } else if (trim().startsWith("//") || trim().startsWith("#")) {
@@ -6083,7 +6103,10 @@ function onStart(e) {
                     }
                 }
             }
-        } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
+        // } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
+        // } else if (startTouchY - bbox.top > (bbox.height*2/3)) {
+        // weird changeup of second and third section depending on if you are editing.Not sure if I like.
+        } else if ((document.activeElement != theText && (startTouchY - bbox.top > (bbox.height*2/3))) || (document.activeElement == theText && (startTouchY - bbox.top < (bbox.height*2/3)))) { // lime marker
             var fileIndex = files.indexOf(fx)
             if (fileIndex != -1) {
                 fileIndex = fileIndex+1
@@ -6179,7 +6202,9 @@ function onStart(e) {
                     }
                 }
             }
-        } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
+        // } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
+        // } else if (startTouchY - bbox.top > (bbox.height*2/3)) {
+        } else if ((document.activeElement != theText && (startTouchY - bbox.top > (bbox.height*2/3))) || (document.activeElement == theText && (startTouchY - bbox.top < (bbox.height*2/3)))) { // lime marker
             var fileIndex = files.indexOf(fx)
             if (fileIndex != -1) {
                 fileIndex = fileIndex-1
