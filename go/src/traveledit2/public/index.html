@@ -5100,7 +5100,9 @@ function renderInternal() {
                 matchLength = theMatch[0].length
                 pos = highlightStartSearch + theMatch.index
                 // lime
-                if (isDark) {
+                if (theMatch[0] == "\r") {
+                    t.fillStyle = "rgba(255,0,0,.05)"
+                } else if (isDark) {
                     t.fillStyle = "salmon"
                 } else {
                     t.fillStyle = "salmon"
