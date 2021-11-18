@@ -73,7 +73,7 @@ func BasicAuth(handler http.Handler) http.HandlerFunc {
 		// 	return
 		// }
 
-		log.Printf("url hit: %s by %s", r.URL.Path, r.RemoteAddr)
+		log.Printf("url hit: %s by %s (%s)", r.URL.Path, r.RemoteAddr, r.Header.Get("X-Forwarded-For"))
 		//rUser, rPass, ok := r.BasicAuth()
 		rUser, rPass, ok := PretendBasicAuth(r)
 		if !ok || subtle.ConstantTimeCompare([]byte(rUser), []byte(user)) != 1 || subtle.ConstantTimeCompare([]byte(rPass), []byte(pass)) != 1 {
@@ -579,6 +579,15 @@ func main() {
 	for _, ip := range allowedIPs {
 		if ip != "" {
 			allowedIPsMap[ip] = true
+		}
+	}
+	// Simple case only allows 1 proxy!
+	allowedXForwardedForsStr := os.Getenv("ALLOWEDXFORWARDEDFORS")
+	allowedXForwardedFors := strings.Split(allowedXForwardedForsStr, ",")
+	allowedXForwardedForsMap := map[string]bool{}
+	for _, ip := range allowedXForwardedFors {
+		if ip != "" {
+			allowedXForwardedForsMap[ip] = true
 		}
 	}
 	certFile := os.Getenv("CERTFILE")
@@ -1331,6 +1340,27 @@ func main() {
 					return
 				}
 				if _, ok := allowedIPsMap[ipParts[0]]; !ok {
+					log.Printf("unalowed ip: %s", ipParts[0])
+					fmt.Fprintf(w, "%s", ipParts[0])
+					return
+				}
+			}
+			oldMainMux.ServeHTTP(w, r)
+		})
+	}
+
+	if len(allowedXForwardedForsMap) > 0 {
+		oldMainMux := mainMux
+		mainMux = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ipParts := strings.Split(r.Header.Get("X-Forwarded-For"), ":")
+			for i := 0; i < 1; i++ {
+				if len(allowedXForwardedForsMap) == 0 {
+					break
+				}
+				if len(ipParts) == 0 {
+					return
+				}
+				if _, ok := allowedXForwardedForsMap[ipParts[0]]; !ok {
 					log.Printf("unalowed ip: %s", ipParts[0])
 					fmt.Fprintf(w, "%s", ipParts[0])
 					return
