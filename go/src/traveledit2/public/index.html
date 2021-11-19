@@ -311,7 +311,6 @@ They get changed later on.
 <div class=toolbar>
     <div class=square onclick="osCopyText()">os copy</div>
     <div class=square onclick="osPasteText()">os paste</div>
-    <div class=square onclick=reloadFile(fx)>reload</div>
     <div class=square onclick=runScript()>run script</div>
     <div class=square onclick=redo()>redo</div>
     <div class=square onclick=undo()>undo</div>
@@ -321,7 +320,6 @@ They get changed later on.
     <div class=square onclick="duplicateFile(fx, -1)">dupl file</div>
     <div class=square onclick=addCmdTab()>cmd</div>
     <div class=square onclick=addTerminalTab()>xterm</div>
-    <div class=square onclick=clearLog()>clear log</div>
     <div class=square onclick=editEditorCommandText()>editor cmd</div>
     <div class=square onclick=gotoDefinition()>goto def</div>
 </div>
@@ -373,6 +371,8 @@ They get changed later on.
     <div class=square onclick=comment()>//</div>
     <div id=findUpButton class=square onclick=findUp()>find up</div>
     <div id=findDownButton class=square onclick=findDown()>find down</div>
+    <div class=square onclick=clearLog()>clear log</div>
+    <div class=square onclick=reloadFile(fx)>reload</div>
 
     -->
 </div>
@@ -881,6 +881,7 @@ var useRegexSearch = true
 // Using menlo while in poor intetnet situation to save space
 selectFont("Menlo")
 
+var hasDoneOverflowYAction = false
 
 function osCopyText() {
     navigator.clipboard.writeText(copyBuffer.join("\n")).then(function() {
@@ -4512,7 +4513,7 @@ function render() {
         theStatus.totalViewBytesSent = totalViewBytesSent
         theStatus.overflowX = overflowX
         theStatus.overflowY = overflowY
-        // theStatus.hasDoneOverflowXAction = hasDoneOverflowYAction
+        theStatus.hasDoneOverflowYAction = hasDoneOverflowYAction
         if (fx.iframe) {
             theStatus.iframeCursorX = fx.iframeCursorX
             theStatus.iframeCursorY = fx.iframeCursorY
@@ -5509,7 +5510,7 @@ function onStart(e) {
     }
 
     var hasDoneOverflowXAction = false
-    var hasDoneOverflowYAction = false
+    hasDoneOverflowYAction = false
     var hasNavedBack = false
     var startCursorColIndex = fx.cursorColIndex
     var startCursorLineIndex = fx.cursorLineIndex
@@ -5686,6 +5687,7 @@ function onStart(e) {
             }
             if (overflowY > 50 && !hasDoneOverflowYAction && startCursorLineIndex >= fx.lines.length-1) {
                 clearLog()
+                hasDoneOverflowYAction = true
                 overflowY = 0
             }
         } else if (cursorY < 0) {
@@ -5699,6 +5701,7 @@ function onStart(e) {
             }
             if (overflowY < -50 && !hasDoneOverflowYAction && startCursorLineIndex == 0) {
                 reloadFile()
+                hasDoneOverflowYAction = true
                 overflowY = 0
             }
         }
