@@ -301,8 +301,6 @@ They get changed later on.
 <!--<div class="toolbar xhidden" id=fileRow ontouchstart=selectFileRow(event)>-->
 <!--Select file row was here-->
 <div class=toolbar>
-    <div id=findUpButton class=square onclick=findUp()>find up</div>
-    <div id=findDownButton class=square onclick=findDown()>find down</div>
     <div id=clearSearchButton class=square onclick=clearSearch()>clear search</div>
     <div class=square onclick=editSearch()>edit search</div>
 
@@ -317,7 +315,6 @@ They get changed later on.
     <div class=square onclick=runScript()>run script</div>
     <div class=square onclick=redo()>redo</div>
     <div class=square onclick=undo()>undo</div>
-    <div class=square onclick=comment()>//</div>
 </div>
 <div class=toolbar>
     <div class=square onmousedown="setCurrentFile(lastFile)" ontouchstart="setCurrentFile(lastFile); event.preventDefault(); event.stopPropagation()">alt tab</div>
@@ -372,6 +369,11 @@ They get changed later on.
     <div class=square onclick=backspace()>backspace</div>
     <div class=square onclick="theText.focus()">insert</div>
     <div class=square onclick="newLine(null, false)">new line</div>
+
+    <div class=square onclick=comment()>//</div>
+    <div id=findUpButton class=square onclick=findUp()>find up</div>
+    <div id=findDownButton class=square onclick=findDown()>find down</div>
+
     -->
 </div>
 <div class=toolbar>
@@ -4509,6 +4511,8 @@ function render() {
         theStatus.totalViewRequests = totalViewRequests
         theStatus.totalViewBytesSent = totalViewBytesSent
         theStatus.overflowX = overflowX
+        theStatus.overflowY = overflowY
+        // theStatus.hasDoneOverflowXAction = hasDoneOverflowYAction
         if (fx.iframe) {
             theStatus.iframeCursorX = fx.iframeCursorX
             theStatus.iframeCursorY = fx.iframeCursorY
@@ -5464,6 +5468,7 @@ function moveHomeEndAction() {
 }
 
 var overflowX = 0
+var overflowY = 0
 var iframeOverflowX = 0
 var isDragKeyboard = false
 var touchCount = 0
@@ -5503,9 +5508,11 @@ function onStart(e) {
         }
     }
 
-    var hasSwitchedFile = false
+    var hasDoneOverflowXAction = false
+    var hasDoneOverflowYAction = false
     var hasNavedBack = false
     var startCursorColIndex = fx.cursorColIndex
+    var startCursorLineIndex = fx.cursorLineIndex
 
     var onMove = function(e) {
         lastAction = "move"
@@ -5557,7 +5564,9 @@ function onStart(e) {
         // touchScaleX = oldTouchScaleX
 
         var toAddY = ensureSign(signY, Math.round(Math.pow(diffLastTouchY, thePow)*touchScaleY))
-        cursorY = cursorY + toAddY
+        if (!hasDoneOverflowYAction) {
+            cursorY = cursorY + toAddY
+        }
         if (fx.iframe) {
             fx.iframeCursorY += toAddY/3
         }
@@ -5667,14 +5676,31 @@ function onStart(e) {
             var extendY = cursorY - maxHeight
             cursorY = maxHeight
             fx.offsetY += Math.ceil(extendY/fontHeight)
-            if (fx.offsetY > fx.lines.length - 10) fx.offsetY = fx.lines.length - 10
             changedY = true
+            // maxOffsetY = max(0, fx.lines.length)
+            // var maxOffsetY = max(0, fx.lines.length - maxLines)
+            var maxOffsetY = max(0, fx.lines.length - 10)
+            if (fx.offsetY > maxOffsetY) {
+                overflowY += (fx.offsetY - maxOffsetY)
+                fx.offsetY = maxOffsetY
+            }
+            if (overflowY > 50 && !hasDoneOverflowYAction && startCursorLineIndex >= fx.lines.length-1) {
+                clearLog()
+                overflowY = 0
+            }
         } else if (cursorY < 0) {
             var extendY = cursorY
             cursorY = 0
             fx.offsetY += Math.floor(extendY/fontHeight)
             changedY = true
-            if (fx.offsetY < 0) fx.offsetY = 0
+            if (fx.offsetY < 0) {
+                overflowY += fx.offsetY
+                fx.offsetY = 0
+            }
+            if (overflowY < -50 && !hasDoneOverflowYAction && startCursorLineIndex == 0) {
+                reloadFile()
+                overflowY = 0
+            }
         }
 
         // log("startCursorColIndex: " + startCursorColIndex)
@@ -5693,6 +5719,7 @@ function onStart(e) {
 
             var prevOffsetX = fx.offsetX
             if (fx.offsetX < -marginLeft) {
+                // Sign is inconsistent
                 overflowX += -marginLeft - fx.offsetX
                 fx.offsetX = -marginLeft
             }
@@ -5707,8 +5734,8 @@ function onStart(e) {
             // }
 
             // attempt 2 at swiping left to do an action
-            if (overflowX > 75 && !hasSwitchedFile && startCursorColIndex == -marginLeft) {
-                hasSwitchedFile = true
+            if (overflowX > 75 && !hasDoneOverflowXAction && startCursorColIndex == -marginLeft) {
+                hasDoneOverflowXAction = true
                 // seeFiles()
                 moveFileAllTheWayLeft()
                 saveWorkspace()
@@ -5751,6 +5778,7 @@ function onStart(e) {
         firstMove = false
         if (cursorType == "select") {
             overflowX = 0
+            overflowY = 0
             var line = fx.lines[fx.cursorLineIndex] || ""
             selectedRegion.stopX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
             selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
@@ -5792,6 +5820,7 @@ function onStart(e) {
     }
     var onEnd = function(e) {
         overflowX = 0
+        overflowY = 0
         touchCount = e.touches.length
         var touchType = e.changedTouches[0].touchType
         clearTimeout(selectTimeout)
@@ -5912,7 +5941,8 @@ function onStart(e) {
             // if (document.activeElement == theText || !hasMovedSinceCut) {
             // when to focus the text // red marker
             // Now you have to tap in middle secrion to edit
-            if (document.activeElement == theText || e.changedTouches[0].pageY > c.clientHeight/3*2) {
+            // if (document.activeElement == theText || e.changedTouches[0].pageY > c.clientHeight/3*2) {
+            if (document.activeElement == theText || e.changedTouches[0].pageY < c.clientHeight/3*2) { // high section handled on touch start with selecting
                 // #alternateTap
                 var w = getWordBeforeCursor()
                 if (lastAction == "move" || w.word == "") {
@@ -6046,12 +6076,16 @@ function onStart(e) {
     }
     var onEndWhileSelected = function(e) {
         overflowX = 0
+        overflowY = 0
         touchCount = e.touches.length
         if (!moved && fx.selectedRegions.length) {
-            if (e.changedTouches[0].pageY > c.clientHeight/3*2) {
-                fx.selectedRegions = []
-            } else {
+            if (selectMode == "line" && e.changedTouches[0].pageY < c.clientHeight/3*1) {
+                copy()
+                paste()
+            } else if (selectMode == "line" && e.changedTouches[0].pageY < c.clientHeight/3*2) {
                 comment()
+            } else {
+                fx.selectedRegions = []
             }
         }
         document.body.removeEventListener("touchmove", onMoveWhileSelected)
@@ -6063,6 +6097,7 @@ function onStart(e) {
 
     var onEndForEdges = function(e) {
         overflowX = 0
+        overflowY = 0
         touchCount = e.touches.length
         document.body.removeEventListener("touchend", onEndForEdges)
         clearTimeout(moveHomeEndTimeout)
@@ -7453,6 +7488,7 @@ function reloadAll() {
 }
 
 function reloadFile(theFile) {
+    theFile = theFile || fx
     if (theFile.fileMode != "file" && theFile.fileMode != "directory") {
         return
     }
