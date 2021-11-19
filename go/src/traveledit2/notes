@@ -1,6 +1,67 @@
 pqbd
 
 
+
+
+  |           |
+A |     B     | C
+  |           |
+-----------------
+  |           |
+D |     E     | F
+  |           |
+-----------------
+  |           |
+H |     I     | J
+  |           |
+-----------------
+     CONTROLS
+
+Tap near top to open editor command or search?
+
+
+In edit mode
+
+[Section A (start)]
+    Search text exists?
+        find up
+    Else
+        shift page down by one (like move cursor up)
+    TODO: what about highlightRanges highlightMatches and markers
+[Section C (start)]
+    Search text exists?
+        find down
+    Else
+        shift page up by one (like move cursor down)
+    TODO: what about highlightRanges highlightMatches and markers
+[Section D (start)]
+    Go one file left
+[Enter]
+    last typed was backspace?
+        Inserts line
+    At word boundary?
+        Inserts line
+    Else
+        Separate line
+
+
+[Backspace]
+    At beginning of line?
+       Joins lines
+
+
+selectMode needs to go on fx!!!
+button replacement
+* comment select and move right then left
+* -5 paste
+* clearlog scroll all the way down
+move all the way roght when all the way rkght does somehting
+ame for left
+
+-
+
+graph maker: for anything, and like when debugging formulating graph of calls
+library server for common taks (like language server for ides)
 select text and search down or up? if not whole line
 make it so you can select text (and paste) with out going into insert mode? (you had that once)
 
@@ -84,7 +145,7 @@ $
         "ID": 281,
         "fileMode": "terminal"
     },
-the word valueOf doesn't autocomplete, 
+the word valueOf doesn't autocomplete,
 
 bug: replacing text on first line is bugged
 
@@ -129,7 +190,7 @@ linger if it's not the first touch?!
 
 somehow alt+tab while typing.(you could repurpose the next field arrows for alt+tab)
    those next field arrows seemed to stop working anyway
-   
+
 long press to make [], then "acToggle" to () {} <>
 two finger tap and release to do something
 
@@ -155,7 +216,7 @@ remember dark mode and current file on refresh
 what if you swiped to different files?
 maybe a fancy animation trick?
 Consider finishing the concept of workspaces (like tmux sessions)
- 
+
 ----
 moving cursor far to the left should open up menu?
 back right again goes back
@@ -164,7 +225,7 @@ should be able to move files around
 by copy-pasting etc
 ----
 after you touch to select move cursor to end
- 
+
 ----
 the weirdness of autocomplete vs select
 ----
@@ -192,7 +253,7 @@ I think I fixed it
 autocomplete should still remember last word (do we keep remember last word?)
 
 new idea, edit mode tap to select word
-when selected tap will toggle through paste over, delete, unselect  
+when selected tap will toggle through paste over, delete, unselect
 
 another idea, last deleted and copied are always 2 paste biffers?
 
@@ -204,7 +265,7 @@ biz is biz so rhe biz
 the  find next (next form el arrow), tap, tap feature is gone?
 (simple makeshift find and replace)
 
-in edit mode the next line and prev line (next/prev form arrows are gone) 
+in edit mode the next line and prev line (next/prev form arrows are gone)
 ------
 
 keep the current file button in view
@@ -269,12 +330,12 @@ b.bar
 option to use websockets for terminal polling
     * i am thinking you could still do the polling model though.
     * that way we don't send data when it's not wanted.
-    
+
 bug with unicode support and auto-completing quotes
     for example try typing
         var a = "yo"
     it shows up like
-        var a = yo"" 
+        var a = yo""
 
 terminal - make dupl file so that it just opens a terminal in same working directory
 
@@ -285,14 +346,14 @@ compare perf of unicode vs non unicode
 maybe you can not do any special handling if there are no tabs or no non-ascii chars
 Add different sessions like tmux
     * have a dropdown of the session name
-    * save 
+    * save
 
 audit render for performance
 also, we are calling it too much, cut down on number of times we call it
 
 unicode support --
     unicode/emojis are supported! 👏👏👏
-    possibly call .normalize() when comparing 
+    possibly call .normalize() when comparing
     how to add emoji/utf-8 support in terminal mode
     fix performance - make a wall of text and it's noticably slower
     maybe you can use the same loop to combine into grapheme's as you do to render
@@ -310,16 +371,16 @@ you need a scratch file feature!
 make the edit search bar like a command bar!
 
 terminal todo:
-    * remember last little bit of terminal and show it on refresh 
+    * remember last little bit of terminal and show it on refresh
     * size limit of read buffer to prevent accidental high memory usage
     * only ensure cursor in screen, and set cursorxy? if current file is the one receiving data
     * allow naming terminals
-    * move cursor to end of document when we get data 
+    * move cursor to end of document when we get data
     * refresh page and still see terminal.
     * later on, all the escape codes
     * add the arrows, tab, control, escape maybe option
-    * when you close it on file view it also has to close 
-    
+    * when you close it on file view it also has to close
+
 
 JSON.stringify("\x1b")
 "\u001b"
@@ -375,18 +436,18 @@ make it so you don't have to hit an extra tap affer pasting
 // short swipe down - paste
 // short swipe up - delete
 // long swipe up cut (delete and copy)
-arrow over 
+arrow over
 After talking with Kyle
 - short swipe up: cut (copy/delete)
-- long swipe up: keep it deleted, but undo the cut 
+- long swipe up: keep it deleted, but undo the cut
 - short swipe down: copy
-- long swipe down: undo the copy (essentially unselect)  
+- long swipe down: undo the copy (essentially unselect)
 
 - get rid of the "mini clipboard"
 - tap when something is selected (lines): paste over and keep selected
   (we keep selected because then we can swipe left and right)
-- tap on word, instead of delete it (mini clipboard), select it 
-  I slightly worry about this because it has been nice to have the "ciw" vim functionality easy   
+- tap on word, instead of delete it (mini clipboard), select it
+  I slightly worry about this because it has been nice to have the "ciw" vim functionality easy
   but there are benefits. Lets try it. if something is copied you can tap,tap to paste over word.
   having a single clipboard is nice too
 - when selected (inline), a tap will paste and get rid of selecting
@@ -396,7 +457,7 @@ scroll left when it is already all the way left select?
 
 autocomplete wholenline - autocomplete non-spaced chunk!
 script sub line
-  
+
 
 lightly highlight line if it has a search match anywhere
 color whitespace to easily line up tabs
@@ -442,7 +503,7 @@ will be easier to path proxy that way.
 http://www.myersdaily.org/joseph/javascript/md5-text.html
 
 
-// marker teal terminal emulator stuff  
+// marker teal terminal emulator stuff
 https://www.xfree86.org/current/ctlseqs.html
 https://gist.github.com/justinmk/a5102f9a0c1810437885a04a07ef0a91
 https://github.com/creack/pty
@@ -456,7 +517,7 @@ take a look at Mosh for ssh alternative
 maybe lightly highlight the line if the search term is found on it?!
 database queryer
 tail mode
-2 types 
+2 types
     - simple jobs manager with streaming output
     - tmux or tty integration
     https://xtermjs.org/
@@ -464,7 +525,7 @@ tail mode
     https://stackoverflow.com/questions/45372066/is-it-possible-to-run-google-chrome-in-headless-mode-with-extensions
     https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-vnc-on-ubuntu-20-04
     https://www.google.com/amp/s/www.tecmint.com/install-tightvnc-remote-desktop/amp/
-    
+
 centos
 // https://www.rootusers.com/how-to-install-xfce-gui-in-centos-7-linux/
 // yum install epel-release -y
@@ -478,22 +539,22 @@ https://www.google.com/amp/s/www.tecmint.com/install-tightvnc-remote-desktop/amp
     sudo yum install epel-release
     sudo yum groupinstall "X Window system"
     sudo yum groupinstall xfce
-    
+
     # in .vnc/xstartup (from the digitalocean documentation)
     #!/bin/bash
     xrdb $HOME/.Xresources
     startxfce4 &
-    
+
     yum install -y chromium
-    
+
     and then when connected to vnc,
     open terminal and run chromium-browser
 
     wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
-    
-    
+
+
 improved file view
-    
+
 newline in middle goes for most indented,
      but newline at end doesn't
 fuzzy autocomplete
@@ -548,7 +609,7 @@ short list
 * select expansion?
 * solve the delete, then paste problem
 * only save diffs.
-* verify the hash of the file 
+* verify the hash of the file
 * go back to where you were
 * newline right before an end-closer should actually do the newline and move it down
 
@@ -572,7 +633,7 @@ don't show the red save button if hashed file matches saved file hash.
 ability to have a .color file in a directiory
 and server code will check that to see what color to show files
 in the ui
-or maybe better a // color blue 
+or maybe better a // color blue
 comment in the file.
 do a fuzzy atcmplt!!!
 fix bug with autocomplete not moving cursor
@@ -581,7 +642,7 @@ fix bug with autocomplete not moving cursor
 inline autocomplete: the order could depend on whwt you last did
 
 
-// marker lime 
+// marker lime
 potentially show all markers in file list
 long press for marker jump is jittery because it first scrolls up one line
 same with going to end of line...
@@ -595,7 +656,7 @@ where you can gondown and up
 see list of all markers in file list
 
 document all the features
-// marker yellow 
+// marker yellow
 wget "https://unpkg.com/diff@4.0.2/dist/diff.js"
 your simpleDiffOld3 is decent, but try to manually implement
 the Myers algorithm to compare.
@@ -610,7 +671,7 @@ bug with sometimes filemode things it's a file but it's a directory?
              duplicateFile(files[i], cursorLineIndex)
              return
          }
-         
+
 Do the thing where you hash the file
 to make sure the one you are starting with is the right one
 
@@ -637,8 +698,8 @@ make it so you can select a region,
 press a button and it will open a new temporary file.
 and you can type something as simple as
 
-     x.replace(/foo/g, bar) 
-     
+     x.replace(/foo/g, bar)
+
 where x is the line and it will map it behind the scenes
 
 local timeout for all fetch requests?
@@ -658,7 +719,7 @@ make row of bash commands configurable?
 
 Test commenting something that's already commented or uncommenting something that's double commented
     and how it works with multiple lines
-    
+
 bug with entering space in nav mode when the line is empty
 
 There seems to be a bug with nav mode backspace button when there is a tab.
@@ -679,18 +740,18 @@ have the screenshare featuere.
 
 alternative server render that is smarter
 on scrolling it just sends new lines?? (or maybe just whole new screen only when scrolling.)
-on cursor move it just sends the cursor pos 
+on cursor move it just sends the cursor pos
 and web sockets
 
 
 
-left/right up/down 
+left/right up/down
 ummd
 lmmr
 
 make autocomplete save the last word too?
     but conditionally?
-    
+
 copyBuffer = ["x".repeat(160)]
 
 do gzip compression of the server view  payload
@@ -758,10 +819,10 @@ visible with netcat?
 
 
 
-save last deleted word to go in pase cycle 
+save last deleted word to go in pase cycle
 
 make it so you can select backwards or forwards
- 
+
 for undo just track lines inserted and deleted
 when you undo or redo, you'll have to update all the indexes down the chain.
 if you get good at that, you can save a file by applying the diffs
@@ -782,18 +843,18 @@ only autocomplete line if cursor is at the end
 
 check that the cursor is at the end before you autocomplete thr word.
 
-moving to new file should clear selection (or possibly allow selection per file) 
+moving to new file should clear selection (or possibly allow selection per file)
 first load doesn't show ..
 warning if closed unsaved
 
-hitting cmd on fileList mode 
+hitting cmd on fileList mode
 make navigating files easier
   maybe integrate with the search feature?
     * keep search feature up between file loads tonseasily search the next dir?
   maybe simply autocomplete with directories in bash mode
 
 lots of programming is research
-it would be cool do have text-only ways 
+it would be cool do have text-only ways
 to research right in the app
 * stackoverflow
 * go docs (possible now with some command line calls?)
@@ -808,21 +869,21 @@ what function you are in (aka first line with 0 indent... first line with x inde
 feature: add markers where you can mark a file/line
    and then see a list of marked lines to go to them
    and maybe a button to toggle beween marked lines
-   
+
 
 idea see all functions (or left-most lines)
 bug: inline paste (by tapping) if it has
    a inltab in it things will be messed up.
    fixed
 
-  
+
 ideas for gestures
 -- long tap after select to get new mode
 -- left and right are comment and uncomment
 -- down is paste over
 -- long tap selects a word
 -- swiping up cuts and down copies, just like normal
-  -- but left and right will expand the selection  
+  -- but left and right will expand the selection
 -- think thru multiple paste buffers
 swipe left after you are already full left
 swipe right after you are already full right
@@ -888,12 +949,12 @@ redo the while toggle word/inline paste thing.
       un surround it.
       if you want to double surroun with parens, just
       don't include the parens in the selection
-      
+
 After you past, keep it selected so you can indent!
-always think of what's slow      
-             
-         
-(test (thing here) this (thing out))        
+always think of what's slow
+
+
+(test (thing here) this (thing out))
 pase over? long tap after selection
 long tap in nav mode will insert a new line then
 go into edit mode?
@@ -906,10 +967,10 @@ make find down and find up general action buttons
   like when you are in ja console mode (not exist yet)
   the action button will execute th code?
   or maybe add a new contextual action button?
-  maybe the save button actually 
+  maybe the save button actually
   in bash, the action should be to go to
   the file it finds on the line you are on
-  
+
 
 autocomplete lines too?!
 more efficient and less bugy undo
@@ -939,7 +1000,7 @@ in bash mode, allow for clicking on files to change directory there
 
 collapsing/expanding indention
 
-inconsistencies: 
+inconsistencies:
 Sometimes we set selectMode to "line"
 before pasting. Sometimes we don't.
 
@@ -989,7 +1050,7 @@ triple tap - selects next most outer grouping (using quotes, parens, brackets, e
 tab in
 tab  out
 
-tap then tap drag selects 
+tap then tap drag selects
 
 move line down
 move line up
@@ -1009,7 +1070,7 @@ selecting should select the text box too
 paste from outside source (more than 1 line)
 
 ui and flow of not going past the end of the file
-right side will be a word selector based on all the words 
+right side will be a word selector based on all the words
 
 when something is selected when you
 paste, it needs to delete that.
@@ -1030,7 +1091,7 @@ or at least content length.
 todo: ability to turn off auto save
 todo: add a formal save button
 todo: offline mode
-todo: a way to copy the text out? 
+todo: a way to copy the text out?
 
 when you keep tapping in insert mode it toggles
 the word. gets closest words. up down up down.
@@ -1095,7 +1156,7 @@ while in edit mode
 * if tap while cursor is at start, delete?
 * if tap while cursor is in space, find close words
 
-don't render so much. use some sort of requestanimationframe 
+don't render so much. use some sort of requestanimationframe
 vertical select is tap twice when one finger is already down
 
 

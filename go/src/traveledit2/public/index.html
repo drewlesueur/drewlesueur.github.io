@@ -2143,10 +2143,10 @@ function findDown(searchDir, wrap, startTop) {
     if (startTop) {
        startY = 0
     }
-    if (document.activeElement != searchText && searchText.value == "") {
+    if (document.activeElement != searchText) {
         if (fx.selectedRegions.length) {
             searchText.value = getSelectedLines(fx, false).lines[0]
-        } else {
+        } else if (searchText.value == "") {
             searchText.value = getWordAtCursor().word
         }
         if (searchText.value == "") {
@@ -2246,12 +2246,11 @@ function findUp() {
         fx.cursorLineIndex = searchText.value.slice(1) - 1
         ensureCursorInScreen()
     }
+    if (fx.selectedRegions.length) {
+        searchText.value = getSelectedLines(fx, false).lines[0]
+    }
     if (searchText.value == "") {
-        if (fx.selectedRegions.length) {
-            searchText.value = getSelectedLines(fx, false).lines[0]
-        } else {
-            searchText.value = getWordAtCursor().word
-        }
+        searchText.value = getWordAtCursor().word
         if (searchText.value == "") {
             // navBack()
             prevHighlightText()
@@ -3143,6 +3142,11 @@ function adjustHighlightRanges(index, linesAddedCount, theFile) {
         var file = files[fileI]
         if (file.lines != theFile.lines) { // same lines, same file
             continue
+        }
+
+        // TODO: fugure out why it's null (default Go value maybe)
+        if (!file.highlightRanges) {
+            file.highlightRanges = []
         }
         for (var i=0; i<file.highlightRanges.length; i++) {
             var r = file.highlightRanges[i]
@@ -5471,7 +5475,7 @@ function onStart(e) {
 
     // this is global
     if (e.touches.length == 1) {
-        selectAction = function() {
+        selectAction = function(forceLines = false) {
             // return early in case we are already selecting
             if (cursorType == "select") {
                 return
@@ -5479,7 +5483,7 @@ function onStart(e) {
             fx.selectedRegions = []
             cursorType = "select"
             var line = fx.lines[fx.cursorLineIndex] || ""
-            selectedRegion.startX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
+            selectedRegion.startX = bind(forceLines ? 0 : fx.cursorColIndex, 0, expandTabIndex(line, line.length))
             selectedRegion.startY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
             // Note how the stopY is inclusive
             // But the stopX is exclusive.
@@ -5487,7 +5491,7 @@ function onStart(e) {
             // was here
             selectedRegion.stopX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
             selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length - 1)
-            if (fx.cursorColIndex < 0) {
+            if (fx.cursorColIndex < 0 || forceLines) {
                 selectedRegion.stopped = true
                 selectMode = "line"
                 selectedRegion.stopX = expandTabIndex(line, line.length)
@@ -5751,7 +5755,7 @@ function onStart(e) {
             selectedRegion.stopX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
             selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
             selectedRegion.stopped = true
-            if (fx.cursorColIndex < 0) {
+            if (fx.cursorColIndex < 0 || selectMode == "line") {
                 var _line = fx.lines[fx.cursorLineIndex] || ""
                 selectedRegion.stopX = expandTabIndex(_line, _line.length)
             }
@@ -5796,6 +5800,7 @@ function onStart(e) {
         }
 
          //         fx.cursorColIndex = wordEndX
+        // Testing isDragKeyboard feature red marker
         var sr = fx.selectedRegions[0]
         if (sr) {
             // testing selectMode is char, meaning they didnt select in the margin
@@ -5905,7 +5910,9 @@ function onStart(e) {
 
             // the !hasMovedSinceCut is so we can paste inline without going in to insert mode
             // if (document.activeElement == theText || !hasMovedSinceCut) {
-            if (document.activeElement == theText) {
+            // when to focus the text // red marker
+            // Now you have to tap in middle secrion to edit
+            if (document.activeElement == theText || e.changedTouches[0].pageY > c.clientHeight/3*2) {
                 // #alternateTap
                 var w = getWordBeforeCursor()
                 if (lastAction == "move" || w.word == "") {
@@ -5915,6 +5922,7 @@ function onStart(e) {
                         paste(false, false, true)
                     } else if (w.word != "") {
                         var sr = {}
+                        selectMode = "char"
                         var theLine = fx.lines[fx.cursorLineIndex] || ""
                         sr.startY = fx.cursorLineIndex
                         sr.startX = expandTabIndex(theLine, w.start)
@@ -5983,7 +5991,7 @@ function onStart(e) {
                         // the handleFocusIn function will do some
                         // processing
 
-                        theText.focus()
+                        theText.focus() // aquamarine marker
                     }
                 }
             }
@@ -6040,7 +6048,11 @@ function onStart(e) {
         overflowX = 0
         touchCount = e.touches.length
         if (!moved && fx.selectedRegions.length) {
-            fx.selectedRegions = []
+            if (e.changedTouches[0].pageY > c.clientHeight/3*2) {
+                fx.selectedRegions = []
+            } else {
+                comment()
+            }
         }
         document.body.removeEventListener("touchmove", onMoveWhileSelected)
         moveListenerCount = max(moveListenerCount-1, 0)
@@ -6071,19 +6083,20 @@ function onStart(e) {
     var movedWithBuffer = false
     var selectedRegion = {}
 
+    // #clickedges #touchedges #tapedges // lime marker
     // scroll right and left and move cursor right and left or up and down
     // TODO: remove some duplication here. especially the bounds checks. Make a setter functions.
     // We divide by 3 because of the whole, points vs pixels
     if (startTouchX > ((canvasWidth/3) - navTouchSize)) {
         var bbox = c.getBoundingClientRect()
-        if (startTouchY - bbox.top < (bbox.height/3)) {
+        if (startTouchY - bbox.top < (bbox.height/3)) { // this divide by 3 is because of the 3 sections
             moveHomeEndDirection = "down"
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
-
+            log({sm: selectMode})
             // if (fx.highlightText) {
             if (false && highlightMatchesSingleRegExp) {
                 nextHighlightText()
-            } else if (searchText.value !== "" && !fx.selectedRegions.length) {
+            } else if (!fx.selectedRegions.length || selectMode == "char") {
                 findDown()
             } else {
                 fx.cursorLineIndex += 1
@@ -6182,7 +6195,8 @@ function onStart(e) {
             // if (fx.highlightText) {
             if (false && highlightMatchesSingleRegExp) {
                 prevHighlightText()
-            } else if (searchText.value !== "" && !fx.selectedRegions.length) {
+            // } else if (searchText.value !== "" && !fx.selectedRegions.length) {
+            } else if (!fx.selectedRegions.length || selectMode == "char") {
                 findUp()
             } else {
                 fx.cursorLineIndex -= 1
@@ -6279,9 +6293,19 @@ function onStart(e) {
         updateCursorXY()
         render()
         return
+    } else {
+        var bbox = c.getBoundingClientRect()
+        if (fx.selectedRegions.length == 0 && cursorType != "select" && document.activeElement != theText && (startTouchY - bbox.top < (bbox.height/3)) ) { // hotpink marker
+            selectAction(true)
+
+            // TODO: maybe figure out how to not copy paste this?
+            document.body.addEventListener("touchmove", onMove)
+            moveListenerCount += 1
+            document.body.addEventListener("touchend", onEnd)
+            endListenerCount += 1
+            return
+        }
     }
-
-
     if (fx.selectedRegions.length) {
         // idea: if 2 touches while selected
         // do something else like comment
