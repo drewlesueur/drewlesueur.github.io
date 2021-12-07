@@ -882,7 +882,8 @@ var useRegexSearch = true
 selectFont("Menlo")
 
 var hasDoneOverflowYAction = false
-
+var alternateTap = true // the false doesn't even fully work anymore
+// it was the tap to cut flow. we can maybe bring that back even with alternate tap
 function osCopyText() {
     navigator.clipboard.writeText(copyBuffer.join("\n")).then(function() {
     }, function() {
@@ -1677,6 +1678,7 @@ var shellHelpers = [
     "open gitdiff",
     "git apply --cached gitdiff",
     "go doc -all ''",
+    "git stash show -p stash@{0}",
     "clear",
     "",
     "",
@@ -2907,10 +2909,10 @@ function bashEscapeSingleQuote(str) {
     return str.replaceAll("'", "'\\''")
 }
 
-function paste(unselect, pasteBefore, fromTap) {
-    pasteLines(copyBuffer, unselect, pasteBefore, fromTap)
+function paste(unselect, pasteBefore, fromTap, unselectIfCharOneLine) {
+    pasteLines(copyBuffer, unselect, pasteBefore, fromTap, unselectIfCharOneLine)
 }
-function pasteLines(copyBuffer, unselect, pasteBefore, fromTap) {
+function pasteLines(copyBuffer, unselect, pasteBefore, fromTap, unselectIfCharOneLine) {
     if (fx.iframe) {
         return
     }
@@ -2951,16 +2953,20 @@ function pasteLines(copyBuffer, unselect, pasteBefore, fromTap) {
             )
 
             // #alternateTap
-            if (!unselect) {
+            // TODO: there may be a bug here with inline paste with multiple lines. it unselects and shouldn't
+            var stopX = expandTabIndex(theLine, u(fx.cursorColIndex) + copyBuffer[0].length)
+            if (alternateTap && !unselect && !unselectIfCharOneLine) {
                 var theLine = fx.lines[fx.cursorLineIndex] || ""
                 var sr = {
                     startY: fx.cursorLineIndex,
                     startX: fx.cursorColIndex,
-                    stopX: expandTabIndex(theLine, u(fx.cursorColIndex) + copyBuffer[0].length),
+                    stopX: stopX,
                     stopY: fx.cursorLineIndex,
                 }
                 fx.selectedRegions = [sr]
             }
+            fx.cursorColIndex = stopX // usually we want the cursor at the end
+            updateCursorXY()
         } else {
             var line = fx.lines[fx.cursorLineIndex]
             // fx.lines[fx.cursorLineIndex] = line.slice(0, u(fx.cursorColIndex)) +
@@ -2975,7 +2981,7 @@ function pasteLines(copyBuffer, unselect, pasteBefore, fromTap) {
             adjustHighlightRanges(fx.cursorLineIndex+1, copyBuffer.length-1)
 
             // #alternateTap
-            if (!unselect) {
+            if (alternateTap && !unselect) {
                 var lastCopyBufferLine = copyBuffer[copyBuffer.length - 1]
                 var sr = {
                     startY: fx.cursorLineIndex,
@@ -4940,7 +4946,7 @@ function renderInternal() {
     // the false is to see what it's like not rendering the "acWord"
     // Because it looks like selected text, I confuse the flow with
     // actual selected text
-    if (false && acWord) {
+    if (!alternateTap && acWord) {
         t.fillStyle = "orange"
         for (var y=acWord.startY-fx.offsetY; y<=acWord.stopY-fx.offsetY; y++) {
             var line = fx.lines[y + fx.offsetY] || ""
@@ -5432,25 +5438,23 @@ function moveHomeEndAction() {
        case "up":
            // TODO: jump to markers once you add that feature?
            // make an implicit marker of where you last were?
-           var oldSearchText = searchText.value
-           searchText.value = "// mar"+"ker "
-           // searchText.value = " mar"+"ker "
-           var found = findUp()
-           searchText.value = oldSearchText
-           if (!found) {
+           // var oldSearchText = searchText.value
+           // searchText.value = "// mar"+"ker "
+           // var found = findUp()
+           // searchText.value = oldSearchText
+           // if (!found) {
                fx.cursorLineIndex = 0
-           }
+           // }
            break;
        case "down":
            // TODO: jump to markers
-           var oldSearchText = searchText.value
-           searchText.value = "// mar"+"ker "
-           // searchText.value = " mar"+"ker "
-           var found = findDown()
-           searchText.value = oldSearchText
-           if (!found) {
+           // var oldSearchText = searchText.value
+           // searchText.value = "// mar"+"ker "
+           // var found = findDown()
+           // searchText.value = oldSearchText
+           // if (!found) {
                fx.cursorLineIndex = fx.lines.length - 1
-           }
+           // }
            break;
        case "left":
            var theIndent = getIndent(theLine)
@@ -5700,7 +5704,11 @@ function onStart(e) {
                 fx.offsetY = 0
             }
             if (overflowY < -50 && !hasDoneOverflowYAction && startCursorLineIndex == 0) {
-                reloadFile()
+                if (fx.fileMode == "shell") {
+                    runShellCommand("cd ..")
+                } else {
+                    reloadFile()
+                }
                 hasDoneOverflowYAction = true
                 overflowY = 0
             }
@@ -5901,8 +5909,14 @@ function onStart(e) {
                     sendTerminal(copyBuffer.join("\r"))
                     return
                 }
-                selectMode = "line"
-                paste(false, false, true)
+                
+                var bbox = c.getBoundingClientRect()
+                if ((e.changedTouches[0].pageY - bbox.top) < c.clientHeight/3*2) {
+                    comment()
+                } else {
+                    selectMode = "line"
+                    paste(false, false, true)
+                }
                 return
             }
             if (fx.fileMode == "terminal") {
@@ -5945,14 +5959,19 @@ function onStart(e) {
             // when to focus the text // red marker
             // Now you have to tap in middle secrion to edit
             // if (document.activeElement == theText || e.changedTouches[0].pageY > c.clientHeight/3*2) {
+
+            // todo: you could include the getBoundingClientRect().top offset like in other places
             if (document.activeElement == theText || e.changedTouches[0].pageY < c.clientHeight/3*2) { // high section handled on touch start with selecting
                 // #alternateTap
                 var w = getWordBeforeCursor()
-                if (lastAction == "move" || w.word == "") {
+                if (alternateTap && lastAction == "move" || w.word == "") { // red marker
                     var w = getWordAtCursor()
-                    if (w.word == "" || w.start == fx.cursorColIndex) {
+                    log([w, fx.cursorColIndex])
+                    //if (w.word == "" || w.start == fx.cursorColIndex) {
+                    if (w.word == "") {
                         selectMode = "char"
-                        paste(false, false, true)
+                        // paste(false, false, true)
+                        paste(false, false, true, true)
                     } else if (w.word != "") {
                         var sr = {}
                         selectMode = "char"
@@ -5962,12 +5981,13 @@ function onStart(e) {
                         sr.stopY = fx.cursorLineIndex
                         sr.stopX = expandTabIndex(theLine, w.end)
                         fx.selectedRegions = [sr]
+                        del(false, true) // new
                         render()
                     }
                 } else {
                     // this condition used to not be there
                     // and we'd acWordToggle every time (alternate paste flow)
-                    acWordToggle()
+                    acWordToggle() // lime marker
                 }
             } else {
                 if (fx.iframe) {
@@ -6032,7 +6052,7 @@ function onStart(e) {
 
         cursorType = "move"
         // #alternateTap
-        if (false && !selectedRegion.stopped) {// this only matters if it is selected I think
+        if (alternateTap && !selectedRegion.stopped) {// this only matters if it is selected I think
             // TODO: what is this feature?
             // for selecting a word?
             // selectWord Fearure
@@ -6082,10 +6102,10 @@ function onStart(e) {
         overflowY = 0
         touchCount = e.touches.length
         if (!moved && fx.selectedRegions.length) {
-            if (selectMode == "line" && e.changedTouches[0].pageY < c.clientHeight/3*1) {
+            if (selectMode == "line" && (e.changedTouches[0].pageY-c.getBoundingClientRect().top) < c.clientHeight/3*1) {
                 copy()
                 paste()
-            } else if (selectMode == "line" && e.changedTouches[0].pageY < c.clientHeight/3*2) {
+            } else if (selectMode == "line" && (e.changedTouches[0].pageY-c.getBoundingClientRect().top) < c.clientHeight/3*2) {
                 comment()
             } else {
                 fx.selectedRegions = []

@@ -1,5 +1,43 @@
 pqbd
 
+data server
+language server ?
+library server
+
+
+straming loop?
+
+latest ideas
+    tap at start of word? delete (no cut)
+    tap at beginning of line: comment
+    tap at end of line: newline
+    tap inside word cut pste flow
+    tap above always go into insert mode?
+    single line going left and right will select more/less
+    when pasting inline, only don't keep selection if it doesn't have a space (and all alphanumeric)
+
+auto save after comment
+the highlights need to be per fullPath
+underline line number if match os found on it?
+move cursor to end after deselect
+maybe depending on where ypu are it will do actions for insert?
+inside word will select(or cut?) word
+but on word edge will go into inser mode?
+in left margin (even line numbers) will comment out
+force to inser by tapping in the middle
+
+bring paste last word feature back? somehow, tap high when word is selected?
+    or maybe just bring back tap to delete.
+swipe right when selecting in char mode will select the next outer wrapper
+swipe left when selecting in char mode will select the next inner wrapper
+selecting/deleting in parens(brackets, etc) needs to be wuicker!
+the forst find down and find up should hoghlight the word
+ability to link from parts of the code to other parts
+brighten files according to when last used
+
+highlight line number if anything matches
+Being able to run a shell command from anywhere
+tap in middle when cursor is all the way left comments just the line!
 
 
 
@@ -51,6 +89,12 @@ In edit mode
        Joins lines
 
 
+little select menu dropdown for common git commands
+So instead of pressing cmd, then press a "git diff"
+you can press the select, then press "git diff"
+
+"converge edit" search and "editor cmd"
+
 selectMode needs to go on fx!!!
 button replacement
 * comment select and move right then left
@@ -58,6 +102,9 @@ button replacement
 * clearlog scroll all the way down
 move all the way roght when all the way rkght does somehting
 ame for left
+
+
+
 
 -
 
