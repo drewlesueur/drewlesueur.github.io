@@ -2922,14 +2922,14 @@ function bashEscapeSingleQuote(str) {
 function paste(unselect, pasteBefore, fromTap, unselectIfCharOneLine) {
     pasteLines(copyBuffer, unselect, pasteBefore, fromTap, unselectIfCharOneLine)
 }
-function pasteLines(copyBuffer, unselect, pasteBefore, fromTap, unselectIfCharOneLine) {
+function pasteLines(localCopyBuffer, unselect, pasteBefore, fromTap, unselectIfCharOneLine) {
     if (fx.iframe) {
         return
     }
     if (fromTap && !hasMovedSinceCut && globalOldCopyBuffer.length) {
-        copyBuffer = globalOldCopyBuffer
+        localCopyBuffer = globalOldCopyBuffer
     }
-    if (copyBuffer.length == 0) {
+    if (localCopyBuffer.length == 0) {
         return
     }
     if (selectMode == "line") {
@@ -2939,9 +2939,9 @@ function pasteLines(copyBuffer, unselect, pasteBefore, fromTap, unselectIfCharOn
             theOffset = 0
             theOffset2 = -1
         }
-        fx.lines.splice(fx.cursorLineIndex + theOffset, 0, ...copyBuffer)
-        adjustHighlightRanges(fx.cursorLineIndex + theOffset, copyBuffer.length)
-        var stopY = fx.cursorLineIndex + copyBuffer.length + theOffset2
+        fx.lines.splice(fx.cursorLineIndex + theOffset, 0, ...localCopyBuffer)
+        adjustHighlightRanges(fx.cursorLineIndex + theOffset, localCopyBuffer.length)
+        var stopY = fx.cursorLineIndex + localCopyBuffer.length + theOffset2
         var lastLine = fx.lines[stopY] || ""
         if (!unselect) {
             fx.selectedRegions = [{
@@ -2953,18 +2953,18 @@ function pasteLines(copyBuffer, unselect, pasteBefore, fromTap, unselectIfCharOn
             }]
         }
     } else if (selectMode == "char") {
-        if (copyBuffer.length == 1) {
+        if (localCopyBuffer.length == 1) {
             // fx.lines[fx.cursorLineIndex] = fx.lines[fx.cursorLineIndex].slice(0, u(fx.cursorColIndex)) +
-            // copyBuffer[0] +
+            // localCopyBuffer[0] +
             // fx.lines[fx.cursorLineIndex].slice(u(fx.cursorColIndex))
             updateLine(fx.cursorLineIndex, fx.lines[fx.cursorLineIndex].slice(0, u(fx.cursorColIndex)) +
-                copyBuffer[0] +
+                localCopyBuffer[0] +
                 fx.lines[fx.cursorLineIndex].slice(u(fx.cursorColIndex))
             )
 
             // #alternateTap
             // TODO: there may be a bug here with inline paste with multiple lines. it unselects and shouldn't
-            var stopX = expandTabIndex(theLine, u(fx.cursorColIndex) + copyBuffer[0].length)
+            var stopX = expandTabIndex(theLine, u(fx.cursorColIndex) + localCopyBuffer[0].length)
             if (alternateTap && !unselect && !unselectIfCharOneLine) {
                 var theLine = fx.lines[fx.cursorLineIndex] || ""
                 var sr = {
@@ -2980,24 +2980,24 @@ function pasteLines(copyBuffer, unselect, pasteBefore, fromTap, unselectIfCharOn
         } else {
             var line = fx.lines[fx.cursorLineIndex]
             // fx.lines[fx.cursorLineIndex] = line.slice(0, u(fx.cursorColIndex)) +
-            //     copyBuffer[0]
+            //     localCopyBuffer[0]
             updateLine(fx.cursorLineIndex, line.slice(0, u(fx.cursorColIndex)) +
-                copyBuffer[0]
+                localCopyBuffer[0]
             )
-            // copyBuffer[copyBuffer.length-1] += line.slice(u(fx.cursorColIndex))
-            // fx.lines.splice(fx.cursorLineIndex+1, 0, ...copyBuffer.slice(1))
-            lastLine = copyBuffer[copyBuffer.length-1] + line.slice(u(fx.cursorColIndex))
-            fx.lines.splice(fx.cursorLineIndex+1, 0, ...copyBuffer.slice(1, -1), lastLine)
-            adjustHighlightRanges(fx.cursorLineIndex+1, copyBuffer.length-1)
+            // localCopyBuffer[localCopyBuffer.length-1] += line.slice(u(fx.cursorColIndex))
+            // fx.lines.splice(fx.cursorLineIndex+1, 0, ...localCopyBuffer.slice(1))
+            lastLine = localCopyBuffer[localCopyBuffer.length-1] + line.slice(u(fx.cursorColIndex))
+            fx.lines.splice(fx.cursorLineIndex+1, 0, ...localCopyBuffer.slice(1, -1), lastLine)
+            adjustHighlightRanges(fx.cursorLineIndex+1, localCopyBuffer.length-1)
 
             // #alternateTap
             if (alternateTap && !unselect) {
-                var lastCopyBufferLine = copyBuffer[copyBuffer.length - 1]
+                var lastCopyBufferLine = localCopyBuffer[localCopyBuffer.length - 1]
                 var sr = {
                     startY: fx.cursorLineIndex,
                     startX: fx.cursorColIndex,
                     stopX: expandTabIndex(lastCopyBufferLine, lastCopyBufferLine.length, null, null, "nocache"),
-                    stopY: fx.cursorLineIndex + copyBuffer.length - 1,
+                    stopY: fx.cursorLineIndex + localCopyBuffer.length - 1,
                 }
                 fx.selectedRegions = [sr]
             }
@@ -3011,10 +3011,18 @@ var splicedFiles = []
 
 var globalOldCopyBuffer = []
 var hasMovedSinceCut = true
-function del(preventCopy, preventDeleteWholeLine) {
-    globalOldCopyBuffer = copyBuffer
-    hasMovedSinceCut = false
 
+function del(preventCopy, preventDeleteWholeLine) {
+    var oldCopyBuffer = copyBuffer
+    delinternal(preventCopy, preventDeleteWholeLine)
+    
+    // to allow cut paste, cut paste, cut paste of same word
+    if (copyBuffer.join("\n") != oldCopyBuffer.join("\n")) {
+        globalOldCopyBuffer = oldCopyBuffer
+    }
+}
+function delinternal(preventCopy, preventDeleteWholeLine) {
+    hasMovedSinceCut = false
 
     if (fx.selectedRegions.length>0) {
         var r = fx.selectedRegions[0]
@@ -4527,9 +4535,11 @@ function render() {
         theStatus.lastCleared = lastCleared
         theStatus.totalViewRequests = totalViewRequests
         theStatus.totalViewBytesSent = totalViewBytesSent
-        theStatus.overflowX = overflowX
-        theStatus.overflowY = overflowY
-        theStatus.hasDoneOverflowYAction = hasDoneOverflowYAction
+        // theStatus.overflowX = overflowX
+        // theStatus.overflowY = overflowY
+        // theStatus.hasDoneOverflowYAction = hasDoneOverflowYAction
+        theStatus.CB = JSON.stringify(copyBuffer)
+        theStatus.oldCB = JSON.stringify(globalOldCopyBuffer)
         if (fx.iframe) {
             theStatus.iframeCursorX = fx.iframeCursorX
             theStatus.iframeCursorY = fx.iframeCursorY
