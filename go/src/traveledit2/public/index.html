@@ -269,34 +269,35 @@ They get changed later on.
 </div>
 
 <div class="toolbar hidden" id=shellToolbar1 style="--display: none">
+    <div class=square onclick=openAtCursor()>open</div>
+    <div class=square onclick='runShellCommand("git diff")'>diff</div>
+    <div class=square onclick='runShellCommand("git diff --cached")'>diff --cached</div>
+    <div class=square onclick='readySameCommitAsBefore()'>commit -m</div>
+    <div class=square onclick='runShellCommand("git push origin HEAD")'>push origin H</div>
+
+
+    <!-- this one tries to make light backgroud, but doesn't work with mac sed.
+    <div class=square onclick='runShellCommand("git add -u :/")'>add -u :/</div>
     <div class=square onclick='runShellCommand("git branch")'>branch</div>
     <div class=square onclick='runShellCommand("git status")'>status</div>
-    <div class=square onclick='runShellCommand("git diff")'>diff</div>
-    <!-- this one tries to make light backgroud, but doesn't work with mac sed.
-    <div class=square onclick='runShellCommand("rm coverage.out coverage.html; if go test -cover -coverprofile coverage.out ./...; then go tool cover -func=coverage.out; go tool cover -o=coverage.html -html=coverage.out; sed -i &apos;s/black;/white;/g&apos; coverage.html; fi")'>gotest</div>
-    -->
     <div class=square onclick='runShellCommand("rm coverage.out coverage.html; if go test -cover -coverprofile coverage.out ./...; then go tool cover -func=coverage.out; go tool cover -o=coverage.html -html=coverage.out; fi")'>gotest</div>
+    <div class=square onclick='runShellCommand("rm coverage.out coverage.html; if go test -cover -coverprofile coverage.out ./...; then go tool cover -func=coverage.out; go tool cover -o=coverage.html -html=coverage.out; sed -i &apos;s/black;/white;/g&apos; coverage.html; fi")'>gotest</div>
+    <div class=square onclick='insertText(["git commit -m &apos;&apos;"], 0, 15)'>commit -m</div>
     <div class=square onclick='insertText(["git checkout "], 0, -1)'>checkout</div>
-    <!-- <div class=square onclick='insertText(["git commit -m &apos;&apos;"], 0, 15)'>commit -m</div>
-    -->
-    <div class=square onclick='readySameCommitAsBefore()'>commit -m</div>
-    <!--
     <div class=square onclick='insertText(["git checkout -b "], 0, -1)'>checkout -b</div>
     -->
-    <div class=square onclick='runShellCommand("git add -u :/")'>add -u :/</div>
+
+
 </div>
 <div class="toolbar hidden" id=shellToolbar2 style="--display: none">
-    <div class=square onclick='runShellCommand("git push origin HEAD")'>push origin H</div>
-    <div class=square onclick=openAtCursor()>open</div>
-    <div class=square onclick='runShellCommand("cd ..")'>cd ..</div>
     <!--
+    <div class=square onclick='runShellCommand("git log -10")'>log -10</div>
+    <div class=square onclick='runShellCommand("git log -p -3")'>log -p -3</div>
+    <div class=square onclick='runShellCommand("cd ..")'>cd ..</div>
     <div class=square onclick='runShellCommand("git stash")'>stash</div>
     <div class=square onclick='runShellCommand("git stash pop")'> stash pop</div>
     <div class=square onclick='runShellCommand("git pull origin master")'>pull origin m</div>
     -->
-    <div class=square onclick='runShellCommand("git diff --cached")'>diff --cached</div>
-    <div class=square onclick='runShellCommand("git log -10")'>log -10</div>
-    <div class=square onclick='runShellCommand("git log -p -3")'>log -p -3</div>
 </div>
 <!--<div class="toolbar xhidden" id=fileRow ontouchstart=selectFileRow(event)>-->
 <!--Select file row was here-->
@@ -304,9 +305,9 @@ They get changed later on.
     <div id=clearSearchButton class=square onclick=clearSearch()>clear search</div>
     <div class=square onclick=editSearch()>edit search</div>
 
+    <div class=square onclick=closeFile()>close</div>
     <div id=saveButton class=square onclick=saveWrapper()>save</div>
     <div class=square onclick=seeFiles()>files</div>
-    <div class=square onclick=closeFile()>close</div>
 </div>
 <div class=toolbar>
     <div class=square onclick="osCopyText()">os copy</div>
@@ -1671,15 +1672,20 @@ var shellHelpers = [
     "grep -Rin '' --include=*.go .",
     "grep -Rin '' --include=*.php .",
     "find . -iname '**'",
-    "diff -y --width=240",
-    "go test ./...",
+    // "diff -y --width=240",
+    // "go test ./...",
     // a way to do `git add -p` non-interactively
-    "git --no-pager diff > gitdiff",
-    "open gitdiff",
-    "git apply --cached gitdiff",
-    "go doc -all ''",
+    // "git --no-pager diff > gitdiff",
+    // "open gitdiff",
+    // "git apply --cached gitdiff",
+    // "go doc -all ''",
     "git stash show -p stash@{0}",
     "clear",
+    "git branch",
+    "git status",
+    "git log -10",
+    "git log -p -3",
+    "git add -u :/",
     "",
     "",
 ]
@@ -2848,12 +2854,16 @@ function setCanvasHeightAccordingly() {
     } else {
        if (fx && fx.fileMode == "shell") {
            setCanvasHeight(canvasHeightShell - heightReduction)
+           fileRow.style.display = "none" // red marker
        } else if (fx && fx.fileMode == "terminal") {
            setCanvasHeight(canvasHeightTerminal - heightReduction)
+           fileRow.style.display = "none" // red marker
        } else if (fx && fx.fileMode == "iframe") {
            setCanvasHeight(canvasHeightIframe - heightReduction)
+           fileRow.style.display = "flex" // red marker
        } else {
            setCanvasHeight(canvasHeightFull - heightReduction)
+           fileRow.style.display = "flex" // red marker
        }
     }
     render()
@@ -4628,12 +4638,16 @@ function render() {
         var oldMaxLines = maxLines
         var oldT = t // canvas rendering context
         fx.offsetX = -5
-        if (maxCols < 120) {
-            maxCols = 120
+        if (maxCols < 250) {
+            maxCols = 250
         }
         if (maxLines < 32) {
             maxLines = 32
         }
+
+        var oldCanvasHeight = canvasHeight
+        // setCanvasHeight(canvasHeightFull)
+        maxLines = Math.floor(canvasHeightFull / fontHeight)
 
         // 5 for the line number margin
         var section = Math.floor((fx.cursorColIndex + 5) / maxCols)
@@ -4655,6 +4669,8 @@ function render() {
         maxCols = oldMaxCols
         maxLines = oldMaxLines
         t = oldT
+        // setCanvasHeight(oldCanvasHeight)
+        canvasHeight = oldCanvasHeight
         sendViewToServer()
     }
 

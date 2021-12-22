@@ -1,11 +1,19 @@
+
+vignettes
+
 pqbd
 
+polling based webserver proxy (like a backwards proxy, maybe ngrok style?)
 data server
 language server ?
 library server
 
 
 straming loop?
+
+
+build a navigatable vsual graph of function calls
+bug: a word didn't autocomplete two files left from cmd.
 
 latest ideas
     tap at start of word? delete (no cut)
@@ -15,6 +23,19 @@ latest ideas
     tap above always go into insert mode?
     single line going left and right will select more/less
     when pasting inline, only don't keep selection if it doesn't have a space (and all alphanumeric)
+    maybe clear search on the very top middle (and long press there to edit search)
+    when pasting maybe don't keep selection but have an easy way to reselect last selected?!
+    custom keyboard implementation because of bug with ios keyboard being transparent (top bar shows)
+    button or gesture for same action? (might allow auto unselection more easily?!)
+        same action might be like indent same selection
+        or replace word.
+        might solve the cut paste, paste, issue
+    address bug with pasting multiword or multiline and it not keeping selection.
+        it should keep selection if it's multiword or multiline
+    gesture to copy line but comment out original one.
+
+
+parens color matching
 
 auto save after comment
 the highlights need to be per fullPath
@@ -41,7 +62,7 @@ tap in middle when cursor is all the way left comments just the line!
 
 
 
-  |           |
+  |     K     |
 A |     B     | C
   |           |
 -----------------
