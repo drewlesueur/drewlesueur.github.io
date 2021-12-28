@@ -1,6 +1,8 @@
 
 vignettes
 
+ability to close all files in a directory!
+
 pqbd
 
 polling based webserver proxy (like a backwards proxy, maybe ngrok style?)

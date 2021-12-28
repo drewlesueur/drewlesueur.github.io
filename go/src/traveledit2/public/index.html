@@ -532,8 +532,6 @@ for (var i=0; i<toolbars.length; i++) {
     var toolbar = toolbars[i]
     toolbar.style.width = innerWidth + "px"
 }
-c.style.width = innerWidth + "px"
-c.width = innerWidth * 3
 var highlightText = "" // deprecated
 var highlightMatchesSingleRegExp
 var highlightMatches = []
@@ -791,44 +789,91 @@ var marginLeft = 5
 // var marginLeft = 50
 // Note that the width and height need to match
 // the width and height of the canvas tag attribute.
-canvasWidth=innerWidth * 3
-//var canvasWidth=600
-// I turned off "Predictive" to get more vertical space
-// TODO: make these configurable in UI
-var canvasHeightFull=1710
-var canvasHeightKeyboard=1200
-// alert(screen.width+" "+screen.height)
-var navTouchSize = 40
-// This condition for the 2021 iPad mini
-if (screen.width == 744 && screen.height == 1133) {
-    canvasHeightFull = 2750
-    canvasHeightKeyboard = 2200
-    navTouchSize = 60
+
+var canvasWidth
+var canvasHeightFull
+var canvasHeightKeyboard
+var navTouchSize
+var device = "iphone12mini"
+var canvasHeightShell
+var canvasHeightTerminal
+var canvasHeightIframe
+var canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*1)
+var maxLines
+var maxCols
+var canvasHeight
+function doSizing() {
+    canvasWidth=innerWidth * 3
+    // I turned off "Predictive" to get more vertical space
+    // TODO: make these configurable in UI
+    canvasHeightFull=1710
+    canvasHeightKeyboard=1200
+    navTouchSize = 40
+    device = "iphone12mini"
+
+    // landscape mode
+    if (innerWidth > innerHeight) {
+        canvasHeightFull = 575
+        canvasHeightKeyboard = 400
+        navTouchSize = 60
+    }
+
+
+    // This condition for the 2021 iPad mini
+    if (screen.width == 744 && screen.height == 1133) {
+        device = "ipad6"
+        canvasHeightFull = 2750
+        canvasHeightKeyboard = 2200
+        navTouchSize = 60
+        // alert(innerWidth + ", " + innerHeight)
+        // warning if the page is zoomed the numbers will be off
+        // if ipad is in landscape mode at 100% zoom, saved to homescreen
+        // innerWidth is 1133
+        // innerHeight is 720
+
+        // if ipad is in landscape mode at 100% zoom, not saved to homescreen, with compact browsing mode
+        // innerWidth is 1133
+        // innerHeight is 665
+
+        // Simple detection for landscape
+        if (innerWidth > innerHeight) {
+            canvasHeightFull = 1600
+            canvasHeightKeyboard = 800
+            navTouchSize = 100
+        }
+    }
+    c.style.width = innerWidth + "px"
+    c.width = canvasWidth
+    c.height = canvasHeightFull
+    // var canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*1)
+    // TODO: clean this special case up. changed so files always show. bit now it needs 2 rows
+    // ok now back to 1 row
+    // var canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*2)
+    canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*1)
+
+    // 34 button height plus 1px*2 margin
+    // 2 rows of new buttons for shell
+    // var canvasHeightShell = canvasHeightFull - ((36*3) * 2)
+    // var canvasHeightTerminal = canvasHeightFull - ((36*3) * 1)
+    // var canvasHeightIframe = canvasHeightFull + ((36*3) * 2)
+
+    // experiment with keeping height
+    canvasHeightShell = canvasHeightFull
+    canvasHeightTerminal = canvasHeightFull
+    canvasHeightIframe = canvasHeightFull
+
+    setCanvasHeight(canvasHeightFull)
+    setCanvasWidth(canvasWidth)
 }
+doSizing()
 
-c.height = canvasHeightFull
-// var canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*1)
-// TODO: clean this special case up. changed so files always show. bit now it needs 2 rows
-var canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*2)
+window.onorientationchange = function(event) {
+    doSizing()
+    render()
+};
 
-// 34 button height plus 1px*2 margin
-// 2 rows of new buttons for shell
-// var canvasHeightShell = canvasHeightFull - ((36*3) * 2)
-// var canvasHeightTerminal = canvasHeightFull - ((36*3) * 1)
-// var canvasHeightIframe = canvasHeightFull + ((36*3) * 2)
 
-// experiment with keeping height
-var canvasHeightShell = canvasHeightFull
-var canvasHeightTerminal = canvasHeightFull
-var canvasHeightIframe = canvasHeightFull
 
-var maxLines = 0
-var maxCols = 0
-var canvasHeight = 0
-setCanvasHeight(canvasHeightFull)
-setCanvasWidth(canvasWidth)
-var pointWidth=325
-var pointHeight=500
 var touchScaleY = 2 // was 3 for a while, then 2 for a while
 var touchScaleX = 2 // was 3 for a while, then 2 for a while
 // #snappingCursor 3
