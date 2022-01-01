@@ -362,6 +362,7 @@ They get changed later on.
 </div>
 <div class=toolbar>
     <div class=square onclick="fx.iframe.contentWindow.reload()">refresh iframe</div>
+    <div class=square onclick="doSizing(); render()">do sizing</div>
 </div>
 <div class=toolbar>
     <!--<div class=square onclick=addSpace()>space</div>
@@ -451,6 +452,10 @@ They get changed later on.
 <label for=showFilesFlatFirstCheckbox>
     <input onchange="showFilesFlatFirst = showFilesFlatFirstCheckbox.checked" type=checkbox name=showFilesFlatFirstCheckbox id=showFilesFlatFirstCheckbox checked />
     flat file list
+</label>
+<label for=bluetoothKeyboardCheckbox>
+    <input onchange="bluetoothKeyboard = bluetoothKeyboardCheckbox.checked" type=checkbox name=bluetoothKeyboardCheckbox id=bluetoothKeyboardCheckbox checked  />
+    bluetooth keyboard
 </label>
 <br>
 <label for=serverViewCheckbox>
@@ -768,6 +773,8 @@ setFontVars()
 // https://www.programmingfonts.org/#iosevka
 
 var showFilesFlatFirst = true
+// var bluetoothKeyboard = false
+var bluetoothKeyboard = true
 
 var lastFile = fx
 // not using indexes so we can move files around without worrying about the indexes
@@ -867,9 +874,16 @@ function doSizing() {
 }
 doSizing()
 
+
+
 window.onorientationchange = function(event) {
     doSizing()
     render()
+    // seems that we need to double check in a few milliseconds
+    setTimeout(function(){
+        doSizing()
+        render()
+    }, 500)
 };
 
 
@@ -2910,6 +2924,11 @@ function setCanvasHeightAccordingly() {
            setCanvasHeight(canvasHeightFull - heightReduction)
            fileRow.style.display = "flex" // red marker
        }
+    }
+    
+    // hack here to ignore whatever we set it before and set it to be canvasHeightFull if we have a bluetooth keybaord
+    if (bluetoothKeyboard) {
+        setCanvasHeight(canvasHeightFull - heightReduction)
     }
     render()
 }
