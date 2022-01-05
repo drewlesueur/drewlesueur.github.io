@@ -841,7 +841,8 @@ func main() {
 				logAndErr(w, "file upload error: %v", err)
 				goto finish
 			}
-			newF, err = os.Create("./uploads/" + fh.Filename)
+			// newF, err = os.Create("./uploads/" + fh.Filename)
+			newF, err = os.Create(r.FormValue("thedirectory") + "/" + fh.Filename)
 			if err != nil {
 				logAndErr(w, "file upload error: %v", err)
 				goto finish

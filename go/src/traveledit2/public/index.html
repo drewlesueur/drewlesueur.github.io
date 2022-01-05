@@ -268,6 +268,10 @@ They get changed later on.
     <div class=square ontouchstart='sendTerminal("\x1b[C"); event.preventDefault()'>right</div>
 </div>
 
+<div class="toolbar hidden" id=fileToolbar style="--display: none">
+    <div class=square onclick=>blank</div>
+</div>
+
 <div class="toolbar hidden" id=shellToolbar1 style="--display: none">
     <div class=square onclick=openAtCursor()>open</div>
     <div class=square onclick='runShellCommand("git diff")'>diff</div>
@@ -383,6 +387,10 @@ They get changed later on.
     </select>
 </div>
 <div class=toolbar>
+    <!--
+        <div class=longButton onclick="selectFont('Monospace')">Monospace</div>
+        <div class=longButton onclick="selectFont('Droid Sans Mono')">DSM</div>
+    -->
     <div class=longButton onclick="selectFont('Menlo')">Menlo</div>
     <div class=longButton onclick="selectFont('VictorMono')">Victor Mono</div>
     <div class=longButton onclick="selectFont('VictorMonoMedium')">Victor Mono M</div>
@@ -544,6 +552,18 @@ var highlightMatches = []
 
 
 var fonts = {
+    // "Monospace": {
+    //     fontHeightPre: 36,
+    //     fontWidthPre: 18,
+    //     fontSize: 30,
+    //     fontName: "monospace",
+    // },
+    // "Droid Sans Mono": {
+    //     fontHeightPre: 36,
+    //     fontWidthPre: 18,
+    //     fontSize: 30,
+    //     fontName: "Droid Sans Mono",
+    // },
     "Courier": {
         fontHeightPre: 36,
         // fontWidthPre: 18,
@@ -805,7 +825,7 @@ var device = "iphone12mini"
 var canvasHeightShell
 var canvasHeightTerminal
 var canvasHeightIframe
-var canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*1)
+var canvasHeightKeyboardTerminal
 var maxLines
 var maxCols
 var canvasHeight
@@ -813,15 +833,15 @@ function doSizing() {
     canvasWidth=innerWidth * 3
     // I turned off "Predictive" to get more vertical space
     // TODO: make these configurable in UI
-    canvasHeightFull=1710
-    canvasHeightKeyboard=1200
+    canvasHeightFull=1710 - (36*3*1) // extra button row now
+    canvasHeightKeyboard=1200 
     navTouchSize = 40
     device = "iphone12mini"
 
     // landscape mode
     if (innerWidth > innerHeight) {
-        canvasHeightFull = 575
-        canvasHeightKeyboard = 400
+        canvasHeightFull = 575 - (36*3*1) 
+        canvasHeightKeyboard = 400 
         navTouchSize = 60
     }
 
@@ -829,8 +849,8 @@ function doSizing() {
     // This condition for the 2021 iPad mini
     if (screen.width == 744 && screen.height == 1133) {
         device = "ipad6"
-        canvasHeightFull = 2750
-        canvasHeightKeyboard = 2200
+        canvasHeightFull = 2750 - (36*3*1)
+        canvasHeightKeyboard = 2200 
         navTouchSize = 60
         // alert(innerWidth + ", " + innerHeight)
         // warning if the page is zoomed the numbers will be off
@@ -844,7 +864,7 @@ function doSizing() {
 
         // Simple detection for landscape
         if (innerWidth > innerHeight) {
-            canvasHeightFull = 1600
+            canvasHeightFull = 1600 - (36*3*1)
             canvasHeightKeyboard = 800
             navTouchSize = 100
         }
@@ -855,8 +875,8 @@ function doSizing() {
     // var canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*1)
     // TODO: clean this special case up. changed so files always show. bit now it needs 2 rows
     // ok now back to 1 row
-    // var canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*2)
-    canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*1)
+    canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*2)
+    // canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*1)
 
     // 34 button height plus 1px*2 margin
     // 2 rows of new buttons for shell
@@ -2913,16 +2933,16 @@ function setCanvasHeightAccordingly() {
     } else {
        if (fx && fx.fileMode == "shell") {
            setCanvasHeight(canvasHeightShell - heightReduction)
-           fileRow.style.display = "none" // red marker
+           // fileRow.style.display = "none" // red marker
        } else if (fx && fx.fileMode == "terminal") {
            setCanvasHeight(canvasHeightTerminal - heightReduction)
-           fileRow.style.display = "none" // red marker
+           // fileRow.style.display = "none" // red marker
        } else if (fx && fx.fileMode == "iframe") {
            setCanvasHeight(canvasHeightIframe - heightReduction)
-           fileRow.style.display = "flex" // red marker
+           // fileRow.style.display = "flex" // red marker
        } else {
            setCanvasHeight(canvasHeightFull - heightReduction)
-           fileRow.style.display = "flex" // red marker
+           // fileRow.style.display = "flex" // red marker
        }
     }
     
@@ -3319,6 +3339,7 @@ function insertLine(closeCurly, oMode) {
 function uploadFile(e) {
     e.preventDefault()
     let formData = new FormData();
+    formData.append("thedirectory", fx.fullPath.split("/").slice(0, -1).join("/"));
     for (var i=0; i<filesToUpload.files.length; i++) {
         formData.append("thefiles", filesToUpload.files[i]);
     }
@@ -5794,6 +5815,7 @@ function onStart(e) {
                 fx.offsetY = 0
             }
             if (overflowY < -50 && !hasDoneOverflowYAction && startCursorLineIndex == 0) {
+                log("top action")
                 if (fx.fileMode == "shell") {
                     runShellCommand("cd ..")
                 } else {
@@ -7461,14 +7483,17 @@ function setCurrentFile(file) {
         shellToolbar1.classList.remove("hidden")
         shellToolbar2.classList.remove("hidden")
         terminalToolbar1.classList.add("hidden")
+        fileToolbar.classList.add("hidden")
     } else if (fx.fileMode == "terminal") {
         shellToolbar1.classList.add("hidden")
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.remove("hidden")
+        fileToolbar.classList.add("hidden")
     } else {
         shellToolbar1.classList.add("hidden")
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.add("hidden")
+        fileToolbar.classList.remove("hidden")
     }
 
     if (fx.fileMode == "iframe") {
