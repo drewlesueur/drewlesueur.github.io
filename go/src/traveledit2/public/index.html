@@ -365,7 +365,7 @@ They get changed later on.
     <div class=square onclick="doRefresh()">refresh</div>
 </div>
 <div class=toolbar>
-    <div class=square onclick="fx.iframe.contentWindow.reload()">refresh iframe</div>
+    <div class=square onclick="fx.iframe.contentWindow.location.reload()">refresh iframe</div>
     <div class=square onclick="doSizing(); render()">do sizing</div>
 </div>
 <div class=toolbar>
@@ -3293,6 +3293,12 @@ function adjustHighlightRanges(index, linesAddedCount, theFile) {
 
 
 function insertLine(closeCurly, oMode) {
+    if (fx.fileMode == "iframe") {
+        // TODO: figure out this flow, sometimes happens when I click a for button on iframe.
+        // likely click causes this and we should change it to not get here on iframe
+        // but maybe it happens after a form is posted and opens a new "tab", even when not target=_blank
+        return
+    }
     if (fx.fileMode == "directory") {
         clickItemInDirectory()
         return

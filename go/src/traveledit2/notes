@@ -1,9 +1,24 @@
+chrome remote debugging
+custom remote desktop
+bring back jump to highlight? (not search)
+hoppers. (like ssh -R, ssh -L)
+pageup pagedown
+
 
 touch on top - edit search
 longer touch - clear search
 maybe get rid of feature where it selects by touching the top
 remember you have autocomolete while in edit mode on the top.
 quick action to duplicate line?
+show current path in directory mode (at bottom or something)
+let "open" button work in terminal
+maybe go back to how opening a directory doesn't show the margin?
+If a tab isn't in View when you go to a file, get it in View.
+fuzzy find files (maybe just search in directory mode)
+change color of many files at a time
+script group of lines as a whole, and not just one per line.
+when you see files, center the current file in the middle of the screen if it overflows.
+
 
 vignettes
 
