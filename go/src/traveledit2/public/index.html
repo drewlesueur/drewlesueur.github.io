@@ -4,6 +4,10 @@
 <script>
 var proxyPath = ""
 // PROXYPATH GOES HERE
+
+var isGitBash = false
+// ISGITBASH GOES HERE
+
 </script>
 <!--<meta name="viewport" content="width=device-width, initial-scale=1">
 -->
@@ -1770,6 +1774,13 @@ var shellHelpers = [
 ]
 
 function getDefaultCWD(f) {
+    var cwd = getDefaultCWDInner(f)
+    if (isGitBash && !cwd.startsWith("/c/")) {
+        cwd = "/c/" + cwd
+    }
+    return cwd
+}
+function getDefaultCWDInner(f) {
     // TODO: check again the proxyPath stuff here
     // it might be old and not used.
     if (f.shellCWD) {
@@ -3412,6 +3423,7 @@ function runShellCommand(line) {
             fx.cursorLineIndex += 1
             fx.cursorColIndex = 0
             ensureCursorInScreen()
+            // TODO: get rid of rootLocation stuff. I am pretty sure it's not used at least on front end
             addFile(trimPrefix(fx.shellCWD, rootLocation) + "/" + fileToLoad)
             break
         }
@@ -7205,6 +7217,10 @@ function addFile(fullPath, preventSelect, id) {
     fullPath = normalizeFullPath(fullPath)
     if (fullPath == "") {
         return
+    }
+    
+    if (isGitBash && fullPath.startsWith("/c/")) {
+        fullPath = fullPath.substr(3)
     }
 
     // adding file to list beforehand to preserve order

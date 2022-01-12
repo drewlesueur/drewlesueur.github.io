@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# GOCACHE seems to be needed when we are sshed in to this machine
+# for some reason we get this error:
+# build cache is required, but could not be located: GOCACHE is not defined and %LocalAppData% is not defined
+# got help by running: go env GOCACHE
+
+GOCACHE="$HOME/AppData/Local/go-build" \
+GO111MODULE=off \
+GOPATH=$(pwd)/../.. \
+go build -o traveledit2 || exit 1
+
+
+# Why the double slashes?
+# Answer: https://stackoverflow.com/questions/48427366/docker-build-command-add-c-program-files-git-to-the-path-passed-as-build-argu
+
+GO111MODULE=off \
+GOPATH=$(pwd)/../.. \
+BASICUSER=user1 \
+BASICPASS=somepw \
+SCREENSHARENOAUTH=1 \
+PUBLICPATH="../../../public" \
+ISGITBASH=1 \
+./traveledit2 \
+-location="//" \
+-proxypath="//teproxywindows365" \
+-proxypathtrimmed=false \
+-addr=:8081

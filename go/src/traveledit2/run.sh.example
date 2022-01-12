@@ -2,11 +2,15 @@
 
 GO111MODULE=off \
 GOPATH=$(pwd)/../.. \
+go build -o traveledit2 || exit 1
+
+GO111MODULE=off \
+GOPATH=$(pwd)/../.. \
 BASICUSER=user1 \
 BASICPASS=somepw \
 SCREENSHARENOAUTH= \
 PUBLICPATH="../../../public" \
-go run traveledit2.go \
+./traveledit2 \
 -location=/ \
 -proxypath=/yourproxypath \
 -proxypathtrimmed=false \
