@@ -128,6 +128,9 @@ input[type="text"] {
     --color: red;
     font-size: 10px;
 }
+#theText::placeholder {
+    font-size: 12px;
+}
 </style>
 </head>
 <body class=dark>
@@ -7218,7 +7221,7 @@ function addFileToList(file) {
     }
     renderFileDropdown()
 }
-function addFile(fullPath, preventSelect, id) {
+function addFile(fullPath, preventSelect, id, name) {
 
     fullPath = normalizeFullPath(fullPath)
     if (fullPath == "") {
@@ -7246,6 +7249,9 @@ function addFile(fullPath, preventSelect, id) {
     }
     var file = makeFile(fullPath, cursorLineIndex, "")
     file.ID = id
+    if (name) {
+        file.name = name
+    }
     addFileToList(file)
     if (!initialFileAdding) {
         if (!preventSelect) {
@@ -7447,7 +7453,11 @@ function getLinesForFileList() {
         treeFiles.push("-") // blank line do you can paste on top
         for (let i = 0; i < files.length; i++) {
             // treeFiles.push(files[i].fullPath.split("/").reverse().join(" < "))
+            
             treeFiles.push(files[i].name || files[i].fullPath.split("/").slice(-1)[0])
+            // I wrote this so you could get rid of the last part if you want and only show the file name
+            // treeFiles.push(files[i].name || files[i].fullPath.split("/").slice(-1)[0] + "\t\t\t\t< " + files[i].fullPath.split("/").reverse().slice(1).join(" < "))
+            // treeFiles.push(files[i].name || files[i].fullPath.split("/").slice(-2).join("/"))
             // treeFilesShadow.push(files[i].fullPath)
             treeFilesShadow.push(files[i])
         }
@@ -7532,6 +7542,7 @@ function setCurrentFile(file) {
     setCanvasHeightAccordingly()
     updateCursorXY()
     searchText.setAttribute("placeholder", fx.fullPath + " (search)")
+    theText.setAttribute("placeholder", fx.fullPath.split("/").reverse().join(" < "))
     render()
     renderFileDropdown()
 
@@ -7725,7 +7736,7 @@ fetch(proxyPath + "/myworkspace", {
         } else if (serverFile.Type == "iframe") {
             addIframe(serverFile.FullPath, serverFile.ID, serverFile.Name, serverFile.CWD)
         } else {
-            addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), false, serverFile.ID)
+            addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), false, serverFile.ID, serverFile.Name)
         }
         fx.color = serverFile.Color
         fx.highlightRanges = serverFile.HighlightRanges
