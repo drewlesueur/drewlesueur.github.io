@@ -1,7 +1,16 @@
 //go:build !windows
 package main
 
-import "github.com/creack/pty"
+import (
+    "net/http"
+    "strconv"
+    "time"
+    "os"
+    "os/exec"
+    "encoding/json"
+    "log"
+    "github.com/creack/pty"
+)
 
 func openTerminal(cwd string, w http.ResponseWriter) {
 	log.Println("my terminal open!")

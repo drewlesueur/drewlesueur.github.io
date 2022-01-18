@@ -1,3 +1,12 @@
+-----
+
+Example autossh command:
+autossh -M 0 -N -C -o "ExitOnForwardFailure=yes" -R "$PUBLIC_IP_OF_REMOTE_SERVER:$THE_REMOTE_PORT:localhost:8000" -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" $THE_USER@$THE_REMOTE_SERVER
+
+Example /etc/ssh/sshd_config settings change:
+
+
+-----
 If you have an existing apache, start up this server and add this line to proxy
 
 ProxyPass        "/te" "http://localhost:3000"

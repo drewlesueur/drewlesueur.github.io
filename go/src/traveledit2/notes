@@ -1,3 +1,13 @@
+bug with terminal. look at addFile and setLines
+setLines happens kon undo, etc. It should limit to fiel or directory.
+or we shouldn't reuse fullpath for cmd and terminal.
+
+maybe a gesture to reselct what you last pasted so you don't have to tap to get out of selection
+
+idea: not having to do a diff, but as you type, it generates the diff.
+
+report bug about keyboard disappearing on full screen apps.
+
 chrome remote debugging
 custom remote desktop
 bring back jump to highlight? (not search)
