@@ -5,7 +5,11 @@
 # build cache is required, but could not be located: GOCACHE is not defined and %LocalAppData% is not defined
 # got help by running: go env GOCACHE
 
+# GOTMPDIR needs to be set because when running while sshed in we get the error:
+# go: creating work dir: mkdir C:\Windows\go-build3242130731: Access is denied.
+
 GOCACHE="$HOME/AppData/Local/go-build" \
+GOTMPDIR="$HOME" \
 GO111MODULE=off \
 GOPATH=$(pwd)/../.. \
 go build -o traveledit2 || exit 1
