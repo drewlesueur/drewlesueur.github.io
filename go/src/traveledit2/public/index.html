@@ -229,6 +229,7 @@ onfocus=handleFocusIn()
 onblur=handleBlur()
 oninput=saveLine()
 onkeydown=handleKeydown(event)
+autocomplete="off"
 >
 <input type=text id=theTextAfter class=fullWidth
 style="
@@ -5250,9 +5251,11 @@ function renderInternal() {
                 if (theMatch[0] == "\r") {
                     t.fillStyle = "rgba(255,0,0,.05)"
                 } else if (isDark) {
-                    t.fillStyle = "salmon"
+                    // t.fillStyle = "salmon"
+                    t.fillStyle = "rgb(255, 140, 105, 0.25)"
                 } else {
-                    t.fillStyle = "salmon"
+                    // t.fillStyle = "salmon"
+                    t.fillStyle = "rgb(255, 140, 105, 0.25)"
                 }
 
                 var startHighlightPos = expandTabIndex(theLine, pos, y + fx.offsetY)

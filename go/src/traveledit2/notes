@@ -1,4 +1,12 @@
-bug with terminal. look at addFile and setLines
+event loop vs coroutines
+
+total bug when the response from running cmd comes back and you are on another tab
+
+somehow the names and the colors got mixed upp for a terminal?
+
+ability to create a code flow diagram with snippets to helpmyou follow.
+
+***bug with terminal. look at addFile and setLines
 setLines happens kon undo, etc. It should limit to fiel or directory.
 or we shouldn't reuse fullpath for cmd and terminal.
 
