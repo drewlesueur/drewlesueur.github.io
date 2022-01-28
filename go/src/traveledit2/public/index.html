@@ -5218,6 +5218,9 @@ function renderInternal() {
                 var highlightLengthChars = (expandTabIndex(theLine, match.index+_regLen, y + fx.offsetY)-startHighlightPos)
                 var highlightLength = highlightLengthChars * fontWidth
 
+                if (_regI >= highlightMatches.length) {
+                    continue 
+                }
                 t.fillStyle = highlightMatches[_regI].BackgroundColor
                 // t.fillRect(
                 //     startFillHighlight,
