@@ -1,3 +1,9 @@
+all files in workspace are closed then workspace is closed
+unless it's the only workspace
+tapping a workspace tab that's already selecred will make a new workspace.
+
+
+
 event loop vs coroutines
 
 total bug when the response from running cmd comes back and you are on another tab

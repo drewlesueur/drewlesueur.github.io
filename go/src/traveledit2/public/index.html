@@ -276,8 +276,7 @@ They get changed later on.
     <div class=square ontouchstart='sendTerminal("\x1b[C"); event.preventDefault()'>right</div>
 </div>
 
-<div class="toolbar hidden" id=fileToolbar style="--display: none">
-    <div class=square onclick=>blank</div>
+<div class="toolbar hidden" id=workspaceToolbar onclick=selectWorkspaceToolbar(event) style="--display: none">
 </div>
 
 <div class="toolbar hidden" id=shellToolbar1 style="--display: none">
@@ -817,6 +816,7 @@ var fontColor = "white"
 var lightFontColor = "rgba(255, 255, 255, 0.5)"
 var veryLightFontColor = "rgba(255, 255, 255, 0.1)"
 var isDark = true
+var workspaceName = ""
 var cursorX=0
 var cursorY=0
 // 4 chars for line number and 1 for space
@@ -839,10 +839,11 @@ var maxCols
 var canvasHeight
 function doSizing() {
     canvasWidth=innerWidth * 3
-    // I turned off "Predictive" to get more vertical space
     // TODO: make these configurable in UI
     canvasHeightFull=1710 - (36*3*1) // extra button row now
-    canvasHeightKeyboard=1200 
+    // I turned off "Predictive" to get more vertical space
+    // canvasHeightKeyboard=1200 
+    canvasHeightKeyboard=1060 
     navTouchSize = 40
     device = "iphone12mini"
 
@@ -1530,6 +1531,11 @@ function runEditorCommand(e) {
     case "name":
         fx.name = rest
         // TODO: could you also call saveName?
+        saveWorkspace()
+        renderFileDropdown()
+        break
+    case "wname":
+        workspaceName = rest
         saveWorkspace()
         renderFileDropdown()
         break
@@ -6624,6 +6630,7 @@ function clickItemInDirectory() {
         preventSelect = false
     }
     var newFile = addFile(newFullPath, preventSelect)
+    
     if (newFile) {
         // we do this because of the close, which doesn't always happen
         newFile.color = color
@@ -7104,6 +7111,20 @@ function getSpaceCount(line) {
     return spaceCount
 }
 
+function selectWorkspaceToolbar(e) {
+    if (!e.target.hasAttribute("data-index")) {
+        return
+    }
+    var index = e.target.getAttribute("data-index")
+    // I guess we could have all the workspaces quietly.
+    if (workspacesList[index].Name == workspaceName) {
+        // make a new one
+        index = "new"
+    }
+    fetchWorkspaceWithList(index)
+}
+
+
 // if it's at 0 (or only ondented) you could do
 // if, func, for, var!!
 
@@ -7345,6 +7366,37 @@ function renderFileDropdown() {
         fileRow.appendChild(button)
 
     }
+
+
+    workspaceToolbar.innerHTML = ""
+    for (var wI=0; wI<workspacesList.length; wI++) {
+        var w = workspacesList[wI]
+        var button = document.createElement("div")
+        button.className = "longButton"
+        button.setAttribute("data-index", wI)
+        button.innerText = w.Name.substr(0, 15)
+        // Maybe do workspace ids at some point.
+        if (w.Name == workspaceName) {
+            button.classList.add("selected")
+        }
+
+        if (w.Color) {
+            var colorDiv = document.createElement("div")
+            colorDiv.style.width = "10px"
+            colorDiv.style.height = "10px"
+            colorDiv.style.backgroundColor = file.color
+            colorDiv.style.position = "absolute"
+            colorDiv.style.top = "2px"
+            colorDiv.style.right = "2px"
+            colorDiv.style.border = "none"
+            colorDiv.style.borderRadius = "5px"
+            button.style.position = "relative"
+            button.appendChild(colorDiv)
+        }
+        workspaceToolbar.appendChild(button)
+    }
+    
+    
     renderSaves()
 
 }
@@ -7521,17 +7573,17 @@ function setCurrentFile(file) {
         shellToolbar1.classList.remove("hidden")
         shellToolbar2.classList.remove("hidden")
         terminalToolbar1.classList.add("hidden")
-        fileToolbar.classList.add("hidden")
+        workspaceToolbar.classList.add("hidden")
     } else if (fx.fileMode == "terminal") {
         shellToolbar1.classList.add("hidden")
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.remove("hidden")
-        fileToolbar.classList.add("hidden")
+        workspaceToolbar.classList.add("hidden")
     } else {
         shellToolbar1.classList.add("hidden")
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.add("hidden")
-        fileToolbar.classList.remove("hidden")
+        workspaceToolbar.classList.remove("hidden")
     }
 
     if (fx.fileMode == "iframe") {
@@ -7704,6 +7756,7 @@ var maxUndos = 30
 var fx
 
 var files = []
+var workspacesList = []
 
 var lines = []
 // the actual lines will be put here by the server
@@ -7720,56 +7773,72 @@ var paths = (location.pathname).split(",")
 var firstFileMD5 = ""
 // FIRSTFILEMD5 GOES HERE
 
-
+// TODO: I don't think this is being used
 var initialFileAdding = false
 
-// add exising files
-// TODO: you should hydrate this in the first pageload.
-// and maybe at least hydrate the first file.
-// #loadWorkspace
-fetch(proxyPath + "/myworkspace", {
-    cache: "no-cache"
-}).then(r => {
-    return r.json()
-}).then(workspace => {
 
-    for (var serverFile of workspace.Files) {
-        // TODO: fix inconsistent file naming #inconsistentFileNaming
-        if (serverFile.Type == "terminal") {
-            addExistingTerminalTab(serverFile.ID, serverFile.Name, serverFile.CWD)
-        } else if (serverFile.Type == "shell") {
-            addCmdTab(serverFile.ID, serverFile.CWD, serverFile.Name)
-        } else if (serverFile.Type == "iframe") {
-            addIframe(serverFile.FullPath, serverFile.ID, serverFile.Name, serverFile.CWD)
-        } else {
-            addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), false, serverFile.ID, serverFile.Name)
+
+function fetchWorkspaceWithList(index) {
+    preventRender = true
+    files = []
+    // add exising files
+    // TODO: you should hydrate this in the first pageload.
+    // and maybe at least hydrate the first file.
+    // #loadWorkspace
+    
+    var theUrl = proxyPath + "/myWorkspaceWithList" 
+    if (index != -1) {
+        theUrl += "?index=" + index
+    }
+    fetch(theUrl, {
+        cache: "no-cache"
+    }).then(r => {
+        return r.json()
+    }).then(workspaceWithList => {
+        // alert(JSON.stringify(workspaceWithList, "", "  "))
+        var workspace = workspaceWithList.workspace
+        workspacesList = workspaceWithList.workspacesList
+        workspaceName = workspace.Name
+        for (var serverFile of workspace.Files) {
+            // TODO: fix inconsistent file naming #inconsistentFileNaming
+            if (serverFile.Type == "terminal") {
+                addExistingTerminalTab(serverFile.ID, serverFile.Name, serverFile.CWD)
+            } else if (serverFile.Type == "shell") {
+                addCmdTab(serverFile.ID, serverFile.CWD, serverFile.Name)
+            } else if (serverFile.Type == "iframe") {
+                addIframe(serverFile.FullPath, serverFile.ID, serverFile.Name, serverFile.CWD)
+            } else {
+                addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), false, serverFile.ID, serverFile.Name)
+            }
+            fx.color = serverFile.Color
+            fx.highlightRanges = serverFile.HighlightRanges
         }
-        fx.color = serverFile.Color
-        fx.highlightRanges = serverFile.HighlightRanges
-    }
-    initialFileAdding = false
-    if (workspace.FontName) {
-        selectFont(workspace.FontName)
-    }
-    if (workspace.FontScale) {
-        // TODO: Maybe make a setter for this, like we have in selectFont
-        fontScale = workspace.FontScale;
-        updateFontScale()
-    }
-    if (workspace.DarkMode != isDark) {
-        toggleDarkMode()
-    }
-    if (workspace.HighlightMatches) {
-        highlightMatches = workspace.HighlightMatches
-        processHighlightMatches()
-    }
+        initialFileAdding = false
+        if (workspace.FontName) {
+            selectFont(workspace.FontName)
+        }
+        if (workspace.FontScale) {
+            // TODO: Maybe make a setter for this, like we have in selectFont
+            fontScale = workspace.FontScale;
+            updateFontScale()
+        }
+        if (workspace.DarkMode != isDark) {
+            toggleDarkMode()
+        }
+        if (workspace.HighlightMatches) {
+            highlightMatches = workspace.HighlightMatches
+            processHighlightMatches()
+        }
+    
+        preventRender = false
+        render()
+        renderDarkMode()
+    }).catch(e => {
+        alert("error loading files: " + e)
+    })
+}
 
-    preventRender = false
-    render()
-    renderDarkMode()
-}).catch(e => {
-    alert("error loading files: " + e)
-})
+fetchWorkspaceWithList(-1)
 
 
 function saveWorkspace(cb) {
@@ -7778,7 +7847,8 @@ function saveWorkspace(cb) {
         FontName: currentFont.fontName,
         FontScale: fontScale,
         HighlightMatches: highlightMatches,
-        Files: []
+        Files: [],
+        Name: workspaceName
     }
     for (var i = 0; i < files.length; i++) {
         var f = files[i]

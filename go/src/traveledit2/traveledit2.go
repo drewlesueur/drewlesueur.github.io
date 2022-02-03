@@ -311,8 +311,44 @@ func (w *Workspace) RemoveFile(id int) {
 			break
 		}
 	}
+	
+	// fun global action
+	// delete workspace if it's empty except for last one
+	// go func() {
+ //        // funky, doing it delayed so the close/open flow for clickItemInDirectory
+	//     // doesn't immediately close the workspace
+	//     time.Sleep(3 * time.Second)
+	//     workspaceMu.Lock()
+	//     defer workspaceMu.Unlock()
+	// 	if len(workspace.Files) == 0 && len(workspaces) > 1 {
+ // 	       for i, w2 := range workspaces {
+ // 	           if w2 == w {
+ // 	               copy(workspaces[i:], workspaces[i+1:])
+ // 	               workspaces[len(workspaces)-1] = nil
+ // 	               workspaces = workspaces[0 : len(workspaces)-1]
+ // 	               break
+ // 	           }
+ // 	       }
+	// 	}
+	// }()
 }
 
+func writeWorkspaceFile(w http.ResponseWriter, r *http.Request) {
+		workspaceViews := []map[string]interface{}{}
+		for _, w := range workspaces {
+			workspaceViews = append(workspaceViews, workspaceView(w))
+		}
+		jsonBytes, err := json.MarshalIndent(workspaceViews, "", "    ")
+		if err != nil {
+			logAndErr(w, "marshalling for mysaveworkspace: %v", err)
+			return
+		}
+		err = ioutil.WriteFile("workspaces.json", jsonBytes, 0644)
+		if err != nil {
+			logAndErr(w, "saving workspaces.json: %v", err)
+			return
+		}
+}
 // workspaceView is a function that returns a json marshallable version of a
 // workspace for use in saving a file and in the front end
 // we could maybe just serialize the raw workspace?
@@ -320,7 +356,7 @@ func (w *Workspace) RemoveFile(id int) {
 func workspaceView(w *Workspace) map[string]interface{} {
 	// workspaceMu lock needs to be held when calling this function
 	files := []map[string]interface{}{}
-	for _, f := range workspace.Files {
+	for _, f := range w.Files {
 		files = append(files, map[string]interface{}{
 			"ID":              f.ID,
 			"Name":            f.Name,
@@ -334,14 +370,28 @@ func workspaceView(w *Workspace) map[string]interface{} {
 		})
 	}
 	workspaceRet := map[string]interface{}{
-		"Name":      workspace.Name,
-		"DarkMode":  workspace.DarkMode,
-		"FontName":  workspace.FontName,
-		"FontScale": workspace.FontScale,
-		"HighlightMatches": workspace.HighlightMatches,
+		"Name":      w.Name,
+		"DarkMode":  w.DarkMode,
+		"FontName":  w.FontName,
+		"FontScale": w.FontScale,
+		"HighlightMatches": w.HighlightMatches,
 		"Files":     files,
 	}
 	return workspaceRet
+}
+func workspaceViewWithList(w *Workspace) map[string]interface{} {
+	// workspaceMu lock needs to be held when calling this function
+	workspacesList := []map[string]interface{}{}
+	for _, w := range workspaces {
+	    workspacesList = append(workspacesList, map[string]interface{}{
+	        "Name": w.Name,
+	    })
+	}
+	// return workspaceRet
+	return map[string]interface{}{
+	    "workspace": workspaceView(w),
+	    "workspacesList": workspacesList,
+	}
 }
 func runShellCommand(id string, cmdString string, cwd string, w http.ResponseWriter) {
 	workspaceMu.Lock()
@@ -438,6 +488,7 @@ func main() {
 					FontScale: tmpW.FontScale,
 					FontName:  tmpW.FontName,
 					DarkMode:  tmpW.DarkMode,
+					Name: tmpW.Name,
 					HighlightMatches:  tmpW.HighlightMatches,
 				}
 				for _, f := range tmpW.Files {
@@ -481,7 +532,7 @@ func main() {
 	}
 
 	if workspace == nil {
-		workspace = &Workspace{}
+		workspace = &Workspace{Name: "default"}
 		workspaces = []*Workspace{workspace}
 		addFile("", "directory", "/")
 	}
@@ -833,22 +884,53 @@ func main() {
 	})
 
 	// #wschange this replaced myterminals, now is an array not map
-	mux.HandleFunc("/myworkspace", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/myWorkspaceWithList", func(w http.ResponseWriter, r *http.Request) {
 		workspaceMu.Lock()
 		defer workspaceMu.Unlock()
-		workspaceRet := workspaceView(workspace)
-		json.NewEncoder(w).Encode(workspaceRet)
+		indexStr := r.FormValue("index")
+		
+		for {
+			if indexStr != "" {
+			    if indexStr == "new" {
+			        log.Println("========= ok doing a new one")
+					workspace = &Workspace{Name: "workspace " + strconv.Itoa(len(workspaces) + 1)}
+					workspaces = append(workspaces, workspace)
+					addFile("", "directory", "/")
+		        	writeWorkspaceFile(w, r)
+			        break
+			    }
+			    index, err := strconv.Atoi(indexStr)
+			    if err != nil {
+					logAndErr(w, "parsing index for myWorkspaceWithList: %v", err)
+					return
+				}
+				if index >= len(workspaces) {
+					logAndErr(w, "incorrect index: %d", index)
+					return
+				}
+				workspace = workspaces[index]
+			}
+			
+			break
+		}
+		workspaceWithListRet := workspaceViewWithList(workspace)
+		json.NewEncoder(w).Encode(workspaceWithListRet)
 	})
+	
 	// #wschange this replaced myterminals, now is an array not map
 	mux.HandleFunc("/mysaveworkspace", func(w http.ResponseWriter, r *http.Request) {
-		// load existing terminal sessions.
 		workspaceMu.Lock()
 		defer workspaceMu.Unlock()
-
 		tmpWorkspace := Workspace{}
 		err := json.NewDecoder(r.Body).Decode(&tmpWorkspace)
 		if err != nil {
 			logAndErr(w, "parsing for mysaveworkspace: %v", err)
+			return
+		}
+		
+		// TODO #workspaceids
+		if tmpWorkspace.Name != workspace.Name {
+			logAndErr(w, "prevent workspace clash")
 			return
 		}
 		filesByID := map[int]*File{}
@@ -878,22 +960,8 @@ func main() {
 		workspace.FontName = tmpWorkspace.FontName
 		workspace.FontScale = tmpWorkspace.FontScale
 		workspace.HighlightMatches = tmpWorkspace.HighlightMatches
-
-		// now write to file
-		workspaceViews := []map[string]interface{}{}
-		for _, w := range workspaces {
-			workspaceViews = append(workspaceViews, workspaceView(w))
-		}
-		jsonBytes, err := json.MarshalIndent(workspaceViews, "", "    ")
-		if err != nil {
-			logAndErr(w, "marshalling for mysaveworkspace: %v", err)
-			return
-		}
-		err = ioutil.WriteFile("workspaces.json", jsonBytes, 0644)
-		if err != nil {
-			logAndErr(w, "saving workspaces.json: %v", err)
-			return
-		}
+		workspace.Name = tmpWorkspace.Name
+	    writeWorkspaceFile(w, r)
 	})
 	mux.HandleFunc("/myterminalpoll", func(w http.ResponseWriter, r *http.Request) {
 		workspaceMu.Lock()
@@ -975,6 +1043,8 @@ func main() {
 
 	mux.HandleFunc("/myaddfile", func(w http.ResponseWriter, r *http.Request) {
 	    // only used for iframe for now, other typed handled their own way
+		workspaceMu.Lock()
+		defer workspaceMu.Unlock()
 	    newID := addFile("", r.FormValue("fileType"), r.FormValue("fullPath"))
 		w.Header().Set("X-ID", strconv.Itoa(newID))
 	})
@@ -991,6 +1061,7 @@ func main() {
 
 		if t, ok := workspace.GetFile(ID); ok {
 			workspace.RemoveFile(ID)
+			
 
 			if t.Type == "shell" {
 				err := t.Cmd.Process.Kill()
@@ -1138,7 +1209,9 @@ func main() {
 				w.Header().Set("X-Is-Dir", "1")
 
 				if r.FormValue("raw") == "1" {
+					workspaceMu.Lock()
 					newID := addFile(r.FormValue("id"), fileType, fullPath)
+					workspaceMu.Unlock()
 					if newID != 0 {
 						w.Header().Set("X-ID", strconv.Itoa(newID))
 					}
@@ -1167,7 +1240,9 @@ func main() {
 				w.Header().Set("X-MD5", md5String)
 
 				if r.FormValue("raw") == "1" {
+					workspaceMu.Lock()
 					newID := addFile(r.FormValue("id"), fileType, fullPath)
+					workspaceMu.Unlock()
 					if newID != 0 {
 						w.Header().Set("X-ID", strconv.Itoa(newID))
 					}
@@ -1355,7 +1430,6 @@ func main() {
 
 func addFile(id string, fileType string, fullPath string) int {
 	if id == "" {
-		workspaceMu.Lock()
 		lastFileID++
 		f := &File{
 			FullPath: fullPath,
@@ -1363,7 +1437,6 @@ func addFile(id string, fileType string, fullPath string) int {
 			Type:     fileType,
 		}
 		workspace.Files = append(workspace.Files, f)
-		workspaceMu.Unlock()
 		return f.ID
 	}
 	return 0
