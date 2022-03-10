@@ -469,6 +469,7 @@ var workspaceCond *sync.Cond
 var proxyPath *string
 
 func main() {
+	workspaceCond = sync.NewCond(&workspaceMu)
 	// TODO: #wschange save workspace to file so ot persists
 	// TODO: secial path prefix for saving/loading files not just /
 
@@ -586,7 +587,6 @@ func main() {
 	var viewMu sync.Mutex
 	viewCond := sync.NewCond(&viewMu)
 
-	workspaceCond = sync.NewCond(&workspaceMu)
 
 	// trying to use a single mutex for multiple shells?
 	// TODO: serialize and de-serialize the state

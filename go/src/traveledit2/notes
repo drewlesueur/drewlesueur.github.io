@@ -1,3 +1,14 @@
+idea swipe down or up on far right will toggle between words?!
+
+a way to do newline, backspace, space without going into insert mode
+
+code paths
+
+consider storing state of all workspaces locally
+or do a workspace "lite" mode, like tab groups in chrome
+current implementation of workspaces is "hard", eg files don't sync. has to telaod all state
+
+
 all files in workspace are closed then workspace is closed
 unless it's the only workspace
 tapping a workspace tab that's already selecred will make a new workspace.
