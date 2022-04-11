@@ -1827,7 +1827,7 @@ function addCmdTab(id=0, cwd="", name="") {
     setCurrentFile(file)
     fx.cursorLineIndex = fx.lines.length - 1
     updateCursorXY()
-    runShellCommand("")
+    runShellCommand("git branch | grep '*'")
     //theText.focus()
 }
 
@@ -2217,6 +2217,48 @@ function findDownForm(e) {
     return false
 }
 
+function nextHighlightRange() {
+    // find the closest highlightRange that is after
+    var hrs = fx.highlightRanges || []
+    var closestYAfter = fx.lines.length - 1
+    for (var i=0; i<hrs.length; i++) {
+        var hr = hrs[i]
+        if (hr.StartY > fx.cursorLineIndex && hr.StartY < closestYAfter) {
+            closestYAfter = hr.StartY
+        }
+    }
+    // now are there any marker comments between us and where we want to be? if so, stop there
+    for (var i=fx.cursorLineIndex+1; i<closestYAfter; i++) {
+        var line = fx.lines[i]
+        if (line.endsWith(" marker")) {
+            closestYAfter = i
+            break
+        }
+    }
+    fx.cursorLineIndex = closestYAfter
+    ensureCursorInScreen()
+}
+function prevHighlightRange() {
+    // find the closest highlightRange that is before
+    var hrs = fx.highlightRanges || []
+    var closestYBefore = 0
+    for (var i=0; i<hrs.length; i++) {
+        var hr = hrs[i]
+        if (hr.StartY < fx.cursorLineIndex && hr.StartY > closestYBefore) {
+            closestYBefore = hr.StartY
+        }
+    }
+    // now are there any marker comments between us and where we want to be? if so, stop there
+    for (var i=fx.cursorLineIndex-1; i>closestYBefore; i--) {
+        var line = fx.lines[i]
+        if (line.endsWith(" marker")) {
+            closestYBefore = i
+            break
+        }
+    }
+    fx.cursorLineIndex = closestYBefore
+    ensureCursorInScreen()
+}
 
 function nextHighlightText() {
     if (!highlightMatchesSingleRegExp) {
@@ -2263,6 +2305,8 @@ function findDown(searchDir, wrap, startTop) {
             searchText.value = getWordAtCursor().word
         }
         if (searchText.value == "") {
+            // nextHighlightRange()
+            // return
             // navForward()
             nextHighlightText()
             return
@@ -2365,6 +2409,8 @@ function findUp() {
     if (searchText.value == "") {
         searchText.value = getWordAtCursor().word
         if (searchText.value == "") {
+            // prevHighlightRange()
+            // return
             // navBack()
             prevHighlightText()
             return
