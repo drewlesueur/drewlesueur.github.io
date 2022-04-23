@@ -314,23 +314,23 @@ func (w *Workspace) RemoveFile(id int) {
 	
 	// fun global action
 	// delete workspace if it's empty except for last one
-	// go func() {
- //        // funky, doing it delayed so the close/open flow for clickItemInDirectory
-	//     // doesn't immediately close the workspace
-	//     time.Sleep(3 * time.Second)
-	//     workspaceMu.Lock()
-	//     defer workspaceMu.Unlock()
-	// 	if len(workspace.Files) == 0 && len(workspaces) > 1 {
- // 	       for i, w2 := range workspaces {
- // 	           if w2 == w {
- // 	               copy(workspaces[i:], workspaces[i+1:])
- // 	               workspaces[len(workspaces)-1] = nil
- // 	               workspaces = workspaces[0 : len(workspaces)-1]
- // 	               break
- // 	           }
- // 	       }
-	// 	}
-	// }()
+	go func() {
+        // funky, doing it delayed so the close/open flow for clickItemInDirectory
+	    // doesn't immediately close the workspace
+	    time.Sleep(3 * time.Second)
+	    workspaceMu.Lock()
+	    defer workspaceMu.Unlock()
+		if len(workspace.Files) == 0 && len(workspaces) > 1 {
+ 	       for i, w2 := range workspaces {
+ 	           if w2 == w {
+ 	               copy(workspaces[i:], workspaces[i+1:])
+ 	               workspaces[len(workspaces)-1] = nil
+ 	               workspaces = workspaces[0 : len(workspaces)-1]
+ 	               break
+ 	           }
+ 	       }
+		}
+	}()
 }
 
 func writeWorkspaceFile(w http.ResponseWriter, r *http.Request) {
@@ -1209,12 +1209,14 @@ func main() {
 				w.Header().Set("X-Is-Dir", "1")
 
 				if r.FormValue("raw") == "1" {
-					workspaceMu.Lock()
-					newID := addFile(r.FormValue("id"), fileType, fullPath)
-					workspaceMu.Unlock()
-					if newID != 0 {
-						w.Header().Set("X-ID", strconv.Itoa(newID))
-					}
+				    if r.FormValue("noid") != "1" {
+						workspaceMu.Lock()
+						newID := addFile(r.FormValue("id"), fileType, fullPath)
+						workspaceMu.Unlock()
+						if newID != 0 {
+							w.Header().Set("X-ID", strconv.Itoa(newID))
+						}
+				    }
 
 					w.Write([]byte(strings.Join(fileNames, "\n")))
 					return
@@ -1240,17 +1242,21 @@ func main() {
 				w.Header().Set("X-MD5", md5String)
 
 				if r.FormValue("raw") == "1" {
-					workspaceMu.Lock()
-					newID := addFile(r.FormValue("id"), fileType, fullPath)
-					workspaceMu.Unlock()
-					if newID != 0 {
-						w.Header().Set("X-ID", strconv.Itoa(newID))
+				    if r.FormValue("noid") != "1" {
+						workspaceMu.Lock()
+						newID := addFile(r.FormValue("id"), fileType, fullPath)
+						workspaceMu.Unlock()
+						if newID != 0 {
+							w.Header().Set("X-ID", strconv.Itoa(newID))
+						}
 					}
 					if r.FormValue("download") == "1" {
 						parts := strings.Split(r.FormValue("fullpath"), "/")
 						theName := parts[len(parts)-1]
 						w.Header().Set("Content-Type", `text/plain`)
 						w.Header().Set("Content-Disposition", `attachment; filename="`+theName+`"`)
+					} else {
+						w.Header().Set("Content-Type", GetContentType(r.FormValue("fullpath")))
 					}
 					w.Write(c)
 					return
@@ -1459,4 +1465,29 @@ func combinePath(a, b string) string {
 	}
 
 	return a + b
+}
+
+var extensionsToMime = map[string]string{
+    "html": "text/html",
+    "txt": "text/plain",
+    "js": "text/javascript",
+    "json": "application/json",
+    "css": "text/css",
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "gif": "image/gif",
+    "svg": "image/svg+xml",
+    "pdf": "apic/pdf",
+}
+func GetContentType(thePath string) string {
+    parts := strings.Split(thePath, ".")
+    if len(parts) == 1 {
+        return "text/plain"
+    }
+    theExtension := parts[len(parts)-1]
+    mime, ok := extensionsToMime[strings.ToLower(theExtension)]
+    if !ok {
+        return "text/plain"
+    }
+    return mime
 }

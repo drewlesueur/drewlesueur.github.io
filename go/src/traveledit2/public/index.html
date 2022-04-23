@@ -3075,7 +3075,13 @@ function bashEscapeSingleQuote(str) {
 function paste(unselect, pasteBefore, fromTap, unselectIfCharOneLine) {
     pasteLines(copyBuffer, unselect, pasteBefore, fromTap, unselectIfCharOneLine)
 }
+var pasteDebug = false
+var p = []
+
 function pasteLines(localCopyBuffer, unselect, pasteBefore, fromTap, unselectIfCharOneLine) {
+    if (pasteDebug) {
+        p.unshift(new Error().stack)
+    }
     if (fx.iframe) {
         return
     }
@@ -5669,12 +5675,14 @@ var overflowY = 0
 var iframeOverflowX = 0
 var isDragKeyboard = false
 var touchCount = 0
+var isSelectedFromTopThird = false
+
 function onStart(e) {
     touchCount = e.touches.length
     e.preventDefault()
     // this handles all the touch interactions
     // first define the closuure functions
-
+    isSelectedFromTopThird = false
     // this is global
     if (e.touches.length == 1) {
         selectAction = function(forceLines = false) {
@@ -6058,7 +6066,21 @@ function onStart(e) {
         if (touchType == "stylus") {
             countedAsMoved = movedWithBuffer
         }
-        if (!countedAsMoved && cursorType == "move") {
+        
+        // TODO: Should we get rid of cursorType variable and just use fx.selectedRegions?
+        // did if false here because decided against tap top to aauto
+        if (false && !countedAsMoved && cursorType == "select") {
+            if (isSelectedFromTopThird) {
+                isSelectedFromTopThird = false
+                cursorType = "move"
+                // #duplicateline
+                copy()
+                paste()
+                fx.selectedRegions = []
+                render()
+                return
+            }
+        } else if (!countedAsMoved && cursorType == "move") {
             if (fx.fileMode == "directory") {
                 // #filestuff
                 // openFile
@@ -6296,8 +6318,9 @@ function onStart(e) {
         touchCount = e.touches.length
         if (!moved && fx.selectedRegions.length) {
             if (selectMode == "line" && (e.changedTouches[0].pageY-c.getBoundingClientRect().top) < c.clientHeight/3*1) {
+                // #duplicateline
                 copy()
-                paste()
+                paste(true) // true here means unselect
             } else if (selectMode == "line" && (e.changedTouches[0].pageY-c.getBoundingClientRect().top) < c.clientHeight/3*2) {
                 comment()
             } else {
@@ -6547,6 +6570,9 @@ function onStart(e) {
     } else {
         var bbox = c.getBoundingClientRect()
         if (fx.selectedRegions.length == 0 && cursorType != "select" && document.activeElement != theText && (startTouchY - bbox.top < (bbox.height/3)) ) { // hotpink marker
+            // touch top third to select #topthird 
+            isSelectedFromTopThird = true
+            // see onEndWhileSelected for one way to duplicate line (#duplicateline)
             selectAction(true)
 
             // TODO: maybe figure out how to not copy paste this?
