@@ -929,8 +929,12 @@ func main() {
 		}
 		
 		// TODO #workspaceids
-		if tmpWorkspace.Name != workspace.Name {
-			logAndErr(w, "prevent workspace clash")
+		workspaceNameToCheck := tmpWorkspace.Name
+		if r.FormValue("oldWorkspaceName") != "" {
+		    workspaceNameToCheck = r.FormValue("oldWorkspaceName")
+		}
+		if workspaceNameToCheck != workspace.Name {
+			logAndErr(w, "preventing workspace clash: %s, %s", workspaceNameToCheck, workspace.Name)
 			return
 		}
 		filesByID := map[int]*File{}

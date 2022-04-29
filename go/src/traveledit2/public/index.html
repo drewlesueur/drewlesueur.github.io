@@ -1537,8 +1537,16 @@ function runEditorCommand(e) {
         renderFileDropdown()
         break
     case "wname":
+        // for now just going by name
+        var oldWorkspaceName = workspaceName
+        var currentWorkspace = workspacesList.find(function (w) {
+            return w.Name == workspaceName
+        })
+        if (currentWorkspace) {
+            currentWorkspace.Name = rest
+        }
         workspaceName = rest
-        saveWorkspace()
+        saveWorkspace(oldWorkspaceName)
         renderFileDropdown()
         break
     case "copyurl":
@@ -4101,6 +4109,7 @@ function handleBlur() {
         dirtyInput = false
         // auto saving...
         // different that the timed autosave feature
+        // this saves when you blur the text input
         if (fx.fileMode == "file") {
             save()
         }
@@ -7915,7 +7924,7 @@ function fetchWorkspaceWithList(index) {
 fetchWorkspaceWithList(-1)
 
 
-function saveWorkspace(cb) {
+function saveWorkspace(oldWorkspaceName) {
     var tmpWorkspace = {
         DarkMode: isDark,
         FontName: currentFont.fontName,
@@ -7939,7 +7948,8 @@ function saveWorkspace(cb) {
             // "HighlightText": f.highlightText,
         })
     }
-    return fetch(proxyPath + "/mysaveworkspace", {
+    oldWorkspaceName = oldWorkspaceName || ""
+    return fetch(proxyPath + "/mysaveworkspace?oldWorkspaceName=" + encodeURIComponent(oldWorkspaceName), {
         cache: "no-cache",
         method: "POST",
         body: JSON.stringify(tmpWorkspace),
