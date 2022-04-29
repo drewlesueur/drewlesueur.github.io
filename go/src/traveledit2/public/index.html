@@ -820,7 +820,7 @@ var workspaceName = ""
 var cursorX=0
 var cursorY=0
 // 4 chars for line number and 1 for space
-var marginLeft = 5
+var marginLeft = 6
 // var marginLeft = 50
 // Note that the width and height need to match
 // the width and height of the canvas tag attribute.
@@ -2070,10 +2070,10 @@ function repositionUndo(isUndo) {
         fx.cursorLineIndex = fx.undo.yStack[fx.undo.index]
     }
     if (fx.cursorLineIndex < fx.offsetY || fx.cursorLineIndex > fx.offsetY+maxLines) {
-        fx.offsetY = max(0, fx.cursorLineIndex - 5)
+        fx.offsetY = max(0, fx.cursorLineIndex - marginLeft)
     }
     if (fx.cursorColIndex < fx.offsetX || fx.cursorColIndex > fx.offsetX+maxCols) {
-        fx.offsetX = max(0, fx.cursorColIndex - 5)
+        fx.offsetX = max(0, fx.cursorColIndex - marginLeft)
     }
     updateCursorXY()
     render()
@@ -2392,8 +2392,8 @@ function ensureCursorInScreen(file) {
     } else if (file.cursorColIndex > file.offsetX+maxCols) {
         file.offsetX = file.cursorColIndex - Math.floor(maxCols/2)
     }
-    if (file.offsetX < -5) {
-        file.offsetX = -5
+    if (file.offsetX < -marginLeft) {
+        file.offsetX = -marginLeft
     }
     updateCursorXY(file)
     render()
@@ -3281,7 +3281,7 @@ function delinternal(preventCopy, preventDeleteWholeLine) {
 
         // if full lines then move cursor up once to paste
         if (fullLines) {
-            fx.cursorColIndex = -5
+            fx.cursorColIndex = -marginLeft
             if (fx.cursorLineIndex > 0) {
                 fx.cursorLineIndex -= 1
             }
@@ -4823,7 +4823,7 @@ function render() {
         var oldMaxCols = maxCols
         var oldMaxLines = maxLines
         var oldT = t // canvas rendering context
-        fx.offsetX = -5
+        fx.offsetX = -marginLeft
         if (maxCols < 250) {
             maxCols = 250
         }
@@ -4835,9 +4835,8 @@ function render() {
         // setCanvasHeight(canvasHeightFull)
         maxLines = Math.floor(canvasHeightFull / fontHeight)
 
-        // 5 for the line number margin
-        var section = Math.floor((fx.cursorColIndex + 5) / maxCols)
-        fx.offsetX = (section * maxCols) - 5
+        var section = Math.floor((fx.cursorColIndex + marginLeft) / maxCols)
+        fx.offsetX = (section * maxCols) - marginLeft
 
         t = mockCanvasContext
         mockCanvasContext.lastFillStyle = "black",
@@ -5349,7 +5348,7 @@ function renderInternal() {
 
         if (true) {
             if (y + fx.offsetY < fx.lines.length) {
-                var lineNumber = (y+fx.offsetY+1).toString().padStart(4, " ")
+                var lineNumber = (y+fx.offsetY+1).toString().padStart(marginLeft-1, " ")
                 if (fx.offsetX < -1) {
                     // Line numbers
 
@@ -6126,7 +6125,7 @@ function onStart(e) {
             }
 
 
-            if (fx.cursorColIndex == -5) {
+            if (fx.cursorColIndex == -marginLeft) {
                 // since we are in the margin, let's force it
                 // to paste line-style.
                 if (fx.fileMode == "terminal") {
@@ -6549,7 +6548,7 @@ function onStart(e) {
                 } else {
                     var origOffsetX = fx.offsetX
                     if (false && fx.offsetX <= 0) {
-                        fx.offsetX = -5
+                        fx.offsetX = -marginLeft
                     }  else {
                         // var tabStop = 4
                         var tabStop = 1 // we changed this to only move one cursor at a time
@@ -6557,20 +6556,20 @@ function onStart(e) {
                     }
                     // fx.cursorColIndex += fx.offsetX - origOffsetX
                     fx.cursorColIndex -= 1
-                    if (fx.cursorColIndex < -5) {
-                         fx.cursorColIndex = -5
+                    if (fx.cursorColIndex < -marginLeft) {
+                         fx.cursorColIndex = -marginLeft
                     }
                 }
             }
         }
-        if (fx.cursorColIndex < -5){
-            fx.cursorColIndex = -5
+        if (fx.cursorColIndex < -marginLeft){
+            fx.cursorColIndex = -marginLeft
         }
         // if (fx.cursorColIndex < 0){
         //     fx.cursorColIndex = 0
         // }
-        if (fx.offsetX < -5){
-            fx.offsetX = -5
+        if (fx.offsetX < -marginLeft){
+            fx.offsetX = -marginLeft
         }
         document.body.addEventListener("touchend", onEndForEdges)
         updateCursorXY()
@@ -6708,7 +6707,7 @@ function clickItemInDirectory() {
     }
     var color = fx.color
     var preventSelect = true
-    if (fx.cursorColIndex != -5) {
+    if (fx.cursorColIndex != -marginLeft) {
         closeFile()
         preventSelect = false
     }
