@@ -1196,14 +1196,14 @@ function simpleDiffOld3(aLines, bLines, showSame) {
     // TODO: you can handle a bit better when it gets to the end for one?
     // NOTE: this is my experimenting with diff. likely not fastest or most
     // efficient. For example I don't get largest common substring.
-    // max 20000 line diff
+    // max 1000000 line diff
     // this has large issues, see scratch5
     // one thing we can do to improve is another pass where we optimize this output.
     // or just implement the Myers diff algorithm and compare speed
     var ret = []
     lastMatched = true
     outerLoop:
-    for (var i=0; i<20000; i++) {
+    for (var i=0; i<1000000; i++) {
         ai += 1
         bi += 1
         if (ai >= aLines.length && bi >= bLines.length) {
@@ -1306,7 +1306,7 @@ function simpleDiffOld3(aLines, bLines, showSame) {
 
         lastMatched = false
     }
-    if (i == 200000) {
+    if (i == 1000000) {
         alert("likely a bug with diff code")
     }
 
