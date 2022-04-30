@@ -5044,6 +5044,9 @@ var renderDuration = 0
 var renderCount = 0
 var rendersInLastSecond = 0
 function renderInternal() {
+    // todo, how performant is this?
+    // better to do this on initial load and then docChanged or something?
+    marginLeft = Math.ceil(Math.log(fx.lines.length)/Math.log(10)) + 1
     var startRenderTime = Date.now()
 
     if (fx.iframe) {
