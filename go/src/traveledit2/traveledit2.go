@@ -128,7 +128,7 @@ func applyDiff(oldContents, diff string) (string, error) {
 	state := "want@"
 	newContentsSlice := []string{}
 	nextDiffIndex := -1
-	for i := 0; i < 20000; i++ {
+	for i := 0; i < 1000000; i++ {
 		if state == "want@" {
 			diffI++
 			if diffI >= len(diffLines) {
