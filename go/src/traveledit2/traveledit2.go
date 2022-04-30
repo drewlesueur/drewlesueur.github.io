@@ -1303,7 +1303,7 @@ func main() {
 				}
 				expectedNewMD5 := fmt.Sprintf("%x", newH.Sum(nil))
 				if expectedNewMD5 != newmd5 {
-					logAndErr(w, "hash doesn't match: %v", err)
+					logAndErr(w, "hash doesn't match: expected: %s, actual: %s", expectedNewMD5, newmd5)
 					return
 				}
 			} else {
