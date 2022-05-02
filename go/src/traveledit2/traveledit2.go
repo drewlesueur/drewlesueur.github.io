@@ -11,6 +11,7 @@ import "fmt"
 import "strings"
 import "os"
 import "os/exec"
+import "path"
 import "crypto/subtle"
 import "io/ioutil"
 import "io"
@@ -19,6 +20,7 @@ import "encoding/base64"
 import "sync"
 import "strconv"
 import "crypto/md5"
+import "html"
 import "github.com/NYTimes/gziphandler"
 
 // import "github.com/gorilla/websocket"
@@ -259,6 +261,7 @@ type File struct {
 
 	// CSS color
 	Color           string
+	
 	HighlightText   string // deprecated
 	HighlightRanges []*HighlightRange
 
@@ -1212,8 +1215,9 @@ func main() {
 				}
 				w.Header().Set("X-Is-Dir", "1")
 
-				if r.FormValue("raw") == "1" {
-				    if r.FormValue("noid") != "1" {
+				if r.FormValue("raw") == "1" || r.FormValue("browser") == "1" {
+			    	// TODO: get rid of noid at some point
+				    if r.FormValue("noid") != "1" && r.FormValue("browser") != "1"  {
 						workspaceMu.Lock()
 						newID := addFile(r.FormValue("id"), fileType, fullPath)
 						workspaceMu.Unlock()
@@ -1222,7 +1226,25 @@ func main() {
 						}
 				    }
 
-					w.Write([]byte(strings.Join(fileNames, "\n")))
+                    if r.FormValue("browser") == "1" {
+                        browserLines := []string{
+                            `<!doctype html><ul>`,
+                        }
+			            browserLines = append(browserLines, `<h1>`)
+			            browserLines = append(browserLines, thePath)
+			            browserLines = append(browserLines, `</h1>`)
+			            browserLines = append(browserLines, `<h2>`)
+			            browserLines = append(browserLines, `<a href="`+*proxyPath+`/saveload?browser=1&fullpath=`+html.EscapeString(url.QueryEscape(path.Dir(thePath)))+`">up</a>`)
+			            browserLines = append(browserLines, `</h2>`)
+				        for _, f := range files {
+				            // TODO: some escaping issues
+				            browserLines = append(browserLines, `<li><a href="`+*proxyPath+`/saveload?browser=1&fullpath=`+html.EscapeString(url.QueryEscape(thePath))+`/`+f.Name()+`">`+html.EscapeString(f.Name())+`</a></li>`)
+				        }
+			            browserLines = append(browserLines, `</ul>`)
+				    	w.Write([]byte(strings.Join(browserLines, "\n")))
+                    } else {
+				    	w.Write([]byte(strings.Join(fileNames, "\n")))
+                    }
 					return
 				}
 
@@ -1245,8 +1267,9 @@ func main() {
 				md5String = fmt.Sprintf("%x", m.Sum(nil))
 				w.Header().Set("X-MD5", md5String)
 
-				if r.FormValue("raw") == "1" {
-				    if r.FormValue("noid") != "1" {
+				if r.FormValue("raw") == "1" || r.FormValue("browser") == "1" {
+			    	// TODO: get rid of noid at some point
+				    if r.FormValue("noid") != "1" && r.FormValue("browser") != "1"  {
 						workspaceMu.Lock()
 						newID := addFile(r.FormValue("id"), fileType, fullPath)
 						workspaceMu.Unlock()
@@ -1261,6 +1284,8 @@ func main() {
 						w.Header().Set("Content-Disposition", `attachment; filename="`+theName+`"`)
 					} else {
 						w.Header().Set("Content-Type", GetContentType(r.FormValue("fullpath")))
+					    // TODO: figure out why the pdfs don't display inline
+						// w.Header().Set("Content-Disposition", "inline;filename=myfile.pdf")
 					}
 					w.Write(c)
 					return
@@ -1484,14 +1509,20 @@ var extensionsToMime = map[string]string{
     "pdf": "apic/pdf",
 }
 func GetContentType(thePath string) string {
-    parts := strings.Split(thePath, ".")
-    if len(parts) == 1 {
-        return "text/plain"
+    var mime string
+    var ok bool
+    for {
+        parts := strings.Split(thePath, ".")
+        if len(parts) == 1 {
+            mime = "text/plain"
+            break
+        }
+        theExtension := parts[len(parts)-1]
+        mime, ok = extensionsToMime[strings.ToLower(theExtension)]
+        if !ok {
+            mime = "text/plain"
+        }
+        break
     }
-    theExtension := parts[len(parts)-1]
-    mime, ok := extensionsToMime[strings.ToLower(theExtension)]
-    if !ok {
-        return "text/plain"
-    }
-    return mime
+    return mime + ";charset=utf-8"
 }

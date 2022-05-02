@@ -514,6 +514,7 @@ style="width:100%; height:100px;"
 document.write(`
 <a href="`+proxyPath+`/tepublic/imageedit.html">Image Edit</a>
 <a href="`+proxyPath+`/tepublic2/">Public 2</a>
+<a href="`+proxyPath+`/screenshare">screenshare</a>
 `)
 </script>
 <div id=bottomPadding style="height: 100px;"></div>
@@ -526,10 +527,6 @@ document.write(`
 window.onerror = function(message, url, lineNumber, columnNumber, error) {
     alert(lineNumber + ": " + message)
 }
-</script>
-<script>
-// uncomment this line if you want to add back emoji, etc support
-// var splitter = new GraphemeSplitter()
 </script>
 <script>
 var t = c.getContext("2d")
@@ -1992,6 +1989,25 @@ function saveUndo(preventUndo) {
     }
 }
 
+
+// uncomment this line if you want to add back emoji, etc support
+// var splitter = new GraphemeSplitter()
+var segmenter = new Intl.Segmenter('en', {granularity: "grapheme"})
+function splitGraphemes(theLine) {
+    // return splitter.splitGraphemes(theLine)
+    var a = []
+    var segments = segmenter.segment(theLine)
+    for (let {segment, index, isWordLike} of segments) {
+      a.push(segment)
+    }
+    return a
+    
+    // This also works, strange to me this interface?
+    // var si = segmenter.segment(theLine)[Symbol.iterator]()
+    // return [...si].map(x => x.segment)
+    // https://github.com/tc39/proposal-intl-segmenter
+}
+
 // setter for lines
 // this should help keep track of changes etc
 // for use in undo maybe, and streaming
@@ -2006,7 +2022,7 @@ function updateLineFile(file, index, value) {
     var theLine = value
     if (useUnicode) {
         theLine = new String(value)
-        theLine.cachedGraphemes = splitter.splitGraphemes(value)
+        theLine.cachedGraphemes = splitGraphemes(value)
         file.lines[index] = theLine
     } else {
         file.lines[index] = value
@@ -2024,7 +2040,7 @@ function getCachedGraphemes(theLine, index, file, nocache) {
     if (theLine.cachedGraphemes) {
         return theLine.cachedGraphemes
     }
-    var graphemes = splitter.splitGraphemes(theLine)
+    var graphemes = splitGraphemes(theLine)
     if (nocache == "nocache") {
         return graphemes
     }
@@ -2316,9 +2332,8 @@ function findDown(searchDir, wrap, startTop) {
             // nextHighlightRange()
             // return
             // navForward()
-            nextHighlightText()
-            return
-            // searchText.value = "// mar"+"ker"
+            // nextHighlightText()
+            // return
             searchText.value = " mar"+"ker"
         }
     }
@@ -2420,9 +2435,8 @@ function findUp() {
             // prevHighlightRange()
             // return
             // navBack()
-            prevHighlightText()
-            return
-            // searchText.value = "// mar"+"ker"
+            // prevHighlightText()
+            // return
             searchText.value = " mar"+"ker"
         }
     }
@@ -2491,6 +2505,7 @@ function updateCursorXY(file) {
     cursorY = (fx.cursorLineIndex - fx.offsetY) * fontHeight
 }
 
+var tabWidth = 4
 function indent() {
     // seems to be buggy
     // when first line indent is more than
@@ -2499,11 +2514,11 @@ function indent() {
         addPrefix("\t")
         return
     }
-    addPrefix("    ")
+    addPrefix(" ".repeat(tabWidth))
 
 }
 function dedent() {
-    stripPrefixes(["\t", "    "])
+    stripPrefixes(["\t", " ".repeat(tabWidth)])
 }
 
 function comment(prefix) {
@@ -5532,6 +5547,7 @@ function renderInternal() {
                     if (chr.length > 1) {
                         t.font = fontCSSEmoji
                         extraY = extraYEmoji
+                        // chr = "?"
                     } else {
                         t.font = fontCSS
                         extraY = 0
@@ -8057,7 +8073,7 @@ function gotoDefinition() {
     fx.color = "hotpink"
     var oldSearchText = searchText.value
     if (fx.fullPath.endsWith(".html")) {
-        searchText.value = "function " + word
+        searchText.value = "function " + word + "\\b"
         fx.cursorLineIndex = 0
         fx.cursorColIndex = 0
         findDown()
