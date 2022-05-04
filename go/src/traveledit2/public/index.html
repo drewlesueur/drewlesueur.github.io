@@ -950,7 +950,7 @@ var moveHomeEndTimeout
 var moveHomeEndTimeoutMillis = 300
 var moveHomeEndDirection
 var selectTimeout
-var selectTimeoutMillis = 500
+var selectTimeoutMillis = 300
 var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
@@ -1024,6 +1024,8 @@ function addIframe(url, id, name, cwd) {
     var iframeWrapper = document.createElement("div")
     var iframe = document.createElement("iframe")
     iframe.src = url
+    // iframe.sandbox = "allow-same-origin allow-scripts allow-popups allow-forms"
+    // iframe.setAttribute("sandbox", "allow-same-origin allow-scripts allow-popups allow-forms")
     iframe.currentElement = document.createElement("div")
     iframe.onload = function() {
         iframe.contentWindow.document.body.style.transform = "scale("+iframeScale+")"
@@ -2813,7 +2815,7 @@ function scriptLinesWithOneLineScript(oneLineScript) {
         }
         try {
             line = f(line)
-            f = new Function("x", funcBody)
+            f = new Function("x", "i", funcBody)
         } catch (e) {
             alert(e)
         }
@@ -2821,7 +2823,7 @@ function scriptLinesWithOneLineScript(oneLineScript) {
         for (var i=0; i<linesToProcess.length; i++) {
             var line = linesToProcess[i]
             try {
-                line = f(line)
+                line = f(line, i)
             } catch (e) {
                 alert(e)
             }
@@ -4379,16 +4381,16 @@ function saveLine() {
             !wasDelete &&
             lastTyped in closingMap
         ) {
+            var mainClosers = "({["
+            var mainClosersEnd = ")}]"
             // first some common checks
-            if (lastTyped == "'" && secondLastTyped != " " && secondLastTyped != "" && secondLastTyped != ",") {
+            if (lastTyped == "'" && secondLastTyped != " " && secondLastTyped != "" && secondLastTyped != "," && mainClosersEnd.indexOf(nextChar) == -1) {
                 break
             }
 
             if (lastTyped == "<" && theText.value.substring(0, theText.selectionStart - 1).trim() != "") {
                 break
             }
-            var mainClosers = "({["
-            var mainClosersEnd = ")}]"
             if (mainClosers.indexOf(lastTyped) != -1 && nextChar != "" && nextChar != " " && nextChar != "," && mainClosersEnd.indexOf(nextChar) == -1) {
                 break
             }
@@ -6074,9 +6076,19 @@ function onStart(e) {
             // testing selectMode is char, meaning they didnt select in the margin
             if (sr.startX == sr.stopX && sr.startY == sr.stopY && selectMode == "char") {
                 // New mode
-                isDragKeyboard = true
-                fx.selectedRegions = []
+                // isDragKeyboard = true
+                // fx.selectedRegions = []
                 // should we return early here?
+                var w = getWordAtCursor()
+                if (w.word != "") {
+                    var theLine = fx.lines[fx.cursorLineIndex] || ""
+                    sr.startY = fx.cursorLineIndex
+                    sr.startX = expandTabIndex(theLine, w.start)
+                    sr.stopY = fx.cursorLineIndex
+                    sr.stopX = expandTabIndex(theLine, w.end)
+                } else {
+                    fx.selectedRegions = []
+                }
             }
         }
 
@@ -6297,7 +6309,7 @@ function onStart(e) {
         if (alternateTap && !selectedRegion.stopped) {// this only matters if it is selected I think
             // TODO: what is this feature?
             // for selecting a word?
-            // selectWord Fearure
+            // selectWord Fearure (I think we no longer get here)
             // this happens when you hold down for a while and then let go
             // we should deprecate this?
             var w = getWordAtCursor()
@@ -7880,6 +7892,9 @@ var initialFileAdding = false
 
 
 function fetchWorkspaceWithList(index) {
+    // if (index != -1) {
+    //     saveWorkspace()
+    // }
     preventRender = true
     files = []
     // add exising files
