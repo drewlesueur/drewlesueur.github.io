@@ -265,8 +265,9 @@ They get changed later on.
 </div>
 <div class="toolbar hidden" id=terminalToolbar1 style="--display: none">
     <div class=square ontouchstart='sendTerminal("\x1b"); event.preventDefault()'>esc</div>
-    <div class=square ontouchstart='ctrlDown = true; event.preventDefault()'>ctrl</div>
     <div class=square ontouchstart='sendTerminal("\x03"); event.preventDefault()'>^C</div>
+    <div class=square ontouchstart='sendTerminal("git add -p"); event.preventDefault()'>-p</div>
+    <div class=square ontouchstart='ctrlDown = true; event.preventDefault()'>ctrl</div>
     <!-- don't really need tab because touching the screen gets you tab-->
     <!--<div class=square ontouchstart='sendTerminal("\t"); event.preventDefault() '>tab</div>
     -->
@@ -951,7 +952,7 @@ var moveHomeEndTimeout
 var moveHomeEndTimeoutMillis = 300
 var moveHomeEndDirection
 var selectTimeout
-var selectTimeoutMillis = 300
+var selectTimeoutMillis = 400
 var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
@@ -1462,6 +1463,10 @@ function toggleDarkMode() {
     isDark = !isDark
     renderDarkMode()
 }
+
+var lighModeFontColor = "black"
+var darkModeFontColor = "rgba(255, 255, 200, 1)"
+var lineNumberColor = "brown"
 function renderDarkMode() {
     if (!isDark) {
         darkModeButton.innerText = "dark"
@@ -1469,7 +1474,7 @@ function renderDarkMode() {
         document.body.classList.add("light")
         updateClassForSelector("input", "dark","light")
         updateClassForSelector("textarea", "dark","light")
-        fontColor = "black"
+        fontColor = lighModeFontColor
         lightFontColor = "rgba(0, 0, 0, 0.5)"
         veryLightFontColor = "rgba(0, 0, 0, 0.1)"
         render()
@@ -1484,7 +1489,7 @@ function renderDarkMode() {
     // fontColor = "white"
     // fontColor = "rgba(100, 255, 100)"
     // fontColor = "rgba(255, 255, 200)"
-    fontColor = "rgba(255, 255, 200, 1)"
+    fontColor = darkModeFontColor
     // fontColor = "deeppink"
     // fontColor = "pink"
 
@@ -1535,6 +1540,41 @@ function runEditorCommand(e) {
         // TODO: could you also call saveName?
         saveWorkspace()
         renderFileDropdown()
+        break
+    // foreground light
+    case "fgl":
+        lighModeFontColor = rest || "black"
+        renderDarkMode()
+        break
+    // foreground light
+    case "fgd":
+        darkModeFontColor = rest || "white"
+        renderDarkMode()
+        break
+    // line number color
+    case "lnc":
+        lineNumberColor = rest || "brown"
+        render()
+        break
+    // background light
+    case "bgl":
+        var rules = document.styleSheets[0].cssRules
+        for (var i=0; i<rules.length; i++) {
+            var rule = rules[i]
+            if (rule.selectorText == ".light") {
+                rule.style.backgroundColor = rest || "#ddf"
+            }
+        }
+        break
+    // background dark
+    case "bgd":
+        var rules = document.styleSheets[0].cssRules
+        for (var i=0; i<rules.length; i++) {
+            var rule = rules[i]
+            if (rule.selectorText == ".dark") {
+                rule.style.backgroundColor = rest || '#002'
+            }
+        }
         break
     case "wname":
         // for now just going by name
@@ -5377,7 +5417,7 @@ function renderInternal() {
                         // handy feature to see if lines are same
                         t.fillStyle = "lime"
                     } else {
-                        t.fillStyle = "brown"
+                        t.fillStyle = lineNumberColor
                     }
                     for (var i=0; i<-fx.offsetX-1; i++) {
                         var lineNumberIndex = fx.offsetX + marginLeft + i
