@@ -373,6 +373,7 @@ They get changed later on.
 </div>
 <div class=toolbar>
     <div class=square onclick="fx.iframe.contentWindow.location.reload()">refresh iframe</div>
+    <div class=square onclick="window.open(location.origin+location.pathname+'/saveload?browser=1&fullpath=' + encodeURIComponent(fx.fullPath))">open browser</div>
     <div class=square onclick="doSizing(); render()">do sizing</div>
 </div>
 <div class=toolbar>
