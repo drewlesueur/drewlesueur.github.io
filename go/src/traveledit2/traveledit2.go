@@ -261,6 +261,7 @@ type File struct {
 
 	// CSS color
 	Color           string
+	Group           string
 	
 	HighlightText   string // deprecated
 	HighlightRanges []*HighlightRange
@@ -368,6 +369,7 @@ func workspaceView(w *Workspace) map[string]interface{} {
 			"LineNumber":      f.LineNumber,
 			"CWD":             f.CWD,
 			"Color":           f.Color,
+			"Group":           f.Group,
 			"HighlightText":   f.HighlightText,
 			"HighlightRanges": f.HighlightRanges,
 		})
@@ -521,6 +523,7 @@ func main() {
 					addedFile.LineNumber = f.LineNumber
 					addedFile.Name = f.Name
 					addedFile.Color = f.Color
+					addedFile.Group = f.Group
 					addedFile.HighlightText = f.HighlightText
 					addedFile.HighlightRanges = f.HighlightRanges
 				}
@@ -953,6 +956,7 @@ func main() {
 				f.LineNumber = fc.LineNumber
 				f.Name = fc.Name
 				f.Color = fc.Color
+				f.Group = fc.Group
 				f.HighlightText = fc.HighlightText
 				f.HighlightRanges = fc.HighlightRanges
 				newFiles = append(newFiles, f)
@@ -1506,7 +1510,7 @@ var extensionsToMime = map[string]string{
     "jpg": "image/jpeg",
     "gif": "image/gif",
     "svg": "image/svg+xml",
-    "pdf": "apic/pdf",
+    "pdf": "application/pdf",
 }
 func GetContentType(thePath string) string {
     var mime string
