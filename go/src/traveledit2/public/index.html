@@ -25,7 +25,8 @@ document.write(`
 <script src="`+proxyPath+`/tepublic/md52.js"></scr`+`ipt>
 <!-- For now not loading in grapheme splitter to save pageload. -->
 <!-- it means we can't use emojis, other unicode chars for now -->
-<!-- <script src="`+proxyPath+`/tepublic/grapheme-splitter.js"></scr`+`ipt> -->
+<!-- <script src="`+proxyPath+`/tepublic/grapheme-splitter.js"></scr`+`ipt>
+ -->
 `)
 </script>
 <style>
@@ -455,7 +456,7 @@ They get changed later on.
     allow polling
 </label>
 <label for=useUnicodeCheckbox>
-    <input onchange="useUnicode = useUnicodeCheckbox.checked" type=checkbox name=useUnicodeCheckbox id=useUnicodeCheckbox />
+    <input onchange="useUnicode = useUnicodeCheckbox.checked" type=checkbox name=useUnicodeCheckbox id=useUnicodeCheckbox checked />
     use unicode
 </label>
 <label for=agressiveRenderCheckbox>
@@ -542,7 +543,7 @@ var saveEveryMS = 3000
 var lastWord = ""
 var lastCleared = ""
 var fontScale = 1.2
-var useUnicode = false
+var useUnicode = true
 var compactRender = false
 var agressiveRender = false
 
@@ -1530,8 +1531,43 @@ function runEditorCommand(e) {
         saveWorkspace()
         break
     case "color":
+        while (true) { // my hack to break wherever I want
+            if (fx.fileMode == "fileList") {
+                if (fx.selectedRegions.length>0) {
+                    var r = fx.selectedRegions[0]
+                    // we subtract 1 because of the initial "-" at the beginning
+                    var fileIndexStart = r.startY - 1
+                    var fileIndexStop = r.stopY - 1
+                    for (var i=fileIndexStart; i<= fileIndexStop; i++) {
+                        files[i].color = rest
+                    }
+                }
+            }
+            break
+        }
         fx.color = rest
         // TODO: you could have a custom function that just sets the color
+        render()
+        renderFileDropdown()
+        saveWorkspace()
+        break
+    case "group":
+        while (true) { // my hack to break wherever I want
+            if (fx.fileMode == "fileList") {
+                if (fx.selectedRegions.length>0) {
+                    var r = fx.selectedRegions[0]
+                    // we subtract 1 because of the initial "-" at the beginning
+                    var fileIndexStart = r.startY - 1
+                    var fileIndexStop = r.stopY - 1
+                    for (var i=fileIndexStart; i<= fileIndexStop; i++) {
+                        files[i].group = rest
+                    }
+                }
+            }
+            break
+        }
+        fx.group = rest
+        render()
         renderFileDropdown()
         saveWorkspace()
         break
@@ -5252,7 +5288,7 @@ function renderInternal() {
             var theFileForColor = treeFilesShadow[y + fx.offsetY]
             if (theFileForColor && theFileForColor.color) {
                 t.fillStyle = theFileForColor.color
-                var startBoxIndex = expandTabIndex(theLine, -1) - fx.offsetX
+                var startBoxIndex = expandTabIndex(theLine, -1, y + fx.offsetY) - fx.offsetX
                 // t.fillText(chr, x*fontWidth, y*fontHeight)
                 // t.fillRect(startBoxIndex*fontWidth, y*fontHeight + (fontHeight/4), 2*fontWidth, fontHeight/2)
                 t.beginPath()
@@ -5261,6 +5297,7 @@ function renderInternal() {
             }
         }
     }
+    
     // t.fillText(chr, x*fontWidth, y*fontHeight)
     for (var y=minY; y < maxY; y++) {
         // show the end of the document
@@ -5530,7 +5567,6 @@ function renderInternal() {
                 expandedLine = getCachedGraphemes(theLine, y + fx.offsetY)
                 expandedLine = expandedLine.slice() // copy it
                 var i = 0
-
                 // TODO: you can potentially also cache this part
                 while (true) {
                     i++
@@ -5551,6 +5587,31 @@ function renderInternal() {
                 if ((y + fx.offsetY) < fx.lines.length) {
                     fx.lines[y + fx.offsetY].tabCache = expandedLine
                 }
+                
+                // expanding emojis for double width emojis
+                // TODO: you can potentially also cache this part
+                // var i = 0
+                // var afterLastEmojiPos = 0
+                // while (true) {
+                //     i++
+                //     if (i === 500) {
+                //         alert("loop err 4")
+                //         break
+                //     }
+                //     var emojiPos = -1
+                //     for (var j=afterLastEmojiPos; j<expandedLine.length;j++) {
+                //         // TODO: finish this!
+                //     }
+                //     
+                //     if (emojiPos == -1) {
+                //         break
+                //     }
+                //     var numberOfSpaces = tabStop - ((tabPos) % tabStop) -1
+                //     // TODO: you can used cached repeated \t array
+                // 
+                //     expandedLine.splice(tabPos, 0, ...("\t".repeat(numberOfSpaces).split("")))
+                //     afterLastTabPos = tabPos + numberOfSpaces + 1
+                // }
 
             }
         } else {
@@ -6355,10 +6416,11 @@ function onStart(e) {
             // we should deprecate this?
             var w = getWordAtCursor()
             if (w.word != "") {
+                var theLine = fx.lines[fx.cursorLineIndex] || ""
                 selectedRegion.startY = fx.cursorLineIndex
-                selectedRegion.startX = w.start
+                selectedRegion.startX = expandTabIndex(theLine, w.start)
                 selectedRegion.stopY = fx.cursorLineIndex
-                selectedRegion.stopX = w.end
+                selectedRegion.stopX = expandTabIndex(theLine, w.end)
             } else {
                 fx.selectedRegions = []
             }
@@ -7385,6 +7447,7 @@ function makeFile(fullPath, cursorLineIndex, contents) {
 
         // copy color from current file
         color: window.fx ? fx.color : '',
+        group: window.fx ? fx.group : '',
         highlightRanges: []
     }
 }
@@ -7504,6 +7567,7 @@ function renderFileDropdown() {
             button.classList.add("selected")
         }
 
+        button.style.position = "relative"
         if (file.color) {
             var colorDiv = document.createElement("div")
             colorDiv.style.width = "10px"
@@ -7514,8 +7578,19 @@ function renderFileDropdown() {
             colorDiv.style.right = "2px"
             colorDiv.style.border = "none"
             colorDiv.style.borderRadius = "5px"
-            button.style.position = "relative"
             button.appendChild(colorDiv)
+        }
+        if (file.group) {
+            var groupDiv = document.createElement("div")
+            // groupDiv.style.height = "10px"
+            // groupDiv.style.width = "10px"
+            groupDiv.style.position = "absolute"
+            groupDiv.style.bottom = "1px"
+            groupDiv.style.right = "1px"
+            groupDiv.style.border = "none"
+            groupDiv.innerText = file.group
+            groupDiv.style.borderRadius = "2px"
+            button.appendChild(groupDiv)
         }
         fileRow.appendChild(button)
 
@@ -7666,7 +7741,13 @@ function getLinesForFileList() {
         for (let i = 0; i < files.length; i++) {
             // treeFiles.push(files[i].fullPath.split("/").reverse().join(" < "))
             
-            treeFiles.push(files[i].name || files[i].fullPath.split("/").slice(-1)[0])
+            // treeFiles.push(files[i].name || files[i].fullPath.split("/").slice(-1)[0])
+            var flatName = files[i].name || files[i].fullPath.split("/").slice(-1)[0]
+            if (files[i].group) {
+                flatName = files[i].group + ": " + flatName
+            }
+            treeFiles.push(flatName)
+            
             // I wrote this so you could get rid of the last part if you want and only show the file name
             // treeFiles.push(files[i].name || files[i].fullPath.split("/").slice(-1)[0] + "\t\t\t\t< " + files[i].fullPath.split("/").reverse().slice(1).join(" < "))
             // treeFiles.push(files[i].name || files[i].fullPath.split("/").slice(-2).join("/"))
@@ -7967,7 +8048,9 @@ function fetchWorkspaceWithList(index) {
             } else {
                 addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), false, serverFile.ID, serverFile.Name)
             }
+            // #serverAssignments
             fx.color = serverFile.Color
+            fx.group = serverFile.Group || ""
             fx.highlightRanges = serverFile.HighlightRanges
         }
         initialFileAdding = false
@@ -8018,6 +8101,7 @@ function saveWorkspace(oldWorkspaceName) {
             "LineNumber": f.cursorLineIndex + 1,
             "CWD": f.shellCWD,
             "Color": f.color,
+            "Group": f.group,
             "HighlightRanges": f.highlightRanges,
             // "HighlightText": f.highlightText,
         })
