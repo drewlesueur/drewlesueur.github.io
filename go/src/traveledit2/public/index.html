@@ -544,6 +544,7 @@ var lastWord = ""
 var lastCleared = ""
 var fontScale = 1.2
 var useUnicode = true
+var emojiWidth = 2
 var compactRender = false
 var agressiveRender = false
 
@@ -1450,8 +1451,9 @@ function setFontVars() {
     // which would render SF Mono before, but now
     // causes the page to crash
     fontCSS = (currentFont.fontSize * fontScale) + "px '"+currentFont.fontName+"'"
-    fontCSSEmoji = (currentFont.fontSize * fontScale * .6) + "px '"+currentFont.fontName+"', ui-monospace"
-    extraYEmoji = (currentFont.fontSize * fontScale * .6) / 2
+    fontCSSEmoji = (currentFont.fontSize * fontScale * .6 * emojiWidth) + "px '"+currentFont.fontName+"', ui-monospace"
+    // extraYEmoji = (currentFont.fontSize * fontScale * .6) / 2 / emojiWidth
+    extraYEmoji = 0
 }
 
 
@@ -2411,9 +2413,9 @@ function findDown(searchDir, wrap, startTop) {
             // nextHighlightRange()
             // return
             // navForward()
-            // nextHighlightText()
-            // return
-            searchText.value = " mar"+"ker"
+            nextHighlightText()
+            return
+            // searchText.value = " mar"+"ker"
         }
     }
     for (var i=startY; i<fx.lines.length; i++) {
@@ -2514,9 +2516,9 @@ function findUp() {
             // prevHighlightRange()
             // return
             // navBack()
-            // prevHighlightText()
-            // return
-            searchText.value = " mar"+"ker"
+            prevHighlightText()
+            return
+            // searchText.value = " mar"+"ker"
         }
     }
     for (var i=fx.cursorLineIndex; i>=0; i--) {
@@ -3971,8 +3973,18 @@ function eq(a, b, message) {
     }
 }
 
-
-
+var emojiRegex = /\p{Extended_Pictographic}/u;
+function containsEmoji(line) {
+    return emojiRegex.test(line)
+}
+function isEmoji(grapheme) {
+    // over simplified attempt to Make it faster, but not 100% accurate
+    if (grapheme.length > 1) {
+        return true
+    }
+    
+    return containsEmoji(grapheme)
+}
 function unExpandTabIndexNoCache(theLine, start) {
     return unExpandTabIndex(theLine, start, null, null, "nocache")
 }
@@ -4002,7 +4014,11 @@ function unExpandTabIndex(theLine, start, index, file, nocache) {
                 newExpandedIndex = expandedIndex + (tabStop - ((expandedIndex) % tabStop))
                 newActualStringIndex = actualStringIndex + 1
             } else {
-                newExpandedIndex = expandedIndex + 1
+                if (isEmoji(grapheme)) {
+                    newExpandedIndex = expandedIndex + emojiWidth
+                } else {
+                    newExpandedIndex = expandedIndex + 1
+                }
                 newActualStringIndex = actualStringIndex + grapheme.length
             }
             if (newExpandedIndex > start) {
@@ -4106,7 +4122,11 @@ function expandTabIndex(theLine, start, index, file, nocache) {
                 newExpandedIndex = expandedIndex + (tabStop - ((expandedIndex) % tabStop))
                 newActualStringIndex = actualStringIndex + 1
             } else {
-                newExpandedIndex = expandedIndex + 1
+                if (isEmoji(grapheme)) {
+                    newExpandedIndex = expandedIndex + emojiWidth
+                } else {
+                    newExpandedIndex = expandedIndex + 1
+                }
                 newActualStringIndex = actualStringIndex + grapheme.length
             }
             expandedIndex = newExpandedIndex
@@ -5567,8 +5587,8 @@ function renderInternal() {
             } else {
                 expandedLine = getCachedGraphemes(theLine, y + fx.offsetY)
                 expandedLine = expandedLine.slice() // copy it
+                // log(Date.now().toString().slice(-4) + " expanding")
                 var i = 0
-                // TODO: you can potentially also cache this part
                 while (true) {
                     i++
                     if (i === 500) {
@@ -5585,34 +5605,37 @@ function renderInternal() {
                     expandedLine.splice(tabPos, 0, ...("\t".repeat(numberOfSpaces).split("")))
                     afterLastTabPos = tabPos + numberOfSpaces + 1
                 }
+                
+                // expanding emojis for double width emojis
+                if (emojiWidth != 1 && containsEmoji(theLine)) {
+                // if (emojiWidth != 1) {
+                    var i = 0
+                    var afterLastEmojiPos = 0
+                    while (true) {
+                        i++
+                        if (i === 500) {
+                            alert("loop err 4")
+                            break
+                        }
+                        var emojiPos = -1
+                        for (var j=afterLastEmojiPos; j<expandedLine.length;j++) {
+                            if (isEmoji(expandedLine[j])) {
+                                emojiPos = j
+                                break
+                            }
+                        }
+                        
+                        if (emojiPos == -1) {
+                            break
+                        }
+                    
+                        expandedLine.splice(emojiPos+1, 0, ...(" ".repeat(emojiWidth-1).split("")))
+                        afterLastEmojiPos = emojiPos + (emojiWidth-1) + 1
+                    }
+                }
                 if ((y + fx.offsetY) < fx.lines.length) {
                     fx.lines[y + fx.offsetY].tabCache = expandedLine
                 }
-                
-                // expanding emojis for double width emojis
-                // TODO: you can potentially also cache this part
-                // var i = 0
-                // var afterLastEmojiPos = 0
-                // while (true) {
-                //     i++
-                //     if (i === 500) {
-                //         alert("loop err 4")
-                //         break
-                //     }
-                //     var emojiPos = -1
-                //     for (var j=afterLastEmojiPos; j<expandedLine.length;j++) {
-                //         // TODO: finish this!
-                //     }
-                //     
-                //     if (emojiPos == -1) {
-                //         break
-                //     }
-                //     var numberOfSpaces = tabStop - ((tabPos) % tabStop) -1
-                //     // TODO: you can used cached repeated \t array
-                // 
-                //     expandedLine.splice(tabPos, 0, ...("\t".repeat(numberOfSpaces).split("")))
-                //     afterLastTabPos = tabPos + numberOfSpaces + 1
-                // }
 
             }
         } else {
@@ -5649,7 +5672,8 @@ function renderInternal() {
                 t.fillStyle = textFillStyle
 
                 if (useUnicode) {
-                    if (chr.length > 1) {
+                    // if (chr.length > 1) {
+                    if (isEmoji(chr)) {
                         t.font = fontCSSEmoji
                         extraY = extraYEmoji
                         // chr = "?"
