@@ -3174,13 +3174,13 @@ function bashEscapeSingleQuote(str) {
     return str.replaceAll("'", "'\\''")
 }
 
-function paste(unselect, pasteBefore, fromTap, unselectIfCharOneLine) {
-    pasteLines(copyBuffer, unselect, pasteBefore, fromTap, unselectIfCharOneLine)
+function paste(unselect, pasteBefore, fromTap, unselectIfCharOneWord) {
+    pasteLines(copyBuffer, unselect, pasteBefore, fromTap, unselectIfCharOneWord)
 }
 var pasteDebug = false
 var p = []
 
-function pasteLines(localCopyBuffer, unselect, pasteBefore, fromTap, unselectIfCharOneLine) {
+function pasteLines(localCopyBuffer, unselect, pasteBefore, fromTap, unselectIfCharOneWord) {
     if (pasteDebug) {
         p.unshift(new Error().stack)
     }
@@ -3224,10 +3224,11 @@ function pasteLines(localCopyBuffer, unselect, pasteBefore, fromTap, unselectIfC
             )
 
             // #alternateTap
-            // TODO: there may be a bug here with inline paste with multiple lines. it unselects and shouldn't
+            var theLine = fx.lines[fx.cursorLineIndex] || ""
             var stopX = expandTabIndex(theLine, u(fx.cursorColIndex) + localCopyBuffer[0].length)
-            if (alternateTap && !unselect && !unselectIfCharOneLine) {
-                var theLine = fx.lines[fx.cursorLineIndex] || ""
+            // regex to test for non-wordy characters
+            var isOneWord = !/\W/.test(localCopyBuffer[0].trim())
+            if (alternateTap && !unselect && (!isOneWord || !unselectIfCharOneWord)) {
                 var sr = {
                     startY: fx.cursorLineIndex,
                     startX: fx.cursorColIndex,
@@ -6271,6 +6272,7 @@ function onStart(e) {
                     comment()
                 } else {
                     selectMode = "line"
+                    // #tapinmargintopaste
                     paste(false, false, true)
                 }
                 return
@@ -6327,8 +6329,10 @@ function onStart(e) {
                     if (w.word == "") {
                         selectMode = "char"
                         // paste(false, false, true)
+                        // #taptopaste
                         paste(false, false, true, true)
                     } else if (w.word != "") {
+                        // # taptodelete #taptocut
                         var sr = {}
                         selectMode = "char"
                         var theLine = fx.lines[fx.cursorLineIndex] || ""
@@ -6840,6 +6844,7 @@ function clickItemInDirectory() {
         var newFullPath = prefix + "/" + addPath
     }
     var color = fx.color
+    var group = fx.group
     var preventSelect = true
     if (fx.cursorColIndex != -marginLeft) {
         closeFile()
@@ -6850,6 +6855,7 @@ function clickItemInDirectory() {
     if (newFile) {
         // we do this because of the close, which doesn't always happen
         newFile.color = color
+        newFile.group = group
         // note, this call already happens above but we need to re-render it
         //  because we set the color after the fact.
         renderFileDropdown()

@@ -1,3 +1,14 @@
+in terninal, ability to click on a directory in this line and have it go there.
+gpsi < lib < portal < drew.lesueur@ad.gpsinsight.com < home < 
+
+
+create a flow...
+have flow mode where you can go in to things and go back out. 
+
+what about the idea of brushes.
+
+left and right swipes if not the whole line is selected.... expand and shrink the selection
+
 if you clear a word then type a word, that new word should be in copy buffer?!
 
 idea open a file in tail mode (even tho you can tail with terminal session)
