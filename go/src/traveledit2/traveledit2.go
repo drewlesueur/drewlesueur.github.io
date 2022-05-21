@@ -1183,6 +1183,20 @@ func main() {
 		}
 		// add to end for now
 	})
+	// mux.HandleFunc("/links", func(w http.ResponseWriter, r *http.Request) {
+	// 	linksTextBytes, err := ioutil.ReadFile("./links.txt")
+	// 	if err != nil {
+	// 		logAndErr(w, "couldn't get links file.")
+	// 		return
+	// 	}
+	// 	linksTextString := string(linksTextBytes)
+	// 	// not updating r.URL.RawPath.
+	// 	// nor r.RequestURI
+	//     
+	//     // /links/device_type_audit
+	//     
+	// })
+	
 	mux.HandleFunc("/saveload", func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains("..", r.URL.Path) {
 			logAndErr(w, "the path has a .. in it")

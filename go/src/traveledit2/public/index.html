@@ -278,6 +278,10 @@ They get changed later on.
     <div class=square ontouchstart='sendTerminal("\x1b[C"); event.preventDefault()'>right</div>
 </div>
 
+<div class="toolbar hidden" id=iframeToolbar1 style="--display: none">
+    <div class=square onclick="fx.iframe.contentWindow.location.reload()">refresh iframe</div>
+</div>
+
 <div class="toolbar hidden" id=workspaceToolbar onclick=selectWorkspaceToolbar(event) style="--display: none">
 </div>
 
@@ -374,8 +378,9 @@ They get changed later on.
     <div class=square onclick="doRefresh()">refresh</div>
 </div>
 <div class=toolbar>
-    <div class=square onclick="fx.iframe.contentWindow.location.reload()">refresh iframe</div>
     <div class=square onclick="window.open(location.origin+location.pathname+'/saveload?browser=1&fullpath=' + encodeURIComponent(fx.fullPath))">open browser</div>
+    <div class=square onclick="navigator.clipboard.writeText(location.origin+location.pathname+'/saveload?browser=1&fullpath=' + encodeURIComponent(fx.fullPath))">copy browser</div>
+    <div class=square onclick="addIframe(location.origin+location.pathname+'/saveload?browser=1&fullpath=' + encodeURIComponent(fx.fullPath))">iframe browser</div>
     <div class=square onclick="doSizing(); render()">do sizing</div>
 </div>
 <div class=toolbar>
@@ -7839,16 +7844,25 @@ function setCurrentFile(file) {
         shellToolbar2.classList.remove("hidden")
         terminalToolbar1.classList.add("hidden")
         workspaceToolbar.classList.add("hidden")
+        iframeToolbar1.classList.add("hidden")
     } else if (fx.fileMode == "terminal") {
         shellToolbar1.classList.add("hidden")
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.remove("hidden")
         workspaceToolbar.classList.add("hidden")
+        iframeToolbar1.classList.add("hidden")
+    } else if (fx.fileMode == "iframe") {
+        shellToolbar1.classList.add("hidden")
+        shellToolbar2.classList.add("hidden")
+        terminalToolbar1.classList.add("hidden")
+        workspaceToolbar.classList.add("hidden")
+        iframeToolbar1.classList.remove("hidden")
     } else {
         shellToolbar1.classList.add("hidden")
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.add("hidden")
         workspaceToolbar.classList.remove("hidden")
+        iframeToolbar1.classList.add("hidden")
     }
 
     if (fx.fileMode == "iframe") {
