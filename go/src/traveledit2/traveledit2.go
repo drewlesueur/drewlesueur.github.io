@@ -1301,9 +1301,11 @@ func main() {
 						w.Header().Set("Content-Type", `text/plain`)
 						w.Header().Set("Content-Disposition", `attachment; filename="`+theName+`"`)
 					} else {
+						parts := strings.Split(r.FormValue("fullpath"), "/")
+						theName := parts[len(parts)-1]
 						w.Header().Set("Content-Type", GetContentType(r.FormValue("fullpath")))
-						// TODO: figure out why the pdfs don't display inline
 						// w.Header().Set("Content-Disposition", "inline;filename=myfile.pdf")
+						w.Header().Set("Content-Disposition", `inline; filename="`+theName+`"`)
 					}
 					w.Write(c)
 					return
