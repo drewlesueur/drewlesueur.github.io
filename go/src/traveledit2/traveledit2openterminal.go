@@ -1,15 +1,16 @@
 //go:build !windows
+
 package main
 
 import (
-    "net/http"
-    "strconv"
-    "time"
-    "os"
-    "os/exec"
-    "encoding/json"
-    "log"
-    "github.com/creack/pty"
+	"encoding/json"
+	"github.com/creack/pty"
+	"log"
+	"net/http"
+	"os"
+	"os/exec"
+	"strconv"
+	"time"
 )
 
 func openTerminal(cwd string, w http.ResponseWriter) {

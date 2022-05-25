@@ -1,3 +1,7 @@
+if you delete a word and then type (including autocomplete), whatever you type should go to the copy buffer
+if you delete the same word again!
+
+
 in terninal, ability to click on a directory in this line and have it go there.
 gpsi < lib < portal < drew.lesueur@ad.gpsinsight.com < home < 
 

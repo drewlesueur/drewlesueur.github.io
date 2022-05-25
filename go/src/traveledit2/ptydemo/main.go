@@ -1,12 +1,14 @@
 package main
+
 import (
-    "github.com/creack/pty"
-    "os"
-    "os/exec"
-    "time"
-    "io"
-    "fmt"
+	"fmt"
+	"github.com/creack/pty"
+	"io"
+	"os"
+	"os/exec"
+	"time"
 )
+
 func main() {
 	c := exec.Command("redis-cli", "-h", "redis01.ue1-dev-portal.gpsinsight.com")
 	f, err := pty.Start(c)
@@ -31,13 +33,13 @@ func main() {
 		// f.Write([]byte{4}) // EOT
 	}()
 	io.Copy(os.Stdout, f)
-    
+
 	// c := exec.Command("grep", "--color=auto", "bar")
 	// f, err := pty.Start(c)
 	// if err != nil {
 	// 	panic(err)
 	// }
-// 
+	//
 	// go func() {
 	// 	f.Write([]byte("foo\n"))
 	// 	f.Write([]byte("bar\n"))

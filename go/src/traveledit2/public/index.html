@@ -7362,7 +7362,7 @@ function getSpaceCount(line) {
     return spaceCount
 }
 
-function selectWorkspaceToolbar(e) {
+async function selectWorkspaceToolbar(e) {
     if (!e.target.hasAttribute("data-index")) {
         return
     }
@@ -7372,6 +7372,7 @@ function selectWorkspaceToolbar(e) {
         // make a new one
         index = "new"
     }
+    await saveWorkspace()
     fetchWorkspaceWithList(index)
 }
 
@@ -7740,7 +7741,15 @@ function getLinesForFileList() {
         var f = sortedFiles[fileI]
         // var parts = (f.fullPath + ":" + (f.cursorLineIndex+1)).split("/")
         // var parts = (f.fullPath + "(" + (f.tmpIndex) + ")").split("/")
-        var parts = (f.fullPath + "(" + (f.ID) + ")").split("/")
+        
+        var groupText = ""
+        if (f.group) {
+            groupText = " " + f.group + " "
+        }
+        var parts = (f.fullPath + groupText + "(" + (f.ID) + ")").split("/")
+        // if (f.group) {
+        //     parts[parts.length - 1] = f.group + ": " + parts[parts.length - 1]
+        // }
         if (f.fileMode == "shell") {
             parts = ["(cmd)", (f.tmpIndex+"").padStart(2, "0") + ": " + (f.name || "")]
         } else if (f.fileMode == "terminal") {

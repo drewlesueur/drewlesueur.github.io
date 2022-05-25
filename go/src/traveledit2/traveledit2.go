@@ -21,6 +21,7 @@ import "sync"
 import "strconv"
 import "crypto/md5"
 import "html"
+import "bytes"
 import "github.com/NYTimes/gziphandler"
 
 // import "github.com/gorilla/websocket"
@@ -260,9 +261,9 @@ type File struct {
 	LineNumber int
 
 	// CSS color
-	Color           string
-	Group           string
-	
+	Color string
+	Group string
+
 	HighlightText   string // deprecated
 	HighlightRanges []*HighlightRange
 
@@ -303,7 +304,7 @@ func (w *Workspace) GetFile(id int) (*File, bool) {
 func (w *Workspace) RemoveFile(id int) {
 	for i, f := range w.Files {
 		if id == f.ID {
-		    log.Printf("removed file: %d", id)
+			log.Printf("removed file: %d", id)
 			// w.Files = append(w.Files[0:i], w.Files[i+1:]...)
 			// https://github.com/golang/go/wiki/SliceTricks
 			copy(w.Files[i:], w.Files[i+1:])
@@ -315,44 +316,45 @@ func (w *Workspace) RemoveFile(id int) {
 			break
 		}
 	}
-	
+
 	// fun global action
 	// delete workspace if it's empty except for last one
 	go func() {
-        // funky, doing it delayed so the close/open flow for clickItemInDirectory
-	    // doesn't immediately close the workspace
-	    time.Sleep(3 * time.Second)
-	    workspaceMu.Lock()
-	    defer workspaceMu.Unlock()
+		// funky, doing it delayed so the close/open flow for clickItemInDirectory
+		// doesn't immediately close the workspace
+		time.Sleep(3 * time.Second)
+		workspaceMu.Lock()
+		defer workspaceMu.Unlock()
 		if len(workspace.Files) == 0 && len(workspaces) > 1 {
- 	       for i, w2 := range workspaces {
- 	           if w2 == w {
- 	               copy(workspaces[i:], workspaces[i+1:])
- 	               workspaces[len(workspaces)-1] = nil
- 	               workspaces = workspaces[0 : len(workspaces)-1]
- 	               break
- 	           }
- 	       }
+			for i, w2 := range workspaces {
+				if w2 == w {
+					copy(workspaces[i:], workspaces[i+1:])
+					workspaces[len(workspaces)-1] = nil
+					workspaces = workspaces[0 : len(workspaces)-1]
+					break
+				}
+			}
 		}
 	}()
 }
 
 func writeWorkspaceFile(w http.ResponseWriter, r *http.Request) {
-		workspaceViews := []map[string]interface{}{}
-		for _, w := range workspaces {
-			workspaceViews = append(workspaceViews, workspaceView(w))
-		}
-		jsonBytes, err := json.MarshalIndent(workspaceViews, "", "    ")
-		if err != nil {
-			logAndErr(w, "marshalling for mysaveworkspace: %v", err)
-			return
-		}
-		err = ioutil.WriteFile("workspaces.json", jsonBytes, 0644)
-		if err != nil {
-			logAndErr(w, "saving workspaces.json: %v", err)
-			return
-		}
+	workspaceViews := []map[string]interface{}{}
+	for _, w := range workspaces {
+		workspaceViews = append(workspaceViews, workspaceView(w))
+	}
+	jsonBytes, err := json.MarshalIndent(workspaceViews, "", "    ")
+	if err != nil {
+		logAndErr(w, "marshalling for mysaveworkspace: %v", err)
+		return
+	}
+	err = ioutil.WriteFile("workspaces.json", jsonBytes, 0644)
+	if err != nil {
+		logAndErr(w, "saving workspaces.json: %v", err)
+		return
+	}
 }
+
 // workspaceView is a function that returns a json marshallable version of a
 // workspace for use in saving a file and in the front end
 // we could maybe just serialize the raw workspace?
@@ -375,12 +377,12 @@ func workspaceView(w *Workspace) map[string]interface{} {
 		})
 	}
 	workspaceRet := map[string]interface{}{
-		"Name":      w.Name,
-		"DarkMode":  w.DarkMode,
-		"FontName":  w.FontName,
-		"FontScale": w.FontScale,
+		"Name":             w.Name,
+		"DarkMode":         w.DarkMode,
+		"FontName":         w.FontName,
+		"FontScale":        w.FontScale,
 		"HighlightMatches": w.HighlightMatches,
-		"Files":     files,
+		"Files":            files,
 	}
 	return workspaceRet
 }
@@ -388,14 +390,14 @@ func workspaceViewWithList(w *Workspace) map[string]interface{} {
 	// workspaceMu lock needs to be held when calling this function
 	workspacesList := []map[string]interface{}{}
 	for _, w := range workspaces {
-	    workspacesList = append(workspacesList, map[string]interface{}{
-	        "Name": w.Name,
-	    })
+		workspacesList = append(workspacesList, map[string]interface{}{
+			"Name": w.Name,
+		})
 	}
 	// return workspaceRet
 	return map[string]interface{}{
-	    "workspace": workspaceView(w),
-	    "workspacesList": workspacesList,
+		"workspace":      workspaceView(w),
+		"workspacesList": workspacesList,
 	}
 }
 func runShellCommand(id string, cmdString string, cwd string, w http.ResponseWriter) {
@@ -491,11 +493,11 @@ func main() {
 			// reload the workspace
 			for _, tmpW := range tmpWorkspaces {
 				workspace = &Workspace{
-					FontScale: tmpW.FontScale,
-					FontName:  tmpW.FontName,
-					DarkMode:  tmpW.DarkMode,
-					Name: tmpW.Name,
-					HighlightMatches:  tmpW.HighlightMatches,
+					FontScale:        tmpW.FontScale,
+					FontName:         tmpW.FontName,
+					DarkMode:         tmpW.DarkMode,
+					Name:             tmpW.Name,
+					HighlightMatches: tmpW.HighlightMatches,
 				}
 				for _, f := range tmpW.Files {
 					if f.Type == "file" {
@@ -592,7 +594,6 @@ func main() {
 	var viewSearch string
 	var viewMu sync.Mutex
 	viewCond := sync.NewCond(&viewMu)
-
 
 	// trying to use a single mutex for multiple shells?
 	// TODO: serialize and de-serialize the state
@@ -894,19 +895,19 @@ func main() {
 		workspaceMu.Lock()
 		defer workspaceMu.Unlock()
 		indexStr := r.FormValue("index")
-		
+
 		for {
 			if indexStr != "" {
-			    if indexStr == "new" {
-			        log.Println("========= ok doing a new one")
-					workspace = &Workspace{Name: "workspace " + strconv.Itoa(len(workspaces) + 1)}
+				if indexStr == "new" {
+					log.Println("========= ok doing a new one")
+					workspace = &Workspace{Name: "workspace " + strconv.Itoa(len(workspaces)+1)}
 					workspaces = append(workspaces, workspace)
 					addFile("", "directory", "/")
-		        	writeWorkspaceFile(w, r)
-			        break
-			    }
-			    index, err := strconv.Atoi(indexStr)
-			    if err != nil {
+					writeWorkspaceFile(w, r)
+					break
+				}
+				index, err := strconv.Atoi(indexStr)
+				if err != nil {
 					logAndErr(w, "parsing index for myWorkspaceWithList: %v", err)
 					return
 				}
@@ -916,13 +917,13 @@ func main() {
 				}
 				workspace = workspaces[index]
 			}
-			
+
 			break
 		}
 		workspaceWithListRet := workspaceViewWithList(workspace)
 		json.NewEncoder(w).Encode(workspaceWithListRet)
 	})
-	
+
 	// #wschange this replaced myterminals, now is an array not map
 	mux.HandleFunc("/mysaveworkspace", func(w http.ResponseWriter, r *http.Request) {
 		workspaceMu.Lock()
@@ -933,11 +934,11 @@ func main() {
 			logAndErr(w, "parsing for mysaveworkspace: %v", err)
 			return
 		}
-		
+
 		// TODO #workspaceids
 		workspaceNameToCheck := tmpWorkspace.Name
 		if r.FormValue("oldWorkspaceName") != "" {
-		    workspaceNameToCheck = r.FormValue("oldWorkspaceName")
+			workspaceNameToCheck = r.FormValue("oldWorkspaceName")
 		}
 		if workspaceNameToCheck != workspace.Name {
 			logAndErr(w, "preventing workspace clash: %s, %s", workspaceNameToCheck, workspace.Name)
@@ -972,7 +973,7 @@ func main() {
 		workspace.FontScale = tmpWorkspace.FontScale
 		workspace.HighlightMatches = tmpWorkspace.HighlightMatches
 		workspace.Name = tmpWorkspace.Name
-	    writeWorkspaceFile(w, r)
+		writeWorkspaceFile(w, r)
 	})
 	mux.HandleFunc("/myterminalpoll", func(w http.ResponseWriter, r *http.Request) {
 		workspaceMu.Lock()
@@ -1053,10 +1054,10 @@ func main() {
 	})
 
 	mux.HandleFunc("/myaddfile", func(w http.ResponseWriter, r *http.Request) {
-	    // only used for iframe for now, other typed handled their own way
+		// only used for iframe for now, other typed handled their own way
 		workspaceMu.Lock()
 		defer workspaceMu.Unlock()
-	    newID := addFile("", r.FormValue("fileType"), r.FormValue("fullPath"))
+		newID := addFile("", r.FormValue("fileType"), r.FormValue("fullPath"))
 		w.Header().Set("X-ID", strconv.Itoa(newID))
 	})
 	// #wschange myterminalclose
@@ -1072,7 +1073,6 @@ func main() {
 
 		if t, ok := workspace.GetFile(ID); ok {
 			workspace.RemoveFile(ID)
-			
 
 			if t.Type == "shell" {
 				err := t.Cmd.Process.Kill()
@@ -1084,13 +1084,13 @@ func main() {
 			}
 
 			// TODO remotefile
-            if t.Type == "terminal" {
-			    err := t.Pty.Close()
-			    if err != nil {
-			    	logAndErr(w, "closing pty: %d: %v", ID, err)
-			    	return
-			    }
-            }
+			if t.Type == "terminal" {
+				err := t.Pty.Close()
+				if err != nil {
+					logAndErr(w, "closing pty: %d: %v", ID, err)
+					return
+				}
+			}
 		}
 	})
 
@@ -1139,9 +1139,9 @@ func main() {
 			replaceProxyPath := "var proxyPath = \"" + *proxyPath + "\""
 			htmlString = strings.Replace(htmlString, "// PROXYPATH GOES HERE", replaceProxyPath, 1)
 			log.Printf("replaceProxyPath: %s", replaceProxyPath)
-			
+
 			var replaceIsGitBash string
-			if (os.Getenv("ISGITBASH") == "1") {
+			if os.Getenv("ISGITBASH") == "1" {
 				replaceIsGitBash = "var isGitBash = true"
 			} else {
 				replaceIsGitBash = "var isGitBash = false"
@@ -1192,11 +1192,11 @@ func main() {
 	// 	linksTextString := string(linksTextBytes)
 	// 	// not updating r.URL.RawPath.
 	// 	// nor r.RequestURI
-	//     
+	//
 	//     // /links/device_type_audit
-	//     
+	//
 	// })
-	
+
 	mux.HandleFunc("/saveload", func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains("..", r.URL.Path) {
 			logAndErr(w, "the path has a .. in it")
@@ -1234,35 +1234,35 @@ func main() {
 				w.Header().Set("X-Is-Dir", "1")
 
 				if r.FormValue("raw") == "1" || r.FormValue("browser") == "1" {
-			    	// TODO: get rid of noid at some point
-				    if r.FormValue("noid") != "1" && r.FormValue("browser") != "1"  {
+					// TODO: get rid of noid at some point
+					if r.FormValue("noid") != "1" && r.FormValue("browser") != "1" {
 						workspaceMu.Lock()
 						newID := addFile(r.FormValue("id"), fileType, fullPath)
 						workspaceMu.Unlock()
 						if newID != 0 {
 							w.Header().Set("X-ID", strconv.Itoa(newID))
 						}
-				    }
+					}
 
-                    if r.FormValue("browser") == "1" {
-                        browserLines := []string{
-                            `<!doctype html><ul>`,
-                        }
-			            browserLines = append(browserLines, `<h1>`)
-			            browserLines = append(browserLines, thePath)
-			            browserLines = append(browserLines, `</h1>`)
-			            browserLines = append(browserLines, `<h2>`)
-			            browserLines = append(browserLines, `<a href="`+*proxyPath+`/saveload?browser=1&fullpath=`+html.EscapeString(url.QueryEscape(path.Dir(thePath)))+`">up</a>`)
-			            browserLines = append(browserLines, `</h2>`)
-				        for _, f := range files {
-				            // TODO: some escaping issues
-				            browserLines = append(browserLines, `<li><a href="`+*proxyPath+`/saveload?browser=1&fullpath=`+html.EscapeString(url.QueryEscape(thePath))+`/`+f.Name()+`">`+html.EscapeString(f.Name())+`</a></li>`)
-				        }
-			            browserLines = append(browserLines, `</ul>`)
-				    	w.Write([]byte(strings.Join(browserLines, "\n")))
-                    } else {
-				    	w.Write([]byte(strings.Join(fileNames, "\n")))
-                    }
+					if r.FormValue("browser") == "1" {
+						browserLines := []string{
+							`<!doctype html><ul>`,
+						}
+						browserLines = append(browserLines, `<h1>`)
+						browserLines = append(browserLines, thePath)
+						browserLines = append(browserLines, `</h1>`)
+						browserLines = append(browserLines, `<h2>`)
+						browserLines = append(browserLines, `<a href="`+*proxyPath+`/saveload?browser=1&fullpath=`+html.EscapeString(url.QueryEscape(path.Dir(thePath)))+`">up</a>`)
+						browserLines = append(browserLines, `</h2>`)
+						for _, f := range files {
+							// TODO: some escaping issues
+							browserLines = append(browserLines, `<li><a href="`+*proxyPath+`/saveload?browser=1&fullpath=`+html.EscapeString(url.QueryEscape(thePath))+`/`+f.Name()+`">`+html.EscapeString(f.Name())+`</a></li>`)
+						}
+						browserLines = append(browserLines, `</ul>`)
+						w.Write([]byte(strings.Join(browserLines, "\n")))
+					} else {
+						w.Write([]byte(strings.Join(fileNames, "\n")))
+					}
 					return
 				}
 
@@ -1286,8 +1286,8 @@ func main() {
 				w.Header().Set("X-MD5", md5String)
 
 				if r.FormValue("raw") == "1" || r.FormValue("browser") == "1" {
-			    	// TODO: get rid of noid at some point
-				    if r.FormValue("noid") != "1" && r.FormValue("browser") != "1"  {
+					// TODO: get rid of noid at some point
+					if r.FormValue("noid") != "1" && r.FormValue("browser") != "1" {
 						workspaceMu.Lock()
 						newID := addFile(r.FormValue("id"), fileType, fullPath)
 						workspaceMu.Unlock()
@@ -1302,7 +1302,7 @@ func main() {
 						w.Header().Set("Content-Disposition", `attachment; filename="`+theName+`"`)
 					} else {
 						w.Header().Set("Content-Type", GetContentType(r.FormValue("fullpath")))
-					    // TODO: figure out why the pdfs don't display inline
+						// TODO: figure out why the pdfs don't display inline
 						// w.Header().Set("Content-Disposition", "inline;filename=myfile.pdf")
 					}
 					w.Write(c)
@@ -1458,6 +1458,11 @@ func main() {
 		})
 	}
 
+	if os.Getenv("POLLERPROXYSERVER") != "" {
+		pollForRequests(mainMux)
+		return
+	}
+
 	httpServer := http.Server{
 		Addr:         *serverAddress,
 		Handler:      redirectMux,
@@ -1479,6 +1484,92 @@ func main() {
 	log.Fatal(httpsServer.ListenAndServeTLS(certFile, keyFile))
 	return
 
+}
+
+type PolledRequest struct {
+	Method string
+	URL    string
+	Header map[string][]string
+	Body   []byte
+}
+type PolledResponse struct {
+	StatusCode int
+	Header    map[string][]string
+	Body      []byte
+}
+
+func pollForRequests(mainMux http.Handler) {
+	minWait := 1000 * time.Millisecond
+	lastPoll := time.Now()
+	httpClient := http.Client{
+		Timeout: 30 * time.Second,
+	}
+	pollerProxyServer := os.Getenv("POLLERPROXYSERVER")
+	pollerName := os.Getenv("POLLERNAME")
+	for {
+		timeSinceLastPoll := time.Since(lastPoll)
+		if timeSinceLastPoll < minWait {
+			time.Sleep(time.Duration(minWait.Milliseconds() - timeSinceLastPoll.Milliseconds()) * time.Millisecond)
+		}
+		log.Println("polling for requests")
+		req, err  := http.NewRequest("GET", pollerProxyServer+"/pollForRequests?poller="+url.QueryEscape(pollerName), nil)
+		if err != nil {
+			log.Println("error creating request to poll: %v", err)
+			continue
+		}
+		res, err := httpClient.Do(req)
+		if err != nil {
+			log.Println("error polling for requests: %v", err)
+			continue
+		}
+		defer res.Body.Close()
+		var pr PolledRequest
+		// NOTE: we could pick a more optimal serialization format.
+		// I think the bytes is base64 encoded.
+		json.NewDecoder(res.Body).Decode(&pr)
+		go func() {
+			w := httptest.NewRecorder()
+			r, err := http.NewRequest(pr.Method, pr.URL, bytes.NewReader(pr.Body))
+			if err != nil {
+				log.Println("error making local request object: %v", err)
+				return
+			}
+			r.Header = http.Header(pr.Header)
+			mainMux.ServeHTTP(w, r)
+
+			resp := w.Result()
+			bodyBytes, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Println("error reading body of ResponseRecorder: %v", err)
+				return
+			}
+			resp.Body.Close()
+			pResp := PolledResponse{
+				StatusCode: resp.StatusCode,
+				Header:     resp.Header,
+				Body:       bodyBytes,
+			}
+			var writeBuf bytes.Buffer
+			json.NewEncoder(&writeBuf).Encode(pResp)
+			if err != nil {
+				log.Println("error encoding json for poller response  %v", err)
+				return
+			}
+			req, err := http.NewRequest("POST", pollerProxyServer+"/pollerResponse?poller="+url.QueryEscape(pollerName), &writeBuf)
+			if err != nil {
+				log.Println("error making request for response: %v", err)
+				return
+			}
+			finalResponse, err := httpClient.Do(req)
+			if err != nil {
+				log.Println("error reading body of final response: %v", err)
+				return
+			}
+			defer finalResponse.Body.Close()
+			// not even reading this final response
+		}()
+
+	}
 }
 
 func addFile(id string, fileType string, fullPath string) int {
@@ -1515,32 +1606,33 @@ func combinePath(a, b string) string {
 }
 
 var extensionsToMime = map[string]string{
-    "html": "text/html",
-    "txt": "text/plain",
-    "js": "text/javascript",
-    "json": "application/json",
-    "css": "text/css",
-    "png": "image/png",
-    "jpg": "image/jpeg",
-    "gif": "image/gif",
-    "svg": "image/svg+xml",
-    "pdf": "application/pdf",
+	"html": "text/html",
+	"txt":  "text/plain",
+	"js":   "text/javascript",
+	"json": "application/json",
+	"css":  "text/css",
+	"png":  "image/png",
+	"jpg":  "image/jpeg",
+	"gif":  "image/gif",
+	"svg":  "image/svg+xml",
+	"pdf":  "application/pdf",
 }
+
 func GetContentType(thePath string) string {
-    var mime string
-    var ok bool
-    for {
-        parts := strings.Split(thePath, ".")
-        if len(parts) == 1 {
-            mime = "text/plain"
-            break
-        }
-        theExtension := parts[len(parts)-1]
-        mime, ok = extensionsToMime[strings.ToLower(theExtension)]
-        if !ok {
-            mime = "text/plain"
-        }
-        break
-    }
-    return mime + ";charset=utf-8"
+	var mime string
+	var ok bool
+	for {
+		parts := strings.Split(thePath, ".")
+		if len(parts) == 1 {
+			mime = "text/plain"
+			break
+		}
+		theExtension := parts[len(parts)-1]
+		mime, ok = extensionsToMime[strings.ToLower(theExtension)]
+		if !ok {
+			mime = "text/plain"
+		}
+		break
+	}
+	return mime + ";charset=utf-8"
 }
