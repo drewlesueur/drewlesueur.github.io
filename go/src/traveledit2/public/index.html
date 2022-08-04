@@ -647,7 +647,8 @@ var fonts = {
         url: proxyPath + "/tepublic/input_mono/input_mono_lucida.ttf"
     },
     "InputMono": {
-        fontHeightPre: 36,
+        // fontHeightPre: 36,
+        fontHeightPre: 40,
         fontWidthPre: 18.5,
         fontSize: 30,
         fontName: "InputMono",
@@ -1456,6 +1457,7 @@ function setFontVars() {
     // which would render SF Mono before, but now
     // causes the page to crash
     fontCSS = (currentFont.fontSize * fontScale) + "px '"+currentFont.fontName+"'"
+    fontCSSTiny = (currentFont.fontSize * fontScale/2) + "px '"+currentFont.fontName+"'"
     fontCSSEmoji = (currentFont.fontSize * fontScale * .6 * emojiWidth) + "px '"+currentFont.fontName+"', ui-monospace"
     // extraYEmoji = (currentFont.fontSize * fontScale * .6) / 2 / emojiWidth
     extraYEmoji = 0
@@ -3995,6 +3997,9 @@ function unExpandTabIndexNoCache(theLine, start) {
 }
 // go from graphical index to string index, at graphical index
 function unExpandTabIndex(theLine, start, index, file, nocache) {
+    // small todo: why is this called every touchend when not in edit mode?
+    // prob a good reason, I just don't know
+    // log("ueti " + Date.now())
     var tabStop = globalTabStop
 
     if (useUnicode) {
@@ -4008,7 +4013,7 @@ function unExpandTabIndex(theLine, start, index, file, nocache) {
             if (i >= expandedLine.length) {
                 break
             }
-            if (i === 5000) {
+            if (i === 100000) {
                 alert("loop err 1")
                 break
             }
@@ -4073,6 +4078,8 @@ function expandTabIndexNoCache(theLine, start) {
 }
 // go from string index to graphical index, at string index
 function expandTabIndex(theLine, start, index, file, nocache) {
+    // todo: This is called every scroll, even if you don't go to another letter.
+    // log("eti " + Date.now())
     theLine = theLine || ""
     var origLine = theLine
     if (!theLine.substring) {
@@ -4117,7 +4124,7 @@ function expandTabIndex(theLine, start, index, file, nocache) {
             if (i >= expandedLineLength) {
                 break
             }
-            if (i === 5000) {
+            if (i === 100000) {
                 alert("loop err 2")
                 break
             }
@@ -4817,7 +4824,7 @@ function render() {
     if (shouldSetIt) {
         // lastRenderFullScreenForSet = true
     }
-    if (inDebugView) {
+    if (false && inDebugView) {
         s.innerHTML =
             lastWord + " " +
             fx.version + "/" + fx.savedVersion +
@@ -5696,6 +5703,13 @@ function renderInternal() {
                 t.font = fontCSS
             }
         }
+        
+        // if (expandedLine.length > maxCols) {
+        //     t.save()
+        //     t.font = fontCSSTiny
+        //     t.fillText(theLine.trim(), marginLeft*fontWidth, (y+1)*fontHeight - (0.2*fontHeight))
+        //     t.restore()
+        // }
     }
 
     // red ghost cursor

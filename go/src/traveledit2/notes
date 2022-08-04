@@ -1,3 +1,25 @@
+long lines cause slowness on initial render when "use unicode" is on.
+
+code to conditionally auto-close things (like quotes and parens)
+
+git add -p error on cmd! completely freezes server for a few minutes.
+
+when determining if you are pasting over the same content
+I think it only checks the first line I think
+
+highlights per file name, not per file instance
+
+wrangle when lines get added and removed so you can edit highlight
+
+get redirect after login working
+
+add back the feature where you navigate back to where you were
+
+keep the dark/light setting global and not per workspace
+remember the last file you had open in a workspace.
+
+shift J feature
+
 if you delete a word and then type (including autocomplete), whatever you type should go to the copy buffer
 if you delete the same word again!
 

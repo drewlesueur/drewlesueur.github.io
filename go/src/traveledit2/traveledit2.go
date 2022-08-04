@@ -63,6 +63,11 @@ func BasicAuth(handler http.Handler) http.HandlerFunc {
 			return
 		}
 
+		if strings.HasPrefix(r.URL.Path, "/tepublic") {
+			handler.ServeHTTP(w, r)
+			return
+		}
+
 		if os.Getenv("SCREENSHARENOAUTH") == "1" {
 			if r.URL.Path == "/screenshare" || r.URL.Path == "/view" {
 				handler.ServeHTTP(w, r)
@@ -598,9 +603,17 @@ func main() {
 	// trying to use a single mutex for multiple shells?
 	// TODO: serialize and de-serialize the state
 
+    // 📖📖📖📖📖📖📖📖📖📖📖📖
+    // single global mutex for everything.
+    var pollerMu sync.Mutex
+    var pollerRequestID = 0
+    pollerCond := sync.NewCond(&pollerMu)
+    var requestsForPolling = map[string][]*PolledRequest{}
+    var responsesForPolling = map[string]*PolledResponse{}
 	go func() {
 		for range time.NewTicker(1 * time.Second).C {
 			viewCond.Broadcast()
+			pollerCond.Broadcast()
 			workspaceCond.Broadcast()
 		}
 	}()
@@ -1115,6 +1128,7 @@ func main() {
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Yay, index was hit")
 		// TODO #wschange: you could hydrate the original files list.
 
 		b, err := ioutil.ReadFile(*indexFile)
@@ -1382,13 +1396,46 @@ func main() {
 	mux.HandleFunc("/mylangserver", func(w http.ResponseWriter, r *http.Request) {
 		proxyToLangServer.ServeHTTP(w, r)
 	})
+	mux.HandleFunc("/pollerResponse", func(w http.ResponseWriter, r *http.Request) {
+	})
+	mux.HandleFunc("/pollForRequests", func(w http.ResponseWriter, r *http.Request) {
+	    // 👂👂👂👂👂👂
+	    pollerName := r.FormValue("poller_name")
+	    pollerMu.Lock()
+	    defer pollerMu.Unlock()
+		startWait := time.Now()
+		var prs = []*PolledRequest{}
+		for {
+			if time.Since(startWait) > (10 * time.Second) {
+				fmt.Fprintf(w, "%s", "{}")
+				return
+			}
+	    	prs = requestsForPolling[pollerName]
+			if len(prs) > 0 {
+				break
+			}
+			pollerCond.Wait()
+		}
+	    pr := prs[0]
+	    // prs = prs[1:]
+	    // shift
+	    copy(prs, prs[1:])
+	    prs = prs[0:len(prs)-1]
+		requestsForPolling[pollerName] = prs
+	    // TODO: underlying array stays large, you could trim it at some point?
+	    json.NewEncoder(w).Encode(pr)
+	})
 
 	var mainMux http.Handler = mux
 	if os.Getenv("NOGZIP") != "1" {
 		mainMux = gziphandler.GzipHandler(mux)
 	}
+	
 	if os.Getenv("NOBASICAUTH") == "" {
 		mainMux = BasicAuth(mainMux)
+		log.Printf("doing basic auth")
+	} else {
+		log.Printf("Not doing basic auth")
 	}
 
 	if len(allowedIPsMap) > 0 {
@@ -1436,6 +1483,7 @@ func main() {
 		http.Redirect(w, r, "https://"+r.URL.Host, http.StatusFound)
 	})
 
+
 	// Allow it to be behind a proxy.
 	if proxyPath != nil && *proxyPath != "" {
 		oldMainMux := mainMux
@@ -1464,6 +1512,63 @@ func main() {
 		pollForRequests(mainMux)
 		return
 	}
+	
+	// Doing the polling handling after we send thr mainMux to pollForRequests
+	// so that we don't get into infinite loop.
+	oldMainMux := mainMux
+	// 🙊🙊🙊🙊🙊🙊🙊🙊
+	mainMux = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pollerName := r.Header.Get("X-Poller-Name")
+		if pollerName == "" {
+			oldMainMux.ServeHTTP(w, r)
+			return
+		}
+		pollerRequestID++
+		requestIDString := fmt.Sprintf("%d", pollerRequestID)
+		rBody, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			logAndErr(w, "couldn't open file: %v", err)
+			return
+		}
+        polledRequest := &PolledRequest{
+            RequestID: requestIDString,
+            Method: r.Method,
+            URL: r.RequestURI,
+            Header: r.Header,
+            Body: rBody,
+        }
+		pollerMu.Lock()
+        requestsForPolling[pollerName] = append(requestsForPolling[pollerName], polledRequest)
+		pollerCond.Broadcast()
+		pollerMu.Unlock()
+		// dead zone. need to unlock so that pollForRequests endpoint can get it and return it
+		pollerMu.Lock()
+		defer pollerMu.Unlock()
+		startWait := time.Now()
+		var polledResponse *PolledResponse
+		for {
+			if time.Since(startWait) > (10 * time.Second) {
+ 	 			w.WriteHeader(504)
+				fmt.Fprintf(w, "%s", "{}")
+				return
+			}
+	 	 	polledResponse = responsesForPolling[requestIDString]
+	 	 	if polledResponse != nil {
+	 	 	    break
+	 	 	}
+			pollerCond.Wait()
+		}
+ 	 	delete(responsesForPolling, requestIDString)
+ 	 	
+ 	 	w.WriteHeader(polledResponse.StatusCode)
+ 	 	// add headers
+ 	 	for k, v := range polledResponse.Header {
+ 	 	    w.Header().Set(k, v[0])
+ 	 	}
+ 	 	w.Write(polledResponse.Body)
+ 	 	
+	})
+	
 
 	httpServer := http.Server{
 		Addr:         *serverAddress,
@@ -1488,18 +1593,24 @@ func main() {
 
 }
 
+
+// ♠️♠️♠️♠️♠️♠️♠️
 type PolledRequest struct {
+	RequestID string
 	Method string
 	URL    string
 	Header map[string][]string
 	Body   []byte
 }
+// ♦️♦️♦️♦️♦️♦️♦️
 type PolledResponse struct {
+	PollerName string
+	RequestID string
 	StatusCode int
 	Header    map[string][]string
 	Body      []byte
 }
-
+// 📞📞📞📞📞📞☎️☎️☎️
 func pollForRequests(mainMux http.Handler) {
 	minWait := 1000 * time.Millisecond
 	lastPoll := time.Now()
@@ -1514,7 +1625,7 @@ func pollForRequests(mainMux http.Handler) {
 			time.Sleep(time.Duration(minWait.Milliseconds() - timeSinceLastPoll.Milliseconds()) * time.Millisecond)
 		}
 		log.Println("polling for requests")
-		req, err  := http.NewRequest("GET", pollerProxyServer+"/pollForRequests?poller="+url.QueryEscape(pollerName), nil)
+		req, err  := http.NewRequest("GET", pollerProxyServer+"/pollForRequests?poller_name="+url.QueryEscape(pollerName), nil)
 		if err != nil {
 			log.Println("error creating request to poll: %v", err)
 			continue
@@ -1528,8 +1639,17 @@ func pollForRequests(mainMux http.Handler) {
 		var pr PolledRequest
 		// NOTE: we could pick a more optimal serialization format.
 		// I think the bytes is base64 encoded.
-		json.NewDecoder(res.Body).Decode(&pr)
-		go func() {
+		err = json.NewDecoder(res.Body).Decode(&pr)
+		if err != nil {
+			log.Println("error parsing polled request: %v", err)
+			continue
+		}
+		// quick check for empty
+		if pr.Method == "" {
+		    // likely because of timeout, meaning we didn't get request
+		    continue
+		}
+		go func(pr PolledRequest) {
 			w := httptest.NewRecorder()
 			r, err := http.NewRequest(pr.Method, pr.URL, bytes.NewReader(pr.Body))
 			if err != nil {
@@ -1547,6 +1667,8 @@ func pollForRequests(mainMux http.Handler) {
 			}
 			resp.Body.Close()
 			pResp := PolledResponse{
+				RequestID: pr.RequestID,
+				PollerName: pollerName,
 				StatusCode: resp.StatusCode,
 				Header:     resp.Header,
 				Body:       bodyBytes,
@@ -1557,7 +1679,7 @@ func pollForRequests(mainMux http.Handler) {
 				log.Println("error encoding json for poller response  %v", err)
 				return
 			}
-			req, err := http.NewRequest("POST", pollerProxyServer+"/pollerResponse?poller="+url.QueryEscape(pollerName), &writeBuf)
+			req, err := http.NewRequest("POST", pollerProxyServer+"/pollerResponse", &writeBuf)
 			if err != nil {
 				log.Println("error making request for response: %v", err)
 				return
@@ -1569,7 +1691,7 @@ func pollForRequests(mainMux http.Handler) {
 			}
 			defer finalResponse.Body.Close()
 			// not even reading this final response
-		}()
+		}(pr)
 
 	}
 }
