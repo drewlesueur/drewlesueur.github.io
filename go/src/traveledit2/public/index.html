@@ -339,7 +339,7 @@ They get changed later on.
     <div class=square onclick=addCmdTab()>cmd</div>
     <div class=square onclick=addTerminalTab()>xterm</div>
     <div class=square onclick=editEditorCommandText()>editor cmd</div>
-    <div class=square onclick=gotoDefinition()>goto def</div>
+    <div class=square onclick="deleteBelow();">del below</div>
 </div>
 <!-- Stuff after here is after the fold -->
 <div class=toolbar>
@@ -382,6 +382,7 @@ They get changed later on.
     <div class=square onclick="navigator.clipboard.writeText(location.origin+location.pathname+'/saveload?browser=1&fullpath=' + encodeURIComponent(fx.fullPath))">copy browser</div>
     <div class=square onclick="addIframe(location.origin+location.pathname+'/saveload?browser=1&fullpath=' + encodeURIComponent(fx.fullPath))">iframe browser</div>
     <div class=square onclick="doSizing(); render()">do sizing</div>
+    <div class=square onclick=gotoDefinition()>goto def</div>
 </div>
 <div class=toolbar>
     <!--<div class=square onclick=addSpace()>space</div>
@@ -561,7 +562,6 @@ for (var i=0; i<toolbars.length; i++) {
 var highlightText = "" // deprecated
 var highlightMatchesSingleRegExp
 var highlightMatches = []
-
 
 
 var fonts = {
@@ -910,7 +910,11 @@ function doSizing() {
 }
 doSizing()
 
-
+function deleteBelow() {
+    setLines(fx.lines.slice(0, fx.cursorLineIndex))
+    docChanged()
+    render()
+}
 
 window.onorientationchange = function(event) {
     doSizing()
@@ -1585,6 +1589,14 @@ function runEditorCommand(e) {
         // TODO: could you also call saveName?
         saveWorkspace()
         renderFileDropdown()
+        break
+    case "so":
+        fx.seeOnly = rest
+        render()
+        break
+    case "sox":
+        fx.seeOnly = ""
+        render()
         break
     // foreground light
     case "fgl":
@@ -2773,6 +2785,9 @@ function runScript() {
     // going to try to default to single line. In most cases it's what we want?
     var theScriptLines
     if (fx.selectedRegions.length) {
+        theScriptLines = getSelectedLines(fx).lines
+    } else if ((fx.lines[fx.cursorLineIndex] || "").trim() == "") {
+        // gets full page if nothing is selected
         theScriptLines = getSelectedLines(fx).lines
     } else {
         theScriptLines = [fx.lines[fx.cursorLineIndex]]
@@ -5669,6 +5684,9 @@ function renderInternal() {
         // one option is to draw the whole line in one go
         // likely more optimal, wouln't have to do the unicode stuff
         // but harder to know wrangle width of the font?
+        if (fx.seeOnly && theLine.indexOf(fx.seeOnly) == -1) {
+            continue
+        }
         var extraY = 0
         for (var x=0; x < maxCols; x++) {
             if ((x+fx.offsetX) >= expandedLine.length) {
