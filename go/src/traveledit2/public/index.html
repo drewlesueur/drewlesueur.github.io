@@ -111,6 +111,18 @@ body.light .toolbar div.selected {
     justify-content: center;
     text-align: center;
 }
+.toolbar .middleButton {
+    padding: 0px;
+    width: 60px;
+    height: 34px;
+    margin: 1px;
+    flex: 1 0 auto;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
 
 #fileRow div {
     font-size: 10px !important;
@@ -265,17 +277,21 @@ They get changed later on.
 <div class="toolbar xhidden" id=fileRow onclick=selectFileRow(event)>
 </div>
 <div class="toolbar hidden" id=terminalToolbar1 style="--display: none">
-    <div class=square ontouchstart='sendTerminal("\x1b"); event.preventDefault()'>esc</div>
-    <div class=square ontouchstart='sendTerminal("\x03"); event.preventDefault()'>^C</div>
-    <div class=square ontouchstart='sendTerminal("git add -p"); event.preventDefault()'>-p</div>
-    <div class=square ontouchstart='ctrlDown = true; event.preventDefault()'>ctrl</div>
+    <div class=middleButton onclick='sendTerminal("\x03"); event.preventDefault()'>^C</div>
+    <div class=middleButton onclick='sendTerminal("git add -p"); event.preventDefault()'>-p</div>
     <!-- don't really need tab because touching the screen gets you tab-->
-    <!--<div class=square ontouchstart='sendTerminal("\t"); event.preventDefault() '>tab</div>
+    <!--<div class=middleButton onclick='sendTerminal("\t"); event.preventDefault() '>tab</div>
     -->
-    <div class=square ontouchstart='sendTerminal("\x1b[D"); event.preventDefault()'>left</div>
-    <div class=square ontouchstart='sendTerminal("\x1b[B"); event.preventDefault()'>down</div>
-    <div class=square ontouchstart='sendTerminal("\x1b[A"); event.preventDefault()'>up</div>
-    <div class=square ontouchstart='sendTerminal("\x1b[C"); event.preventDefault()'>right</div>
+    <div class=middleButton onclick=runScriptAndPasteButtonPress()>paste</div>
+    <div class=middleButton id=slot1Button onclick='sendTerminal(slot1Input.value); event.preventDefault()'>slot 1</div>
+    <div class=middleButton onclick='sendTerminal("\x1b[A"); event.preventDefault()'>up</div>
+    <div class=middleButton id=slot2Button onclick='sendTerminal(slot2Input.value); event.preventDefault()'>slot 2</div>
+    <div class=middleButton id=slot3Button onclick='sendTerminal(slot3Input.value); event.preventDefault()'>slot 3</div>
+    <div class=middleButton onclick='sendTerminal("\x1b"); event.preventDefault()'>esc</div>
+    <div class=middleButton onclick='ctrlDown = true; event.preventDefault()'>ctrl</div>
+    <div class=middleButton onclick='sendTerminal("\x1b[B"); event.preventDefault()'>down</div>
+    <div class=middleButton onclick='sendTerminal("\x1b[D"); event.preventDefault()'>left</div>
+    <div class=middleButton onclick='sendTerminal("\x1b[C"); event.preventDefault()'>right</div>
 </div>
 
 <div class="toolbar hidden" id=iframeToolbar1 style="--display: none">
@@ -329,7 +345,7 @@ They get changed later on.
 <div class=toolbar>
     <div class=square onclick="osCopyText()">os copy</div>
     <div class=square onclick="osPasteText()">os paste</div>
-    <div class=square onclick=runScript()>run script</div>
+    <div id=runScriptAndPasteButton class=square onclick=runScriptAndPasteButtonPress()>run script</div>
     <div class=square onclick=redo()>redo</div>
     <div class=square onclick=undo()>undo</div>
 </div>
@@ -513,6 +529,9 @@ onfocus="this.setSelectionRange(0, this.value.length)"
 style="width:100%; height:100px;"
     placeholder="when you copy something, it will show up here"
 ></textarea>
+<input placeholder="slot 1" id=slot1Input onchange='localStorage.setItem("slot1", this.value); slot1Button.innerText = this.value;'/>
+<input placeholder="slot 2" id=slot2Input onchange='localStorage.setItem("slot2", this.value); slot2Button.innerText = this.value;' />
+<input placeholder="slot 3" id=slot3Input onchange='localStorage.setItem("slot3", this.value); slot3Button.innerText = this.value;' />
 <form onsubmit=uploadFile(event)>
     Upload files:<br>
     <input id=filesToUpload type=file multiple>
@@ -538,6 +557,13 @@ window.onerror = function(message, url, lineNumber, columnNumber, error) {
 }
 </script>
 <script>
+
+slot1Input.value = localStorage.getItem("slot1")
+slot1Button.innerText = localStorage.getItem("slot1") || "slot 1"
+slot2Input.value = localStorage.getItem("slot2")
+slot2Button.innerText = localStorage.getItem("slot2") || "slot 2"
+slot3Input.value = localStorage.getItem("slot3")
+slot3Button.innerText = localStorage.getItem("slot3") || "slot 3"
 var t = c.getContext("2d")
 
 var preventRender = true
@@ -2778,6 +2804,14 @@ function copy() {
     // sel.removeAllRanges()
     // sel.addRange(range)
     // document.execCommand("copy")
+}
+
+function runScriptAndPasteButtonPress() {
+    if (fx.fileMode == "terminal") {
+        sendTerminal(copyBuffer.join("\r"))
+        return
+    }
+    runScript()
 }
 
 function runScript() {
@@ -7886,24 +7920,29 @@ function setCurrentFile(file) {
         terminalToolbar1.classList.add("hidden")
         workspaceToolbar.classList.add("hidden")
         iframeToolbar1.classList.add("hidden")
+        runScriptAndPasteButton.innerText = "run script"
     } else if (fx.fileMode == "terminal") {
         shellToolbar1.classList.add("hidden")
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.remove("hidden")
         workspaceToolbar.classList.add("hidden")
         iframeToolbar1.classList.add("hidden")
+        runScriptAndPasteButton.innerText = "paste"
     } else if (fx.fileMode == "iframe") {
         shellToolbar1.classList.add("hidden")
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.add("hidden")
         workspaceToolbar.classList.add("hidden")
         iframeToolbar1.classList.remove("hidden")
+        // something else can be done here? like refresh?
+        runScriptAndPasteButton.innerText = "run script"
     } else {
         shellToolbar1.classList.add("hidden")
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.add("hidden")
         workspaceToolbar.classList.remove("hidden")
         iframeToolbar1.classList.add("hidden")
+        runScriptAndPasteButton.innerText = "run script"
     }
 
     if (fx.fileMode == "iframe") {

@@ -1,3 +1,8 @@
+ability to paste liens while not all the way scrolled to left?
+duplicate lines faster by repeatedly pressing top
+sub line selecction and swipe left should change the selection
+
+
 long lines cause slowness on initial render when "use unicode" is on.
 
 code to conditionally auto-close things (like quotes and parens)
