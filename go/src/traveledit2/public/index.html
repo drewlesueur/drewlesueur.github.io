@@ -937,7 +937,11 @@ function doSizing() {
 doSizing()
 
 function deleteBelow() {
-    setLines(fx.lines.slice(0, fx.cursorLineIndex))
+    if (fx.fileMode == "terminal") {
+        clearLog()
+    } else {
+        setLines(fx.lines.slice(0, fx.cursorLineIndex))
+    }
     docChanged()
     render()
 }
@@ -2120,6 +2124,7 @@ function saveUndo(preventUndo) {
 // var splitter = new GraphemeSplitter()
 var segmenter = new Intl.Segmenter('en', {granularity: "grapheme"})
 function splitGraphemes(theLine) {
+    // return theLine.split("")
     // return splitter.splitGraphemes(theLine)
     var a = []
     var segments = segmenter.segment(theLine)
@@ -2197,8 +2202,11 @@ function setLines(lines) {
     // for when you have to update the whole object
     fx.lines = lines
     for (var i=0; i<files.length; i++) {
-        if (fx != files[i] && files[i].fullPath == fx.fullPath) {
-            files[i].lines = fx.lines
+        // TODO: maybe you souldn't make terminal and shell have the same path anyway?
+        if (fx.fileMode != "terminal" && fx.fileMode != "shell") {
+            if (fx != files[i] && files[i].fullPath == fx.fullPath) {
+                files[i].lines = fx.lines
+            }
         }
     }
 }
@@ -2624,7 +2632,7 @@ function clearSearch() {
 }
 
 function updateCursorXY(file) {
-    if (file != fx) {
+    if (!file) {
         file = fx
     }
     cursorX = (fx.cursorColIndex - fx.offsetX) * fontWidth
@@ -3770,6 +3778,7 @@ function pollTerminals() {
             // Maybe we need to preserve the parseState to the file object.
             var parseState = "literal"
             var controlValues = [""]
+            var lineBuffer = []
             for (var i = 0; i < strToProcess.length; i++) {
                 // not calling docChanged because we don't care for terminals
                 // doing this very dumb now... more optimizations later
@@ -3777,6 +3786,8 @@ function pollTerminals() {
                 switch (parseState) {
                     case "literal":
                         if (strToProcess[i] == "\n") {
+                            updateLineFile(file, file.lines.length-1, file.lines[file.lines.length-1] + lineBuffer.join(""))
+                            lineBuffer = []
                             file.lines.push("")
                         // for  now commenting out \r, later do I need to code the difference between newline and carriage return?
                         } else if (strToProcess[i] == "\r") {
@@ -3806,7 +3817,9 @@ function pollTerminals() {
                         // } else if (strToProcess[i] == "\t") { // tab
                         } else {
                             // file.lines[file.lines.length-1] += strToProcess[i]
-                            updateLineFile(file, file.lines.length-1, file.lines[file.lines.length-1] + strToProcess[i])
+                            // updateLineFile(file, file.lines.length-1, file.lines[file.lines.length-1] + strToProcess[i])
+                            // Todo: look at how the \b works with lineBuffer. May be more optimal to do it that way.
+                            lineBuffer.push(strToProcess[i])
                         }
                         break;
                     case "ESC":
@@ -3872,12 +3885,15 @@ function pollTerminals() {
                         break;
                 }
             }
+            if (lineBuffer.length) {
+                updateLineFile(file, file.lines.length-1, file.lines[file.lines.length-1] + lineBuffer.join(""))
+            }
 
             // don't move the cursor if they are looking up higher in the file
             if (file.cursorLineIndex >= (lineLengthBeforeChange - 1)) {
                 file.cursorLineIndex = file.lines.length - 1
                 var theLine = file.lines[file.lines.length-1]
-                file.cursorColIndex = expandTabIndex(theLine, theLine.length, file.lines.length-1, file)
+                // file.cursorColIndex = expandTabIndex(theLine, theLine.length, file.lines.length-1, file)
                 ensureCursorInScreen(file)
             }
         }
