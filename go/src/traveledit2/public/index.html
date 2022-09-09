@@ -589,6 +589,9 @@ var highlightText = "" // deprecated
 var highlightMatchesSingleRegExp
 var highlightMatches = []
 
+var wordAtCursor = ""
+var wordAtCursorRegexp = null
+
 
 var fonts = {
     // "Monospace": {
@@ -3893,7 +3896,12 @@ function pollTerminals() {
             if (file.cursorLineIndex >= (lineLengthBeforeChange - 1)) {
                 file.cursorLineIndex = file.lines.length - 1
                 var theLine = file.lines[file.lines.length-1]
-                // file.cursorColIndex = expandTabIndex(theLine, theLine.length, file.lines.length-1, file)
+                if (theLine != "") {
+                    file.cursorColIndex = expandTabIndex(theLine, theLine.length, file.lines.length-1, file)
+                } else {
+                    theLine = file.lines[file.lines.length-2] || ""
+                    file.cursorColIndex = expandTabIndex(theLine, theLine.length, file.lines.length-2, file)
+                }
                 ensureCursorInScreen(file)
             }
         }
@@ -5457,6 +5465,44 @@ function renderInternal() {
                 )
             }
         }
+        
+        if (theLine && wordAtCursorRegexp) {
+            // TODO: regular search can benefit from this matchAll business
+            // TODO: you can cache the line and the end result of the matches!
+            var matches = theLine.matchAll(wordAtCursorRegexp)
+            for (const match of matches) {
+                // first non null index - 1 (first index is total match)
+                var _regI
+                var _regLen
+                for (_regI=1; _regI < match.length; _regI++) {
+                    var captureItem = match[_regI]
+                    if (captureItem) {
+                        _regLen = captureItem.length
+                        break
+                    }
+                }
+                _regI -= 1 // because first item is full match then capture groups
+
+
+                // TODO: expanding the same line, we could come up with optimization for that
+                var startHighlightPos = expandTabIndex(theLine, match.index, y + fx.offsetY)
+                var startFillHighlight = (startHighlightPos - fx.offsetX) * fontWidth
+                var highlightLengthChars = (expandTabIndex(theLine, match.index+_regLen, y + fx.offsetY)-startHighlightPos)
+                var highlightLength = highlightLengthChars * fontWidth
+                // this is copied from highlightmatches but there is only one
+                if (_regI >= 1) {
+                    continue 
+                }
+                t.fillStyle = "gray"
+                t.fillRect(
+                    startFillHighlight,
+                    // (y * fontHeight) + (5/6 * fontHeight),
+                    (y * fontHeight) + (fontHeight) - (1/6/2 * fontHeight),
+                    highlightLength,
+                    fontHeight/6
+                )
+            }
+        }
 
         if (theLine && highlightMatchesSingleRegExp) {
             // TODO: regular search can benefit from this matchAll business
@@ -5500,8 +5546,8 @@ function renderInternal() {
                     fontHeight/6
                 )
             }
-
         }
+        
 
         // Trailing whitespace
         var highlightStartSearch = 0
@@ -6262,6 +6308,14 @@ function onStart(e) {
         // }
 
 
+        var w = getWordAtCursor()
+        if (w.word) {
+            wordAtCursor = w.word
+            wordAtCursorRegexp = new RegExp("(\\b" + wordAtCursor + "\\b)", "g")
+        } else {
+            wordAtCursor = ""
+            wordAtCursorRegexp = null
+        }
         render()
         // See comment in render asking if we need to do this here too
         // this optimization was for Nokia 1.4,
