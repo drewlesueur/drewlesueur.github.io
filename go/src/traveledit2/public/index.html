@@ -3592,7 +3592,11 @@ function insertLine(closeCurly, oMode) {
 function uploadFile(e) {
     e.preventDefault()
     let formData = new FormData();
-    formData.append("thedirectory", fx.fullPath.split("/").slice(0, -1).join("/"));
+    if (fx.fileMode == "directory") {
+        formData.append("thedirectory", fx.fullPath.split("/").join("/"));
+    } else {
+        formData.append("thedirectory", fx.fullPath.split("/").slice(0, -1).join("/"));
+    }
     for (var i=0; i<filesToUpload.files.length; i++) {
         formData.append("thefiles", filesToUpload.files[i]);
     }
