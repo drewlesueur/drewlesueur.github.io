@@ -1961,7 +1961,7 @@ function addCmdTab(id=0, cwd="", name="") {
         cwd = getDefaultCWD(fx)
     }
     file.shellCWD = cwd
-    addFileToList(file, false)
+    addFileToList(file)
     setCurrentFile(file)
     fx.cursorLineIndex = fx.lines.length - 1
     updateCursorXY()
@@ -1976,7 +1976,7 @@ function addTerminalTab() {
     var file = makeFile(proxyPath + "/terminal", 0, "")
     file.fileMode = "terminal"
     file.shellCWD = getDefaultCWD(fx)
-    addFileToList(file, false)
+    addFileToList(file)
     setCurrentFile(file)
     fx.cursorLineIndex = fx.lines.length - 1
     updateCursorXY()
@@ -1991,7 +1991,7 @@ function addExistingTerminalTab(id, name, cwd) {
     if (name) {
         file.name = name
     }
-    addFileToList(file, false)
+    addFileToList(file)
     setCurrentFile(file)
     fx.cursorLineIndex = fx.lines.length - 1
     updateCursorXY()
@@ -6409,7 +6409,7 @@ function onStart(e) {
                 clickItemInDirectory()
                 return
             }
-            // Clicking a file #clickfile
+            // Clicking a file #clickfile #touchfile #tapfile
             if (fx.fileMode == "fileList") {
                 if (splicedFiles.length) {
                     files.splice(fx.cursorLineIndex, 0, ...splicedFiles)
@@ -6643,7 +6643,8 @@ function onStart(e) {
         overflowY = 0
         touchCount = e.touches.length
         if (!moved && fx.selectedRegions.length) {
-            if (selectMode == "line" && (e.changedTouches[0].pageY-c.getBoundingClientRect().top) < c.clientHeight/3*1) {
+                if (false && selectMode == "line" && (e.changedTouches[0].pageY-c.getBoundingClientRect().top) < c.clientHeight/3*1) {
+                // this code got moved to duplicatelinefromtop
                 // #duplicateline
                 copy()
                 paste(true) // true here means unselect
@@ -6692,7 +6693,7 @@ function onStart(e) {
         if (startTouchY - bbox.top < (bbox.height/3)) { // this divide by 3 is because of the 3 sections
             moveHomeEndDirection = "down"
             moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
-            log({sm: selectMode})
+            // log({sm: selectMode})
             // if (fx.highlightText) {
             if (false && highlightMatchesSingleRegExp) {
                 nextHighlightText()
@@ -6895,18 +6896,31 @@ function onStart(e) {
         return
     } else {
         var bbox = c.getBoundingClientRect()
-        if (fx.selectedRegions.length == 0 && cursorType != "select" && document.activeElement != theText && (startTouchY - bbox.top < (bbox.height/3)) ) { // hotpink marker
-            // touch top third to select #topthird 
-            isSelectedFromTopThird = true
-            // see onEndWhileSelected for one way to duplicate line (#duplicateline)
-            selectAction(true)
+        // TODO: is there any difference between cursorType select and selectedRegions.length > 0
+        // if (fx.selectedRegions.length == 0 && cursorType != "select" && document.activeElement != theText && (startTouchY - bbox.top < (bbox.height/3)) ) {
+        // TODO: consider allowing this on edit mode.
+        if ((startTouchY - bbox.top < (bbox.height/3)) && document.activeElement != theText) { // hotpink marker
+            // touch top third to select #topthird  #selectline #touchtop
+            if (fx.selectedRegions.length == 0) {
+                isSelectedFromTopThird = true
+                // see onEndWhileSelected for one way to duplicate line (#duplicateline)
+                selectAction(true)
 
-            // TODO: maybe figure out how to not copy paste this?
-            document.body.addEventListener("touchmove", onMove)
-            moveListenerCount += 1
-            document.body.addEventListener("touchend", onEnd)
-            endListenerCount += 1
-            return
+                // TODO: maybe figure out how to not copy paste this?
+                document.body.addEventListener("touchmove", onMove)
+                moveListenerCount += 1
+                document.body.addEventListener("touchend", onEnd)
+                endListenerCount += 1
+                return
+            } else {
+                // # duplicateline #duplicatelinefromtop
+                var oldSelectedRegions = fx.selectedRegions
+                copy()
+                paste(true) // true here means unselect
+                fx.selectedRegions = oldSelectedRegions
+                render()
+                return
+            }
         }
     }
     if (fx.selectedRegions.length) {
@@ -7026,11 +7040,19 @@ function clickItemInDirectory() {
     var color = fx.color
     var group = fx.group
     var preventSelect = true
+    var closedLeftMostFile = false
     if (fx.cursorColIndex != -marginLeft) {
+        if (files[0] == fx) {
+            closedLeftMostFile = true
+        }
         closeFile()
         preventSelect = false
     }
-    var newFile = addFile(newFullPath, preventSelect)
+    // log("add before: " + closedLeftMostFile)
+    var newFile = addFile(newFullPath, {
+        preventSelect: preventSelect,
+        addBefore: closedLeftMostFile
+    })
     
     if (newFile) {
         // we do this because of the close, which doesn't always happen
@@ -7638,22 +7660,29 @@ function makeFile(fullPath, cursorLineIndex, contents) {
         highlightRanges: []
     }
 }
-function addFileToList(file) {
+function addFileToList(file, options) {
+    options = options || {}
     if (initialFileAdding) {
         files.push(file)
     } else {
         // add it after current file if it exists in list, otherwise unshift it to the start.
         var theIndex = files.indexOf(fx)
+        log("the start index is: " + theIndex)
         if (theIndex != -1) {
-            files.splice(theIndex + 1, 0, file)
+            var spliceIndex = theIndex + 1
+            if (options.addBefore) {
+                spliceIndex = theIndex
+                log("did add before")
+            }
+            files.splice(spliceIndex, 0, file)
         } else {
             files.unshift(file)
         }
     }
     renderFileDropdown()
 }
-function addFile(fullPath, preventSelect, id, name) {
-
+function addFile(fullPath, options, id, name) {
+    options = options || {}
     fullPath = normalizeFullPath(fullPath)
     if (fullPath == "") {
         return
@@ -7675,7 +7704,7 @@ function addFile(fullPath, preventSelect, id, name) {
     // then let it have a reference to the existing lines, like vim does.
     for (var i=0; i<files.length; i++) {
         if (files[i].fullPath == fullPath) {
-            return duplicateFile(files[i], cursorLineIndex, id)
+            return duplicateFile(files[i], cursorLineIndex, options, id)
         }
     }
     var file = makeFile(fullPath, cursorLineIndex, "")
@@ -7683,9 +7712,9 @@ function addFile(fullPath, preventSelect, id, name) {
     if (name) {
         file.name = name
     }
-    addFileToList(file)
+    addFileToList(file, options)
     if (!initialFileAdding) {
-        if (!preventSelect) {
+        if (!options.preventSelect) {
             setCurrentFile(file)
         }
         renderURL()
@@ -7717,8 +7746,10 @@ function verifyLoadedMD5(f, md5String) {
 
 }
 
+var selectedButton = null
 function renderFileDropdown() {
     fileRow.innerHTML = ""
+    selectedButton = null
     for (var fileI=0; fileI<files.length; fileI++) {
         var file = files[fileI]
         // Todo, what causes this bug
@@ -7752,6 +7783,7 @@ function renderFileDropdown() {
         button.innerText = theName.substr(0, 15)
         if (fx == file) {
             button.classList.add("selected")
+            selectedButton = button
         }
 
         button.style.position = "relative"
@@ -8050,7 +8082,8 @@ function setCurrentFile(file) {
 
 }
 
-function duplicateFile(f, cursorLineIndex, id="") {
+function duplicateFile(f, cursorLineIndex, options, id="") {
+    options = options || {}
     if (f.fileMode == "terminal") {
         return
     }
@@ -8078,7 +8111,7 @@ function duplicateFile(f, cursorLineIndex, id="") {
     if (window.fx) {
         fc.color = fx.color
     }
-    addFileToList(fc)
+    addFileToList(fc, options)
     setCurrentFile(fc)
     if (cursorLineIndex != -1) {
         fc.cursorLineIndex = cursorLineIndex
@@ -8255,7 +8288,7 @@ function fetchWorkspaceWithList(index) {
             } else if (serverFile.Type == "iframe") {
                 addIframe(serverFile.FullPath, serverFile.ID, serverFile.Name, serverFile.CWD)
             } else {
-                addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), false, serverFile.ID, serverFile.Name)
+                addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), {preventSelect: false}, serverFile.ID, serverFile.Name)
             }
             // #serverAssignments
             fx.color = serverFile.Color
