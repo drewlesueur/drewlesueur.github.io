@@ -3646,6 +3646,17 @@ function runShellCommand(line) {
     }
     var oldCopyBuffer = copyBuffer
     for (var s=0; s<1; s++) {
+        // ""supposebly" in non interactive mode this will get into some weird loop and use all the memory
+        var trimmedLine = line.trim() 
+        if (trimmedLine.startsWith("git") && trimmedLine.match(/\s-p\b/)) {
+            copyBuffer = ["run this in terminal (xterm button), not non-interactive shell", ""]
+            paste(true)
+            fx.cursorLineIndex = fx.lines.length - 1
+            updateCursorXY()
+            ensureCursorInScreen()
+            copyBuffer = oldCopyBuffer
+            break
+        }
         if (line == "clear") {
             // clear everything but the last 2 lines
             // TODO: should we be using set lines here?
