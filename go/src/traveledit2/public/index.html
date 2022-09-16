@@ -2060,14 +2060,24 @@ function log(v) {
     logEl.appendChild(d)
     logEl.scrollTop = logEl.scrollHeight
 }
-
+var hasUpdatedSearchTextForReplaceFlow = false
+function setLastWord(maybeLastWord) {
+    if (maybeLastWord != "") {
+        lastWord = maybeLastWord
+        if (!hasMovedSinceCut) {
+            if (copyBuffer.length && !hasUpdatedSearchTextForReplaceFlow) {
+                searchText.value = "\\b" + copyBuffer[0] + "\\b"
+                // searchText.value = copyBuffer[0]
+                hasUpdatedSearchTextForReplaceFlow = true
+            }
+            copyBuffer = lastWord.split("\n")
+        }
+    }
+}
 function docChanged(preventUndo) {
     fx.version += 1
-    if (!inACPlop) {
-        var maybeLastWord = getWordAtCursor().word
-        if (maybeLastWord != "") {
-            lastWord = maybeLastWord
-        }
+    if (!inACPlop) { // TODO: check this out because in acPlop you also set lastWord
+        setLastWord(getWordAtCursor().word)
     }
     if (!preventUndo) {
         // var start = Date.now()
@@ -3354,6 +3364,7 @@ function del(preventCopy, preventDeleteWholeLine) {
 }
 function delinternal(preventCopy, preventDeleteWholeLine) {
     hasMovedSinceCut = false
+    hasUpdatedSearchTextForReplaceFlow = false
 
     if (fx.selectedRegions.length>0) {
         var r = fx.selectedRegions[0]
@@ -7312,6 +7323,7 @@ var inACPlop = false
 function acPlop(buff) {
     if (buff[0].length > 0){
        acWord.hasPlopped = true
+       setLastWord(buff.join("\n"))
     }
     inACPlop = true
     // TODO: compare with old implementation
@@ -7813,6 +7825,16 @@ function renderFileDropdown() {
         }
         fileRow.appendChild(button)
 
+    }
+    
+    // make sure selected button is in view.
+    if (selectedButton) {
+        if (selectedButton.offsetLeft + selectedButton.clientWidth > fileRow.scrollLeft + fileRow.clientWidth) {
+            fileRow.scrollLeft = selectedButton.offsetLeft - fileRow.clientWidth + selectedButton.clientWidth
+        }
+        if (selectedButton.offsetLeft < fileRow.scrollLeft) {
+            fileRow.scrollLeft = selectedButton.offsetLeft
+        }
     }
 
 
