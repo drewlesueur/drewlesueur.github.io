@@ -997,7 +997,9 @@ var moveHomeEndTimeout
 var moveHomeEndTimeoutMillis = 300
 var moveHomeEndDirection
 var selectTimeout
-var selectTimeoutMillis = 400
+var selectTimeoutMillis = 300
+var expandSelectTimeout
+var expandSelectTimeoutMillis = 300
 var moveListenerCount = 0
 var endListenerCount = 0
 var startListenerCount = 0
@@ -1982,6 +1984,7 @@ function addTerminalTab() {
     updateCursorXY()
     openTerminal()
     //theText.focus()
+    return file
 }
 function addExistingTerminalTab(id, name, cwd) {
     var file = makeFile(proxyPath + "/terminal", 0, "")
@@ -1998,6 +2001,7 @@ function addExistingTerminalTab(id, name, cwd) {
     if (!isPollingTerminal) {
         pollTerminals()
     }
+    return file
     //theText.focus()
 }
 function normalizeFullPath(fullPath) {
@@ -2064,7 +2068,7 @@ var hasUpdatedSearchTextForReplaceFlow = false
 function setLastWord(maybeLastWord) {
     if (maybeLastWord != "") {
         lastWord = maybeLastWord
-        if (!hasMovedSinceCut) {
+        if (lastAction == "type" && !hasMovedSinceCut) {
             if (copyBuffer.length && !hasUpdatedSearchTextForReplaceFlow) {
                 searchText.value = "\\b" + copyBuffer[0] + "\\b"
                 // searchText.value = copyBuffer[0]
@@ -6001,6 +6005,7 @@ function onStart(e) {
     // this is global
     if (e.touches.length == 1) {
         selectAction = function(forceLines = false) {
+            log("selectAction")
             // return early in case we are already selecting
             if (cursorType == "select") {
                 return
@@ -6008,24 +6013,140 @@ function onStart(e) {
             fx.selectedRegions = []
             cursorType = "select"
             var line = fx.lines[fx.cursorLineIndex] || ""
-            selectedRegion.startX = bind(forceLines ? 0 : fx.cursorColIndex, 0, expandTabIndex(line, line.length))
-            selectedRegion.startY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
+
             // Note how the stopY is inclusive
             // But the stopX is exclusive.
             // for some reason seemed natural to do it like that
-            // was here
-            selectedRegion.stopX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
-            selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length - 1)
-            if (fx.cursorColIndex < 0 || forceLines) {
+            if (forceLines || fx.cursorColIndex < 0) {
+                selectedRegion.startX = 0
+                selectedRegion.startY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
+                selectedRegion.stopX = expandTabIndex(line, line.length)
+                selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length - 1)
                 selectedRegion.stopped = true
                 selectMode = "line"
-                selectedRegion.stopX = expandTabIndex(line, line.length)
             } else {
+                var w = getWordAtCursor()
+                if (w.word != "") {
+                    // #selectword
+                    selectedRegion.startY = fx.cursorLineIndex
+                    selectedRegion.startX = expandTabIndex(line, w.start)
+                    selectedRegion.stopY = fx.cursorLineIndex
+                    selectedRegion.stopX = expandTabIndex(line, w.end)
+                    selectedRegion.stopped = true
+                    
+                    selectedRegion.selectedWord = true
+                    selectedRegion.origStartX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
+                    // selectedRegion.origStopX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
+                    // fx.cursorColIndex = w.end
+                    // updateCursorXY()
+                    // ensureCursorInScreen()
+                } else {
+                    selectedRegion.startX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
+                    selectedRegion.startY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
+                    selectedRegion.stopX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
+                    selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length - 1)
+                }
+                expandSelectTimeout = setTimeout(expandSelection, expandSelectTimeoutMillis)
                 selectMode = "char"
             }
             fx.selectedRegions.push(selectedRegion)
             render()
         }
+    }
+    
+    expandSelection = function() {
+        log("expandSelection")
+        if (fx.selectedRegions.length == 0) {
+            return
+        }
+        if (selectedRegion.startY != selectedRegion.stopY) {
+            return
+        }
+        var mappedClosers = {
+            "(": ")",
+            "{": "}",
+            "[": "]",
+            ")": "(",
+            "}": "{",
+            "]": "[",
+        }
+        var leftCounts = {
+            "(": 0,
+            // "{": 0,
+            "[": 0
+        }
+        var rightCounts = {
+            ")": 0,
+            // "}": 0,
+            "]": 0
+        }
+        var leftDone = false
+        var rightDone = false
+        var lefties = "([{"
+        var righties = ")]}"
+        var line = fx.lines[fx.cursorLineIndex] || ""
+        var expandedLineLength = expandTabIndex(line, line.length)
+        var i = 0
+        for (i=0; i<100; i++) {
+            if (leftDone && rightDone) {
+                break
+            }
+
+            if (!leftDone) {
+                var leftChar = line.charAt(u(selectedRegion.startX - 1))
+                // log("leftChar " + leftChar)
+                if (righties.indexOf(leftChar) != -1) {
+                    leftCounts[mappedClosers[leftChar]] -= 1
+                    selectedRegion.startX -= 1
+                } else if (lefties.indexOf(leftChar) != -1) {
+                    leftCounts[leftChar] += 1
+                    if (leftCounts[leftChar] == 1) {
+                        leftDone = true
+                    } else {
+                        selectedRegion.startX -= 1
+                    }
+                } else {
+                    // technically better if you unexpand and then expand
+                    selectedRegion.startX -= 1
+                }
+                if (selectedRegion.startX <= 0) {
+                    selectedRegion.startX = 0
+                    leftDone = true
+                }
+            }
+            if (!rightDone) {
+                // stopX is exclusive
+                var rightChar = line.charAt(u(selectedRegion.stopX - 1 + 1))
+                // log("rightChar" + rightChar)
+                if (lefties.indexOf(rightChar) != -1) {
+                    rightCounts[mappedClosers[rightChar]] -= 1
+                    selectedRegion.stopX += 1
+                } else if (righties.indexOf(rightChar) != -1) {
+                    rightCounts[rightChar] += 1
+                    if (rightCounts[rightChar] == 1) {
+                        rightDone = true
+                    } else {
+                        selectedRegion.stopX += 1
+                    }
+                } else {
+                    // technically better if you unexpand and then expand
+                    selectedRegion.stopX += 1
+                }
+                if (selectedRegion.stopX >= expandedLineLength) {
+                    selectedRegion.stopX = expandedLineLength
+                    rightDone = true
+                }
+            }
+            // log([leftCounts, rightCounts])
+        }
+        // if (i == 0) {
+        //     
+        // }
+        // var foo = bar(biz(abc + yo.test + 2004), something.something("else to" , do))
+        // var x1 =
+        // order . , ( ) =
+        render()
+        // expandSelectTimeout = selectTimeout(expandSelection, expandSelectTimeoutMillis)
     }
 
     var hasDoneOverflowXAction = false
@@ -6043,6 +6164,7 @@ function onStart(e) {
         wasDelete = false // so a previous delete doesn't cause split line when you don't want
         acWord = null
         clearTimeout(selectTimeout)
+        clearTimeout(expandSelectTimeout)
         if (e.touches.length > 1) {
             return
         }
@@ -6307,6 +6429,11 @@ function onStart(e) {
             overflowX = 0
             overflowY = 0
             var line = fx.lines[fx.cursorLineIndex] || ""
+            if (selectedRegion.selectedWord) {
+                selectedRegion.selectedWord = false
+                selectedRegion.startX = selectedRegion.origStartX
+                // selectedRegion.stopX = selectedRegion.origStopX
+            }
             selectedRegion.stopX = bind(fx.cursorColIndex, 0, expandTabIndex(line, line.length))
             selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length-1)
             selectedRegion.stopped = true
@@ -6354,11 +6481,13 @@ function onStart(e) {
         return false
     }
     var onEnd = function(e) {
+        log("onEnd")
         overflowX = 0
         overflowY = 0
         touchCount = e.touches.length
         var touchType = e.changedTouches[0].touchType
         clearTimeout(selectTimeout)
+        clearTimeout(expandSelectTimeout)
         if (e.touches.length != 0) {
             return
         }
@@ -6366,23 +6495,26 @@ function onStart(e) {
          //         fx.cursorColIndex = wordEndX
         // Testing isDragKeyboard feature red marker
         var sr = fx.selectedRegions[0]
-        if (sr) {
+        if (sr) { 
             // testing selectMode is char, meaning they didnt select in the margin
             if (sr.startX == sr.stopX && sr.startY == sr.stopY && selectMode == "char") {
+                fx.selectedRegions = []
                 // New mode
                 // isDragKeyboard = true
                 // fx.selectedRegions = []
                 // should we return early here?
-                var w = getWordAtCursor()
-                if (w.word != "") {
-                    var theLine = fx.lines[fx.cursorLineIndex] || ""
-                    sr.startY = fx.cursorLineIndex
-                    sr.startX = expandTabIndex(theLine, w.start)
-                    sr.stopY = fx.cursorLineIndex
-                    sr.stopX = expandTabIndex(theLine, w.end)
-                } else {
-                    fx.selectedRegions = []
-                }
+                // # selectWord, selectWord is done by holding down now
+                
+                // var w = getWordAtCursor()
+                // if (w.word != "") {
+                //     var theLine = fx.lines[fx.cursorLineIndex] || ""
+                //     sr.startY = fx.cursorLineIndex
+                //     sr.startX = expandTabIndex(theLine, w.start)
+                //     sr.stopY = fx.cursorLineIndex
+                //     sr.stopX = expandTabIndex(theLine, w.end)
+                // } else {
+                //     fx.selectedRegions = []
+                // }
             }
         }
 
@@ -6603,14 +6735,12 @@ function onStart(e) {
 
         cursorType = "move"
         // #alternateTap
-        if (alternateTap && !selectedRegion.stopped) {// this only matters if it is selected I think
-            // TODO: what is this feature?
-            // for selecting a word?
-            // selectWord Fearure (I think we no longer get here)
+        if (false && alternateTap && !selectedRegion.stopped) {// this only matters if it is selected I think
+            // This got moved, see other selectWord
+            // #selectword
             // this happens when you hold down for a while and then let go
-            // we should deprecate this?
             var w = getWordAtCursor()
-            if (w.word != "") {
+            if (false && w.word != "") {
                 var theLine = fx.lines[fx.cursorLineIndex] || ""
                 selectedRegion.startY = fx.cursorLineIndex
                 selectedRegion.startX = expandTabIndex(theLine, w.start)
@@ -6650,11 +6780,13 @@ function onStart(e) {
         moveListenerCount = max(moveListenerCount-1, 0)
     }
     var onEndWhileSelected = function(e) {
+        log("onEndWhileSelected")
         overflowX = 0
         overflowY = 0
         touchCount = e.touches.length
-        if (!moved && fx.selectedRegions.length) {
-                if (false && selectMode == "line" && (e.changedTouches[0].pageY-c.getBoundingClientRect().top) < c.clientHeight/3*1) {
+        var sr = fx.selectedRegions[0]
+        if (!moved && sr) {
+            if (false && selectMode == "line" && (e.changedTouches[0].pageY-c.getBoundingClientRect().top) < c.clientHeight/3*1) {
                 // this code got moved to duplicatelinefromtop
                 // #duplicateline
                 copy()
@@ -7725,12 +7857,10 @@ function addFile(fullPath, options, id, name) {
         file.name = name
     }
     addFileToList(file, options)
-    if (!initialFileAdding) {
-        if (!options.preventSelect) {
-            setCurrentFile(file)
-        }
-        renderURL()
+    if (!options.preventSelect) {
+        setCurrentFile(file)
     }
+    renderURL()
     fetchFile(fullPath, file, id).then(() => {
         for (var i=0; i<files.length; i++) {
             if (files[i] != file && files[i].fullPath == file.fullPath) {
@@ -7828,7 +7958,7 @@ function renderFileDropdown() {
     }
     
     // make sure selected button is in view.
-    if (selectedButton) {
+    if (selectedButton && !initialFileAdding) {
         if (selectedButton.offsetLeft + selectedButton.clientWidth > fileRow.scrollLeft + fileRow.clientWidth) {
             fileRow.scrollLeft = selectedButton.offsetLeft - fileRow.clientWidth + selectedButton.clientWidth
         }
@@ -8053,6 +8183,9 @@ function setCurrentFile(file) {
         lastFile = fx
     }
     fx = file
+    if (initialFileAdding) {
+        return
+    }
     if (fx.fileMode == "shell") {
         shellToolbar1.classList.remove("hidden")
         shellToolbar2.classList.remove("hidden")
@@ -8272,10 +8405,7 @@ var paths = (location.pathname).split(",")
 var firstFileMD5 = ""
 // FIRSTFILEMD5 GOES HERE
 
-// TODO: I don't think this is being used
-var initialFileAdding = false
-
-
+var initialFileAdding = true
 
 function fetchWorkspaceWithList(index) {
     // if (index != -1) {
@@ -8303,14 +8433,15 @@ function fetchWorkspaceWithList(index) {
         workspaceName = workspace.Name
         for (var serverFile of workspace.Files) {
             // TODO: fix inconsistent file naming #inconsistentFileNaming
+            var f
             if (serverFile.Type == "terminal") {
-                addExistingTerminalTab(serverFile.ID, serverFile.Name, serverFile.CWD)
+                f = addExistingTerminalTab(serverFile.ID, serverFile.Name, serverFile.CWD)
             } else if (serverFile.Type == "shell") {
-                addCmdTab(serverFile.ID, serverFile.CWD, serverFile.Name)
+                f = addCmdTab(serverFile.ID, serverFile.CWD, serverFile.Name)
             } else if (serverFile.Type == "iframe") {
-                addIframe(serverFile.FullPath, serverFile.ID, serverFile.Name, serverFile.CWD)
+                f = addIframe(serverFile.FullPath, serverFile.ID, serverFile.Name, serverFile.CWD)
             } else {
-                addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), {preventSelect: false}, serverFile.ID, serverFile.Name)
+                f = addFile(serverFile.FullPath + ":" + (serverFile.LineNumber || 1), {preventSelect: false}, serverFile.ID, serverFile.Name)
             }
             // #serverAssignments
             fx.color = serverFile.Color

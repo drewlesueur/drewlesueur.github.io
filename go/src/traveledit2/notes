@@ -1,6 +1,6 @@
 shortlist
     [done] figure out why "git add -p" craps out in cmd
-    move the scroll position  of file row when you have a file selected
+    [done] move the scroll position  of file row when you have a file selected
     move the workspace list down to bottom
     fix position of find down and find up
     [done] tap to delete, then type, the new word (last word) becomes the copied word.
@@ -8,7 +8,7 @@ shortlist
     button to select word?
     [done] fast top touch to copy line.
     maybe clear paste buffer a few sconds after paste?
-    sometimes in the paste flow it doesnt select when pasting (if multiline or space)??
+    pasting without cutting first does not keep text selected when it should (if space or more than one line.)
     some way of pinning files to lines (or specific text)
     fast way to select word? (default sction now is delete, which I think I like)
     touch and hold to select on mousedown and then have the selected region get bigger
