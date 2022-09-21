@@ -2076,6 +2076,9 @@ function setLastWord(maybeLastWord) {
             }
             copyBuffer = lastWord.split("\n")
         }
+    } else {
+        // TODO: do we need this
+        // hasMovedSinceCut = true
     }
 }
 function docChanged(preventUndo) {
@@ -3719,8 +3722,12 @@ function runShellCommand(line) {
         }
 
         let myFx = fx
-        fetch(proxyPath + "/myshell?id="+fx.ID+"&cwd="+encodeURIComponent(fx.shellCWD)+"&cmd="+encodeURIComponent(line), {
-            cache: "no-cache"
+        // fetch(proxyPath + "/myshell?id="+fx.ID+"&cwd="+encodeURIComponent(fx.shellCWD)+"&cmd="+encodeURIComponent(line), {
+        fetch(proxyPath + "/myshell?id="+fx.ID+"&cwd="+encodeURIComponent(fx.shellCWD), {
+            cache: "no-cache",
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded"},
+            body: "cmd="+encodeURIComponent(line)
         }).then(r => {
             if (r.headers.get("X-ID")) {
                 myFx.ID = r.headers.get("X-ID") - 0
@@ -6023,6 +6030,8 @@ function onStart(e) {
                 selectedRegion.stopX = expandTabIndex(line, line.length)
                 selectedRegion.stopY = bind(fx.cursorLineIndex, 0, fx.lines.length - 1)
                 selectedRegion.stopped = true
+                // TODO: should selectMode be prop on selectedRegion
+                // or should some props on selectedRegion just be global vars?
                 selectMode = "line"
             } else {
                 var w = getWordAtCursor()
@@ -6138,6 +6147,10 @@ function onStart(e) {
                 }
             }
             // log([leftCounts, rightCounts])
+        }
+        if (selectedRegion.startX == 0 && selectedRegion.stopX == expandedLineLength) {
+            selectMode = "line"
+            selectedRegion.selectedWord = false
         }
         // if (i == 0) {
         //     
@@ -6827,6 +6840,260 @@ function onStart(e) {
     var movedWithBuffer = false
     var selectedRegion = {}
 
+    var navFileRight = function() {
+        var fileIndex = files.indexOf(fx)
+        if (fileIndex != -1) {
+            fileIndex = fileIndex+1
+            if (fileIndex < 0) {
+                fileIndex = -1
+            } else if (fileIndex >= files.length) {
+                fileIndex = files.length - 1
+            }
+        } else {
+            fileIndex = 0
+        }
+        if (fileIndex == -1) {
+            seeFiles()
+        } else {
+            setCurrentFile(files[fileIndex])
+        }
+    }
+    var navFileLeft = function() {
+        var fileIndex = files.indexOf(fx)
+        if (fileIndex != -1) {
+            fileIndex = fileIndex-1
+            if (fileIndex < 0) {
+                fileIndex = -1
+            } else if (fileIndex >= files.length) {
+                fileIndex = files.length - 1
+            }
+        } else {
+            fileIndex = 0
+        }
+        if (fileIndex == -1) {
+            seeFiles()
+        } else {
+            setCurrentFile(files[fileIndex])
+        }
+    }
+    var moveCursorRight = function() {
+        moveHomeEndDirection = "right"
+        moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
+        // the "true ||" essentially comments out the shift screen to the left feature
+        // in practice it wasn't that helpful because I did one char at a time
+        if (true || document.activeElement == theText) {
+            fx.cursorColIndex += 1
+            if (document.activeElement == theText) {
+                //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+                setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+            }
+            ensureCursorInScreen()
+        } else {
+            var origOffsetX = fx.offsetX
+            // scroll by tabstop?
+            if (false && fx.offsetX < 0) {
+                fx.offsetX = 0
+            }  else {
+                // var tabStop = 4
+                var tabStop = 1 // we changed this to only move one cursor at a time
+                fx.offsetX = Math.ceil((fx.offsetX + 1) / tabStop) * tabStop
+            }
+            ////fx.offsetX += Math.floor(maxCols/2)
+            // fx.cursorColIndex += fx.offsetX - origOffsetX
+            fx.cursorColIndex += 1
+        }
+    }
+    var moveCursorLeft = function() {
+        moveHomeEndDirection = "left"
+        moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
+        // the "true ||" essentially comments out the shift screen to the left feature
+        // in practice it wasn't that helpful because I did one char at a time
+        if (true || document.activeElement == theText) {
+            fx.cursorColIndex -= 1
+            if (document.activeElement == theText) {
+                //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
+                setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
+            }
+            ensureCursorInScreen()
+        } else {
+            var origOffsetX = fx.offsetX
+            if (false && fx.offsetX <= 0) {
+                fx.offsetX = -marginLeft
+            }  else {
+                // var tabStop = 4
+                var tabStop = 1 // we changed this to only move one cursor at a time
+                fx.offsetX = Math.floor((fx.offsetX-1) / tabStop) * tabStop
+            }
+            // fx.cursorColIndex += fx.offsetX - origOffsetX
+            fx.cursorColIndex -= 1
+            if (fx.cursorColIndex < -marginLeft) {
+                 fx.cursorColIndex = -marginLeft
+            }
+        }
+    }
+    var moveSelectionRight = function() {
+        fx.selectedRegions[0].stopX += 1
+        var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
+        var expandedIndex = expandTabIndex(theLine, theLine.length, fx.selectedRegions[0].stopY)
+        if (fx.selectedRegions[0].stopX > expandedIndex) {
+            fx.selectedRegions[0].stopX = expandedIndex
+        }
+    }
+    var moveSelectionLeft = function() {
+        fx.selectedRegions[0].stopX -= 1
+        if (fx.selectedRegions[0].stopX < 0) {
+            fx.selectedRegions[0].stopY = 0
+        }
+    }
+    var goDownFileList = function() {
+        fx.cursorLineIndex += 1
+        if (fx.cursorLineIndex >= fx.lines.length) {
+            fx.cursorLineIndex = fx.lines.length - 1
+        }
+        ensureCursorInScreen()
+    }
+    var goUpFileList = function() {
+        fx.cursorLineIndex -= 1
+        if (fx.cursorLineIndex < 0) {
+            fx.cursorLineIndex = 0
+        }
+        ensureCursorInScreen()
+    }
+    // basically 9 sections
+    // a b c
+    // d e f
+    // g h i
+    var touchTopLeft = function() {
+        moveHomeEndDirection = "up"
+        moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
+
+        // if (fx.highlightText) {
+        if (false && highlightMatchesSingleRegExp) {
+            prevHighlightText()
+        // } else if (searchText.value !== "" && !fx.selectedRegions.length) {
+        } else if (!fx.selectedRegions.length || selectMode == "char") {
+            findUp()
+        } else {
+            fx.cursorLineIndex -= 1
+            if (fx.cursorLineIndex < 0) {
+                fx.cursorLineIndex = 0
+            }
+            ensureCursorInScreen()
+            if (fx.selectedRegions.length) {
+                fx.selectedRegions[0].stopY -= 1
+                if (fx.selectedRegions[0].stopY < fx.selectedRegions[0].startY) {
+                    fx.selectedRegions[0].stopY = fx.selectedRegions[0].startY
+                }
+                var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
+                fx.selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length, fx.selectedRegions[0].stopY)
+            } else if (document.activeElement != theText) {
+                fx.offsetY -= 1
+                if (fx.offsetY < 0) {
+                    fx.offsetY = 0
+                }
+            }
+        }
+    }
+    var touchTopMiddle = function() {
+        if (fx.selectedRegions.length == 0) {
+            isSelectedFromTopThird = true
+            // see onEndWhileSelected for one way to duplicate line (#duplicateline)
+            selectAction(true)
+    
+            // TODO: maybe figure out how to not copy paste this?
+            document.body.addEventListener("touchmove", onMove)
+            moveListenerCount += 1
+            document.body.addEventListener("touchend", onEnd)
+            endListenerCount += 1
+            return
+        } else {
+            // # duplicateline #duplicatelinefromtop
+            var oldSelectedRegions = fx.selectedRegions
+            copy()
+            paste(true) // true here means unselect
+            fx.selectedRegions = oldSelectedRegions
+            render()
+            return
+        }
+    }
+    var touchTopRight = function() {
+        moveHomeEndDirection = "down"
+        moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
+        // log({sm: selectMode})
+        // if (fx.highlightText) {
+        if (false && highlightMatchesSingleRegExp) {
+            nextHighlightText()
+        } else if (!fx.selectedRegions.length || selectMode == "char") {
+            findDown()
+        } else {
+            fx.cursorLineIndex += 1
+            if (fx.cursorLineIndex >= fx.lines.length) {
+                fx.cursorLineIndex = fx.lines.length - 1
+            }
+            ensureCursorInScreen()
+            if (fx.selectedRegions.length) {
+                fx.selectedRegions[0].stopY += 1
+                if (fx.selectedRegions[0].stopY > fx.lines.length - 1) { // stopY is inclusive I think, stopX isn't
+                    fx.selectedRegions[0].stopY = fx.lines.length - 1
+                }
+                var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
+                fx.selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length, fx.selectedRegions[0].stopY)
+            } else if (document.activeElement != theText) {
+                fx.offsetY += 1
+                if (fx.offsetY > fx.lines.length - 10) {
+                    fx.offsetY = lines.length - 10
+                }
+            }
+        }
+    }
+    var touchMiddleLeft = function() {
+        if (document.activeElement == theText) {
+            navFileLeft()
+        } else {
+            if (fx.selectedRegions.length) {
+                moveSelectionLeft()
+            } else if (fx.fileMode == "fileList" || fx.fileMode == "directory") {
+                goUpFileList()
+            } else {
+                moveCursorLeft()
+            }
+        }
+    }
+    var touchMiddleMiddle = function() {
+        
+    }
+    var touchMiddleRight = function() {
+        if (document.activeElement == theText) {
+            navFileRight()
+        } else {
+            if (fx.selectedRegions.length) {
+                moveSelectionRight()
+            } else if (fx.fileMode == "fileList" || fx.fileMode == "directory") {
+                goDownFileList()
+            } else {
+                moveCursorRight()
+            }
+        }
+    }
+    var touchBottomLeft = function() {
+        if (document.activeElement == theText) {
+            moveCursorLeft()
+        } else {
+            navFileLeft()
+        }
+    }
+    var touchBottomMiddle = function() {
+        
+        
+    }
+    var touchBottomRight = function() {
+        if (document.activeElement == theText) {
+            moveCursorRight()
+        } else {
+            navFileRight()
+        }
+    }
+    
     // #clickedges #touchedges #tapedges // lime marker
     // scroll right and left and move cursor right and left or up and down
     // TODO: remove some duplication here. especially the bounds checks. Make a setter functions.
@@ -6834,97 +7101,11 @@ function onStart(e) {
     if (startTouchX > ((canvasWidth/3) - navTouchSize)) {
         var bbox = c.getBoundingClientRect()
         if (startTouchY - bbox.top < (bbox.height/3)) { // this divide by 3 is because of the 3 sections
-            moveHomeEndDirection = "down"
-            moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
-            // log({sm: selectMode})
-            // if (fx.highlightText) {
-            if (false && highlightMatchesSingleRegExp) {
-                nextHighlightText()
-            } else if (!fx.selectedRegions.length || selectMode == "char") {
-                findDown()
-            } else {
-                fx.cursorLineIndex += 1
-                if (fx.cursorLineIndex >= fx.lines.length) {
-                    fx.cursorLineIndex = fx.lines.length - 1
-                }
-                ensureCursorInScreen()
-                if (fx.selectedRegions.length) {
-                    fx.selectedRegions[0].stopY += 1
-                    if (fx.selectedRegions[0].stopY > fx.lines.length - 1) { // stopY is inclusive I think, stopX isn't
-                        fx.selectedRegions[0].stopY = fx.lines.length - 1
-                    }
-                    var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
-                    fx.selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length, fx.selectedRegions[0].stopY)
-                } else if (document.activeElement != theText) {
-                    fx.offsetY += 1
-                    if (fx.offsetY > fx.lines.length - 10) {
-                        fx.offsetY = lines.length - 10
-                    }
-                }
-            }
-        // } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
-        // } else if (startTouchY - bbox.top > (bbox.height*2/3)) {
-        // weird changeup of second and third section depending on if you are editing.Not sure if I like.
-        } else if ((document.activeElement != theText && (startTouchY - bbox.top > (bbox.height*2/3))) || (document.activeElement == theText && (startTouchY - bbox.top < (bbox.height*2/3)))) { // lime marker
-            var fileIndex = files.indexOf(fx)
-            if (fileIndex != -1) {
-                fileIndex = fileIndex+1
-                if (fileIndex < 0) {
-                    fileIndex = -1
-                } else if (fileIndex >= files.length) {
-                    fileIndex = files.length - 1
-                }
-            } else {
-                fileIndex = 0
-            }
-            if (fileIndex == -1) {
-                seeFiles()
-            } else {
-                setCurrentFile(files[fileIndex])
-            }
-        } else if (fx.selectedRegions.length) {
-            fx.selectedRegions[0].stopX += 1
-            var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
-            var expandedIndex = expandTabIndex(theLine, theLine.length, fx.selectedRegions[0].stopY)
-            if (fx.selectedRegions[0].stopX > expandedIndex) {
-                fx.selectedRegions[0].stopX = expandedIndex
-            }
-        } else if (fx.fileMode == "fileList" || fx.fileMode == "directory") {
-            fx.cursorLineIndex += 1
-            if (fx.cursorLineIndex >= fx.lines.length) {
-                fx.cursorLineIndex = fx.lines.length - 1
-            }
-            ensureCursorInScreen()
+            touchTopRight()
+        } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
+            touchMiddleRight()
         } else {
-            if (false && searchText.value) {
-                findDown()
-            } else {
-                moveHomeEndDirection = "right"
-                moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
-                // the "true ||" essentially comments out the shift screen to the left feature
-                // in practice it wasn't that helpful because I did one char at a time
-                if (true || document.activeElement == theText) {
-                    fx.cursorColIndex += 1
-                    if (document.activeElement == theText) {
-                        //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-                        setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-                    }
-                    ensureCursorInScreen()
-                } else {
-                    var origOffsetX = fx.offsetX
-                    // scroll by tabstop?
-                    if (false && fx.offsetX < 0) {
-                        fx.offsetX = 0
-                    }  else {
-                        // var tabStop = 4
-                        var tabStop = 1 // we changed this to only move one cursor at a time
-                        fx.offsetX = Math.ceil((fx.offsetX + 1) / tabStop) * tabStop
-                    }
-                    ////fx.offsetX += Math.floor(maxCols/2)
-                    // fx.cursorColIndex += fx.offsetX - origOffsetX
-                    fx.cursorColIndex += 1
-                }
-            }
+            touchBottomRight()
         }
         document.body.addEventListener("touchend", onEndForEdges)
         updateCursorXY()
@@ -6933,97 +7114,13 @@ function onStart(e) {
     } else if (startTouchX < navTouchSize) {
         var bbox = c.getBoundingClientRect()
         if (startTouchY - bbox.top < (bbox.height/3)) {
-            moveHomeEndDirection = "up"
-            moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
-
-            // if (fx.highlightText) {
-            if (false && highlightMatchesSingleRegExp) {
-                prevHighlightText()
-            // } else if (searchText.value !== "" && !fx.selectedRegions.length) {
-            } else if (!fx.selectedRegions.length || selectMode == "char") {
-                findUp()
-            } else {
-                fx.cursorLineIndex -= 1
-                if (fx.cursorLineIndex < 0) {
-                    fx.cursorLineIndex = 0
-                }
-                ensureCursorInScreen()
-                if (fx.selectedRegions.length) {
-                    fx.selectedRegions[0].stopY -= 1
-                    if (fx.selectedRegions[0].stopY < fx.selectedRegions[0].startY) {
-                        fx.selectedRegions[0].stopY = fx.selectedRegions[0].startY
-                    }
-                    var theLine = fx.lines[fx.selectedRegions[0].stopY] || ""
-                    fx.selectedRegions[0].stopX = expandTabIndex(theLine, theLine.length, fx.selectedRegions[0].stopY)
-                } else if (document.activeElement != theText) {
-                    fx.offsetY -= 1
-                    if (fx.offsetY < 0) {
-                        fx.offsetY = 0
-                    }
-                }
-            }
-        // } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
-        // } else if (startTouchY - bbox.top > (bbox.height*2/3)) {
-        } else if ((document.activeElement != theText && (startTouchY - bbox.top > (bbox.height*2/3))) || (document.activeElement == theText && (startTouchY - bbox.top < (bbox.height*2/3)))) { // lime marker
-            var fileIndex = files.indexOf(fx)
-            if (fileIndex != -1) {
-                fileIndex = fileIndex-1
-                if (fileIndex < 0) {
-                    fileIndex = -1
-                } else if (fileIndex >= files.length) {
-                    fileIndex = files.length - 1
-                }
-            } else {
-                fileIndex = 0
-            }
-            if (fileIndex == -1) {
-                seeFiles()
-            } else {
-                setCurrentFile(files[fileIndex])
-            }
-        } else if (fx.selectedRegions.length) {
-            fx.selectedRegions[0].stopX -= 1
-            if (fx.selectedRegions[0].stopX < 0) {
-                fx.selectedRegions[0].stopY = 0
-            }
-        } else if (fx.fileMode == "fileList" || fx.fileMode == "directory") {
-            fx.cursorLineIndex -= 1
-            if (fx.cursorLineIndex < 0) {
-                fx.cursorLineIndex = 0
-            }
-            ensureCursorInScreen()
+            touchTopLeft()
+        } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
+            touchMiddleLeft()
         } else {
-            if (false && searchText.value) {
-                findUp()
-            } else {
-                moveHomeEndDirection = "left"
-                moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
-                // the "true ||" essentially comments out the shift screen to the left feature
-                // in practice it wasn't that helpful because I did one char at a time
-                if (true || document.activeElement == theText) {
-                    fx.cursorColIndex -= 1
-                    if (document.activeElement == theText) {
-                        //theText.setSelectionRange(fx.cursorColIndex, fx.cursorColIndex)
-                        setSelectionRangeForText(fx.cursorColIndex, fx.cursorColIndex)
-                    }
-                    ensureCursorInScreen()
-                } else {
-                    var origOffsetX = fx.offsetX
-                    if (false && fx.offsetX <= 0) {
-                        fx.offsetX = -marginLeft
-                    }  else {
-                        // var tabStop = 4
-                        var tabStop = 1 // we changed this to only move one cursor at a time
-                        fx.offsetX = Math.floor((fx.offsetX-1) / tabStop) * tabStop
-                    }
-                    // fx.cursorColIndex += fx.offsetX - origOffsetX
-                    fx.cursorColIndex -= 1
-                    if (fx.cursorColIndex < -marginLeft) {
-                         fx.cursorColIndex = -marginLeft
-                    }
-                }
-            }
+            touchBottomLeft()
         }
+        
         if (fx.cursorColIndex < -marginLeft){
             fx.cursorColIndex = -marginLeft
         }
@@ -7044,26 +7141,8 @@ function onStart(e) {
         // TODO: consider allowing this on edit mode.
         if ((startTouchY - bbox.top < (bbox.height/3)) && document.activeElement != theText) { // hotpink marker
             // touch top third to select #topthird  #selectline #touchtop
-            if (fx.selectedRegions.length == 0) {
-                isSelectedFromTopThird = true
-                // see onEndWhileSelected for one way to duplicate line (#duplicateline)
-                selectAction(true)
-
-                // TODO: maybe figure out how to not copy paste this?
-                document.body.addEventListener("touchmove", onMove)
-                moveListenerCount += 1
-                document.body.addEventListener("touchend", onEnd)
-                endListenerCount += 1
-                return
-            } else {
-                // # duplicateline #duplicatelinefromtop
-                var oldSelectedRegions = fx.selectedRegions
-                copy()
-                paste(true) // true here means unselect
-                fx.selectedRegions = oldSelectedRegions
-                render()
-                return
-            }
+            touchTopMiddle()
+            return
         }
     }
     if (fx.selectedRegions.length) {

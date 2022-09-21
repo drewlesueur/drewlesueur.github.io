@@ -13,6 +13,27 @@ shortlist
     fast way to select word? (default sction now is delete, which I think I like)
     touch and hold to select on mousedown and then have the selected region get bigger
     
+    fix cut and move then type and autocomplete then make a function
+        see setLastWord
+    if lastAction is type and you press and hold it autocompletes line instead of select.
+        (get rid of touch to too autocomplete line ) 
+    sometimes filemode dirextory will get replaced with filemode file
+    hold left for even longer clears search?
+    and even longer close file?
+    holding rigt even longer saves?
+    cut copy paste files and directories.
+    when you long press to select inside parens (etc)
+       and it selects the whole line
+       then turn into line select mode 
+    when you go up a dir (by tapping on the file) it doesn't keep the group field!
+    something like color or group but automatically inherits from a parent.
+    duplicate a file by tapping on file to go up a directory, (make it select the current file you are on ) then tap again to open that file
+    feature added press and holdnif it selects line, will go into line mode editing
+    long press file to close? (too slow?)
+    add ways to create copy paste rename files?
+    
+    
+    
 selectMode
 
 

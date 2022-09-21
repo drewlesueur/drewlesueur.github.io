@@ -1130,8 +1130,8 @@ func main() {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Yay, index was hit")
 		// TODO #wschange: you could hydrate the original files list.
-        var usedIndexFile = *indexfile
-        if r.FormValue("indexFile") {
+        var usedIndexFile = *indexFile
+        if r.FormValue("indexFile") != "" {
             usedIndexFile = r.FormValue("indexFile")
         }
 		b, err := ioutil.ReadFile(usedIndexFile)
