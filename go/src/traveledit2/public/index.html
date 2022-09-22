@@ -865,6 +865,8 @@ var canvasWidth
 var canvasHeightFull
 var canvasHeightKeyboard
 var navTouchSize
+// var verticalTouchSize = 120
+var verticalTouchSize = 80
 var device = "iphone12mini"
 var canvasHeightShell
 var canvasHeightTerminal
@@ -880,7 +882,8 @@ function doSizing() {
     // I turned off "Predictive" to get more vertical space
     // canvasHeightKeyboard=1200 
     canvasHeightKeyboard=1060 
-    navTouchSize = 40
+    // navTouchSize = 40
+    navTouchSize = 60
     device = "iphone12mini"
 
     // landscape mode
@@ -1488,6 +1491,8 @@ function updateFontScale() {
 }
 function setFontVars() {
     fontHeight = currentFont.fontHeightPre * fontScale
+    verticalTouchSize = Math.ceil(verticalTouchSize/fontHeight) * fontHeight
+    log("vertical touch " + verticalTouchSize)
     fontWidth = currentFont.fontWidthPre * fontScale
     // fontCSS = (currentFont.fontSize * fontScale) + "px '"+currentFont.fontName+"', ui-monospace"
     // fontCSS = (currentFont.fontSize * fontScale) + "px 'Courier', ui-monospace"
@@ -2481,6 +2486,9 @@ function findDown(searchDir, wrap, startTop) {
             searchText.value = getSelectedLines(fx, false).lines[0]
         } else if (searchText.value == "") {
             searchText.value = getWordAtCursor().word
+            if (searchText.value) {
+                return
+            }
         }
         if (searchText.value == "") {
             // nextHighlightRange()
@@ -2585,6 +2593,9 @@ function findUp() {
     }
     if (searchText.value == "") {
         searchText.value = getWordAtCursor().word
+        if (searchText.value) {
+            return
+        }
         if (searchText.value == "") {
             // prevHighlightRange()
             // return
@@ -5292,6 +5303,41 @@ function renderInternal() {
         iframeCursor.style.left = (fx.iframeCursorX-5) + "px"
         return
     }
+    
+    // t.fillStyle = "navy"
+    // t.fillRect(0,canvasHeight-canvasHeight*1/5, 10, canvasHeight*1/5)
+    // t.fillStyle = "lime"
+    // t.fillRect(0,canvasHeight-canvasHeight*2/5, 10, canvasHeight*1/5)
+    // t.fillStyle = "magenta"
+    // t.fillRect(0,canvasHeight-canvasHeight*3/5, 10, canvasHeight*1/5)
+    // t.fillStyle = "cyan"
+    // t.fillRect(0,canvasHeight-canvasHeight*4/5, 10, canvasHeight*1/5)
+    // t.fillStyle = "yellow"
+    // t.fillRect(0,canvasHeight-canvasHeight*5/5, 10, canvasHeight*1/5)
+    
+    // t.fillStyle = "navy"
+    // t.fillRect(0,canvasHeight-canvasHeight*1/4, 2, canvasHeight*1/4)
+    // t.fillStyle = "lime"
+    // t.fillRect(0,canvasHeight-canvasHeight*2/4, 2, canvasHeight*1/4)
+    // t.fillStyle = "magenta"
+    // t.fillRect(0,canvasHeight-canvasHeight*3/4, 2, canvasHeight*1/4)
+    // t.fillStyle = "cyan"
+    // t.fillRect(0,canvasHeight-canvasHeight*4/4, 2, canvasHeight*1/4)
+    
+    // multiply by 3 because of device pixe ratio
+    // t.fillStyle = "blue"
+    // t.fillRect(0, canvasHeight-(1*verticalTouchSize*3), 10, verticalTouchSize*3)
+    // t.fillStyle = "lime"
+    // t.fillRect(0, canvasHeight-(2*verticalTouchSize*3), 10, verticalTouchSize*3)
+    // t.fillStyle = "red"
+    // t.fillRect(0, canvasHeight-(3*verticalTouchSize*3), 10, verticalTouchSize*3)
+
+    t.fillStyle = "rgba(255,0,0,0.4)"
+    // t.fillRect(0, canvasHeight-(1*verticalTouchSize*3), 10, 3)
+    // t.fillRect(0, canvasHeight-(2*verticalTouchSize*3), 10, 3)
+    // t.fillRect(0, canvasHeight-(3*verticalTouchSize*3), 10, 3)
+    t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(1*verticalTouchSize*3), canvasWidth, 3)
+    t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(2*verticalTouchSize*3), canvasWidth, 3)
 
     // the selected areas
     for (var i=0; i<fx.selectedRegions.length;i++) {
@@ -6604,7 +6650,8 @@ function onStart(e) {
                 }
                 
                 var bbox = c.getBoundingClientRect()
-                if ((e.changedTouches[0].pageY - bbox.top) < c.clientHeight/3*2) {
+                // if ((e.changedTouches[0].pageY - bbox.top) < c.clientHeight/3*2) {
+                if (bbox.bottom - e.changedTouches[0].pageY > (1*verticalTouchSize)) {
                     comment()
                 } else {
                     selectMode = "line"
@@ -6655,7 +6702,9 @@ function onStart(e) {
             // if (document.activeElement == theText || e.changedTouches[0].pageY > c.clientHeight/3*2) {
 
             // todo: you could include the getBoundingClientRect().top offset like in other places
-            if (document.activeElement == theText || e.changedTouches[0].pageY < c.clientHeight/3*2) { // high section handled on touch start with selecting
+            // if (document.activeElement == theText || e.changedTouches[0].pageY < c.clientHeight/3*2) { // high section handled on touch start with selecting
+            var bbox = c.getBoundingClientRect()
+            if (document.activeElement == theText || (bbox.bottom - e.changedTouches[0].pageY > (1*verticalTouchSize))) { // high section handled on touch start with selecting
                 // #alternateTap
                 var w = getWordBeforeCursor()
                 if (alternateTap && lastAction == "move" || w.word == "") { // red marker
@@ -7100,9 +7149,11 @@ function onStart(e) {
     // We divide by 3 because of the whole, points vs pixels
     if (startTouchX > ((canvasWidth/3) - navTouchSize)) {
         var bbox = c.getBoundingClientRect()
-        if (startTouchY - bbox.top < (bbox.height/3)) { // this divide by 3 is because of the 3 sections
+        // if (startTouchY - bbox.top < (bbox.height/3)) { // this divide by 3 is because of the 3 sections
+        if (bbox.bottom - startTouchY > (2*verticalTouchSize)) {
             touchTopRight()
-        } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
+        // } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
+        } else if (bbox.bottom - startTouchY > (1*verticalTouchSize)) {
             touchMiddleRight()
         } else {
             touchBottomRight()
@@ -7113,9 +7164,12 @@ function onStart(e) {
         return
     } else if (startTouchX < navTouchSize) {
         var bbox = c.getBoundingClientRect()
-        if (startTouchY - bbox.top < (bbox.height/3)) {
+        // if (startTouchY - bbox.top < (bbox.height/3)) { // this divide by 3 is because of the 3 sections
+        if (bbox.bottom - startTouchY > (2*verticalTouchSize)) {
+            log("touchTopLeft")
             touchTopLeft()
-        } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
+        // } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
+        } else if (bbox.bottom - startTouchY > (1*verticalTouchSize)) {
             touchMiddleLeft()
         } else {
             touchBottomLeft()
@@ -7139,7 +7193,8 @@ function onStart(e) {
         // TODO: is there any difference between cursorType select and selectedRegions.length > 0
         // if (fx.selectedRegions.length == 0 && cursorType != "select" && document.activeElement != theText && (startTouchY - bbox.top < (bbox.height/3)) ) {
         // TODO: consider allowing this on edit mode.
-        if ((startTouchY - bbox.top < (bbox.height/3)) && document.activeElement != theText) { // hotpink marker
+        // if ((startTouchY - bbox.top < (bbox.height/3)) && document.activeElement != theText) { // hotpink marker
+        if (bbox.bottom - startTouchY > (2*verticalTouchSize)) {
             // touch top third to select #topthird  #selectline #touchtop
             touchTopMiddle()
             return
@@ -7256,6 +7311,10 @@ function clickItemInDirectory() {
             parts = parts.slice(0, parts.length - 1)
         }
         var newFullPath = parts.join("/")
+    } else if (addPath == "> cmd") {
+        var newFullPath = "> cmd"
+    } else if (addPath == "> xterm") {
+        var newFullPath = "> xterm"
     } else {
         var newFullPath = prefix + "/" + addPath
     }
@@ -7270,7 +7329,16 @@ function clickItemInDirectory() {
         closeFile()
         preventSelect = false
     }
+    
     // log("add before: " + closedLeftMostFile)
+    if (newFullPath == "> cmd") {
+        addCmdTab()
+        return
+    } else if (newFullPath == "> xterm") {
+        addTerminalTab()
+        return
+    }
+    
     var newFile = addFile(newFullPath, {
         preventSelect: preventSelect,
         addBefore: closedLeftMostFile
@@ -7904,6 +7972,20 @@ function addFileToList(file, options) {
     }
     renderFileDropdown()
 }
+
+
+function selectFileInDirectory(file, selectName) {
+    if (file && file.fileMode == "directory" && selectName) {
+        for (var i=0; i<file.lines.length; i++) {
+            if (file.lines[i] == selectName) {
+                file.cursorLineIndex = i
+                updateCursorXY(file)
+                ensureCursorInScreen(file)
+                render()
+            }
+        }
+    }
+}
 function addFile(fullPath, options, id, name) {
     options = options || {}
     fullPath = normalizeFullPath(fullPath)
@@ -7918,16 +8000,26 @@ function addFile(fullPath, options, id, name) {
     // adding file to list beforehand to preserve order
 
     var cursorLineIndex = 0
+    var explicitCursorLineIndex = false
     var parts = fullPath.split(":")
     fullPath = parts[0]
     if (parts.length > 1) {
         cursorLineIndex = (parts[1] - 1) || 0
+        explicitCursorLineIndex = true
     }
     // If the file is already in the list of open files.
     // then let it have a reference to the existing lines, like vim does.
+    // quick hack to duplicate file
+    if (fx && fx.fullPath == fullPath && !explicitCursorLineIndex) {
+        var duped = duplicateFile(fx, -1, options, id)
+        // selectFileInDirectory(duped, options.selectName)
+        return duped
+    }
     for (var i=0; i<files.length; i++) {
         if (files[i].fullPath == fullPath) {
-            return duplicateFile(files[i], cursorLineIndex, options, id)
+            var duped = duplicateFile(files[i], cursorLineIndex, options, id)
+            // selectFileInDirectory(duped, options.selectName)
+            return duped
         }
     }
     var file = makeFile(fullPath, cursorLineIndex, "")
@@ -7948,6 +8040,7 @@ function addFile(fullPath, options, id, name) {
                 files[i].undo = file.undo
             }
         }
+        // selectFileInDirectory(file, options.selectName)
         updateCursorXY(file)
         ensureCursorInScreen(file)
         render()
@@ -7955,6 +8048,8 @@ function addFile(fullPath, options, id, name) {
         alert("Error loading file " + e)
     })
     return file
+    
+    
 }
 
 function verifyLoadedMD5(f, md5String) {
@@ -8251,7 +8346,15 @@ function setCurrentFile(file) {
 
     if (fx == file) {
         // go up a directory
-        addFile(fx.fullPath.split("/").slice(0, -1).join("/"))
+        if (fx.fileMode == "shell" || fx.fileMode == "terminal") {
+            addFile(fx.shellCWD.split("/").slice(0, -1).join("/"), {
+                 selectName: fx.shellCWD.split("/").slice(-1)[0]
+            })
+        } else {
+            addFile(fx.fullPath.split("/").slice(0, -1).join("/"), {
+                 selectName: fx.fullPath.split("/").slice(-1)[0]
+            })
+        }
         return
     }
 
@@ -8395,6 +8498,10 @@ function fetchFile(fullPath, file, id="") {
         return r.text()
     }).then(b => {
         file.lines = b.split("\n")
+        if (isDir) {
+            file.lines.unshift("> cmd")
+            file.lines.unshift("> xterm")
+        }
         file.undo = {
             stack: [b],
             index:0,
@@ -8407,6 +8514,7 @@ function fetchFile(fullPath, file, id="") {
         if (isDir) {
             file.fileMode = "directory"
             file.cursorLineIndex = 1
+            file.cursorColIndex = 0
         } else {
             file.fileMode = "file"
         }
