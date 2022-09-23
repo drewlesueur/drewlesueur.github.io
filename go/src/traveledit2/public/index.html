@@ -340,13 +340,15 @@ They get changed later on.
     <!--
         <div id=clearSearchButton class=square onclick=clearSearch()>clear search</div>
         <div class=square onclick=editSearch()>edit search</div>
+    <div class=square onclick=closeFile()>close</div>
     -->
     <div class=square onclick="osCopyText()">os copy</div>
     <div class=square onclick="osPasteText()">os paste</div>
-    <div class=square onclick=closeFile()>close</div>
     <div id=runScriptAndPasteButton class=square onclick=runScriptAndPasteButtonPress()>run script</div>
     <div id=saveButton class=square onclick=saveWrapper()>save</div>
+    <!--
     <div class=square onclick=seeFiles()>files</div>
+    -->
 </div>
 <div class=toolbar>
     <!-- done on touchTopTopLeft and touchTopTopRight  -->
@@ -357,11 +359,15 @@ They get changed later on.
 </div>
 <div class=toolbar>
     <div class=square onmousedown="setCurrentFile(lastFile)" ontouchstart="setCurrentFile(lastFile); event.preventDefault(); event.stopPropagation()">alt tab</div>
+    <!--
     <div class=square onclick="duplicateFile(fx, -1)">dupl file</div>
+    -->
     <div class=square onclick=addCmdTab()>cmd</div>
     <div class=square onclick=addTerminalTab()>xterm</div>
     <div class=square onclick=editEditorCommandText()>editor cmd</div>
+    <!--
     <div class=square onclick="deleteBelow();">del below</div>
+    -->
 </div>
 <!-- Stuff after here is after the fold -->
 <div class=toolbar>
@@ -6637,7 +6643,14 @@ function onStart(e) {
         } else if (!countedAsMoved && cursorType == "move") {
             var bbox = c.getBoundingClientRect() // deeppink marker
             
-            if (bbox.bottom - e.changedTouches[0].pageY > (2*verticalTouchSize)) {
+            if (bbox.bottom - e.changedTouches[0].pageY > (4*verticalTouchSize)) {
+                // touchTopTopTopMiddle
+                closeFile()
+                return
+            } else if (bbox.bottom - e.changedTouches[0].pageY > (3*verticalTouchSize)) {
+                // We won't get into this case because it's handled on touch start to select 
+            } else if (bbox.bottom - e.changedTouches[0].pageY > (2*verticalTouchSize)) {
+                // touchTopTopMiddle
                 if (searchText.value == "") {
                     editSearch()
                 } else {
@@ -7086,7 +7099,7 @@ function onStart(e) {
             }
         }
     }
-    var touchTopMiddle = function() {
+    var touchTopTopMiddle = function() {
         if (fx.selectedRegions.length == 0) {
             isSelectedFromTopThird = true
             // see onEndWhileSelected for one way to duplicate line (#duplicateline)
@@ -7107,6 +7120,12 @@ function onStart(e) {
             render()
             return
         }
+    }
+    var touchTopTopTopLeft = function() {
+        seeFiles()
+    }
+    var touchTopTopTopRight = function() {
+        duplicateFile(fx, -1)
     }
     
     var touchTopTopLeft = function() {
@@ -7199,7 +7218,9 @@ function onStart(e) {
     // We divide by 3 because of the whole, points vs pixels
     if (startTouchX > ((canvasWidth/3) - navTouchSize)) {
         var bbox = c.getBoundingClientRect()
-        if (bbox.bottom - startTouchY > (3*verticalTouchSize)) {
+        if (bbox.bottom - startTouchY > (4*verticalTouchSize)) {
+            touchTopTopTopRight()
+        } else if (bbox.bottom - startTouchY > (3*verticalTouchSize)) {
             touchTopTopRight()
         // if (startTouchY - bbox.top < (bbox.height/3)) { // this divide by 3 is because of the 3 sections
         } else if (bbox.bottom - startTouchY > (2*verticalTouchSize)) {
@@ -7216,7 +7237,9 @@ function onStart(e) {
         return
     } else if (startTouchX < navTouchSize) {
         var bbox = c.getBoundingClientRect()
-        if (bbox.bottom - startTouchY > (3*verticalTouchSize)) {
+        if (bbox.bottom - startTouchY > (4*verticalTouchSize)) {
+            touchTopTopTopLeft()
+        } else if (bbox.bottom - startTouchY > (3*verticalTouchSize)) {
             touchTopTopLeft()
         // if (startTouchY - bbox.top < (bbox.height/3)) { // this divide by 3 is because of the 3 sections
         } else if (bbox.bottom - startTouchY > (2*verticalTouchSize)) {
@@ -7248,9 +7271,9 @@ function onStart(e) {
         // if (fx.selectedRegions.length == 0 && cursorType != "select" && document.activeElement != theText && (startTouchY - bbox.top < (bbox.height/3)) ) {
         // TODO: consider allowing this on edit mode.
         // if ((startTouchY - bbox.top < (bbox.height/3)) && document.activeElement != theText) {
-        if (bbox.bottom - startTouchY > (3*verticalTouchSize)) {  // hotpink marker
+        if ((bbox.bottom - startTouchY > (3*verticalTouchSize)) && (bbox.bottom - startTouchY < (4*verticalTouchSize))) {  // hotpink marker
             // touch top third to select #topthird  #selectline #touchtop
-            touchTopMiddle()
+            touchTopTopMiddle()
             return
         }
     }
