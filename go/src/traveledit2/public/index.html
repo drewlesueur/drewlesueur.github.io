@@ -5362,10 +5362,12 @@ function renderInternal() {
     t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(1*verticalTouchSize*3), notchWidth, notchThickness)
     t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(2*verticalTouchSize*3), notchWidth, notchThickness)
     t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(3*verticalTouchSize*3), notchWidth, notchThickness)
+    t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(4*verticalTouchSize*3), notchWidth, notchThickness)
     
     t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(1*verticalTouchSize*3), notchWidth, notchThickness)
     t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(2*verticalTouchSize*3), notchWidth, notchThickness)
     t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(3*verticalTouchSize*3), notchWidth, notchThickness)
+    t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(4*verticalTouchSize*3), notchWidth, notchThickness)
 
     // the selected areas
     for (var i=0; i<fx.selectedRegions.length;i++) {
@@ -6633,6 +6635,17 @@ function onStart(e) {
                 return
             }
         } else if (!countedAsMoved && cursorType == "move") {
+            var bbox = c.getBoundingClientRect() // deeppink marker
+            
+            if (bbox.bottom - e.changedTouches[0].pageY > (2*verticalTouchSize)) {
+                if (searchText.value == "") {
+                    editSearch()
+                } else {
+                    clearSearch()
+                }
+                return
+            }
+            
             if (fx.fileMode == "directory") {
                 // #filestuff
                 // openFile
@@ -6669,16 +6682,6 @@ function onStart(e) {
             }
 
 
-            var bbox = c.getBoundingClientRect() // deeppink marker
-            
-            if (bbox.bottom - e.changedTouches[0].pageY > (2*verticalTouchSize)) {
-                if (searchText.value == "") {
-                    editSearch()
-                } else {
-                    clearSearch()
-                }
-                return
-            }
             
             if (fx.cursorColIndex == -marginLeft) {
                 // since we are in the margin, let's force it
