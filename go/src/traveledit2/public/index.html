@@ -276,6 +276,9 @@ They get changed later on.
 </div>
 <div class="toolbar xhidden" id=fileRow onclick=selectFileRow(event)>
 </div>
+<div class="toolbar hidden" id=fileToolbar1 style="--display: none">
+    <div class=square onclick="" id=statusBar>status</div>
+</div>
 <div class="toolbar hidden" id=terminalToolbar1 style="--display: none">
     <div class=middleButton onclick='sendTerminal("\x03"); event.preventDefault()'>^C</div>
     <div class=middleButton onclick='sendTerminal("git add -p"); event.preventDefault()'>-p</div>
@@ -298,8 +301,7 @@ They get changed later on.
     <div class=square onclick="fx.iframe.contentWindow.location.reload()">refresh iframe</div>
 </div>
 
-<div class="toolbar hidden" id=workspaceToolbar onclick=selectWorkspaceToolbar(event) style="--display: none">
-</div>
+<!-- workspace toolbar was here -->
 
 <div class="toolbar hidden" id=shellToolbar1 style="--display: none">
     <div class=square onclick=openAtCursor()>open</div>
@@ -335,17 +337,18 @@ They get changed later on.
 <!--<div class="toolbar xhidden" id=fileRow ontouchstart=selectFileRow(event)>-->
 <!--Select file row was here-->
 <div class=toolbar>
-    <div id=clearSearchButton class=square onclick=clearSearch()>clear search</div>
-    <div class=square onclick=editSearch()>edit search</div>
-
+    <!--
+        <div id=clearSearchButton class=square onclick=clearSearch()>clear search</div>
+        <div class=square onclick=editSearch()>edit search</div>
+    -->
+    <div class=square onclick="osCopyText()">os copy</div>
+    <div class=square onclick="osPasteText()">os paste</div>
     <div class=square onclick=closeFile()>close</div>
+    <div id=runScriptAndPasteButton class=square onclick=runScriptAndPasteButtonPress()>run script</div>
     <div id=saveButton class=square onclick=saveWrapper()>save</div>
     <div class=square onclick=seeFiles()>files</div>
 </div>
 <div class=toolbar>
-    <div class=square onclick="osCopyText()">os copy</div>
-    <div class=square onclick="osPasteText()">os paste</div>
-    <div id=runScriptAndPasteButton class=square onclick=runScriptAndPasteButtonPress()>run script</div>
     <!-- done on touchTopTopLeft and touchTopTopRight  -->
     <!--
         <div class=square onclick=redo()>redo</div>
@@ -378,6 +381,8 @@ They get changed later on.
     <div class=square onclick="clearTrailingWhitespace()">&times; tr whitespace</div>
     <div class=square onclick="searchText.value = getWordAtCursor().word; render();">highlight word</div>
     <div id=toggleTabStopButton class=square onclick="toggleTabStop()">tabs</div>
+</div>
+<div class="toolbar hidden" id=workspaceToolbar onclick=selectWorkspaceToolbar(event) style="--display: none">
 </div>
 <div class=toolbar>
     <div class=square onclick=doFormat()>format</div>
@@ -881,7 +886,7 @@ var canvasHeight
 function doSizing() {
     canvasWidth=innerWidth * 3
     // TODO: make these configurable in UI
-    canvasHeightFull=1710 - (36*3*1) // extra button row now
+    canvasHeightFull=1710 // - (36*3*1) // extra button row now
     // I turned off "Predictive" to get more vertical space
     // canvasHeightKeyboard=1200 
     canvasHeightKeyboard=1060 
@@ -926,8 +931,11 @@ function doSizing() {
     // var canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*1)
     // TODO: clean this special case up. changed so files always show. bit now it needs 2 rows
     // ok now back to 1 row
-    canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*2)
     // canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*1)
+    // canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*2)
+    
+    // back to 0 rows
+    canvasHeightKeyboardTerminal=canvasHeightKeyboard-(36*3*0)
 
     // 34 button height plus 1px*2 margin
     // 2 rows of new buttons for shell
@@ -4985,6 +4993,7 @@ function render() {
         // theStatus.acWord = acWord
         statusEl.innerText = JSON.stringify(theStatus, null, "    ")
     }
+    statusBar.innerText = searchText.value
     // this is commented out because of iphone 12 mini slowness
     // see renderSaves()
     // if (fx.fileMode == "file")   {
@@ -5346,7 +5355,7 @@ function renderInternal() {
     // t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(3*verticalTouchSize*3), canvasWidth, 1)
     
     var notchThickness = 5
-    var notchWidth = 40
+    var notchWidth = 10
     t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(1*verticalTouchSize*3), notchWidth, notchThickness)
     t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(2*verticalTouchSize*3), notchWidth, notchThickness)
     t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(3*verticalTouchSize*3), notchWidth, notchThickness)
@@ -6657,6 +6666,17 @@ function onStart(e) {
             }
 
 
+            var bbox = c.getBoundingClientRect() // deeppink marker
+            
+            if (bbox.bottom - e.changedTouches[0].pageY > (2*verticalTouchSize)) {
+                if (searchText.value == "") {
+                    editSearch()
+                } else {
+                    clearSearch()
+                }
+                return
+            }
+            
             if (fx.cursorColIndex == -marginLeft) {
                 // since we are in the margin, let's force it
                 // to paste line-style.
@@ -6665,7 +6685,6 @@ function onStart(e) {
                     return
                 }
                 
-                var bbox = c.getBoundingClientRect()
                 // if ((e.changedTouches[0].pageY - bbox.top) < c.clientHeight/3*2) {
                 if (bbox.bottom - e.changedTouches[0].pageY > (1*verticalTouchSize)) {
                     comment()
@@ -7222,8 +7241,8 @@ function onStart(e) {
         // TODO: is there any difference between cursorType select and selectedRegions.length > 0
         // if (fx.selectedRegions.length == 0 && cursorType != "select" && document.activeElement != theText && (startTouchY - bbox.top < (bbox.height/3)) ) {
         // TODO: consider allowing this on edit mode.
-        // if ((startTouchY - bbox.top < (bbox.height/3)) && document.activeElement != theText) { // hotpink marker
-        if (bbox.bottom - startTouchY > (2*verticalTouchSize)) {
+        // if ((startTouchY - bbox.top < (bbox.height/3)) && document.activeElement != theText) {
+        if (bbox.bottom - startTouchY > (3*verticalTouchSize)) {  // hotpink marker
             // touch top third to select #topthird  #selectline #touchtop
             touchTopMiddle()
             return
@@ -8398,32 +8417,36 @@ function setCurrentFile(file) {
         return
     }
     if (fx.fileMode == "shell") {
+        fileToolbar1.classList.add("hidden")
         shellToolbar1.classList.remove("hidden")
         shellToolbar2.classList.remove("hidden")
         terminalToolbar1.classList.add("hidden")
-        workspaceToolbar.classList.add("hidden")
+        // workspaceToolbar.classList.add("hidden")
         iframeToolbar1.classList.add("hidden")
         runScriptAndPasteButton.innerText = "run script"
     } else if (fx.fileMode == "terminal") {
+        fileToolbar1.classList.add("hidden")
         shellToolbar1.classList.add("hidden")
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.remove("hidden")
-        workspaceToolbar.classList.add("hidden")
+        // workspaceToolbar.classList.add("hidden")
         iframeToolbar1.classList.add("hidden")
         runScriptAndPasteButton.innerText = "paste"
     } else if (fx.fileMode == "iframe") {
+        fileToolbar1.classList.add("hidden")
         shellToolbar1.classList.add("hidden")
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.add("hidden")
-        workspaceToolbar.classList.add("hidden")
+        // workspaceToolbar.classList.add("hidden")
         iframeToolbar1.classList.remove("hidden")
         // something else can be done here? like refresh?
         runScriptAndPasteButton.innerText = "run script"
     } else {
+        fileToolbar1.classList.remove("hidden")
         shellToolbar1.classList.add("hidden")
         shellToolbar2.classList.add("hidden")
         terminalToolbar1.classList.add("hidden")
-        workspaceToolbar.classList.remove("hidden")
+        // workspaceToolbar.classList.remove("hidden")
         iframeToolbar1.classList.add("hidden")
         runScriptAndPasteButton.innerText = "run script"
     }
