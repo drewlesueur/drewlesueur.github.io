@@ -346,8 +346,11 @@ They get changed later on.
     <div class=square onclick="osCopyText()">os copy</div>
     <div class=square onclick="osPasteText()">os paste</div>
     <div id=runScriptAndPasteButton class=square onclick=runScriptAndPasteButtonPress()>run script</div>
-    <div class=square onclick=redo()>redo</div>
-    <div class=square onclick=undo()>undo</div>
+    <!-- done on touchTopTopLeft and touchTopTopRight  -->
+    <!--
+        <div class=square onclick=redo()>redo</div>
+        <div class=square onclick=undo()>undo</div>
+    -->
 </div>
 <div class=toolbar>
     <div class=square onmousedown="setCurrentFile(lastFile)" ontouchstart="setCurrentFile(lastFile); event.preventDefault(); event.stopPropagation()">alt tab</div>
@@ -883,7 +886,7 @@ function doSizing() {
     // canvasHeightKeyboard=1200 
     canvasHeightKeyboard=1060 
     // navTouchSize = 40
-    navTouchSize = 60
+    navTouchSize = 50
     device = "iphone12mini"
 
     // landscape mode
@@ -5332,12 +5335,25 @@ function renderInternal() {
     // t.fillStyle = "red"
     // t.fillRect(0, canvasHeight-(3*verticalTouchSize*3), 10, verticalTouchSize*3)
 
-    t.fillStyle = "rgba(255,0,0,0.4)"
-    // t.fillRect(0, canvasHeight-(1*verticalTouchSize*3), 10, 3)
-    // t.fillRect(0, canvasHeight-(2*verticalTouchSize*3), 10, 3)
-    // t.fillRect(0, canvasHeight-(3*verticalTouchSize*3), 10, 3)
-    t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(1*verticalTouchSize*3), canvasWidth, 3)
-    t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(2*verticalTouchSize*3), canvasWidth, 3)
+    // t.fillStyle = "rgba(255,0,0,0.4)"
+    t.fillStyle = "rgba(255,0,0,1)"
+    // t.fillRect(0, canvasHeight-(1*verticalTouchSize*3), 30, 5)
+    // t.fillRect(0, canvasHeight-(2*verticalTouchSize*3), 30, 5)
+    // t.fillRect(0, canvasHeight-(3*verticalTouchSize*3), 30, 5)
+    
+    // t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(1*verticalTouchSize*3), canvasWidth, 1)
+    // t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(2*verticalTouchSize*3), canvasWidth, 1)
+    // t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(3*verticalTouchSize*3), canvasWidth, 1)
+    
+    var notchThickness = 5
+    var notchWidth = 40
+    t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(1*verticalTouchSize*3), notchWidth, notchThickness)
+    t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(2*verticalTouchSize*3), notchWidth, notchThickness)
+    t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(3*verticalTouchSize*3), notchWidth, notchThickness)
+    
+    t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(1*verticalTouchSize*3), notchWidth, notchThickness)
+    t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(2*verticalTouchSize*3), notchWidth, notchThickness)
+    t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(3*verticalTouchSize*3), notchWidth, notchThickness)
 
     // the selected areas
     for (var i=0; i<fx.selectedRegions.length;i++) {
@@ -6848,12 +6864,14 @@ function onStart(e) {
         touchCount = e.touches.length
         var sr = fx.selectedRegions[0]
         if (!moved && sr) {
+            var bbox = c.getBoundingClientRect()
             if (false && selectMode == "line" && (e.changedTouches[0].pageY-c.getBoundingClientRect().top) < c.clientHeight/3*1) {
                 // this code got moved to duplicatelinefromtop
                 // #duplicateline
                 copy()
                 paste(true) // true here means unselect
-            } else if (selectMode == "line" && (e.changedTouches[0].pageY-c.getBoundingClientRect().top) < c.clientHeight/3*2) {
+            // } else if (selectMode == "line" && (e.changedTouches[0].pageY-c.getBoundingClientRect().top) < c.clientHeight/3*2) {
+            } else if (bbox.bottom - e.changedTouches[0].pageY > (1*verticalTouchSize)) {
                 comment()
             } else {
                 fx.selectedRegions = []
@@ -7065,6 +7083,13 @@ function onStart(e) {
             return
         }
     }
+    
+    var touchTopTopLeft = function() {
+        undo()
+    }
+    var touchTopTopRight = function() {
+        redo()
+    }
     var touchTopRight = function() {
         moveHomeEndDirection = "down"
         moveHomeEndTimeout = setTimeout(moveHomeEndAction, moveHomeEndTimeoutMillis)
@@ -7149,8 +7174,10 @@ function onStart(e) {
     // We divide by 3 because of the whole, points vs pixels
     if (startTouchX > ((canvasWidth/3) - navTouchSize)) {
         var bbox = c.getBoundingClientRect()
+        if (bbox.bottom - startTouchY > (3*verticalTouchSize)) {
+            touchTopTopRight()
         // if (startTouchY - bbox.top < (bbox.height/3)) { // this divide by 3 is because of the 3 sections
-        if (bbox.bottom - startTouchY > (2*verticalTouchSize)) {
+        } else if (bbox.bottom - startTouchY > (2*verticalTouchSize)) {
             touchTopRight()
         // } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
         } else if (bbox.bottom - startTouchY > (1*verticalTouchSize)) {
@@ -7164,8 +7191,10 @@ function onStart(e) {
         return
     } else if (startTouchX < navTouchSize) {
         var bbox = c.getBoundingClientRect()
+        if (bbox.bottom - startTouchY > (3*verticalTouchSize)) {
+            touchTopTopLeft()
         // if (startTouchY - bbox.top < (bbox.height/3)) { // this divide by 3 is because of the 3 sections
-        if (bbox.bottom - startTouchY > (2*verticalTouchSize)) {
+        } else if (bbox.bottom - startTouchY > (2*verticalTouchSize)) {
             log("touchTopLeft")
             touchTopLeft()
         // } else if (startTouchY - bbox.top < (bbox.height*2/3)) {
@@ -8012,13 +8041,13 @@ function addFile(fullPath, options, id, name) {
     // quick hack to duplicate file
     if (fx && fx.fullPath == fullPath && !explicitCursorLineIndex) {
         var duped = duplicateFile(fx, -1, options, id)
-        // selectFileInDirectory(duped, options.selectName)
+        selectFileInDirectory(duped, options.selectName)
         return duped
     }
     for (var i=0; i<files.length; i++) {
         if (files[i].fullPath == fullPath) {
             var duped = duplicateFile(files[i], cursorLineIndex, options, id)
-            // selectFileInDirectory(duped, options.selectName)
+            selectFileInDirectory(duped, options.selectName)
             return duped
         }
     }
@@ -8040,7 +8069,7 @@ function addFile(fullPath, options, id, name) {
                 files[i].undo = file.undo
             }
         }
-        // selectFileInDirectory(file, options.selectName)
+        selectFileInDirectory(file, options.selectName)
         updateCursorXY(file)
         ensureCursorInScreen(file)
         render()
@@ -8499,8 +8528,10 @@ function fetchFile(fullPath, file, id="") {
     }).then(b => {
         file.lines = b.split("\n")
         if (isDir) {
-            file.lines.unshift("> cmd")
-            file.lines.unshift("> xterm")
+            // cmd and xterm in file list feature attempt
+            // I don't like it that much
+            // file.lines.unshift("> cmd")
+            // file.lines.unshift("> xterm")
         }
         file.undo = {
             stack: [b],
