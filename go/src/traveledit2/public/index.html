@@ -880,7 +880,7 @@ var canvasHeightFull
 var canvasHeightKeyboard
 var navTouchSize
 // var verticalTouchSize = 120
-var verticalTouchSize = 80
+var verticalTouchSize = 120
 var device = "iphone12mini"
 var canvasHeightShell
 var canvasHeightTerminal
@@ -1508,8 +1508,6 @@ function updateFontScale() {
 }
 function setFontVars() {
     fontHeight = currentFont.fontHeightPre * fontScale
-    verticalTouchSize = Math.ceil(verticalTouchSize/fontHeight) * fontHeight
-    log("vertical touch " + verticalTouchSize)
     fontWidth = currentFont.fontWidthPre * fontScale
     // fontCSS = (currentFont.fontSize * fontScale) + "px '"+currentFont.fontName+"', ui-monospace"
     // fontCSS = (currentFont.fontSize * fontScale) + "px 'Courier', ui-monospace"
@@ -5365,15 +5363,24 @@ function renderInternal() {
     t.fillStyle = lightFontColor
     var notchThickness = 5
     var notchWidth = 30
-    t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(1*verticalTouchSize*3), notchWidth, notchThickness)
-    t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(2*verticalTouchSize*3), notchWidth, notchThickness)
-    t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(3*verticalTouchSize*3), notchWidth, notchThickness)
-    t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(4*verticalTouchSize*3), notchWidth, notchThickness)
+    // t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(1*verticalTouchSize*3), notchWidth, notchThickness)
+    // t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(2*verticalTouchSize*3), notchWidth, notchThickness)
+    // t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(3*verticalTouchSize*3), notchWidth, notchThickness)
+    // t.fillRect(0, Math.floor(canvasHeight/fontHeight)*fontHeight-(4*verticalTouchSize*3), notchWidth, notchThickness)
+    // 
+    // t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(1*verticalTouchSize*3), notchWidth, notchThickness)
+    // t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(2*verticalTouchSize*3), notchWidth, notchThickness)
+    // t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(3*verticalTouchSize*3), notchWidth, notchThickness)
+    // t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(4*verticalTouchSize*3), notchWidth, notchThickness)
+    t.fillRect(0, canvasHeight-(1*verticalTouchSize*3), notchWidth, notchThickness)
+    t.fillRect(0, canvasHeight-(2*verticalTouchSize*3), notchWidth, notchThickness)
+    t.fillRect(0, canvasHeight-(3*verticalTouchSize*3), notchWidth, notchThickness)
+    t.fillRect(0, canvasHeight-(4*verticalTouchSize*3), notchWidth, notchThickness)
     
-    t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(1*verticalTouchSize*3), notchWidth, notchThickness)
-    t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(2*verticalTouchSize*3), notchWidth, notchThickness)
-    t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(3*verticalTouchSize*3), notchWidth, notchThickness)
-    t.fillRect(canvasWidth-notchWidth, Math.floor(canvasHeight/fontHeight)*fontHeight-(4*verticalTouchSize*3), notchWidth, notchThickness)
+    t.fillRect(canvasWidth-notchWidth, canvasHeight-(1*verticalTouchSize*3), notchWidth, notchThickness)
+    t.fillRect(canvasWidth-notchWidth, canvasHeight-(2*verticalTouchSize*3), notchWidth, notchThickness)
+    t.fillRect(canvasWidth-notchWidth, canvasHeight-(3*verticalTouchSize*3), notchWidth, notchThickness)
+    t.fillRect(canvasWidth-notchWidth, canvasHeight-(4*verticalTouchSize*3), notchWidth, notchThickness)
 
     // the selected areas
     for (var i=0; i<fx.selectedRegions.length;i++) {
