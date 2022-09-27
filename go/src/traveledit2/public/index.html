@@ -346,9 +346,7 @@ They get changed later on.
     <div class=square onclick="osPasteText()">os paste</div>
     <div id=runScriptAndPasteButton class=square onclick=runScriptAndPasteButtonPress()>run script</div>
     <div id=saveButton class=square onclick=saveWrapper()>save</div>
-    <!--
     <div class=square onclick=seeFiles()>files</div>
-    -->
 </div>
 <div class=toolbar>
     <!-- done on touchTopTopLeft and touchTopTopRight  -->
@@ -473,6 +471,7 @@ They get changed later on.
     <div class=longButton onclick="fontScale = 0.7; updateFontScale()">0.7</div>
     <div class=longButton onclick="fontScale = 0.8; updateFontScale()">0.8</div>
     <div class=longButton onclick="fontScale = 0.9; updateFontScale()">0.9</div>
+    <div class=longButton onclick="fontScale = 0.95; updateFontScale()">0.95</div>
     <div class=longButton onclick="fontScale = 1.0; updateFontScale()">1.0</div>
     <div class=longButton onclick="fontScale = 1.1; updateFontScale()">1.1</div>
     <div class=longButton onclick="fontScale = 1.15; updateFontScale()">1.15</div>
@@ -889,6 +888,10 @@ var canvasHeightKeyboardTerminal
 var maxLines
 var maxCols
 var canvasHeight
+
+// alert(innerWidth + ", " + innerHeight)
+// alert(screen.width + ", " + screen.height)
+
 function doSizing() {
     canvasWidth=innerWidth * 3
     // TODO: make these configurable in UI
@@ -906,7 +909,19 @@ function doSizing() {
         canvasHeightKeyboard = 400 
         navTouchSize = 60
     }
-
+    
+    // This condition for the 2022 iPhone 14 Pro
+    if (screen.width == 393 && screen.height == 852) {
+        device = "iphone14pro"
+        canvasHeightFull=1820
+        canvasHeightKeyboard=1154
+        navTouchSize = 50
+        if (innerWidth > innerHeight) {
+            canvasHeightFull = 575
+            canvasHeightKeyboard = 400
+            navTouchSize = 100
+        }
+    }
 
     // This condition for the 2021 iPad mini
     if (screen.width == 744 && screen.height == 1133) {
@@ -3692,7 +3707,7 @@ function runShellCommand(line) {
     for (var s=0; s<1; s++) {
         // ""supposebly" in non interactive mode this will get into some weird loop and use all the memory
         var trimmedLine = line.trim() 
-        if (trimmedLine.startsWith("git") && trimmedLine.match(/\s-p\b/)) {
+        if (trimmedLine.startsWith("git") && trimmedLine.match(/\s-p\b/) && trimmedLine.indexOf(" log ") == -1) {
             copyBuffer = ["run this in terminal (xterm button), not non-interactive shell", ""]
             paste(true)
             fx.cursorLineIndex = fx.lines.length - 1
@@ -7129,7 +7144,8 @@ function onStart(e) {
         }
     }
     var touchTopTopTopLeft = function() {
-        seeFiles()
+        // seeFiles()
+        toggleDarkMode()
     }
     var touchTopTopTopRight = function() {
         duplicateFile(fx, -1)
