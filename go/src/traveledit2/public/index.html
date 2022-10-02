@@ -7086,7 +7086,9 @@ function onStart(e) {
         }
         ensureCursorInScreen()
     }
-    // basically 9 sections
+    // basically 15 sections
+    // a b c
+    // a b c
     // a b c
     // d e f
     // g h i
@@ -7144,18 +7146,18 @@ function onStart(e) {
         }
     }
     var touchTopTopTopLeft = function() {
-        // seeFiles()
-        toggleDarkMode()
+        undo()
+        // toggleDarkMode()
     }
     var touchTopTopTopRight = function() {
-        duplicateFile(fx, -1)
+        redo()
     }
     
     var touchTopTopLeft = function() {
-        undo()
+        seeFiles()
     }
     var touchTopTopRight = function() {
-        redo()
+        duplicateFile(fx, -1)
     }
     var touchTopRight = function() {
         moveHomeEndDirection = "down"
