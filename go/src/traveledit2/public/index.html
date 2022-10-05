@@ -7157,7 +7157,8 @@ function onStart(e) {
         seeFiles()
     }
     var touchTopTopRight = function() {
-        duplicateFile(fx, -1)
+        // duplicateFile(fx, -1)
+        goUpDirectory()
     }
     var touchTopRight = function() {
         moveHomeEndDirection = "down"
@@ -8441,22 +8442,28 @@ function seeFiles() {
     ensureCursorInScreen()
 }
 
+
+function goUpDirectory() {
+    // go up a directory
+    if (fx.fileMode == "shell" || fx.fileMode == "terminal") {
+        addFile(fx.shellCWD.split("/").slice(0, -1).join("/"), {
+             selectName: fx.shellCWD.split("/").slice(-1)[0]
+        })
+    } else {
+        addFile(fx.fullPath.split("/").slice(0, -1).join("/"), {
+             selectName: fx.fullPath.split("/").slice(-1)[0]
+        })
+    }
+}
+    
 function setCurrentFile(file) {
     if (!file) {
         return
     }
 
     if (fx == file) {
-        // go up a directory
-        if (fx.fileMode == "shell" || fx.fileMode == "terminal") {
-            addFile(fx.shellCWD.split("/").slice(0, -1).join("/"), {
-                 selectName: fx.shellCWD.split("/").slice(-1)[0]
-            })
-        } else {
-            addFile(fx.fullPath.split("/").slice(0, -1).join("/"), {
-                 selectName: fx.fullPath.split("/").slice(-1)[0]
-            })
-        }
+        // goUpDirectory()
+        duplicateFile(fx, -1)
         return
     }
 
@@ -8562,6 +8569,7 @@ function duplicateFile(f, cursorLineIndex, options, id="") {
         ensureCursorInScreen()
     }
     renderURL()
+    
     return fc
     // TODO: eventually, update cursor position
     // when text to one file is added.

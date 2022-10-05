@@ -41,6 +41,7 @@ shortlist
     single tap high will duplicate line
     bring back autocomplete line 
     when selected maybe swipt to select next word etc
+    when viewing files, if you close a directory, it should close everything under that directory
     
     
     
