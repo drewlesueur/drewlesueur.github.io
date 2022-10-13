@@ -8399,9 +8399,20 @@ function getLinesForFileList() {
             
             // treeFiles.push(files[i].name || files[i].fullPath.split("/").slice(-1)[0])
             var flatName = files[i].name || files[i].fullPath.split("/").slice(-1)[0]
+            
+            
             if (files[i].group) {
                 flatName = files[i].group + ": " + flatName
             }
+            
+            var dirPart = files[i].fullPath.split("/").slice(0, -1).reverse().join(" < ")
+            var theLen = expandTabIndex(flatName, flatName.length, null, null, "nocache")
+            var takenUp = Math.floor(theLen/4)
+            var gap = 7 - takenUp
+            if (gap < 1) {
+                gap = 1
+            }
+            flatName = flatName + "\t".repeat(gap) + "< " + dirPart
             treeFiles.push(flatName)
             
             // I wrote this so you could get rid of the last part if you want and only show the file name
